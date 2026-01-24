@@ -1,0 +1,12 @@
+@import 'tailwindcss';
+
+html,
+body,
+#root {
+  overscroll-behavior: none;
+  font-family: var(--font-sans);
+  font-size: var(--text-l);
+  line-height: calc(var(--spacing) * 8);
+  /* color: oklch(0.97 0 0 / 0.49); */
+  color: oklch(1 0 0 / 0.72);
+}

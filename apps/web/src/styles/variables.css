@@ -1,0 +1,4 @@
+:root {
+  /* --color_bg_screen: radial-gradient(circle at 50% 52.5%, rgb(14, 53, 92) 0%, rgb(16, 14, 72) 90%); */
+  --color_bg_screen: radial-gradient(circle at 50% 52.5%, rgb(14 92 77) 0%, rgb(14 58 72) 90%);
+}

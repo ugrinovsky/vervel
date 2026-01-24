@@ -1,0 +1,50 @@
+.avatar {
+  display: flex;
+  margin: 0 auto;
+}
+.avatar g[data-zone] path {
+  fill: transparent;
+  transition: fill 0.25s ease;
+  pointer-events: all;
+  stroke: rgba(0, 0, 0, 0) !important;
+}
+
+.avatar svg path {
+  fill: red;
+  transition: fill 0.3s ease;
+}
+
+.avatar[data-active-zone='chests'] g[data-zone='chests'] path {
+  fill: #ff6b6b;
+}
+
+.avatar svg g path:hover {
+  opacity: 0.6;
+}
+
+.avatar[data-active-zone='chests'] g[data-zone='chests'] path,
+.avatar[data-active-zone='shoulders'] g[data-zone='shoulders'] path,
+.avatar[data-active-zone='trapezoids'] g[data-zone='trapezoids'] path,
+.avatar[data-active-zone='abdominalPress'] g[data-zone='abdominalPress'] path,
+.avatar[data-active-zone='obliquePress'] g[data-zone='obliquePress'] path,
+.avatar[data-active-zone='backMuscles'] g[data-zone='backMuscles'] path,
+.avatar[data-active-zone='legMuscles'] g[data-zone='legMuscles'] path,
+.avatar[data-active-zone='glutealMuscles'] g[data-zone='glutealMuscles'] path,
+.avatar[data-active-zone='biceps'] g[data-zone='biceps'] path,
+.avatar[data-active-zone='triceps'] g[data-zone='triceps'] path,
+.avatar[data-active-zone='forearms'] g[data-zone='forearms'] path,
+.avatar[data-active-zone='calfMuscles'] g[data-zone='calfMuscles'] path {
+  fill: rgb(176 255 245 / 35%);
+}
+
+.avatar-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.muscle-list {
+  width: 100%;
+}

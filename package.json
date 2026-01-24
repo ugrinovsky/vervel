@@ -1,0 +1,15 @@
+{
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "cd apps/api && node ace serve --watch",
+    "dev:web": "cd apps/web && vite",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
