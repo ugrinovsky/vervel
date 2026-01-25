@@ -1,18 +1,18 @@
+import { useExercises } from '@/hooks/useExercises';
 import { useEffect, useState } from 'react';
 
 export default function ExercisesList() {
-  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const { data: exercises, loading, error } = useExercises();
 
-  // useEffect(() => {
-  //   fetchExercises().then(setExercises).catch(console.error);
-  // }, []);
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <div>
       <h2>Exercises:</h2>
       <ul>
         {exercises.map((ex) => (
-          <li key={ex._id}>{ex.id}</li>
+          <li key={ex.id}>{ex.id}</li>
         ))}
       </ul>
     </div>

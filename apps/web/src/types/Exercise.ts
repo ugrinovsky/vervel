@@ -1,8 +1,6 @@
 export type MuscleZone = 'chests' | 'triceps' | 'shoulders' | 'back' | 'legs' | 'glutes' | 'core';
 
 export interface Exercise {
-  _id?: string;
-
   /** Уникальный код */
   id: string;
 

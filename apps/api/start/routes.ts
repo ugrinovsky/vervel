@@ -7,10 +7,14 @@
 |
 */
 
-import router from '@adonisjs/core/services/router'
+const ExercisesController = () => import('#controllers/exercises_controller');
+
+import router from '@adonisjs/core/services/router';
 
 router.get('/', async () => {
   return {
     hello: 'world',
-  }
-})
+  };
+});
+
+router.get('/exercises', [ExercisesController, 'index']);

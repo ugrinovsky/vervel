@@ -1,4 +1,4 @@
-import { MuscleZone } from './Exercise';
+import { MuscleZone } from '../Exercise';
 
 export interface WorkoutResult {
   _id?: string;
