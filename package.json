@@ -5,9 +5,14 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:api": "cd apps/api && node ace serve --watch",
-    "dev:web": "cd apps/web && vite",
-    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\""
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev": "npm run db:up && concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "db:up": "docker-compose -f docker/docker-compose.yml up -d postgres",
+    "db:down": "docker-compose -f docker/docker-compose.yml down",
+    "db:reset": "npm run db:reset --workspace=apps/api",
+    "db:migrate": "npm run migrate --workspace=apps/api",
+    "db:seed": "npm run db:seed --workspace=apps/api"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
