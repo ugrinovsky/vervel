@@ -9,6 +9,11 @@ export default class extends BaseSchema {
 
       table.string('title').notNullable();
 
+      table
+        .enum('category', ['strength', 'olympic', 'gymnastics', 'functional', 'cardio'])
+        .notNullable()
+        .defaultTo('strength');
+
       table.jsonb('keywords').notNullable();
       table.jsonb('zones').notNullable();
 

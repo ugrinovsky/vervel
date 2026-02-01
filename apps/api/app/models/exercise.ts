@@ -16,6 +16,9 @@ export default class Exercise extends BaseModel {
   @column()
   declare title: string;
 
+  @column()
+  declare category: 'strength' | 'olympic' | 'gymnastics' | 'functional' | 'cardio';
+
   @column({ serializeAs: 'keywords', prepare: (value: string[]) => JSON.stringify(value) })
   declare keywords: string[];
 
