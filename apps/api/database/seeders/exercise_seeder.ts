@@ -2,6 +2,7 @@ import { BaseSeeder } from '@adonisjs/lucid/seeders';
 import Exercise from '#models/exercise';
 
 export default class ExerciseSeeder extends BaseSeeder {
+  static environment: string[] = ['development', 'production'];
   public async run() {
     await Exercise.updateOrCreateMany('id', [
       // ========================================

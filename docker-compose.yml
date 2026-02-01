@@ -18,7 +18,7 @@ services:
     volumes:
       - ./apps/api:/app
       - ./packages:/packages
-      - /app/node_modules
+      - node_modules_api:/app/node_modules
     ports:
       - '3333:3333'
     environment:
@@ -43,7 +43,7 @@ services:
     volumes:
       - ./apps/web:/app
       - ./packages:/packages
-      - /app/node_modules
+      - node_modules_web:/app/node_modules
     ports:
       - '5173:5173'
     depends_on:
@@ -51,3 +51,5 @@ services:
 
 volumes:
   pgdata:
+  node_modules_api:
+  node_modules_web:
