@@ -1,4 +1,22 @@
 :root {
+  --color_primary: rgb(14 92 77);
+  --color_secondary: rgb(14 58 72);
   /* --color_bg_screen: radial-gradient(circle at 50% 52.5%, rgb(14, 53, 92) 0%, rgb(16, 14, 72) 90%); */
-  --color_bg_screen: radial-gradient(circle at 50% 52.5%, rgb(14 92 77) 0%, rgb(14 58 72) 90%);
+  /* --color_bg_screen: radial-gradient(circle at 50% 52.5%, rgb(14 92 77) 0%, rgb(14 58 72) 90%); */
+
+  --color_bg_screen: radial-gradient(
+    circle at 50% 52.5%,
+    var(--color_primary) %,
+    var(--color_secondary) 90%
+  );
+}
+
+input {
+}
+
+input:focus {
+  /* outline: none; дефолтный outline не нужен */
+  /* border-color: #10b981; цвет фокуса, например emerald-400 */
+  outline-color: var(--color-emerald-400);
+  outline-style: solid;
 }

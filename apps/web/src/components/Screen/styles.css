@@ -8,10 +8,31 @@
   box-sizing: border-box;
   padding-bottom: 80px;
   min-height: 100vh;
-  background: var(--color_bg_screen);
+  background: radial-gradient(circle, rgb(14 92 77), rgb(14 58 72));
+  background-size: 300% 300%;
+  background-position: 50% 50%;
+  animation: float-bg 20s linear infinite;
 }
 
 .screen-content {
   padding-bottom: 60px;
   width: 100%;
+}
+
+@keyframes float-bg {
+  0% {
+    background-position: 25% 30%;
+  }
+  25% {
+    background-position: 75% 40%;
+  }
+  50% {
+    background-position: 50% 80%;
+  }
+  75% {
+    background-position: 30% 60%;
+  }
+  100% {
+    background-position: 25% 30%;
+  }
 }

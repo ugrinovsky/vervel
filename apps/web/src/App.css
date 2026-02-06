@@ -10,3 +10,7 @@ body,
   /* color: oklch(0.97 0 0 / 0.49); */
   color: oklch(1 0 0 / 0.72);
 }
+
+html::-webkit-scrollbar {
+  display: none; /* Для Chrome, Safari и современных мобильных браузеров */
+}

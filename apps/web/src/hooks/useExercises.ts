@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getExercises, Exercise } from '../api/exercises';
+import { exercisesApi } from '../api/exercises';
+import { Exercise } from '@/types/Exercise';
 
 export function useExercises() {
   const [data, setData] = useState<Exercise[]>([]);
@@ -7,8 +8,8 @@ export function useExercises() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getExercises()
-      .then(setData)
+    exercisesApi
+      .list()
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
