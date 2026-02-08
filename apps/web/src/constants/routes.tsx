@@ -1,4 +1,5 @@
-import ActivityScreen from '@/screens/ActivityScreen';
+import ActivityScreen from '@/screens/ActivityScreen/ActivityScreen';
+import AnalyticsScreen from '@/screens/AnalyticsScreen/AnalyticsScreen';
 import AvatarScreen from '@/screens/AvatarScreen';
 import WorkoutForm from '@/screens/WorkoutForm/WorkoutForm';
 import {
@@ -22,25 +23,33 @@ export interface RouteItem {
 
 export const routes: RouteItem[] = [
   {
-    path: '/activity',
+    path: '/calendar',
     label: 'Activity',
     icon: ChartBarIcon,
     element: <ActivityScreen />,
     toolbarPosition: 'left',
   },
   {
-    path: '/exercises',
-    label: 'Exercises',
-    icon: SparklesIcon,
-    element: <AvatarScreen />,
+    path: '/analytics',
+    label: 'Аналитика',
+    icon: ChartBarIcon,
+    element: <AnalyticsScreen />,
     toolbarPosition: 'left',
   },
+
   {
     path: '/',
     label: 'Avatar',
     icon: UserIcon,
     element: <AvatarScreen />,
     toolbarPosition: 'center',
+  },
+  {
+    path: '/achivements',
+    label: 'Achivements',
+    icon: SparklesIcon,
+    element: <AvatarScreen />,
+    toolbarPosition: 'right',
   },
   {
     path: '/settings',

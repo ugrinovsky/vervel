@@ -14,3 +14,10 @@ body,
 html::-webkit-scrollbar {
   display: none; /* Для Chrome, Safari и современных мобильных браузеров */
 }
+
+body {
+  background: radial-gradient(circle, rgb(14 92 77), rgb(14 58 72));
+  background-size: 300% 300%;
+  background-position: 50% 50%;
+  animation: float-bg 20s linear infinite;
+}

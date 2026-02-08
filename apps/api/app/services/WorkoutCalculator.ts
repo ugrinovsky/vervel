@@ -1,4 +1,5 @@
 import Exercise from '#models/exercise';
+import Workout from '#models/workout';
 
 /* ------------------------------------------------------------------ */
 /* Types */
@@ -162,6 +163,50 @@ export class WorkoutCalculator {
       zonesLoad: zoneLoads,
       totalIntensity: Math.min(totalIntensity, NORMALIZATION.MAX_ZONE_LOAD),
       totalVolume,
+    };
+  }
+
+  static calculatePeriodStats(
+    workouts: Workout[],
+    period: string = 'custom'
+  ): {
+    zoneIntensities: Record<string, number>;
+    totalWorkouts: number;
+    period: string;
+  } {
+    if (workouts.length === 0) {
+      return {
+        zoneIntensities: {},
+        totalWorkouts: 0,
+        period,
+      };
+    }
+
+    // Просто суммируем уже рассчитанные zonesLoad
+    const zoneIntensities: Record<string, number> = {};
+
+    workouts.forEach((workout) => {
+      const zonesLoad = workout.zonesLoad || {};
+      Object.entries(zonesLoad).forEach(([zone, intensity]) => {
+        zoneIntensities[zone] = (zoneIntensities[zone] || 0) + intensity;
+      });
+    });
+
+    // Нормализуем (0-1) - используем ту же логику, что и в normalizeResult
+    const values = Object.values(zoneIntensities);
+    const maxLoad = Math.max(...values, NORMALIZATION.MIN_DENOMINATOR);
+
+    Object.keys(zoneIntensities).forEach((zone) => {
+      zoneIntensities[zone] = Math.min(
+        zoneIntensities[zone] / maxLoad,
+        NORMALIZATION.MAX_ZONE_LOAD
+      );
+    });
+
+    return {
+      zoneIntensities,
+      totalWorkouts: workouts.length,
+      period,
     };
   }
 }

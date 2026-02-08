@@ -21,7 +21,7 @@ export default function ExercisePicker({ onSelect, workoutType }: IProps) {
   });
 
   useEffect(() => {
-    exercisesApi.list().then((res) => setExercises(res.exercises ?? []));
+    exercisesApi.list().then((res) => setExercises(res ?? []));
   }, []);
 
   const handleAdd = () => {

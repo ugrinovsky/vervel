@@ -27,5 +27,7 @@ router
   .group(() => {
     router.get('workouts/stats', '#controllers/workouts_controller.stats');
     router.resource('workouts', WorkoutsController).apiOnly();
+
+    router.get('avatar/stats', '#controllers/avatars_controller.getZoneIntensities');
   })
   .use(middleware.auth());

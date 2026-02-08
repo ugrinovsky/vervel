@@ -1,6 +1,12 @@
-import { useState } from 'react';
-import { Combobox, ComboboxInput, ComboboxOptions, ComboboxOption } from '@headlessui/react';
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxOptions,
+  ComboboxOption,
+  ComboboxButton,
+} from '@headlessui/react';
 import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
+import { useState } from 'react';
 
 export interface UiOption<T> {
   value: T;
@@ -29,60 +35,55 @@ export default function UiCombobox<T>({
 
   return (
     <Combobox value={value} onChange={onChange}>
-      <div className="relative">
-        <div
-          className="
-            relative w-full
+      {({ open }) => (
+        <div className="relative">
+          <div
+            className="
+            relative w-full flex items-center
             rounded-lg bg-white/10 border border-white/20
             focus-within:ring-2 focus-within:ring-emerald-400
           "
-        >
-          <ComboboxInput
-            className="
+          >
+            <ComboboxInput
+              className="
               w-full bg-transparent px-3 py-2
               text-white placeholder-white/40
               focus:outline-none
             "
-            displayValue={(opt: UiOption<T>) => opt?.label ?? ''}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={placeholder}
-          />
+              displayValue={(opt: UiOption<T>) => opt?.label ?? ''}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={placeholder}
+            />
 
-          <ChevronUpDownIcon
-            className="
-              pointer-events-none
-              absolute right-3 top-1/2 -translate-y-1/2
-              h-5 w-5 text-white/40
-            "
-          />
-        </div>
+            <ComboboxButton className="px-2">
+              <ChevronUpDownIcon className="h-5 w-5 text-white/40" />
+            </ComboboxButton>
+          </div>
 
-        {filtered.length > 0 && (
           <ComboboxOptions
-            className="
-              absolute z-10 mt-2 w-full
-              rounded-lg border border-white/20
-              bg-[rgb(14,58,72)]
-              shadow-lg max-h-60 overflow-auto
-            "
+            static
+            className={`
+          absolute z-10 mt-2 w-full
+          rounded-lg border border-white/20
+          bg-[rgb(14,58,72)]
+          shadow-lg max-h-60 overflow-auto
+          ${open ? 'block' : 'hidden'}
+        `}
           >
             {filtered.map((opt) => (
               <ComboboxOption
-                key={String(opt.value)}
+                key={opt.label}
                 value={opt}
                 className={({ active }) =>
-                  `
-                    px-3 py-2 cursor-pointer
-                    ${active ? 'bg-white/10' : ''}
-                  `
+                  `px-3 py-2 cursor-pointer ${active ? 'bg-white/10' : ''}`
                 }
               >
                 {opt.label}
               </ComboboxOption>
             ))}
           </ComboboxOptions>
-        )}
-      </div>
+        </div>
+      )}
     </Combobox>
   );
 }

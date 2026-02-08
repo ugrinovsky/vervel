@@ -1,5 +1,5 @@
 import { JSX } from 'react';
-import Navigation from '@/components/Navigation';
+import Navigation from '@/components/Navigation/Navigation';
 import { Routes, Route } from 'react-router';
 import { routes } from '@/constants/routes';
 import { Toaster } from 'react-hot-toast';

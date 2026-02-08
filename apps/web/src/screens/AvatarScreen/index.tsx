@@ -1,5 +1,5 @@
-import Avatar from '@/components/Avatar';
-import Screen from '@/components/Screen';
+import Avatar from '@/components/Avatar/Avatar';
+import Screen from '@/components/Screen/Screen';
 
 export default function AvatarScreen() {
   return (

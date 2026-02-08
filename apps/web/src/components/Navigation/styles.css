@@ -32,3 +32,49 @@
 .nav-btn:hover {
   background: rgba(255, 255, 255, 0.1);
 }
+
+.action-btn-center {
+  position: relative;
+  width: 5rem; /* 80px */
+  height: 5rem;
+  border-radius: 9999px;
+  background: #10b981; /* bg-emerald-500 */
+  color: black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease-in-out;
+  cursor: pointer;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.action-btn-center:active {
+  transform: scale(0.95);
+}
+
+.action-btn-center::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, #00ff90, #10b981, #34d399, #059669, #10b981, #00ff90);
+  background-size: 400% 400%;
+  filter: blur(20px);
+  z-index: -1;
+  animation: glow 6s linear infinite;
+}
+
+@keyframes glow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}

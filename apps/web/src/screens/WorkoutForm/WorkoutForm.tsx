@@ -4,7 +4,7 @@ import { workoutsApi, WorkoutExercise } from '@/api/workouts';
 import toast from 'react-hot-toast';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import Screen from '@/components/Screen';
+import Screen from '@/components/Screen/Screen';
 import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
 import UiListbox from '@/components/ui/Listbox';
 
