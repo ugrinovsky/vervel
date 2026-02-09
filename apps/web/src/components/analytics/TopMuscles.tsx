@@ -1,15 +1,14 @@
-// components/analytics/TopMuscles.tsx
-
 import { useState, useMemo } from 'react';
 import { FireIcon } from '@heroicons/react/24/outline';
 
 interface TopMusclesProps {
   period: 'week' | 'month' | 'year';
-  data: any; // объект stats из AnalyticsScreen
+  data: any;
 }
 
 interface MuscleData {
   id: string;
+  name: string;
   displayName: string;
   percentage: number;
   volume: string;
@@ -17,7 +16,6 @@ interface MuscleData {
   change: number;
 }
 
-// Названия зон, чтобы выводить красивые русские названия
 const ZONE_LABELS: Record<string, string> = {
   chests: 'Грудь',
   backMuscles: 'Спина',
@@ -35,55 +33,40 @@ const ZONE_LABELS: Record<string, string> = {
 export default function TopMuscles({ period, data }: TopMusclesProps) {
   const [viewMode, setViewMode] = useState<'percentage' | 'volume'>('percentage');
 
-  // Подготавливаем массив мышц + проценты/объем/тренд
   const muscles: MuscleData[] = useMemo(() => {
     const zones = data?.zones || {};
-    const totalVolume = data?.totalVolume ?? 0;
+    const timeline = data?.timeline || [];
+    const totalVolume = data?.totalVolume || 0;
 
-    // Если зон нет, возвращаем пустой массив
-    if (!zones || Object.keys(zones).length === 0) {
-      return [];
-    }
+    return Object.entries(zones)
+      .map(([zone, value]) => {
+        const percentage = Math.round((value as number) * 100);
 
-    // Считаем массив объектов
-    return (
-      Object.entries(zones)
-        .map(([zone, value]) => {
-          const percentage = Math.round(value * 100);
+        let previousValue = percentage;
+        if (timeline.length > 1) {
+          const prevZones = timeline[timeline.length - 2]?.zones || {};
+          previousValue = Math.round((prevZones[zone] || 0) * 100);
+        }
 
-          // Объем берем как процент от общего объема по зоне
-          const vol =
-            Math.max(...Object.values(zones)) > 0
-              ? Math.round((value / Math.max(...Object.values(zones))) * totalVolume)
-              : 0;
-          const volume = `${vol}кг`;
+        const change = percentage - previousValue;
+        let trend: MuscleData['trend'] = 'stable';
+        if (change > 2) trend = 'up';
+        else if (change < -2) trend = 'down';
 
-          // Для тренда сравниваем с предыдущей точкой timeline
-          let previousValue = percentage;
-          if (data?.timeline && data.timeline.length > 1) {
-            const prevZones = data.timeline[data.timeline.length - 2]?.zones || {};
-            previousValue = Math.round((prevZones[zone] || 0) * 100);
-          }
+        const volume = `${Math.round(((value as number) / Math.max(...Object.values(zones), 1)) * totalVolume)}кг`;
 
-          const change = percentage - previousValue;
-          let trend: MuscleData['trend'] = 'stable';
-          if (change > 2) trend = 'up';
-          else if (change < -2) trend = 'down';
-
-          return {
-            id: zone,
-            displayName: ZONE_LABELS[zone] || zone,
-            percentage,
-            volume,
-            trend,
-            change,
-          };
-        })
-        // Сортируем по нагрузке
-        .sort((a, b) => b.percentage - a.percentage)
-        // Выводим максимум топ‑5
-        .slice(0, 5)
-    );
+        return {
+          id: zone,
+          name: ZONE_LABELS[zone] || zone,
+          displayName: ZONE_LABELS[zone] || zone,
+          percentage,
+          volume,
+          trend,
+          change,
+        };
+      })
+      .sort((a, b) => b.percentage - a.percentage)
+      .slice(0, 5);
   }, [data]);
 
   const getTrendColor = (trend: MuscleData['trend']) => {
@@ -103,8 +86,7 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
   };
 
   return (
-    <>
-      {/* Заголовок секции */}
+    <div className="glass p-5 rounded-xl">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-lg font-bold text-white">Топ мышц</h3>
@@ -113,7 +95,6 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
           </p>
         </div>
 
-        {/* Переключатель вида: % или объем */}
         <div className="flex gap-1 bg-gray-800 rounded-lg p-1">
           <button
             onClick={() => setViewMode('percentage')}
@@ -136,7 +117,6 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
         </div>
       </div>
 
-      {/* Список мышц */}
       <div className="space-y-4">
         {muscles.map((muscle, index) => (
           <div key={muscle.id} className="group">
@@ -183,7 +163,6 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
               </div>
             </div>
 
-            {/* Прогресс‑бар */}
             <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
               <div
                 className={`
@@ -205,7 +184,6 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
         ))}
       </div>
 
-      {/* Итоги по мышцам */}
       <div className="mt-6 pt-4 border-t border-gray-800">
         <div className="flex items-center justify-between text-sm">
           <div className="text-gray-400">Всего мышц:</div>
@@ -214,13 +192,10 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
         <div className="flex items-center justify-between text-sm mt-1">
           <div className="text-gray-400">Средняя нагрузка:</div>
           <div className="text-green-400 font-medium">
-            {muscles.length > 0
-              ? Math.round(muscles.reduce((sum, m) => sum + m.percentage, 0) / muscles.length)
-              : 0}
-            %
+            {Math.round(muscles.reduce((sum, m) => sum + m.percentage, 0) / muscles.length)}%
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

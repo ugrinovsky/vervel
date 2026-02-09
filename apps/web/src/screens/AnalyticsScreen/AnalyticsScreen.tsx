@@ -50,10 +50,10 @@ export default function AnalyticsScreen() {
           <WorkoutRadar period={timeRange} />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <CollapsibleBlock title="Топ мышц" defaultOpen={true}>
+          <CollapsibleBlock title="Топ мышц" defaultOpen={false}>
             <TopMuscles period={timeRange} data={stats} />
           </CollapsibleBlock>
-          <CollapsibleBlock title={weeklyOverviewTitle} defaultOpen={true}>
+          <CollapsibleBlock title={weeklyOverviewTitle} defaultOpen={false}>
             <WeeklyOverview period={timeRange} data={stats} />
           </CollapsibleBlock>
           <CollapsibleBlock title="Статистика нагрузки" defaultOpen={false}>
