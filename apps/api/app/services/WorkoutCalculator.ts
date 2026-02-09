@@ -170,42 +170,84 @@ export class WorkoutCalculator {
     workouts: Workout[],
     period: string = 'custom'
   ): {
-    zoneIntensities: Record<string, number>;
-    totalWorkouts: number;
+    workoutsCount: number;
+    totalVolume: number;
+    avgIntensity: number; // ← исправить на число
+    byType: Record<string, number>;
+    zones: Record<string, number>; // ← нормализовать 0-1
+    timeline: Array<{
+      date: string;
+      intensity: number; // ← исправить на число
+      volume: number;
+      type: string;
+    }>;
     period: string;
   } {
     if (workouts.length === 0) {
       return {
-        zoneIntensities: {},
-        totalWorkouts: 0,
+        workoutsCount: 0,
+        totalVolume: 0,
+        avgIntensity: 0, // не null
+        byType: {},
+        zones: {},
+        timeline: [],
         period,
       };
     }
 
-    // Просто суммируем уже рассчитанные zonesLoad
-    const zoneIntensities: Record<string, number> = {};
+    // Считаем totalVolume и avgIntensity
+    let totalVolume = 0;
+    let totalIntensity = 0;
+    const byType: Record<string, number> = {};
+    const zones: Record<string, number> = {};
 
     workouts.forEach((workout) => {
+      // Volume
+      totalVolume += workout.totalVolume || 0;
+
+      // Intensity (преобразуем строку в число если нужно)
+      const intensity =
+        typeof workout.totalIntensity === 'string'
+          ? parseFloat(workout.totalIntensity)
+          : workout.totalIntensity || 0;
+      totalIntensity += intensity;
+
+      // By type
+      const type = workout.workoutType || 'unknown';
+      byType[type] = (byType[type] || 0) + 1;
+
+      // Zones (суммируем)
       const zonesLoad = workout.zonesLoad || {};
       Object.entries(zonesLoad).forEach(([zone, intensity]) => {
-        zoneIntensities[zone] = (zoneIntensities[zone] || 0) + intensity;
+        zones[zone] = (zones[zone] || 0) + intensity;
       });
     });
 
-    // Нормализуем (0-1) - используем ту же логику, что и в normalizeResult
-    const values = Object.values(zoneIntensities);
-    const maxLoad = Math.max(...values, NORMALIZATION.MIN_DENOMINATOR);
+    // НОРМАЛИЗУЕМ zones 0-1 (как в WorkoutCalculator)
+    const zoneValues = Object.values(zones);
+    if (zoneValues.length > 0) {
+      const maxZone = Math.max(...zoneValues, NORMALIZATION.MIN_DENOMINATOR);
+      Object.keys(zones).forEach((zone) => {
+        zones[zone] = Math.min(zones[zone] / maxZone, NORMALIZATION.MAX_ZONE_LOAD);
+      });
+    }
 
-    Object.keys(zoneIntensities).forEach((zone) => {
-      zoneIntensities[zone] = Math.min(
-        zoneIntensities[zone] / maxLoad,
-        NORMALIZATION.MAX_ZONE_LOAD
-      );
-    });
+    // Timeline с числами
+    const timeline = workouts.map((w) => ({
+      date: w.date.toString(),
+      intensity:
+        typeof w.totalIntensity === 'string' ? parseFloat(w.totalIntensity) : w.totalIntensity || 0,
+      volume: w.totalVolume || 0,
+      type: w.workoutType || 'unknown',
+    }));
 
     return {
-      zoneIntensities,
-      totalWorkouts: workouts.length,
+      workoutsCount: workouts.length,
+      totalVolume,
+      avgIntensity: totalIntensity / workouts.length, // число!
+      byType,
+      zones, // нормализованные 0-1
+      timeline,
       period,
     };
   }

@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import ActivityCalendar, { DayData } from '@/components/ActivityGraph/ActivityGraph';
-import ExercisesList from '@/components/ExercisesList';
 import Screen from '@/components/Screen/Screen';
 import {
   CalendarIcon,
@@ -148,18 +147,6 @@ export default function ActivityScreen() {
                 <StatItem value="7,360кг" label="Объем" icon="📊" />
                 <StatItem value="420" label="Калорий" icon="🔥" />
               </div>
-            </div>
-
-            {/* Упражнения дня */}
-            <div className="glass p-5 rounded-xl">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-white">Упражнения</h3>
-                <button className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1">
-                  <PlusIcon className="w-4 h-4" />
-                  Добавить упражнение
-                </button>
-              </div>
-              <ExercisesList exercises={demoExercises} />
             </div>
 
             {/* Быстрые действия для дня */}

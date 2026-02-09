@@ -116,11 +116,8 @@ export default class WorkoutsController {
       .whereBetween('date', [from, to])
       .orderBy('date', 'asc');
 
-    return workouts.map((w) => ({
-      date: w.date,
-      intensity: w.totalIntensity,
-      zones: w.zonesLoad,
-      workoutType: w.workoutType,
-    }));
+    const stats = WorkoutCalculator.calculatePeriodStats(workouts);
+
+    return response.ok(stats);
   }
 }

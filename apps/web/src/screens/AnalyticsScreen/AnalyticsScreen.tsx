@@ -3,14 +3,15 @@ import Screen from '@/components/Screen/Screen';
 import StatsOverview from '@/components/analytics/StatsOverview';
 import TopMuscles from '@/components/analytics/TopMuscles';
 import MuscleBalance from '@/components/analytics/MuscleBalance';
-import ActivityHeatmap from '@/components/analytics/ActivityHeatmap';
+import WeeklyOverview from '@/components/analytics/WeeklyOverview';
 import Recommendations from '@/components/analytics/Recommendations';
-import LoadFilters from '@/components/analytics/LoadFilters';
 import WorkoutRadar from '@/components/analytics/WorkoutRadar';
 import { useState } from 'react';
+import { useWorkoutStats } from '@/hooks/useWorkoutsStats';
 
 export default function AnalyticsScreen() {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('week');
+  const { data: stats = {}, loading, error } = useWorkoutStats(timeRange);
 
   return (
     <Screen>
@@ -55,23 +56,16 @@ export default function AnalyticsScreen() {
             {/* Топ мышц */}
             <TopMuscles period={timeRange} />
 
-            {/* Активность (heatmap) */}
-            <ActivityHeatmap period={timeRange} />
+            <WeeklyOverview />
           </div>
 
           {/* Правая колонка */}
           <div className="space-y-6">
-            {/* Статистика нагрузки */}
-            <StatsOverview period={timeRange} />
-
-            {/* Баланс мышц */}
+            <StatsOverview period={timeRange} data={stats} />
+            Баланс мышц
             <MuscleBalance period={timeRange} />
-
-            {/* Рекомендации */}
+            Рекомендации
             <Recommendations period={timeRange} />
-
-            {/* Фильтры нагрузки */}
-            <LoadFilters period={timeRange} />
           </div>
         </div>
 
