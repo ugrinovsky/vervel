@@ -1,7 +1,7 @@
 import { privateApi } from './http/privateApi';
 
 export interface AvatarStats {
-  zoneIntensities: Record<string, number>;
+  zones: Record<string, number>;
   totalWorkouts: number;
   period: string;
 }

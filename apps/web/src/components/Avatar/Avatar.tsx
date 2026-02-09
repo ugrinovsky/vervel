@@ -13,7 +13,6 @@ interface BodySVGProps {
 const BodySVG: React.FC<BodySVGProps> = ({
   activeZones = [],
   onZoneClick,
-  zoneIntensities: propZoneIntensities,
   showIntensity = true,
 }) => {
   const [isAnimating, setIsAnimating] = useState(true);
@@ -29,7 +28,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
       setLoading(true);
       const response = await avatarApi.getZoneIntensities({ period: 'week' });
       if (response.data.success) {
-        setZoneIntensities(response.data.data.zoneIntensities);
+        setZoneIntensities(response.data.data.zones);
       }
     } catch (error) {
       console.error('Failed to load avatar stats:', error);
@@ -39,13 +38,10 @@ const BodySVG: React.FC<BodySVGProps> = ({
   };
 
   useEffect(() => {
-    // Загружаем данные только если не переданы извне
-    if (showIntensity && !propZoneIntensities) {
+    if (showIntensity) {
       loadAvatarStats();
-    } else if (propZoneIntensities) {
-      setZoneIntensities(propZoneIntensities);
     }
-  }, [showIntensity, propZoneIntensities]);
+  }, [showIntensity]);
 
   useEffect(() => {
     const drawTimer = setTimeout(() => {
@@ -64,7 +60,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
 
   const getFillColor = (zoneName: string) => {
     // Используем переданные данные или загруженные
-    const intensities = propZoneIntensities || zoneIntensities;
+    const intensities = zoneIntensities;
     const intensity = intensities[zoneName] || 0;
 
     if (showIntensity && intensity > 0) {
@@ -89,7 +85,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
       return ACTIVE_ZONE_STROKE;
     }
 
-    const intensities = propZoneIntensities || zoneIntensities;
+    const intensities = zoneIntensities;
     const intensity = intensities[zoneName] || 0;
 
     if (showIntensity && intensity > 0) {
@@ -105,7 +101,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
   };
 
   const handleZoneClick = (zoneName: string) => {
-    const intensities = propZoneIntensities || zoneIntensities;
+    const intensities = zoneIntensities;
     const intensity = intensities[zoneName] || 0;
 
     console.log('Клик по зоне:', zoneName, 'Интенсивность:', Math.round(intensity * 100) + '%');
@@ -120,7 +116,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
 
   // Обновляем легенду с реальными данными
   const getIntensityLegend = () => {
-    const intensities = Object.values(propZoneIntensities || zoneIntensities);
+    const intensities = Object.values(zoneIntensities);
     const loadedZones = intensities.filter((i) => i > 0).length;
 
     return (

@@ -1,6 +1,7 @@
 // components/analytics/TopMuscles.tsx
-import { useState } from 'react';
-import { FireIcon, TrendingUpIcon } from '@heroicons/react/24/outline';
+import { useState, useMemo } from 'react';
+import { FireIcon } from '@heroicons/react/24/outline';
+import { useWorkoutStats } from '@/hooks/useWorkoutsStats';
 
 interface TopMusclesProps {
   period: 'week' | 'month' | 'year';
@@ -16,57 +17,59 @@ interface MuscleData {
   change: number;
 }
 
+const ZONE_LABELS: Record<string, string> = {
+  chests: 'Грудь',
+  backMuscles: 'Спина',
+  legMuscles: 'Ноги',
+  shoulders: 'Плечи',
+  biceps: 'Бицепсы',
+  triceps: 'Трицепс',
+  forearms: 'Предплечья',
+  glutes: 'Ягодицы',
+  trapezoids: 'Трапеции',
+  calfMuscles: 'Икры',
+  abdominalPress: 'Пресс',
+};
+
 export default function TopMuscles({ period }: TopMusclesProps) {
   const [viewMode, setViewMode] = useState<'percentage' | 'volume'>('percentage');
+  const { data: stats = {} } = useWorkoutStats(period);
 
-  // Демо данные - в реальном приложении будет API запрос
-  const muscles: MuscleData[] = [
-    {
-      id: 'chest',
-      name: 'Грудь',
-      displayName: 'Грудь',
-      percentage: 92,
-      volume: '15,200кг',
-      trend: 'up',
-      change: 5,
-    },
-    {
-      id: 'back',
-      name: 'Спина',
-      displayName: 'Спина',
-      percentage: 88,
-      volume: '14,800кг',
-      trend: 'up',
-      change: 3,
-    },
-    {
-      id: 'legs',
-      name: 'Ноги',
-      displayName: 'Ноги',
-      percentage: 85,
-      volume: '21,500кг',
-      trend: 'stable',
-      change: 0,
-    },
-    {
-      id: 'shoulders',
-      name: 'Плечи',
-      displayName: 'Плечи',
-      percentage: 78,
-      volume: '8,900кг',
-      trend: 'up',
-      change: 8,
-    },
-    {
-      id: 'biceps',
-      name: 'Бицепсы',
-      displayName: 'Бицепсы',
-      percentage: 65,
-      volume: '5,400кг',
-      trend: 'down',
-      change: -2,
-    },
-  ];
+  // Подготовка данных мышц
+  const muscles: MuscleData[] = useMemo(() => {
+    const zones = stats.zones || {};
+    const totalVolume = stats.totalVolume || 0;
+
+    return Object.entries(zones)
+      .map(([zone, value]) => {
+        const percentage = Math.round(value * 100);
+        const volume = `${Math.round((value / Math.max(...Object.values(zones), 1)) * totalVolume)}кг`;
+
+        // Для простого тренда сравниваем с предыдущей точкой timeline
+        let previousValue = percentage;
+        if (stats.timeline && stats.timeline.length > 1) {
+          const prevZones = stats.timeline[stats.timeline.length - 2]?.zones || {};
+          previousValue = Math.round((prevZones[zone] || 0) * 100);
+        }
+
+        let trend: MuscleData['trend'] = 'stable';
+        let change = percentage - previousValue;
+        if (change > 2) trend = 'up';
+        else if (change < -2) trend = 'down';
+
+        return {
+          id: zone,
+          name: ZONE_LABELS[zone] || zone,
+          displayName: ZONE_LABELS[zone] || zone,
+          percentage,
+          volume,
+          trend,
+          change,
+        } as MuscleData;
+      })
+      .sort((a, b) => b.percentage - a.percentage)
+      .slice(0, 5); // топ 5 мышц
+  }, [stats]);
 
   const getTrendColor = (trend: MuscleData['trend']) => {
     switch (trend) {
@@ -85,7 +88,7 @@ export default function TopMuscles({ period }: TopMusclesProps) {
   };
 
   return (
-    <div className="glass p-5 rounded-xl">
+    <>
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-lg font-bold text-white">Топ мышц</h3>
@@ -123,17 +126,17 @@ export default function TopMuscles({ period }: TopMusclesProps) {
               <div className="flex items-center gap-3">
                 <div
                   className={`
-                  w-7 h-7 flex items-center justify-center rounded-lg
-                  ${
-                    index === 0
-                      ? 'bg-red-500/20 text-red-400'
-                      : index === 1
-                        ? 'bg-orange-500/20 text-orange-400'
-                        : index === 2
-                          ? 'bg-yellow-500/20 text-yellow-400'
-                          : 'bg-gray-800 text-gray-400'
-                  }
-                `}
+                    w-7 h-7 flex items-center justify-center rounded-lg
+                    ${
+                      index === 0
+                        ? 'bg-red-500/20 text-red-400'
+                        : index === 1
+                          ? 'bg-orange-500/20 text-orange-400'
+                          : index === 2
+                            ? 'bg-yellow-500/20 text-yellow-400'
+                            : 'bg-gray-800 text-gray-400'
+                    }
+                  `}
                 >
                   {index === 0 && <FireIcon className="w-4 h-4" />}
                   {index > 0 && <span className="text-sm font-bold">{index + 1}</span>}
@@ -142,11 +145,7 @@ export default function TopMuscles({ period }: TopMusclesProps) {
                 <div>
                   <div className="font-medium text-white">{muscle.displayName}</div>
                   <div className="flex items-center gap-2 text-xs">
-                    <span
-                      className={`
-                      ${getTrendColor(muscle.trend)}
-                    `}
-                    >
+                    <span className={getTrendColor(muscle.trend)}>
                       {getTrendIcon(muscle.trend, muscle.change)}
                     </span>
                     {viewMode === 'volume' && (
@@ -166,7 +165,6 @@ export default function TopMuscles({ period }: TopMusclesProps) {
               </div>
             </div>
 
-            {/* Прогресс-бар */}
             <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
               <div
                 className={`
@@ -188,7 +186,6 @@ export default function TopMuscles({ period }: TopMusclesProps) {
         ))}
       </div>
 
-      {/* Сводка */}
       <div className="mt-6 pt-4 border-t border-gray-800">
         <div className="flex items-center justify-between text-sm">
           <div className="text-gray-400">Всего мышц:</div>
@@ -201,6 +198,6 @@ export default function TopMuscles({ period }: TopMusclesProps) {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

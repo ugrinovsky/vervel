@@ -103,10 +103,9 @@ export default function StatsOverview({ period, data }: StatsOverviewProps) {
   const zonesToShow = showAllZones ? zonesStats.sorted : zonesStats.sorted.slice(0, 3);
 
   return (
-    <div className="glass p-5 rounded-xl">
+    <>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-bold text-white">Статистика нагрузки</h3>
           <p className="text-sm text-gray-400">За {PERIOD_LABELS[period]}</p>
         </div>
         <div className="px-3 py-1 text-xs bg-gray-800 rounded-full text-gray-300">
@@ -202,7 +201,7 @@ export default function StatsOverview({ period, data }: StatsOverviewProps) {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

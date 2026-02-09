@@ -8,6 +8,7 @@ import Recommendations from '@/components/analytics/Recommendations';
 import WorkoutRadar from '@/components/analytics/WorkoutRadar';
 import { useState } from 'react';
 import { useWorkoutStats } from '@/hooks/useWorkoutsStats';
+import CollapsibleBlock from '@/components/ui/CollapsibleBlock';
 
 export default function AnalyticsScreen() {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('week');
@@ -46,27 +47,25 @@ export default function AnalyticsScreen() {
         {/* Основная сетка */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Левая колонка */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Радарная диаграмма - большая */}
-            <div className="glass p-6 rounded-xl">
-              <h2 className="text-xl font-bold mb-4 text-white">Профиль нагрузки</h2>
-              <WorkoutRadar period={timeRange} />
-            </div>
-
-            {/* Топ мышц */}
+          {/* Радарная диаграмма - большая */}
+          <div className="glass p-6 rounded-xl">
+            <h2 className="text-xl font-bold mb-4 text-white">Профиль нагрузки</h2>
+            <WorkoutRadar period={timeRange} />
+          </div>
+          <CollapsibleBlock title="Топ мышц" defaultOpen={true}>
             <TopMuscles period={timeRange} />
-
+          </CollapsibleBlock>
+          <CollapsibleBlock title="Топ мышц" defaultOpen={true}>
             <WeeklyOverview />
-          </div>
-
-          {/* Правая колонка */}
-          <div className="space-y-6">
+          </CollapsibleBlock>
+          <CollapsibleBlock title="Статистика нагрузки" defaultOpen={true}>
             <StatsOverview period={timeRange} data={stats} />
-            Баланс мышц
-            <MuscleBalance period={timeRange} />
-            Рекомендации
-            <Recommendations period={timeRange} />
-          </div>
+          </CollapsibleBlock>
+          <CollapsibleBlock title="Баланс мышц" defaultOpen={true}>
+            <MuscleBalance period={timeRange} data={stats} />
+          </CollapsibleBlock>
+          Рекомендации
+          <Recommendations period={timeRange} />
         </div>
 
         {/* Дополнительные метрики внизу */}
