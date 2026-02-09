@@ -14,6 +14,9 @@ export default function AnalyticsScreen() {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('week');
   const { data: stats = {}, loading, error } = useWorkoutStats(timeRange);
 
+  const weeklyOverviewTitle =
+    '📅 ' + (timeRange === 'week' ? 'Неделя' : timeRange === 'month' ? 'Месяц' : 'Год');
+
   return (
     <Screen>
       <div className="p-4 pb-20">
@@ -22,7 +25,6 @@ export default function AnalyticsScreen() {
           <h1 className="text-2xl font-bold text-white mb-2">📊 Аналитика</h1>
           <p className="text-gray-400">Детальная статистика ваших тренировок</p>
 
-          {/* Фильтры времени */}
           <div className="flex gap-2 mt-4">
             {['Неделя', 'Месяц', '3 месяца', 'Год'].map((period) => (
               <button
@@ -43,31 +45,26 @@ export default function AnalyticsScreen() {
             ))}
           </div>
         </div>
-
-        {/* Основная сетка */}
+        <div className="glass p-6 rounded-xl">
+          <h2 className="text-xl font-bold mb-4 text-white">Профиль нагрузки</h2>
+          <WorkoutRadar period={timeRange} />
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Левая колонка */}
-          {/* Радарная диаграмма - большая */}
-          <div className="glass p-6 rounded-xl">
-            <h2 className="text-xl font-bold mb-4 text-white">Профиль нагрузки</h2>
-            <WorkoutRadar period={timeRange} />
-          </div>
           <CollapsibleBlock title="Топ мышц" defaultOpen={true}>
-            <TopMuscles period={timeRange} />
+            <TopMuscles period={timeRange} data={stats} />
           </CollapsibleBlock>
-          <CollapsibleBlock title="Топ мышц" defaultOpen={true}>
-            <WeeklyOverview />
+          <CollapsibleBlock title={weeklyOverviewTitle} defaultOpen={true}>
+            <WeeklyOverview period={timeRange} data={stats} />
           </CollapsibleBlock>
-          <CollapsibleBlock title="Статистика нагрузки" defaultOpen={true}>
+          <CollapsibleBlock title="Статистика нагрузки" defaultOpen={false}>
             <StatsOverview period={timeRange} data={stats} />
           </CollapsibleBlock>
-          <CollapsibleBlock title="Баланс мышц" defaultOpen={true}>
+          <CollapsibleBlock title="Баланс мышц" defaultOpen={false}>
             <MuscleBalance period={timeRange} data={stats} />
           </CollapsibleBlock>
-          Рекомендации
-          <Recommendations period={timeRange} />
         </div>
-
+        Рекомендации
+        <Recommendations period={timeRange} />
         {/* Дополнительные метрики внизу */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard title="Средняя интенсивность" value="87%" change="+5%" color="green" />
