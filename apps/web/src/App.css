@@ -21,3 +21,9 @@ body {
   background-position: 50% 50%;
   animation: float-bg 20s linear infinite;
 }
+
+svg:focus,
+g:focus,
+path:focus {
+  outline: none;
+}

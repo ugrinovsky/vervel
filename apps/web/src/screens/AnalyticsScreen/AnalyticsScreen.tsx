@@ -45,11 +45,9 @@ export default function AnalyticsScreen() {
             ))}
           </div>
         </div>
-        <div className="glass p-6 rounded-xl">
-          <h2 className="text-xl font-bold mb-4 text-white">Профиль нагрузки</h2>
-          <WorkoutRadar period={timeRange} />
-        </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <WorkoutRadar period={timeRange} data={stats} />
+
           <CollapsibleBlock title="Топ мышц" defaultOpen={false}>
             <TopMuscles period={timeRange} data={stats} />
           </CollapsibleBlock>

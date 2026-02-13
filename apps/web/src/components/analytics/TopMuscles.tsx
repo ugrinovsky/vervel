@@ -86,10 +86,9 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
   };
 
   return (
-    <div className="glass p-5 rounded-xl">
+    <>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-lg font-bold text-white">Топ мышц</h3>
           <p className="text-sm text-gray-400">
             {period === 'week' ? 'За неделю' : period === 'month' ? 'За месяц' : 'За год'}
           </p>
@@ -196,6 +195,6 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
