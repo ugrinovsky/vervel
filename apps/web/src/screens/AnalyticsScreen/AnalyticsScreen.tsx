@@ -60,9 +60,10 @@ export default function AnalyticsScreen() {
           <CollapsibleBlock title="Баланс мышц" defaultOpen={false}>
             <MuscleBalance period={timeRange} data={stats} />
           </CollapsibleBlock>
+          <CollapsibleBlock title="Рекомендации" defaultOpen={true}>
+            <Recommendations period={timeRange} stats={stats} />
+          </CollapsibleBlock>
         </div>
-        Рекомендации
-        <Recommendations period={timeRange} />
         {/* Дополнительные метрики внизу */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard title="Средняя интенсивность" value="87%" change="+5%" color="green" />
