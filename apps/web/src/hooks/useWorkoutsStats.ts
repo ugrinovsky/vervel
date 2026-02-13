@@ -1,6 +1,7 @@
 // hooks/useWorkoutStats.ts
 import { useCallback, useEffect, useState } from 'react';
 import { workoutsApi } from '@/api/workouts';
+import { WorkoutStats } from '@/types/Analytics';
 
 export type StatsPeriod = 'week' | 'month' | 'year';
 
@@ -18,11 +19,18 @@ const getDateRange = (period: StatsPeriod) => {
   };
 };
 
-export const useWorkoutStats = (period: StatsPeriod) => {
-  const [data, setData] = useState<unknown>({
+interface UseWorkoutStatsResult {
+  data: WorkoutStats | null;
+  loading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
+}
+
+export const useWorkoutStats = (period: StatsPeriod): UseWorkoutStatsResult => {
+  const [data, setData] = useState<WorkoutStats | null>({
     workoutsCount: 0,
     totalVolume: 0,
-    avgIntensity: null,
+    avgIntensity: 0,
     byType: {},
     zones: {},
     timeline: [],

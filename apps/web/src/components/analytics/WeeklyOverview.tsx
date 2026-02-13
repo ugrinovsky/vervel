@@ -1,8 +1,9 @@
+import { WorkoutStats } from '@/types/Analytics';
 import { useMemo } from 'react';
 
 interface WeeklyOverviewProps {
   period: 'week' | 'month' | 'year';
-  data: any;
+  data: WorkoutStats;
 }
 
 interface DayData {

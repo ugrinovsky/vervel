@@ -1,6 +1,8 @@
+import { WorkoutStats } from '@/types/Analytics';
+
 interface MuscleBalanceProps {
   period: 'week' | 'month' | 'year';
-  data?: any;
+  data: WorkoutStats;
 }
 
 interface BalanceMetric {

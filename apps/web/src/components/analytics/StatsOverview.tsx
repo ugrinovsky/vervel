@@ -7,6 +7,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
 } from '@heroicons/react/24/outline';
+import { WorkoutStats } from '@/types/Analytics';
 
 type Period = 'week' | 'month' | 'year';
 
@@ -17,18 +18,9 @@ interface TimelineItem {
   type: string;
 }
 
-interface StatsData {
-  workoutsCount: number;
-  totalVolume: number;
-  avgIntensity: number | null;
-  byType: Record<string, number>;
-  zones: Record<string, number>;
-  timeline?: TimelineItem[];
-}
-
 interface StatsOverviewProps {
   period: Period;
-  data: StatsData;
+  data: WorkoutStats;
 }
 
 const PERIOD_LABELS: Record<Period, string> = {

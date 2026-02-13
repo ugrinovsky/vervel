@@ -1,7 +1,7 @@
-import { useState } from 'react';
 import { LightBulbIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { getZoneLabel } from '@/util/zones';
 import { generateRecommendations } from '@/util/getRecomendations';
+import { WorkoutStats } from '@/types/Analytics';
 
 export interface Recommendation {
   id: string;
@@ -14,8 +14,7 @@ export interface Recommendation {
 }
 
 interface RecommendationsProps {
-  period: 'week' | 'month' | 'year';
-  recommendations: Recommendation[];
+  stats: WorkoutStats;
 }
 
 export default function Recommendations({ stats }: RecommendationsProps) {

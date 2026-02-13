@@ -1,4 +1,3 @@
-// components/analytics/WorkoutRadar.tsx
 import {
   Radar,
   RadarChart,

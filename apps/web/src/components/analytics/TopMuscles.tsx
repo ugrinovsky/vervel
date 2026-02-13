@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
 import { FireIcon } from '@heroicons/react/24/outline';
+import { WorkoutStats } from '@/types/Analytics';
 
 interface TopMusclesProps {
   period: 'week' | 'month' | 'year';
-  data: any;
+  data: WorkoutStats;
 }
 
 interface MuscleData {

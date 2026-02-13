@@ -1,4 +1,3 @@
-// app/screens/AnalyticsScreen.tsx
 import Screen from '@/components/Screen/Screen';
 import StatsOverview from '@/components/analytics/StatsOverview';
 import TopMuscles from '@/components/analytics/TopMuscles';
@@ -9,10 +8,15 @@ import WorkoutRadar from '@/components/analytics/WorkoutRadar';
 import { useState } from 'react';
 import { useWorkoutStats } from '@/hooks/useWorkoutsStats';
 import CollapsibleBlock from '@/components/ui/CollapsibleBlock';
+import { MetricsOverview } from '@/components/analytics/MetricsOverview';
 
 export default function AnalyticsScreen() {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('week');
-  const { data: stats = {}, loading, error } = useWorkoutStats(timeRange);
+  const { data: stats } = useWorkoutStats(timeRange);
+
+  if (!stats) {
+    return null;
+  }
 
   const weeklyOverviewTitle =
     '📅 ' + (timeRange === 'week' ? 'Неделя' : timeRange === 'month' ? 'Месяц' : 'Год');
@@ -20,13 +24,12 @@ export default function AnalyticsScreen() {
   return (
     <Screen>
       <div className="p-4 pb-20">
-        {/* Шапка */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-white mb-2">📊 Аналитика</h1>
           <p className="text-gray-400">Детальная статистика ваших тренировок</p>
 
           <div className="flex gap-2 mt-4">
-            {['Неделя', 'Месяц', '3 месяца', 'Год'].map((period) => (
+            {['Неделя', 'Месяц', 'Год'].map((period) => (
               <button
                 key={period}
                 onClick={() =>
@@ -60,49 +63,14 @@ export default function AnalyticsScreen() {
           <CollapsibleBlock title="Баланс мышц" defaultOpen={false}>
             <MuscleBalance period={timeRange} data={stats} />
           </CollapsibleBlock>
-          <CollapsibleBlock title="Рекомендации" defaultOpen={true}>
-            <Recommendations period={timeRange} stats={stats} />
+          <CollapsibleBlock title="Рекомендации" defaultOpen={false}>
+            <Recommendations stats={stats} />
           </CollapsibleBlock>
-        </div>
-        {/* Дополнительные метрики внизу */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard title="Средняя интенсивность" value="87%" change="+5%" color="green" />
-          <MetricCard title="Частота тренировок" value="4.2/нед" change="+0.3" color="blue" />
-          <MetricCard title="Баланс мышц" value="92%" change="+2%" color="purple" />
-          <MetricCard title="Прогресс в весах" value="+8%" change="+3%" color="yellow" />
+          <CollapsibleBlock title="Метрики" defaultOpen={false}>
+            <MetricsOverview stats={stats} />
+          </CollapsibleBlock>
         </div>
       </div>
     </Screen>
-  );
-}
-
-function MetricCard({
-  title,
-  value,
-  change,
-  color,
-}: {
-  title: string;
-  value: string;
-  change: string;
-  color: string;
-}) {
-  const colorClasses = {
-    green: 'text-green-400',
-    blue: 'text-blue-400',
-    purple: 'text-purple-400',
-    yellow: 'text-yellow-400',
-  };
-
-  return (
-    <div className="glass p-4 rounded-xl">
-      <div className="text-sm text-gray-400 mb-1">{title}</div>
-      <div className={`text-2xl font-bold ${colorClasses[color as keyof typeof colorClasses]}`}>
-        {value}
-      </div>
-      <div className="text-xs text-gray-400 mt-1">
-        <span className="text-green-400">↑ {change}</span> за период
-      </div>
-    </div>
   );
 }

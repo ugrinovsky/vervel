@@ -1,3 +1,5 @@
+import { getZoneLabel } from './zones';
+
 export type RecommendationType = 'focus' | 'improvement' | 'achievement' | 'warning';
 export type Priority = 'high' | 'medium' | 'low';
 
