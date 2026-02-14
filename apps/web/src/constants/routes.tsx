@@ -5,8 +5,9 @@ import WorkoutForm from '@/screens/WorkoutForm/WorkoutForm';
 import {
   ChartBarIcon,
   PlusIcon,
-  AdjustmentsHorizontalIcon,
+  CalendarIcon,
   UserIcon,
+  Cog6ToothIcon,
   SparklesIcon,
 } from '@heroicons/react/24/outline';
 
@@ -23,17 +24,17 @@ export interface RouteItem {
 
 export const routes: RouteItem[] = [
   {
-    path: '/calendar',
-    label: 'Activity',
-    icon: ChartBarIcon,
-    element: <ActivityScreen />,
-    toolbarPosition: 'left',
-  },
-  {
     path: '/analytics',
     label: 'Аналитика',
     icon: ChartBarIcon,
     element: <AnalyticsScreen />,
+    toolbarPosition: 'left',
+  },
+  {
+    path: '/calendar',
+    label: 'Календарь',
+    icon: CalendarIcon,
+    element: <ActivityScreen />,
     toolbarPosition: 'left',
   },
 
@@ -44,25 +45,26 @@ export const routes: RouteItem[] = [
     element: <AvatarScreen />,
     toolbarPosition: 'center',
   },
+
+  {
+    path: '/profile',
+    label: 'Профиль',
+    icon: Cog6ToothIcon,
+    toolbarPosition: 'right',
+  },
+  {
+    path: '/workouts/new',
+    label: 'Добавить',
+    icon: PlusIcon,
+    element: <WorkoutForm />,
+    toolbarPosition: 'right',
+    isButton: true,
+    accent: true,
+  },
   {
     path: '/achivements',
     label: 'Achivements',
     icon: SparklesIcon,
     element: <AvatarScreen />,
-    toolbarPosition: 'right',
-  },
-  {
-    path: '/settings',
-    label: 'Settings',
-    icon: AdjustmentsHorizontalIcon,
-    toolbarPosition: 'right',
-  },
-  {
-    path: '/workouts/new',
-    label: 'AddWorkout',
-    icon: PlusIcon,
-    element: <WorkoutForm />,
-    toolbarPosition: 'right',
-    isButton: true,
   },
 ];
