@@ -80,7 +80,7 @@ export default function StatsOverview({ period, data }: StatsOverviewProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Metric
-          icon={<CalendarIcon className="w-5 h-5 text-blue-400" />}
+          icon={<CalendarIcon className="w-5 h-5 text-emerald-400" />}
           label="Тренировок"
           value={data.workoutsCount}
           sub="за период"
@@ -111,7 +111,7 @@ export default function StatsOverview({ period, data }: StatsOverviewProps) {
           {zonesStats.sorted.length > 3 && (
             <button
               onClick={() => setShowAllZones((v) => !v)}
-              className="text-xs text-blue-400 flex items-center gap-1"
+              className="text-xs text-emerald-400 flex items-center gap-1"
             >
               {showAllZones ? 'Скрыть' : `Все (${zonesStats.sorted.length})`}
               {showAllZones ? (
@@ -205,7 +205,7 @@ function ZoneBar({ zone, percent, isTop }: { zone: string; percent: number; isTo
           className={`h-full ${
             isTop
               ? 'bg-gradient-to-r from-red-500 to-yellow-500'
-              : 'bg-gradient-to-r from-blue-500 to-cyan-400'
+              : 'bg-gradient-to-r from-emerald-500 to-emerald-400'
           }`}
           style={{ width: `${Math.min(percent, DISPLAY.PERCENT_MULTIPLIER)}%` }}
         />

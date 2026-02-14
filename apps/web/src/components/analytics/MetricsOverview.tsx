@@ -124,7 +124,7 @@ function MetricCard({
 }) {
   const colorClasses = {
     green: 'text-green-400',
-    blue: 'text-blue-400',
+    blue: 'text-emerald-400',
     purple: 'text-purple-400',
     yellow: 'text-yellow-400',
   };
