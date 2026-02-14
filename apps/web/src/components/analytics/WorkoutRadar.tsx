@@ -13,6 +13,11 @@ import {
   FireIcon,
   HeartIcon,
 } from '@heroicons/react/24/outline';
+import {
+  DISPLAY,
+  RADAR,
+  NORMALIZATION,
+} from '@/constants/AnalyticsConstants';
 
 interface WorkoutRadarProps {
   period: 'week' | 'month' | 'year';
@@ -46,15 +51,17 @@ function darkenColor(hex: string, percent: number) {
 export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
   // Безопасное получение avgIntensity (может быть 0-1 или уже 0-100)
   const rawIntensity = Number(data.avgIntensity) || 0;
-  const intensity = rawIntensity > 1 ? rawIntensity : rawIntensity * 100;
-  
+  const intensity = rawIntensity > NORMALIZATION.PERCENT_THRESHOLD
+    ? rawIntensity
+    : rawIntensity * DISPLAY.PERCENT_MULTIPLIER;
+
   const zones = data.zones || {};
   const totalVolume = Number(data.totalVolume) || 0;
-  
+
   // Баланс: средняя нагрузка по зонам (от 0 до 1, конвертируем в проценты)
   const zoneValues = Object.values(zones).map(v => Number(v) || 0);
   const balance = zoneValues.length
-    ? Math.round((zoneValues.reduce((sum, v) => sum + v, 0) / zoneValues.length) * 100)
+    ? Math.round((zoneValues.reduce((sum, v) => sum + v, 0) / zoneValues.length) * DISPLAY.PERCENT_MULTIPLIER)
     : 0;
 
   const metrics: RadarMetric[] = [
@@ -63,7 +70,7 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
       fullName: 'Максимальная сила',
       description: 'Способность поднимать максимальные веса',
       value: Math.round(intensity),
-      max: 100,
+      max: RADAR.MAX_VALUE,
       icon: <BoltIcon className="w-5 h-5" />,
       color: '#0E5C4D',
     },
@@ -71,8 +78,8 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
       metric: 'Объем',
       fullName: 'Рабочий объем',
       description: 'Общий тоннаж за период',
-      value: Math.min(100, Math.round(totalVolume / 1000)),
-      max: 100,
+      value: Math.min(RADAR.MAX_VALUE, Math.round(totalVolume / DISPLAY.VOLUME_TO_TONS_DIVIDER)),
+      max: RADAR.MAX_VALUE,
       icon: <ChartBarIcon className="w-5 h-5" />,
       color: '#0E3A48',
     },
@@ -80,8 +87,8 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
       metric: 'Выносливость',
       fullName: 'Мышечная выносливость',
       description: 'Способность к многоповторной работе',
-      value: Math.round(intensity * 0.8), // Чуть меньше чем сила
-      max: 100,
+      value: Math.round(intensity * RADAR.ENDURANCE_COEFFICIENT),
+      max: RADAR.MAX_VALUE,
       icon: <HeartIcon className="w-5 h-5" />,
       color: '#0E5C4D',
     },
@@ -90,7 +97,7 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
       fullName: 'Тренировочная интенсивность',
       description: 'Процент от максимальных возможностей',
       value: Math.round(intensity),
-      max: 100,
+      max: RADAR.MAX_VALUE,
       icon: <FireIcon className="w-5 h-5" />,
       color: '#0E3A48',
     },
@@ -99,7 +106,7 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
       fullName: 'Мышечный баланс',
       description: 'Симметрия развития мышечных групп',
       value: balance,
-      max: 100,
+      max: RADAR.MAX_VALUE,
       icon: <ArrowsRightLeftIcon className="w-5 h-5" />,
       color: '#0E5C4D',
     },
@@ -120,7 +127,7 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-xl font-bold text-white">Профиль нагрузки</h3>
-          <p className="text-sm text-gray-400">Радарная диаграмма ваших показателей</p>
+          <p className="text-sm text-[var(--color_text_muted)]">Радарная диаграмма ваших показателей</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <div className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full whitespace-nowrap">
@@ -149,11 +156,11 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
                   </text>
                 )}
               />
-              <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="transparent" tick={false} />
+              <PolarRadiusAxis angle={30} domain={[0, RADAR.MAX_VALUE]} stroke="transparent" tick={false} />
               <Radar
                 dataKey="value"
-                stroke={darkenColor(metrics[0].color, 0.2)}
-                fill={darkenColor(metrics[0].color, 0.2)}
+                stroke={darkenColor(metrics[0].color, RADAR.DARKEN_PERCENT)}
+                fill={darkenColor(metrics[0].color, RADAR.DARKEN_PERCENT)}
                 fillOpacity={0.3}
                 strokeWidth={2}
               />
@@ -162,7 +169,7 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
         </div>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between text-gray-300 text-sm mb-2">
+          <div className="flex items-center justify-between text-[var(--color_text_secondary)] text-sm mb-2">
             Лучший показатель:
           </div>
           <div className="flex items-center justify-between">
@@ -170,7 +177,7 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
             <div className="font-bold">{bestMetric.value}%</div>
           </div>
 
-          <div className="flex items-center justify-between text-gray-300 text-sm mt-2">
+          <div className="flex items-center justify-between text-[var(--color_text_secondary)] text-sm mt-2">
             Для улучшения:
           </div>
           <div className="flex items-center justify-between">
@@ -178,7 +185,7 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
             <div className="font-bold">{worstMetric.value}%</div>
           </div>
 
-          <div className="flex items-center justify-between text-gray-300 text-sm mt-2">
+          <div className="flex items-center justify-between text-[var(--color_text_secondary)] text-sm mt-2">
             Общий балл:
           </div>
           <div className="text-2xl font-bold text-blue-400">{averageValue}%</div>

@@ -1,4 +1,5 @@
 import { WorkoutStats } from '@/types/Analytics';
+import { DISPLAY, METRICS } from '@/constants/AnalyticsConstants';
 
 interface MetricOverviewProps {
   stats: WorkoutStats;
@@ -9,8 +10,8 @@ export function MetricsOverview({ stats }: MetricOverviewProps) {
   const zones: Record<string, number> = stats?.zones ?? {};
   const avgIntensityRaw = stats?.avgIntensity ?? 0;
 
-  const avgIntensity = Math.round(avgIntensityRaw * 100);
-  const workoutsPerWeek = timeline.length > 0 ? timeline.length / 4 : 0;
+  const avgIntensity = Math.round(avgIntensityRaw * DISPLAY.PERCENT_MULTIPLIER);
+  const workoutsPerWeek = timeline.length > 0 ? timeline.length / METRICS.WEEKS_PER_PERIOD : 0;
 
   const zoneValues = Object.values(zones);
   let muscleBalance = 0;
@@ -21,13 +22,12 @@ export function MetricsOverview({ stats }: MetricOverviewProps) {
     muscleBalance = Math.max(0, 1 - (max - min));
   }
 
-  const muscleBalancePercent = Math.round(muscleBalance * 100);
+  const muscleBalancePercent = Math.round(muscleBalance * DISPLAY.PERCENT_MULTIPLIER);
 
   let weightProgress = 0;
-  const MIN_VOLUME = 1000;
-  const volumeWorkouts = timeline.filter((w) => (w.volume ?? 0) >= MIN_VOLUME);
+  const volumeWorkouts = timeline.filter((w) => (w.volume ?? 0) >= METRICS.MIN_VOLUME);
 
-  if (volumeWorkouts.length >= 4) {
+  if (volumeWorkouts.length >= METRICS.MIN_WORKOUTS_FOR_PROGRESS) {
     const mid = Math.floor(volumeWorkouts.length / 2);
 
     const firstHalf = volumeWorkouts.slice(0, mid);
@@ -43,27 +43,27 @@ export function MetricsOverview({ stats }: MetricOverviewProps) {
     }
   }
 
-  const weightProgressPercent = Math.round(weightProgress * 100);
+  const weightProgressPercent = Math.round(weightProgress * DISPLAY.PERCENT_MULTIPLIER);
 
   // --- Изменения считаем по последним двум тренировкам ---
   let intensityChange = 0;
   let weightChange = 0;
 
   if (timeline.length > 1) {
-    const prev = timeline[timeline.length - 2];
+    const prev = timeline[timeline.length - METRICS.MIN_WORKOUTS_FOR_CHANGES];
     const last = timeline[timeline.length - 1];
 
     if (prev?.intensity && last?.intensity) {
-      intensityChange = Math.round((last.intensity - prev.intensity) * 100);
+      intensityChange = Math.round((last.intensity - prev.intensity) * DISPLAY.PERCENT_MULTIPLIER);
     }
 
-    if (volumeWorkouts.length >= 2) {
-      const prevVolume = volumeWorkouts[volumeWorkouts.length - 2];
+    if (volumeWorkouts.length >= METRICS.MIN_WORKOUTS_FOR_CHANGES) {
+      const prevVolume = volumeWorkouts[volumeWorkouts.length - METRICS.MIN_WORKOUTS_FOR_CHANGES];
       const lastVolume = volumeWorkouts[volumeWorkouts.length - 1];
 
       if (prevVolume?.volume && lastVolume?.volume && prevVolume.volume > 0) {
         weightChange = Math.round(
-          ((lastVolume.volume - prevVolume.volume) / prevVolume.volume) * 100
+          ((lastVolume.volume - prevVolume.volume) / prevVolume.volume) * DISPLAY.PERCENT_MULTIPLIER
         );
       }
     }
@@ -90,8 +90,8 @@ export function MetricsOverview({ stats }: MetricOverviewProps) {
     },
     {
       title: 'Динамика объема',
-      value: volumeWorkouts.length >= 6 ? `${weightProgressPercent}%` : '—',
-      change: volumeWorkouts.length >= 6 ? weightChange : null,
+      value: volumeWorkouts.length >= METRICS.MIN_WORKOUTS_FOR_DYNAMICS ? `${weightProgressPercent}%` : '—',
+      change: volumeWorkouts.length >= METRICS.MIN_WORKOUTS_FOR_DYNAMICS ? weightChange : null,
       color: 'yellow' as const,
     },
   ];
@@ -133,10 +133,10 @@ function MetricCard({
 
   return (
     <div className="glass p-3 rounded-xl">
-      <div className="text-sm text-gray-400 mb-1">{title}</div>
+      <div className="text-sm text-[var(--color_text_muted)] mb-1">{title}</div>
       <div className={`text-2xl font-bold ${colorClasses[color]}`}>{value}</div>
       {change !== null && Math.abs(change) > 0 && (
-        <div className="text-xs text-gray-400 mt-1">
+        <div className="text-xs text-[var(--color_text_muted)] mt-1">
           <span className={isPositive ? 'text-green-400' : 'text-red-400'}>
             {isPositive ? '↑' : '↓'} {Math.abs(change)}
           </span>{' '}

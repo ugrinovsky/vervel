@@ -18,7 +18,7 @@ export default function Drawer({ open, onClose, header, children }: DrawerProps)
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-white"
+            className="absolute top-4 right-4 text-[var(--color_text_muted)] hover:text-white"
           >
             <XMarkIcon className="w-6 h-6" />
           </button>

@@ -16,10 +16,9 @@ html::-webkit-scrollbar {
 }
 
 body {
-  background: radial-gradient(circle, rgb(14 92 77), rgb(14 58 72));
-  background-size: 300% 300%;
-  background-position: 50% 50%;
-  animation: float-bg 20s linear infinite;
+  background: radial-gradient(circle at 50% 50%, rgb(14 92 77) 0%, rgb(14 58 72) 60%);
+  background-size: 200% 200%;
+  animation: float-bg 15s ease-in-out infinite;
 }
 
 svg:focus,

@@ -26,7 +26,7 @@ export default function AnalyticsScreen() {
       <div className="p-4 pb-20">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-white mb-2">📊 Аналитика</h1>
-          <p className="text-gray-400">Детальная статистика ваших тренировок</p>
+          <p className="text-[var(--color_text_muted)]">Детальная статистика ваших тренировок</p>
 
           <div className="flex gap-2 mt-4">
             {['Неделя', 'Месяц', 'Год'].map((period) => (
@@ -40,7 +40,7 @@ export default function AnalyticsScreen() {
                   (period === 'Месяц' && timeRange === 'month') ||
                   (period === 'Год' && timeRange === 'year')
                     ? 'bg-blue-600 text-white'
-                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                    : 'bg-[var(--color_bg_card)] text-[var(--color_text_secondary)] hover:bg-[var(--color_bg_card_hover)]'
                 }`}
               >
                 {period}

@@ -8,6 +8,14 @@ import {
   ChevronUpIcon,
 } from '@heroicons/react/24/outline';
 import { WorkoutStats } from '@/types/Analytics';
+import {
+  ZONE_LABELS,
+  TYPE_LABELS,
+  PERIOD_LABELS,
+  DISPLAY,
+  normalizeZones,
+  formatVolume,
+} from '@/constants/AnalyticsConstants';
 
 type Period = 'week' | 'month' | 'year';
 
@@ -23,44 +31,9 @@ interface StatsOverviewProps {
   data: WorkoutStats;
 }
 
-const PERIOD_LABELS: Record<Period, string> = {
-  week: 'неделю',
-  month: 'месяц',
-  year: 'год',
-};
-
-const ZONE_LABELS: Record<string, string> = {
-  chests: 'Грудь',
-  triceps: 'Трицепс',
-  shoulders: 'Плечи',
-  legMuscles: 'Ноги',
-  trapezoids: 'Трапеции',
-  calfMuscles: 'Икры',
-  abdominalPress: 'Пресс',
-  biceps: 'Бицепс',
-  glutes: 'Ягодицы',
-  backMuscles: 'Спина',
-  forearms: 'Предплечья',
-};
-
-const TYPE_LABELS: Record<string, string> = {
-  mixed: 'Смешанная',
-  crossfit: 'Кроссфит',
-  bodybuilding: 'Бодибилдинг',
-};
-
-const normalizeZones = (zones: Record<string, number>) =>
-  Object.entries(zones).reduce<Record<string, number>>((acc, [zone, value]) => {
-    acc[zone] = value > 1 ? value / 100 : value;
-    return acc;
-  }, {});
-
-const formatVolume = (value: number) =>
-  value >= 1000 ? `${Math.round(value / 1000)}т` : `${value}кг`;
-
-const calcAvgIntensity = (data: StatsData): number => {
+const calcAvgIntensity = (data: WorkoutStats): number => {
   if (data.avgIntensity != null) {
-    return Math.round(data.avgIntensity * 100);
+    return Math.round(data.avgIntensity * DISPLAY.PERCENT_MULTIPLIER);
   }
 
   if (!data.timeline?.length) return 0;
@@ -72,7 +45,7 @@ const calcAvgIntensity = (data: StatsData): number => {
     return acc + val;
   }, 0);
 
-  return Math.round((sum / data.timeline.length) * 100);
+  return Math.round((sum / data.timeline.length) * DISPLAY.PERCENT_MULTIPLIER);
 };
 
 export default function StatsOverview({ period, data }: StatsOverviewProps) {
@@ -92,15 +65,15 @@ export default function StatsOverview({ period, data }: StatsOverviewProps) {
     return { sorted, mostLoaded };
   }, [data.zones]);
 
-  const zonesToShow = showAllZones ? zonesStats.sorted : zonesStats.sorted.slice(0, 3);
+  const zonesToShow = showAllZones ? zonesStats.sorted : zonesStats.sorted.slice(0, DISPLAY.DEFAULT_ZONES_TO_SHOW);
 
   return (
     <>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <p className="text-sm text-gray-400">За {PERIOD_LABELS[period]}</p>
+          <p className="text-sm text-[var(--color_text_muted)]">За {PERIOD_LABELS[period]}</p>
         </div>
-        <div className="px-3 py-1 text-xs bg-gray-800 rounded-full text-gray-300">
+        <div className="px-3 py-1 text-xs bg-[var(--color_bg_card)] rounded-full text-[var(--color_text_secondary)]">
           {data.workoutsCount} тренировок
         </div>
       </div>
@@ -151,27 +124,27 @@ export default function StatsOverview({ period, data }: StatsOverviewProps) {
         </div>
 
         {zonesToShow.map(([zone, value]) => {
-          const percent = Math.round(value * 100);
+          const percent = Math.round(value * DISPLAY.PERCENT_MULTIPLIER);
           const isTop = zone === zonesStats.mostLoaded[0];
 
           return <ZoneBar key={zone} zone={zone} percent={percent} isTop={isTop} />;
         })}
 
         {!zonesStats.sorted.length && (
-          <div className="text-center py-4 text-gray-500 text-sm">Нет данных по зонам нагрузки</div>
+          <div className="text-center py-4 text-[var(--color_text_muted)] text-sm">Нет данных по зонам нагрузки</div>
         )}
       </div>
 
       {!!Object.keys(data.byType || {}).length && (
-        <div className="pt-4 border-t border-gray-800">
+        <div className="pt-4 border-t border-[var(--color_border)]">
           <h4 className="text-sm font-medium text-white mb-3">Типы тренировок</h4>
           <div className="flex flex-wrap gap-2">
-            {Object.entries(data.byType).map(([type, count]) => (
+            {Object.entries(data.byType || {}).map(([type, count]) => (
               <div
                 key={type}
-                className="px-3 py-1.5 bg-gray-800/50 rounded-lg flex items-center gap-2"
+                className="px-3 py-1.5 bg-[var(--color_bg_card)]/50 rounded-lg flex items-center gap-2"
               >
-                <span className="text-xs text-gray-300">{TYPE_LABELS[type] || type}</span>
+                <span className="text-xs text-[var(--color_text_secondary)]">{TYPE_LABELS[type] || type}</span>
                 <span className="text-xs font-bold text-white">{count}</span>
               </div>
             ))}
@@ -179,16 +152,16 @@ export default function StatsOverview({ period, data }: StatsOverviewProps) {
         </div>
       )}
 
-      <div className="mt-6 pt-4 border-t border-gray-800">
-        <div className="text-sm text-gray-400 mb-2">Самая нагруженная зона:</div>
-        <div className="flex items-center gap-3 p-3 bg-gray-800/30 rounded-lg">
+      <div className="mt-6 pt-4 border-t border-[var(--color_border)]">
+        <div className="text-sm text-[var(--color_text_muted)] mb-2">Самая нагруженная зона:</div>
+        <div className="flex items-center gap-3 p-3 bg-[var(--color_bg_card)]/30 rounded-lg">
           <div className="w-10 h-10 flex items-center justify-center bg-red-500/20 rounded-lg">
             <FireIcon className="w-5 h-5 text-red-400" />
           </div>
           <div className="flex-1">
             <div className="font-bold text-white">{zonesStats.mostLoaded[0]}</div>
-            <div className="text-xs text-gray-400">
-              Нагрузка {Math.round(zonesStats.mostLoaded[1] * 100)}%
+            <div className="text-xs text-[var(--color_text_muted)]">
+              Нагрузка {Math.round(zonesStats.mostLoaded[1] * DISPLAY.PERCENT_MULTIPLIER)}%
             </div>
           </div>
         </div>
@@ -209,13 +182,13 @@ function Metric({
   sub: string;
 }) {
   return (
-    <div className="p-4 bg-gray-800/30 rounded-lg">
+    <div className="p-4 bg-[var(--color_bg_card)]/30 rounded-lg">
       <div className="flex items-center gap-3 mb-2">
         <div className="p-2 bg-white/10 rounded-lg">{icon}</div>
-        <div className="text-sm text-gray-400">{label}</div>
+        <div className="text-sm text-[var(--color_text_muted)]">{label}</div>
       </div>
       <div className="text-2xl font-bold text-white">{value}</div>
-      <div className="text-xs text-gray-400 mt-1">{sub}</div>
+      <div className="text-xs text-[var(--color_text_muted)] mt-1">{sub}</div>
     </div>
   );
 }
@@ -224,17 +197,17 @@ function ZoneBar({ zone, percent, isTop }: { zone: string; percent: number; isTo
   return (
     <div className="mb-3">
       <div className="flex justify-between mb-1">
-        <span className={isTop ? 'text-white font-medium' : 'text-gray-300'}>{zone}</span>
-        <span className="text-sm text-gray-400">{percent}%</span>
+        <span className={isTop ? 'text-white font-medium' : 'text-[var(--color_text_secondary)]'}>{zone}</span>
+        <span className="text-sm text-[var(--color_text_muted)]">{percent}%</span>
       </div>
-      <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+      <div className="h-2 bg-[var(--color_bg_card)] rounded-full overflow-hidden">
         <div
           className={`h-full ${
             isTop
               ? 'bg-gradient-to-r from-red-500 to-yellow-500'
               : 'bg-gradient-to-r from-blue-500 to-cyan-400'
           }`}
-          style={{ width: `${Math.min(percent, 100)}%` }}
+          style={{ width: `${Math.min(percent, DISPLAY.PERCENT_MULTIPLIER)}%` }}
         />
       </div>
     </div>

@@ -177,7 +177,7 @@ export default function ActivityScreen() {
       <div className="relative px-4 pt-6 pb-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-white mb-2">Активность</h1>
-          <p className="text-gray-400">Отслеживайте ваши тренировки и прогресс</p>
+          <p className="text-[var(--color_text_muted)]">Отслеживайте ваши тренировки и прогресс</p>
         </div>
 
         {/* Статистика месяца */}
@@ -217,7 +217,7 @@ export default function ActivityScreen() {
           </div>
 
           {/* Дополнительные метрики месяца (опционально) */}
-          <div className="mt-4 pt-4 border-t border-gray-700 grid grid-cols-2 gap-4 text-sm text-gray-400">
+          <div className="mt-4 pt-4 border-t border-[var(--color_border)] grid grid-cols-2 gap-4 text-sm text-[var(--color_text_muted)]">
             <div>🔥 Всего сожжено: ~{monthlyStats?.totalCalories.toLocaleString()} ккал</div>
             <div>⏱️ Средняя тренировка: {monthlyStats?.avgDuration} мин</div>
           </div>
@@ -245,7 +245,7 @@ export default function ActivityScreen() {
                   </h2>
                   {dayStats && dayStats.type && (
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-sm px-2 py-1 bg-gray-700 rounded-full text-gray-300">
+                      <span className="text-sm px-2 py-1 bg-[var(--color_bg_card_hover)] rounded-full text-[var(--color_text_secondary)]">
                         {dayStats.type === 'crossfit'
                           ? '🔥 Кроссфит'
                           : dayStats.type === 'mixed'
@@ -253,7 +253,7 @@ export default function ActivityScreen() {
                             : '🏋️ Бодибилдинг'}
                       </span>
                       {dayStats.intensity > 0 && (
-                        <span className="text-sm text-gray-400">
+                        <span className="text-sm text-[var(--color_text_muted)]">
                           Интенсивность: {Math.round(dayStats.intensity * 100)}%
                         </span>
                       )}
@@ -294,7 +294,7 @@ export default function ActivityScreen() {
                   </div>
 
                   {/* Дополнительная информация о тренировке */}
-                  <div className="mt-4 p-3 bg-gray-800/30 rounded-lg text-sm text-gray-400">
+                  <div className="mt-4 p-3 bg-[var(--color_bg_card)]/30 rounded-lg text-sm text-[var(--color_text_muted)]">
                     {dayStats.volume > 10000
                       ? '⚡ Сегодня была тяжелая тренировка!'
                       : dayStats.volume > 5000
@@ -303,7 +303,7 @@ export default function ActivityScreen() {
                   </div>
                 </>
               ) : (
-                <div className="text-center py-8 text-gray-400">
+                <div className="text-center py-8 text-[var(--color_text_muted)]">
                   😴 В этот день тренировок не было
                 </div>
               )}
@@ -350,7 +350,7 @@ function StatCard({
 
   return (
     <div
-      className="text-center p-4 bg-gray-800/30 rounded-lg group hover:bg-gray-800/50 transition cursor-help"
+      className="text-center p-4 bg-[var(--color_bg_card)]/30 rounded-lg group hover:bg-[var(--color_bg_card_hover)] transition cursor-help"
       title={detail || title}
     >
       <div
@@ -363,7 +363,7 @@ function StatCard({
       >
         {displayValue}
       </div>
-      <div className="text-xs text-gray-400 mt-1 group-hover:text-gray-300 transition">{label}</div>
+      <div className="text-xs text-[var(--color_text_muted)] mt-1 group-hover:text-[var(--color_text_secondary)] transition">{label}</div>
     </div>
   );
 }
@@ -384,12 +384,12 @@ function StatItem({
 }) {
   return (
     <div
-      className="text-center p-4 bg-gray-800/30 rounded-lg hover:bg-gray-800/50 transition cursor-help"
+      className="text-center p-4 bg-[var(--color_bg_card)]/30 rounded-lg hover:bg-[var(--color_bg_card_hover)] transition cursor-help"
       title={detail || title}
     >
       <div className="text-2xl mb-2">{icon}</div>
       <div className="text-xl font-bold text-white">{value}</div>
-      <div className="text-xs text-gray-400 mt-1">{label}</div>
+      <div className="text-xs text-[var(--color_text_muted)] mt-1">{label}</div>
     </div>
   );
 }

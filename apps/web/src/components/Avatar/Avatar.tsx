@@ -134,7 +134,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
           <div className="w-3 h-3 rounded-sm bg-red-500"></div>
           <span>Высокая ({'>'}66%)</span>
         </div>
-        <div className="mt-2 pt-2 border-t border-gray-600 text-xs text-gray-300">
+        <div className="mt-2 pt-2 border-t border-[var(--color_border_light)] text-xs text-[var(--color_text_secondary)]">
           Нагружено зон: {loadedZones}
         </div>
       </div>
@@ -286,22 +286,22 @@ const BodySVG: React.FC<BodySVGProps> = ({
 
         <div className="space-y-3">
           <div className="flex justify-between">
-            <span className="text-gray-300">Общая нагрузка</span>
+            <span className="text-[var(--color_text_secondary)]">Общая нагрузка</span>
             <span className="text-yellow-400 font-semibold">87%</span>
           </div>
 
           <div className="flex justify-between">
-            <span className="text-gray-300">Тренировок за неделю</span>
+            <span className="text-[var(--color_text_secondary)]">Тренировок за неделю</span>
             <span className="text-blue-400 font-semibold">5</span>
           </div>
 
           <div className="flex justify-between">
-            <span className="text-gray-300">Средняя интенсивность</span>
+            <span className="text-[var(--color_text_secondary)]">Средняя интенсивность</span>
             <span className="text-green-400 font-semibold">72%</span>
           </div>
 
-          <div className="pt-2 border-t border-gray-700">
-            <div className="text-sm text-gray-400">Самая нагруженная:</div>
+          <div className="pt-2 border-t border-[var(--color_border)]">
+            <div className="text-sm text-[var(--color_text_muted)]">Самая нагруженная:</div>
             <div className="flex items-center gap-2 mt-1">
               <div className="w-3 h-3 rounded-full bg-red-500"></div>
               <span className="text-white">Грудь - 92%</span>
@@ -316,7 +316,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
         <div className="space-y-2">
           {['chests', 'legMuscles', 'backMuscles', 'shoulders', 'triceps'].map((muscle, index) => (
             <div key={muscle} className="flex items-center gap-3">
-              <div className="w-6 h-6 flex items-center justify-center bg-gray-800 rounded-full">
+              <div className="w-6 h-6 flex items-center justify-center bg-[var(--color_bg_card)] rounded-full">
                 <span className="text-xs font-bold">{index + 1}</span>
               </div>
 
@@ -338,7 +338,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
                   </span>
                 </div>
 
-                <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-[var(--color_border)] rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-green-500 to-yellow-500 rounded-full"
                     style={{ width: `${Math.round(Math.random() * 30 + 70)}%` }}
@@ -387,7 +387,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
                   <span className="text-white font-bold">{item.value}%</span>
                 </div>
               </div>
-              <span className="text-sm text-gray-300">{item.label}</span>
+              <span className="text-sm text-[var(--color_text_secondary)]">{item.label}</span>
             </div>
           ))}
         </div>
@@ -398,7 +398,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
 
         <div className="grid grid-cols-7 gap-1 mb-3">
           {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((day) => (
-            <div key={day} className="text-center text-xs text-gray-400">
+            <div key={day} className="text-center text-xs text-[var(--color_text_muted)]">
               {day}
             </div>
           ))}
@@ -412,7 +412,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
                 key={i}
                 className={`h-6 rounded text-xs flex items-center justify-center ${
                   intensity === 0
-                    ? 'bg-gray-800'
+                    ? 'bg-[var(--color_bg_card)]'
                     : intensity === 1
                       ? 'bg-green-900'
                       : intensity === 2
@@ -429,11 +429,11 @@ const BodySVG: React.FC<BodySVGProps> = ({
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-green-900 rounded"></div>
-            <span className="text-gray-300">Легко</span>
+            <span className="text-[var(--color_text_secondary)]">Легко</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-red-900 rounded"></div>
-            <span className="text-gray-300">Интенсивно</span>
+            <span className="text-[var(--color_text_secondary)]">Интенсивно</span>
           </div>
         </div>
       </div>
@@ -447,7 +447,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
               <span className="text-blue-300 font-semibold">Фокус на отстающие</span>
             </div>
-            <p className="text-sm text-gray-300">Добавьте упражнения на бицепс и предплечья</p>
+            <p className="text-sm text-[var(--color_text_secondary)]">Добавьте упражнения на бицепс и предплечья</p>
           </div>
 
           <div className="p-3 bg-green-900/30 rounded-lg border border-green-700/50">
@@ -455,7 +455,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               <span className="text-green-300 font-semibold">Отличный прогресс</span>
             </div>
-            <p className="text-sm text-gray-300">Грудь и плечи хорошо развиты</p>
+            <p className="text-sm text-[var(--color_text_secondary)]">Грудь и плечи хорошо развиты</p>
           </div>
 
           <div className="p-3 bg-yellow-900/30 rounded-lg border border-yellow-700/50">
@@ -463,7 +463,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
               <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
               <span className="text-yellow-300 font-semibold">Следующая тренировка</span>
             </div>
-            <p className="text-sm text-gray-300">Спина + Ноги</p>
+            <p className="text-sm text-[var(--color_text_secondary)]">Спина + Ноги</p>
           </div>
         </div>
       </div>
@@ -477,7 +477,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
               <div className="w-4 h-4 rounded-sm bg-green-500/30 border border-green-500"></div>
               <span className="text-white">Низкая нагрузка</span>
             </div>
-            <span className="text-gray-400 text-sm">3 зоны</span>
+            <span className="text-[var(--color_text_muted)] text-sm">3 зоны</span>
           </div>
 
           <div className="flex items-center justify-between">
@@ -485,7 +485,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
               <div className="w-4 h-4 rounded-sm bg-yellow-500/30 border border-yellow-500"></div>
               <span className="text-white">Средняя нагрузка</span>
             </div>
-            <span className="text-gray-400 text-sm">5 зон</span>
+            <span className="text-[var(--color_text_muted)] text-sm">5 зон</span>
           </div>
 
           <div className="flex items-center justify-between">
@@ -493,16 +493,16 @@ const BodySVG: React.FC<BodySVGProps> = ({
               <div className="w-4 h-4 rounded-sm bg-red-500/30 border border-red-500"></div>
               <span className="text-white">Высокая нагрузка</span>
             </div>
-            <span className="text-gray-400 text-sm">2 зоны</span>
+            <span className="text-[var(--color_text_muted)] text-sm">2 зоны</span>
           </div>
 
-          <div className="pt-3 border-t border-gray-700">
-            <div className="text-sm text-gray-400 mb-2">Период:</div>
+          <div className="pt-3 border-t border-[var(--color_border)]">
+            <div className="text-sm text-[var(--color_text_muted)] mb-2">Период:</div>
             <div className="flex gap-2">
               {['Неделя', 'Месяц', '3 месяца', 'Год'].map((period) => (
                 <button
                   key={period}
-                  className="px-3 py-1 text-sm rounded-full bg-gray-800 hover:bg-gray-700 text-white transition"
+                  className="px-3 py-1 text-sm rounded-full bg-[var(--color_bg_card)] hover:bg-[var(--color_bg_card_hover)] text-white transition"
                 >
                   {period}
                 </button>

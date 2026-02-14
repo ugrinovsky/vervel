@@ -26,7 +26,7 @@ export default function CollapsibleBlock({
           </DisclosureButton>
 
           <DisclosurePanel className="p-2  transition-all duration-300">
-            <div className="h-px bg-gray-400/20 mb-3" />
+            <div className="h-px bg-[var(--color_text_muted)]/20 mb-3" />
             {children}
           </DisclosurePanel>
         </div>

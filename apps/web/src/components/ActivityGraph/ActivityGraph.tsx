@@ -29,7 +29,7 @@ const getColor = (load: LoadType, intensity?: number) => {
       return intensity ? `bg-gradient-to-br from-green-400 to-green-600` : 'bg-green-400';
     case 'none':
     default:
-      return 'bg-gray-800';
+      return 'bg-[var(--color_bg_card)]';
   }
 };
 
@@ -101,7 +101,7 @@ export default function ActivityCalendar({
         <div className="flex items-center gap-4">
           <button
             onClick={goToPreviousMonth}
-            className="p-2 hover:bg-gray-800 rounded-full transition"
+            className="p-2 hover:bg-[var(--color_bg_card_hover)] rounded-full transition"
             aria-label="Предыдущий месяц"
           >
             ←
@@ -113,7 +113,7 @@ export default function ActivityCalendar({
 
           <button
             onClick={goToNextMonth}
-            className="p-2 hover:bg-gray-800 rounded-full transition"
+            className="p-2 hover:bg-[var(--color_bg_card_hover)] rounded-full transition"
             aria-label="Следующий месяц"
           >
             →
@@ -131,7 +131,7 @@ export default function ActivityCalendar({
       {/* Дни недели */}
       <div className="grid grid-cols-7 gap-2 mb-3">
         {weekDays.map((day) => (
-          <div key={day} className="text-center text-sm text-gray-400 font-medium">
+          <div key={day} className="text-center text-sm text-[var(--color_text_muted)] font-medium">
             {day}
           </div>
         ))}
@@ -162,7 +162,7 @@ export default function ActivityCalendar({
                     : 'hover:opacity-90 hover:scale-105'
                 }
                 ${isCurrentDay && !isActive ? 'ring-1 ring-white' : ''}
-                ${day.load === 'none' ? 'hover:bg-gray-700' : ''}
+                ${day.load === 'none' ? 'hover:bg-[var(--color_bg_card_hover)]' : ''}
                 flex flex-col items-center justify-center
               `}
               title={`${format(day.date, 'd MMMM yyyy')} - ${getLoadLabel(day.load)} нагрузка`}
@@ -171,7 +171,7 @@ export default function ActivityCalendar({
               <span
                 className={`
                 text-sm font-bold
-                ${day.load === 'none' ? 'text-gray-400' : 'text-white'}
+                ${day.load === 'none' ? 'text-[var(--color_text_muted)]' : 'text-white'}
                 ${isCurrentDay ? 'text-yellow-300' : ''}
               `}
               >
@@ -187,21 +187,21 @@ export default function ActivityCalendar({
       </div>
 
       {/* Легенда */}
-      <div className="mt-6 pt-6 border-t border-gray-700">
+      <div className="mt-6 pt-6 border-t border-[var(--color_border)]">
         <div className="flex justify-between items-center">
-          <div className="text-sm text-gray-400">Легенда нагрузки:</div>
+          <div className="text-sm text-[var(--color_text_muted)]">Легенда нагрузки:</div>
           <div className="flex gap-4">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-green-400 rounded"></div>
-              <span className="text-xs text-gray-300">Низкая</span>
+              <span className="text-xs text-[var(--color_text_secondary)]">Низкая</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-              <span className="text-xs text-gray-300">Средняя</span>
+              <span className="text-xs text-[var(--color_text_secondary)]">Средняя</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-red-600 rounded"></div>
-              <span className="text-xs text-gray-300">Высокая</span>
+              <span className="text-xs text-[var(--color_text_secondary)]">Высокая</span>
             </div>
           </div>
         </div>

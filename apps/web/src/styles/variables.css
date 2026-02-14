@@ -4,6 +4,21 @@
 
   --color_primary: rgb(14 92 77);
   --color_primary_dark: rgb(14 58 72);
+  --color_primary_light: rgb(16 185 129);
+
+  /* Background colors */
+  --color_bg_card: rgba(255, 255, 255, 0.08);
+  --color_bg_card_hover: rgba(255, 255, 255, 0.12);
+  --color_bg_input: rgba(255, 255, 255, 0.1);
+
+  /* Border colors */
+  --color_border: rgba(255, 255, 255, 0.15);
+  --color_border_light: rgba(255, 255, 255, 0.1);
+
+  /* Text colors */
+  --color_text_primary: rgba(255, 255, 255, 1);
+  --color_text_secondary: rgba(255, 255, 255, 0.9);
+  --color_text_muted: rgba(255, 255, 255, 0.7);
 }
 
 input:focus {

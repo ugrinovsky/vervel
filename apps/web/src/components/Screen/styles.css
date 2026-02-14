@@ -17,18 +17,12 @@
 
 @keyframes float-bg {
   0% {
-    background-position: 25% 30%;
-  }
-  25% {
-    background-position: 75% 40%;
+    background-position: 0% 50%;
   }
   50% {
-    background-position: 50% 80%;
-  }
-  75% {
-    background-position: 30% 60%;
+    background-position: 100% 50%;
   }
   100% {
-    background-position: 25% 30%;
+    background-position: 0% 50%;
   }
 }

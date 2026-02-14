@@ -121,9 +121,9 @@ export default function MuscleBalance({ period }: MuscleBalanceProps) {
     <>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="text-sm text-gray-400">Симметрия развития</p>
+          <p className="text-sm text-[var(--color_text_muted)]">Симметрия развития</p>
         </div>
-        <div className="text-xs px-3 py-1 rounded-full bg-gray-800 text-gray-300">
+        <div className="text-xs px-3 py-1 rounded-full bg-[var(--color_bg_card)] text-[var(--color_text_secondary)]">
           {period === 'week' ? 'Нед' : period === 'month' ? 'Месяц' : 'Год'}
         </div>
       </div>
@@ -175,12 +175,12 @@ export default function MuscleBalance({ period }: MuscleBalanceProps) {
 
               <div className="text-sm text-white font-medium">{metric.label}</div>
 
-              <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mt-1">
+              <div className="flex items-center justify-center gap-2 text-xs text-[var(--color_text_muted)] mt-1">
                 <div className="text-left">
                   <div>{metric.details.left}</div>
                   <div className="text-white">{metric.details.leftValue}%</div>
                 </div>
-                <div className="h-4 w-px bg-gray-700"></div>
+                <div className="h-4 w-px bg-[var(--color_border)]"></div>
                 <div className="text-right">
                   <div>{metric.details.right}</div>
                   <div className="text-white">{metric.details.rightValue}%</div>
@@ -194,26 +194,26 @@ export default function MuscleBalance({ period }: MuscleBalanceProps) {
       <div className="grid grid-cols-3 gap-2 text-xs">
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-full bg-green-500"></div>
-          <span className="text-gray-300">Хорошо</span>
+          <span className="text-[var(--color_text_secondary)]">Хорошо</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-          <span className="text-gray-300">Норма</span>
+          <span className="text-[var(--color_text_secondary)]">Норма</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-full bg-red-500"></div>
-          <span className="text-gray-300">Слабо</span>
+          <span className="text-[var(--color_text_secondary)]">Слабо</span>
         </div>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-800">
+      <div className="mt-4 pt-4 border-t border-[var(--color_border)]">
         <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-400">Общий баланс</div>
+          <div className="text-sm text-[var(--color_text_muted)]">Общий баланс</div>
           <div className="text-lg font-bold text-green-400">
             {Math.round(metrics.reduce((sum, m) => sum + m.value, 0) / metrics.length)}%
           </div>
         </div>
-        <div className="text-xs text-gray-400 mt-1">Средний показатель по всем метрикам</div>
+        <div className="text-xs text-[var(--color_text_muted)] mt-1">Средний показатель по всем метрикам</div>
       </div>
     </>
   );

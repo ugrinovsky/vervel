@@ -1,5 +1,5 @@
 import { test } from '@japa/runner';
-import { WorkoutCalculator, WorkoutCalculationResult } from '#services/WorkoutCalculator';
+import { WorkoutCalculator } from '#services/WorkoutCalculator';
 
 /**
  * Создаем упрощенный мок упражнения, чтобы не тянуть зависимости базы данных
@@ -38,7 +38,14 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     WorkoutCalculator['loadExercises'] = async () => new Map([['ex1', exercise]]);
 
     const result = await WorkoutCalculator.calculateZoneLoads(
-      [{ exerciseId: 'ex1', sets: 2, reps: 5, weight: 1000 }],
+      [{
+        exerciseId: 'ex1',
+        type: 'strength' as const,
+        sets: [
+          { id: '1', reps: 5, weight: 1000 },
+          { id: '2', reps: 5, weight: 1000 }
+        ]
+      }],
       'bodybuilding'
     );
 
@@ -52,7 +59,7 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     WorkoutCalculator['loadExercises'] = async () => new Map([['ex1', exercise]]);
 
     const result = await WorkoutCalculator.calculateZoneLoads(
-      [{ exerciseId: 'ex1' }],
+      [{ exerciseId: 'ex1', type: 'strength' as const, sets: [] }],
       'bodybuilding'
     );
 
@@ -65,11 +72,15 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     WorkoutCalculator['loadExercises'] = async () => new Map([['ex2', exercise]]);
 
     const result = await WorkoutCalculator.calculateZoneLoads(
-      [{ exerciseId: 'ex2', sets: 1, reps: 1, weight: 50 }], // 50 < 100 → нормализация < 1
+      [{
+        exerciseId: 'ex2',
+        type: 'strength' as const,
+        sets: [{ id: '1', reps: 1, weight: 50 }]
+      }], // 50 < 100 → нормализация < 1
       'bodybuilding'
     );
 
-    const expectedLoad = 0.6 * ((1 * 1 * (50 / 100)) / 10); // = 0.6 * 0.05 = 0.03
+    // expectedLoad = 0.6 * ((1 * 1 * (50 / 100)) / 10) = 0.6 * 0.05 = 0.03
     assert.closeTo(result.zonesLoad.плечи, 1, 0.001); // после нормализации к max=0.03 → 1
     assert.closeTo(result.totalIntensity, 0.03, 0.001); // среднее = load / 1
   });
@@ -80,7 +91,7 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     WorkoutCalculator['loadExercises'] = async () => new Map([['ex3', exercise]]);
 
     const result = await WorkoutCalculator.calculateZoneLoads(
-      [{ exerciseId: 'ex3', rounds: 10 }],
+      [{ exerciseId: 'ex3', type: 'wod' as const, rounds: 10 }],
       'crossfit'
     );
 
@@ -96,7 +107,7 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     WorkoutCalculator['loadExercises'] = async () => new Map([['ex4', exercise]]);
 
     const result = await WorkoutCalculator.calculateZoneLoads(
-      [{ exerciseId: 'ex4', rounds: 2 }], // лимит 5 → 2/5 = 0.4
+      [{ exerciseId: 'ex4', type: 'wod' as const, rounds: 2 }], // лимит 5 → 2/5 = 0.4
       'crossfit'
     );
 
@@ -104,6 +115,52 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     assert.closeTo(result.zonesLoad.грудь, 1, 0.001); // после нормализации к max
     assert.closeTo(result.totalIntensity, 0.32, 0.001);
     assert.equal(result.totalVolume, 0);
+  });
+
+  /* -------------------------------- CARDIO -------------------------------- */
+  test('кардио: ограничивает нагрузку по лимиту времени', async ({ assert }) => {
+    const exercise = createExercise('ex5', ['ноги', 'выносливость'], 0.7);
+    WorkoutCalculator['loadExercises'] = async () => new Map([['ex5', exercise]]);
+
+    const result = await WorkoutCalculator.calculateZoneLoads(
+      [{ exerciseId: 'ex5', type: 'cardio' as const, duration: 3600 }], // 1 час = full load
+      'cardio'
+    );
+
+    assert.equal(result.totalVolume, 0);
+    assert.closeTo(result.zonesLoad.ноги, 1, 0.001);
+    assert.closeTo(result.zonesLoad.выносливость, 1, 0.001);
+    assert.equal(result.totalIntensity, 0.7);
+  });
+
+  test('кардио: частичная нагрузка при времени < MAX_TIME_FOR_FULL_LOAD', async ({
+    assert,
+  }) => {
+    const exercise = createExercise('ex6', ['сердце'], 0.6);
+    WorkoutCalculator['loadExercises'] = async () => new Map([['ex6', exercise]]);
+
+    const result = await WorkoutCalculator.calculateZoneLoads(
+      [{ exerciseId: 'ex6', type: 'cardio' as const, duration: 1800 }], // 30 мин = 1800 / 3600 = 0.5
+      'cardio'
+    );
+
+    // load = 0.6 * 0.5 = 0.3, после нормализации к max → 1
+    assert.closeTo(result.zonesLoad.сердце, 1, 0.001);
+    assert.closeTo(result.totalIntensity, 0.3, 0.001);
+    assert.equal(result.totalVolume, 0);
+  });
+
+  test('кардио: использует значение по умолчанию при отсутствии duration', async ({ assert }) => {
+    const exercise = createExercise('ex7', ['выносливость'], 0.5);
+    WorkoutCalculator['loadExercises'] = async () => new Map([['ex7', exercise]]);
+
+    const result = await WorkoutCalculator.calculateZoneLoads(
+      [{ exerciseId: 'ex7', type: 'cardio' as const }],
+      'cardio'
+    );
+
+    // duration по умолчанию = 1, timeFactor = 1/3600 ≈ 0.00028, load = 0.5 * 0.00028 ≈ 0.00014
+    assert.isBelow(result.totalIntensity, 0.001);
   });
 
   /* -------------------------------- НОРМАЛИЗАЦИЯ ЗОН -------------------------------- */
@@ -119,8 +176,8 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
 
     const result = await WorkoutCalculator.calculateZoneLoads(
       [
-        { exerciseId: 'ex1', sets: 1, reps: 1, weight: 1000 }, // нагрузка = 0.5 * 1 = 0.5
-        { exerciseId: 'ex2', sets: 1, reps: 1, weight: 1000 }, // нагрузка = 1.0 * 1 = 1
+        { exerciseId: 'ex1', type: 'strength' as const, sets: [{ id: '1', reps: 1, weight: 1000 }] }, // нагрузка = 0.5 * 1 = 0.5
+        { exerciseId: 'ex2', type: 'strength' as const, sets: [{ id: '1', reps: 1, weight: 1000 }] }, // нагрузка = 1.0 * 1 = 1
       ],
       'bodybuilding'
     );
@@ -134,7 +191,7 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     WorkoutCalculator['loadExercises'] = async () => new Map();
 
     const result = await WorkoutCalculator.calculateZoneLoads(
-      [{ exerciseId: 'unknown_id' }],
+      [{ exerciseId: 'unknown_id', type: 'strength' as const, sets: [] }],
       'bodybuilding'
     );
 

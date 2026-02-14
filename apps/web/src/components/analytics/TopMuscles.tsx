@@ -1,6 +1,14 @@
 import { useState, useMemo } from 'react';
 import { FireIcon } from '@heroicons/react/24/outline';
 import { WorkoutStats } from '@/types/Analytics';
+import {
+  ZONE_LABELS,
+  DISPLAY,
+  TREND_THRESHOLDS,
+  getTrendDirection,
+  getLoadLabel,
+  type TrendDirection,
+} from '@/constants/AnalyticsConstants';
 
 interface TopMusclesProps {
   period: 'week' | 'month' | 'year';
@@ -13,25 +21,9 @@ interface MuscleData {
   displayName: string;
   percentage: number;
   relativeLoad: string;
-  trend: 'up' | 'down' | 'stable';
+  trend: TrendDirection;
   change: number;
 }
-
-const ZONE_LABELS: Record<string, string> = {
-  chests: 'Грудь',
-  backMuscles: 'Спина',
-  legMuscles: 'Ноги',
-  shoulders: 'Плечи',
-  biceps: 'Бицепсы',
-  triceps: 'Трицепс',
-  forearms: 'Предплечья',
-  glutes: 'Ягодицы',
-  trapezoids: 'Трапеции',
-  calfMuscles: 'Икры',
-  abdominalPress: 'Пресс',
-  obliquePress: 'Косые мышцы',
-  core: 'Кор',
-};
 
 export default function TopMuscles({ period, data }: TopMusclesProps) {
   const [viewMode, setViewMode] = useState<'percentage' | 'relative'>('percentage');
@@ -48,27 +40,20 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
     return Object.entries(zones)
       .map(([zone, value]) => {
         const numValue = Number(value) || 0;
-        const percentage = Math.round(numValue * 100);
+        const percentage = Math.round(numValue * DISPLAY.PERCENT_MULTIPLIER);
 
         // Тренд
         let previousValue = percentage;
         if (timeline.length > 1) {
           const prevZones = timeline[timeline.length - 2]?.zones || {};
-          previousValue = Math.round((Number(prevZones[zone]) || 0) * 100);
+          previousValue = Math.round((Number(prevZones[zone]) || 0) * DISPLAY.PERCENT_MULTIPLIER);
         }
 
         const change = percentage - previousValue;
-        let trend: MuscleData['trend'] = 'stable';
-        if (change > 2) trend = 'up';
-        else if (change < -2) trend = 'down';
+        const trend = getTrendDirection(change);
 
         // Относительная нагрузка (для отображения вместо объёма)
-        let relativeLoad = 'Низкая';
-        if (percentage >= 80) relativeLoad = 'Очень высокая';
-        else if (percentage >= 60) relativeLoad = 'Высокая';
-        else if (percentage >= 40) relativeLoad = 'Средняя';
-        else if (percentage >= 20) relativeLoad = 'Низкая';
-        else relativeLoad = 'Очень низкая';
+        const relativeLoad = getLoadLabel(percentage);
 
         return {
           id: zone,
@@ -81,7 +66,7 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
         };
       })
       .sort((a, b) => b.percentage - a.percentage)
-      .slice(0, 5);
+      .slice(0, DISPLAY.TOP_MUSCLES_COUNT);
   }, [data]);
 
   const getTrendColor = (trend: MuscleData['trend']) => {
@@ -103,7 +88,7 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
   // Если нет данных
   if (muscles.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-400">
+      <div className="text-center py-8 text-[var(--color_text_muted)]">
         <p>Нет данных о нагрузке на мышцы</p>
         <p className="text-sm mt-2">Добавьте тренировки, чтобы увидеть статистику</p>
       </div>
@@ -114,18 +99,18 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
     <>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-[var(--color_text_muted)]">
             {period === 'week' ? 'За неделю' : period === 'month' ? 'За месяц' : 'За год'}
           </p>
         </div>
 
-        <div className="flex gap-1 bg-gray-800 rounded-lg p-1">
+        <div className="flex gap-1 bg-[var(--color_bg_card)] rounded-lg p-1">
           <button
             onClick={() => setViewMode('percentage')}
             className={`px-3 py-1 text-sm rounded-md transition ${
               viewMode === 'percentage'
-                ? 'bg-gray-700 text-white'
-                : 'text-gray-400 hover:text-white'
+                ? 'bg-[var(--color_bg_card_hover)] text-white'
+                : 'text-[var(--color_text_muted)] hover:text-white'
             }`}
           >
             %
@@ -133,7 +118,7 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
           <button
             onClick={() => setViewMode('relative')}
             className={`px-3 py-1 text-sm rounded-md transition ${
-              viewMode === 'relative' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
+              viewMode === 'relative' ? 'bg-[var(--color_bg_card_hover)] text-white' : 'text-[var(--color_text_muted)] hover:text-white'
             }`}
           >
             Уровень
@@ -156,7 +141,7 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
                           ? 'bg-orange-500/20 text-orange-400'
                           : index === 2
                             ? 'bg-yellow-500/20 text-yellow-400'
-                            : 'bg-gray-800 text-gray-400'
+                            : 'bg-[var(--color_bg_card)] text-[var(--color_text_muted)]'
                     }
                   `}
                 >
@@ -171,7 +156,7 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
                       {getTrendIcon(muscle.trend, muscle.change)}
                     </span>
                     {viewMode === 'relative' && (
-                      <span className="text-gray-500">{muscle.relativeLoad}</span>
+                      <span className="text-[var(--color_text_muted)]">{muscle.relativeLoad}</span>
                     )}
                   </div>
                 </div>
@@ -181,13 +166,13 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
                 <div className="text-xl font-bold text-white">
                   {viewMode === 'percentage' ? `${muscle.percentage}%` : muscle.relativeLoad}
                 </div>
-                <div className="text-xs text-gray-400">
+                <div className="text-xs text-[var(--color_text_muted)]">
                   {viewMode === 'percentage' ? muscle.relativeLoad : `${muscle.percentage}%`}
                 </div>
               </div>
             </div>
 
-            <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+            <div className="h-2 bg-[var(--color_bg_card)] rounded-full overflow-hidden">
               <div
                 className={`
                   h-full rounded-full transition-all duration-500
@@ -208,13 +193,13 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
         ))}
       </div>
 
-      <div className="mt-6 pt-4 border-t border-gray-800">
+      <div className="mt-6 pt-4 border-t border-[var(--color_border)]">
         <div className="flex items-center justify-between text-sm">
-          <div className="text-gray-400">Всего мышц:</div>
+          <div className="text-[var(--color_text_muted)]">Всего мышц:</div>
           <div className="text-white font-medium">{muscles.length}</div>
         </div>
         <div className="flex items-center justify-between text-sm mt-1">
-          <div className="text-gray-400">Средняя нагрузка:</div>
+          <div className="text-[var(--color_text_muted)]">Средняя нагрузка:</div>
           <div className="text-green-400 font-medium">
             {muscles.length > 0
               ? Math.round(muscles.reduce((sum, m) => sum + m.percentage, 0) / muscles.length)
