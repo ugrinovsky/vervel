@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday } from 'date-fns';
+import { format, startOfMonth, endOfMonth, isSameDay, isToday, getDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
 export type LoadType = 'none' | 'low' | 'medium' | 'high';
@@ -14,7 +14,9 @@ export interface DayData {
 interface ActivityCalendarProps {
   selectedDate: Date | null;
   onSelect: (day: DayData) => void;
-  month?: Date; // Опционально: какой месяц показывать
+  onMonthChange?: (month: Date) => void;
+  month?: Date;
+  days: DayData[];
 }
 
 const getColor = (load: LoadType, intensity?: number) => {
@@ -47,66 +49,50 @@ const getLoadLabel = (load: LoadType): string => {
 export default function ActivityCalendar({
   selectedDate,
   onSelect,
+  onMonthChange,
   month = new Date(),
+  days,
 }: ActivityCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState<Date>(month);
-  const [days, setDays] = useState<DayData[]>([]);
 
-  // Генерация дней месяца
+  // Синхронизация с пропом month
   useEffect(() => {
-    const start = startOfMonth(currentMonth);
-    const end = endOfMonth(currentMonth);
-    const monthDays = eachDayOfInterval({ start, end });
-
-    // TODO: Заменить на реальные данные из API
-    const generatedDays: DayData[] = monthDays.map((date) => {
-      const hasWorkout = Math.random() > 0.4;
-
-      if (!hasWorkout) {
-        return { date, load: 'none' };
-      }
-
-      const loadTypes: LoadType[] = ['low', 'medium', 'high'];
-      const workoutTypes: Array<'strength' | 'cardio' | 'crossfit'> = [
-        'strength',
-        'cardio',
-        'crossfit',
-      ];
-
-      return {
-        date,
-        load: loadTypes[Math.floor(Math.random() * 3)],
-        workoutType: workoutTypes[Math.floor(Math.random() * 3)],
-        intensity: Math.random() * 0.5 + 0.5, // 0.5-1.0
-      };
-    });
-
-    setDays(generatedDays);
-  }, [currentMonth]);
+    setCurrentMonth(month);
+  }, [month]);
 
   // Навигация по месяцам
   const goToPreviousMonth = () => {
-    setCurrentMonth((prev) => {
-      const newDate = new Date(prev);
-      newDate.setMonth(prev.getMonth() - 1);
-      return newDate;
-    });
+    const newDate = new Date(currentMonth);
+    newDate.setMonth(currentMonth.getMonth() - 1);
+    setCurrentMonth(newDate);
+    onMonthChange?.(newDate);
   };
 
   const goToNextMonth = () => {
-    setCurrentMonth((prev) => {
-      const newDate = new Date(prev);
-      newDate.setMonth(prev.getMonth() + 1);
-      return newDate;
-    });
+    const newDate = new Date(currentMonth);
+    newDate.setMonth(currentMonth.getMonth() + 1);
+    setCurrentMonth(newDate);
+    onMonthChange?.(newDate);
   };
 
   const goToToday = () => {
-    setCurrentMonth(new Date());
+    const today = new Date();
+    setCurrentMonth(today);
+    onMonthChange?.(today);
   };
 
-  // Дни недели
+  // Дни недели (начинаем с понедельника)
   const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+  // Получаем первый день месяца
+  const firstDayOfMonth = startOfMonth(currentMonth);
+
+  // Корректируем индекс для понедельника (в date-fns неделя начинается с воскресенья (0))
+  let startDayIndex = getDay(firstDayOfMonth);
+  // Преобразуем воскресенье (0) в 6, чтобы понедельник был 0
+  startDayIndex = startDayIndex === 0 ? 6 : startDayIndex - 1;
+
+  console.log('First day index:', startDayIndex); // Для отладки
 
   return (
     <div className="glass p-6 rounded-xl">
@@ -154,7 +140,7 @@ export default function ActivityCalendar({
       {/* Календарная сетка */}
       <div className="grid grid-cols-7 gap-2">
         {/* Пустые ячейки для начала месяца */}
-        {Array.from({ length: startOfMonth(currentMonth).getDay() || 7 }).map((_, i) => (
+        {Array.from({ length: startDayIndex }).map((_, i) => (
           <div key={`empty-start-${i}`} className="h-12" />
         ))}
 
@@ -191,18 +177,6 @@ export default function ActivityCalendar({
               >
                 {format(day.date, 'd')}
               </span>
-
-              {/* Индикатор типа тренировки */}
-              {day.workoutType && (
-                <span className="text-xs mt-1 opacity-80">
-                  {day.workoutType === 'strength'
-                    ? '🏋️‍♂️'
-                    : day.workoutType === 'cardio'
-                      ? '🏃'
-                      : '⚡'}
-                </span>
-              )}
-
               {/* Индикатор сегодняшнего дня */}
               {isCurrentDay && (
                 <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full" />
@@ -232,67 +206,6 @@ export default function ActivityCalendar({
           </div>
         </div>
       </div>
-
-      {/* Информация о выбранном дне */}
-      {selectedDate && (
-        <div className="mt-6 p-4 bg-gray-800/50 rounded-lg animate-fade-in">
-          <h3 className="font-bold text-white mb-2">
-            {format(selectedDate, 'd MMMM yyyy', { locale: ru })}
-            {isToday(selectedDate) && (
-              <span className="ml-2 px-2 py-1 bg-blue-600 text-xs rounded-full">Сегодня</span>
-            )}
-          </h3>
-
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div
-                className={`
-                w-4 h-4 rounded
-                ${getColor(days.find((d) => isSameDay(d.date, selectedDate))?.load || 'none')}
-              `}
-              ></div>
-              <span className="text-gray-300">
-                Нагрузка:{' '}
-                <strong>
-                  {getLoadLabel(days.find((d) => isSameDay(d.date, selectedDate))?.load || 'none')}
-                </strong>
-              </span>
-            </div>
-
-            {days.find((d) => isSameDay(d.date, selectedDate))?.workoutType && (
-              <div className="flex items-center gap-3">
-                <span className="text-lg">
-                  {days.find((d) => isSameDay(d.date, selectedDate))?.workoutType === 'strength'
-                    ? '🏋️‍♂️'
-                    : days.find((d) => isSameDay(d.date, selectedDate))?.workoutType === 'cardio'
-                      ? '🏃'
-                      : '⚡'}
-                </span>
-                <span className="text-gray-300">
-                  Тип:{' '}
-                  <strong>
-                    {days.find((d) => isSameDay(d.date, selectedDate))?.workoutType === 'strength'
-                      ? 'Силовая'
-                      : days.find((d) => isSameDay(d.date, selectedDate))?.workoutType === 'cardio'
-                        ? 'Кардио'
-                        : 'Кроссфит'}
-                  </strong>
-                </span>
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={() => {
-              // TODO: Переход к тренировке этого дня
-              console.log('Переход к тренировке', selectedDate);
-            }}
-            className="mt-4 w-full py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition"
-          >
-            Посмотреть тренировки за этот день
-          </button>
-        </div>
-      )}
     </div>
   );
 }

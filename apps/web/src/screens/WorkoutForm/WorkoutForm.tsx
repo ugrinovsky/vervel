@@ -1,59 +1,73 @@
+// WorkoutForm.tsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { workoutsApi, WorkoutExercise } from '@/api/workouts';
 import toast from 'react-hot-toast';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
 import Screen from '@/components/Screen/Screen';
-import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import ru from 'date-fns/locale/ru';
 import UiListbox from '@/components/ui/Listbox';
+import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
+import ExerciseList from './ExerciseList';
+import ExerciseDrawer from './ExerciseDrawer';
+import { getLocalDateISOString } from '@/util/exercise';
+import { workoutsApi, WorkoutExercise } from '@/api/workouts';
+import type { ExerciseWithSets } from '@/types/Exercise';
+import { WorkoutTypeOption, workoutTypes } from '@/constants/workoutTypes';
+import 'react-datepicker/dist/react-datepicker.css';
+import '@/styles/datepicker.css';
 
-export default function AddWorkoutScreen() {
+// Регистрируем русскую локаль
+registerLocale('ru', ru);
+
+export default function WorkoutForm() {
   const navigate = useNavigate();
 
-  const workoutTypes = [
-    { id: 'bodybuilding', label: '💪 Качалка' },
-    { id: 'crossfit', label: '🏋️ Кроссфит' },
-    { id: 'mixed', label: '🔥 Смешанная' },
-  ];
-
-  const [workoutType, setWorkoutType] = useState(workoutTypes[0]);
+  const [workoutType, setWorkoutType] = useState<WorkoutTypeOption>(workoutTypes[0]);
   const [date, setDate] = useState(new Date());
-  const [exercises, setExercises] = useState<WorkoutExercise[]>([]);
+  const [notes, setNotes] = useState('');
+  const [exercises, setExercises] = useState<ExerciseWithSets[]>([]);
   const [loading, setLoading] = useState(false);
+  const [currentExercise, setCurrentExercise] = useState<ExerciseWithSets | null>(null);
+  const [showDrawer, setShowDrawer] = useState(false);
+
+  const handleAddExercise = (exercise: ExerciseWithSets) => {
+    setCurrentExercise(exercise);
+    setShowDrawer(true);
+  };
+
+  const handleSaveExercise = (exercise: ExerciseWithSets) => {
+    setExercises([...exercises, exercise]);
+    setCurrentExercise(null);
+    setShowDrawer(false);
+  };
 
   const handleSubmit = async () => {
-    if (!exercises.length) {
-      toast.error('Добавьте хотя бы одно упражнение');
-      return;
-    }
+    if (!exercises.length) return toast.error('Добавьте хотя бы одно упражнение');
 
     setLoading(true);
     try {
-      await workoutsApi.create({
-        date: date.toISOString().split('T')[0],
-        workoutType: workoutType.id as any,
-        exercises: exercises.map((ex) => ({
-          exerciseId: ex.exerciseId,
-          ...ex.params,
-        })),
-      });
+      const exercisesPayload: WorkoutExercise[] = exercises.map((ex) => ({
+        exerciseId: String(ex.exerciseId),
+        type: 'strength' as const,
+        sets: ex.sets,
+      }));
 
-      toast.success('Тренировка добавлена! 💪');
-      // Если хочешь очистить форму, а не редирект:
-      setExercises([]);
-      setDate(new Date());
-      setWorkoutType(workoutTypes[0]);
+      const payload = {
+        date: getLocalDateISOString(date),
+        workoutType: workoutType.value as 'crossfit' | 'bodybuilding' | 'cardio',
+        exercises: exercisesPayload,
+        notes: notes || undefined,
+      };
+
+      await workoutsApi.create(payload);
+      toast.success('Тренировка сохранена 💪');
+      navigate(-1);
     } catch (err: any) {
-      console.error(err);
-      toast.error(err?.message || 'Ошибка при добавлении тренировки');
+      console.error('❌ Ошибка:', err);
+      toast.error(err?.response?.data?.message || err?.message || 'Ошибка сохранения');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleAddExercise = (exercise: WorkoutExercise) => {
-    setExercises((prev) => [...prev, exercise]);
   };
 
   return (
@@ -61,93 +75,56 @@ export default function AddWorkoutScreen() {
       <div className="p-4 max-w-md text-white">
         <h1 className="text-2xl font-bold mb-6">Добавить тренировку</h1>
 
-        <div className="mb-5">
-          <label className="block mb-2 text-sm text-white/70">Тип тренировки</label>
+        <div className="space-y-4">
+          <div>
+            <label className="block mb-2 text-sm text-white/70">Тип тренировки</label>
+            <UiListbox value={workoutType} options={workoutTypes} onChange={setWorkoutType} />
+          </div>
 
-          <UiListbox value={workoutType} options={workoutTypes} onChange={setWorkoutType} />
-        </div>
+          <div>
+            <label className="block mb-2 text-sm text-white/70">Дата</label>
+            <DatePicker
+              selected={date}
+              onChange={(d) => d && setDate(d)}
+              dateFormat="d MMMM yyyy"
+              locale="ru"
+              className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50"
+              calendarClassName="dark-datepicker"
+            />
+          </div>
 
-        <div className="mb-5">
-          <label className="block mb-2 text-sm text-white/70">Дата</label>
-
-          <DatePicker
-            selected={date}
-            onChange={(d) => d && setDate(d)}
-            dateFormat="yyyy-MM-dd"
-            className="
-              w-full px-3 py-2 rounded-lg
-              bg-white/10 border border-white/20
-              text-white
-              focus:outline-none focus:ring-2 focus:ring-emerald-400
-            "
-          />
-        </div>
-
-        <div className="mb-6">
-          <h2 className="mb-2 text-sm text-white/70">Упражнения</h2>
-
-          {exercises.length === 0 && (
-            <p className="text-sm text-white/40">Пока ничего не добавлено</p>
-          )}
-
-          {exercises.map((ex, i) => (
-            <div
-              key={i}
-              className="
-      relative flex items-center justify-between
-      px-3 py-2 mb-2
-      rounded-lg
-      bg-white/5 border border-white/10
-    "
-            >
-              <span className="font-medium mt-2">{ex.title}</span>
-
-              <button
-                onClick={() => setExercises((prev) => prev.filter((_, idx) => idx !== i))}
-                className="text-red-400 text-sm z-10 mt-4"
-              >
-                Удалить
-              </button>
-
-              <div className="absolute right-3 top-1 text-xs text-white/50">
-                {(() => {
-                  const parts: string[] = [];
-
-                  if (ex.params.sets && ex.params.reps) {
-                    parts.push(`${ex.params.sets}×${ex.params.reps}`);
-                  } else if (ex.params.sets) {
-                    parts.push(`${ex.params.sets}×`);
-                  } else if (ex.params.reps) {
-                    parts.push(`${ex.params.reps} повт.`);
-                  }
-
-                  if (ex.params.weight) parts.push(`${ex.params.weight} кг`);
-                  if (ex.params.rounds) parts.push(`${ex.params.rounds} повт.`);
-                  if (ex.params.time) parts.push(`${ex.params.time} мин.`);
-
-                  return parts.join(' | ');
-                })()}
-              </div>
-            </div>
-          ))}
+          <div>
+            <label className="block mb-2 text-sm text-white/70">Заметки (опционально)</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Как прошла тренировка, самочувствие..."
+              rows={3}
+              className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/40 resize-none"
+            />
+          </div>
         </div>
 
         <ExercisePicker onSelect={handleAddExercise} workoutType={workoutType.id} />
 
+        <ExerciseList exercises={exercises} setExercises={setExercises} />
+
         <button
           onClick={handleSubmit}
           disabled={loading}
-          className="
-            mt-5
-            w-full py-3 rounded-xl
-            bg-emerald-500 text-black font-medium
-            shadow-lg
-            active:scale-95 transition
-            disabled:opacity-50
-          "
+          className="mt-6 w-full py-3 rounded-xl bg-emerald-500 text-black font-medium disabled:opacity-50"
         >
-          {loading ? 'Сохраняем…' : 'Сохранить тренировку'}
+          {loading ? 'Сохраняем…' : 'Сохранить'}
         </button>
+
+        {currentExercise && (
+          <ExerciseDrawer
+            open={showDrawer}
+            exercise={currentExercise}
+            onClose={() => setShowDrawer(false)}
+            onSave={handleSaveExercise}
+          />
+        )}
       </div>
     </Screen>
   );

@@ -1,79 +1,183 @@
-// app/screens/ActivityScreen.tsx
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import ActivityCalendar, { DayData } from '@/components/ActivityGraph/ActivityGraph';
 import Screen from '@/components/Screen/Screen';
-import {
-  CalendarIcon,
-  ChartBarIcon,
-  ChartPieIcon,
-  FireIcon,
-  PlusIcon,
-  DocumentDuplicateIcon,
-  ArrowTrendingUpIcon,
-  HomeIcon,
-} from '@heroicons/react/24/outline';
+import { CalendarIcon, ChartBarIcon, ChartPieIcon, FireIcon } from '@heroicons/react/24/outline';
+import { useWorkoutStats } from '@/hooks/useWorkoutsStats';
 
-// Демо данные для упражнений
-const demoExercises = [
-  { name: 'Приседания со штангой', sets: '4x8', weight: '80кг', volume: '2560кг' },
-  { name: 'Жим лежа', sets: '3x10', weight: '60кг', volume: '1800кг' },
-  { name: 'Тяга верхнего блока', sets: '3x12', weight: '50кг', volume: '1800кг' },
-  { name: 'Жим над головой', sets: '3x10', weight: '40кг', volume: '1200кг' },
-];
+// Форматирование объема в тоннах с одним знаком после запятой
+const formatVolume = (volume: number): string => {
+  if (volume >= 1000) {
+    return `${(volume / 1000).toFixed(1)} т`;
+  }
+  return `${volume} кг`;
+};
+
+// Компактное форматирование для карточек
+const formatVolumeCompact = (volume: number): string => {
+  if (volume >= 1000) {
+    return `${(volume / 1000).toFixed(1)}т`;
+  }
+  return `${volume}кг`;
+};
 
 export default function ActivityScreen() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
 
-  // Обработчик выбора дня
+  const { data: stats, loading } = useWorkoutStats('month');
+
+  // Генерируем дни для текущего месяца
+  const days: DayData[] = useMemo(() => {
+    if (!stats?.timeline) return [];
+
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+
+    return Array.from({ length: daysInMonth }, (_, i) => {
+      const date = new Date(year, month, i + 1);
+      const dateStr = format(date, 'yyyy-MM-dd');
+
+      const workout = stats.timeline.find((w) => {
+        const workoutDate = format(new Date(w.date), 'yyyy-MM-dd');
+        return workoutDate === dateStr;
+      });
+
+      // Определяем нагрузку на основе объема
+      let load: 'none' | 'low' | 'medium' | 'high' = 'none';
+      if (workout) {
+        if (workout.volume > 15000) load = 'high';
+        else if (workout.volume > 10000) load = 'medium';
+        else if (workout.volume > 0) load = 'low';
+      }
+
+      return {
+        date,
+        workoutsCount: workout ? 1 : 0,
+        load,
+        workoutType: workout?.type,
+        intensity: workout?.intensity,
+      };
+    });
+  }, [stats, currentMonth]);
+
+  // Метрики выбранного дня - ВЕРНУЛ ВСЕ 4 МЕТРИКИ
+  const dayStats = useMemo(() => {
+    if (!selectedDate || !stats?.timeline) return null;
+
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const dayWorkouts = stats.timeline.filter((w) => {
+      const workoutDate = format(new Date(w.date), 'yyyy-MM-dd');
+      return workoutDate === dateStr;
+    });
+
+    if (!dayWorkouts.length) {
+      return {
+        exercises: 0,
+        duration: 0,
+        volume: 0,
+        calories: 0,
+        type: null,
+        intensity: 0,
+      };
+    }
+
+    // Рассчитываем все метрики для дня
+    const result = dayWorkouts.reduce(
+      (acc, w) => {
+        // Количество упражнений (если есть данные по упражнениям)
+        const exercisesCount = w.exercises?.length || 1;
+
+        // Длительность (если нет данных, ставим 60 мин по умолчанию)
+        const duration = w.duration || 60;
+
+        // Калории (примерный расчет: 5 ккал на 1 кг поднятого веса)
+        const calories = Math.round((w.volume || 0) * 0.05);
+
+        return {
+          exercises: acc.exercises + exercisesCount,
+          duration: acc.duration + duration,
+          volume: acc.volume + (w.volume || 0),
+          calories: acc.calories + calories,
+          type: w.type || acc.type,
+          intensity: w.intensity || acc.intensity,
+        };
+      },
+      {
+        exercises: 0,
+        duration: 0,
+        volume: 0,
+        calories: 0,
+        type: null,
+        intensity: 0,
+      }
+    );
+
+    return result;
+  }, [selectedDate, stats]);
+
+  // Метрики месяца
+  const monthlyStats = useMemo(() => {
+    if (!stats) return null;
+
+    const totalVolume =
+      stats.totalVolume || stats.timeline.reduce((acc, w) => acc + (w.volume || 0), 0);
+
+    // Рассчитываем среднюю длительность (если нет данных, используем 60 мин)
+    const totalDuration = stats.timeline.reduce((acc, w) => acc + (w.duration || 60), 0);
+    const avgDuration = Math.round(totalDuration / stats.timeline.length);
+
+    // Рассчитываем средние калории
+    const totalCalories = stats.timeline.reduce(
+      (acc, w) => acc + Math.round((w.volume || 0) * 0.05),
+      0
+    );
+
+    return {
+      workouts: stats.timeline.length,
+      activeDays: new Set(stats.timeline.map((w) => format(new Date(w.date), 'yyyy-MM-dd'))).size,
+      totalVolume: totalVolume,
+      avgVolume: Math.round(totalVolume / stats.timeline.length),
+      avgDuration: avgDuration,
+      totalCalories: totalCalories,
+      streak: stats.streak || 0,
+    };
+  }, [stats]);
+
   const handleSelectDay = (day: DayData) => {
     setSelectedDate(day.date);
   };
 
-  // Статистика за текущий месяц
-  const monthlyStats = {
-    workouts: 12,
-    activeDays: 15,
-    totalVolume: '45,280кг',
-    streak: 5,
+  const handleMonthChange = (newMonth: Date) => {
+    setCurrentMonth(newMonth);
   };
 
-  // Быстрые действия
-  const quickActions = [
-    { icon: HomeIcon, label: 'Сегодня', action: () => setSelectedDate(new Date()) },
-    { icon: CalendarIcon, label: 'Весь месяц', action: () => console.log('Показать месяц') },
-    { icon: ChartBarIcon, label: 'Аналитика', action: () => console.log('Перейти к аналитике') },
-    { icon: ChartPieIcon, label: 'Прогресс', action: () => console.log('Показать прогресс') },
-  ];
+  if (loading) {
+    return (
+      <Screen>
+        <div className="text-center text-white mt-12">Загрузка...</div>
+      </Screen>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <Screen>
+        <div className="text-center text-white mt-12">Нет данных</div>
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
       <div className="relative px-4 pt-6 pb-8">
-        {/* Шапка экрана */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-white mb-2">Активность</h1>
           <p className="text-gray-400">Отслеживайте ваши тренировки и прогресс</p>
-        </div>
-
-        {/* Быстрые действия */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          {quickActions.map((action, index) => (
-            <button
-              key={index}
-              onClick={action.action}
-              className="glass p-4 rounded-xl hover:bg-gray-800/50 transition text-left group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gray-800 rounded-lg group-hover:bg-gray-700 transition">
-                  <action.icon className="w-5 h-5 text-blue-400" />
-                </div>
-                <span className="font-medium text-white group-hover:text-blue-300 transition">
-                  {action.label}
-                </span>
-              </div>
-            </button>
-          ))}
         </div>
 
         {/* Статистика месяца */}
@@ -81,29 +185,41 @@ export default function ActivityScreen() {
           <h2 className="text-lg font-bold text-white mb-4">Статистика месяца</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <StatCard
-              value={monthlyStats.workouts}
+              value={monthlyStats?.workouts ?? 0}
               label="Тренировок"
               color="blue"
               icon={<CalendarIcon className="w-6 h-6" />}
+              detail={`Активных дней: ${monthlyStats?.activeDays}`}
             />
             <StatCard
-              value={monthlyStats.activeDays}
+              value={monthlyStats?.activeDays ?? 0}
               label="Активных дней"
               color="green"
               icon={<ChartBarIcon className="w-6 h-6" />}
+              detail={`${Math.round((monthlyStats?.activeDays / 30) * 100)}% месяца`}
             />
             <StatCard
-              value={monthlyStats.totalVolume}
+              value={formatVolumeCompact(monthlyStats?.totalVolume ?? 0)}
               label="Общий объем"
               color="yellow"
               icon={<ChartPieIcon className="w-6 h-6" />}
+              title={`${monthlyStats?.totalVolume?.toLocaleString()} кг`}
+              detail={`Средний объем: ${formatVolume(monthlyStats?.avgVolume ?? 0)}`}
             />
             <StatCard
-              value={`${monthlyStats.streak} дн.`}
-              label="Серия подряд"
+              value={monthlyStats?.streak ?? 0}
+              label="Текущая серия"
               color="red"
               icon={<FireIcon className="w-6 h-6" />}
+              unit="дн"
+              detail={`Лучшая серия: ${monthlyStats?.streak ?? 0} дн`}
             />
+          </div>
+
+          {/* Дополнительные метрики месяца (опционально) */}
+          <div className="mt-4 pt-4 border-t border-gray-700 grid grid-cols-2 gap-4 text-sm text-gray-400">
+            <div>🔥 Всего сожжено: ~{monthlyStats?.totalCalories.toLocaleString()} ккал</div>
+            <div>⏱️ Средняя тренировка: {monthlyStats?.avgDuration} мин</div>
           </div>
         </div>
 
@@ -112,97 +228,86 @@ export default function ActivityScreen() {
           <ActivityCalendar
             selectedDate={selectedDate}
             onSelect={handleSelectDay}
-            month={new Date()}
+            onMonthChange={handleMonthChange}
+            month={currentMonth}
+            days={days}
           />
         </div>
 
-        {/* Детали выбранного дня */}
+        {/* Детали выбранного дня - ВЕРНУЛ 4 МЕТРИКИ */}
         {selectedDate && (
           <div className="space-y-6 animate-fade-in">
-            {/* Заголовок дня */}
             <div className="glass p-5 rounded-xl">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-xl font-bold text-white">
                     {format(selectedDate, 'd MMMM yyyy', { locale: ru })}
                   </h2>
-                  <p className="text-gray-400">Выбранный день</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 bg-blue-600 text-sm rounded-full flex items-center gap-1">
-                    <CalendarIcon className="w-3 h-3" />
-                    Тренировка
-                  </span>
-                  <span className="px-3 py-1 bg-green-600 text-sm rounded-full flex items-center gap-1">
-                    <FireIcon className="w-3 h-3" />
-                    Силовая
-                  </span>
+                  {dayStats && dayStats.type && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-sm px-2 py-1 bg-gray-700 rounded-full text-gray-300">
+                        {dayStats.type === 'crossfit'
+                          ? '🔥 Кроссфит'
+                          : dayStats.type === 'mixed'
+                            ? '💪 Смешанная'
+                            : '🏋️ Бодибилдинг'}
+                      </span>
+                      {dayStats.intensity > 0 && (
+                        <span className="text-sm text-gray-400">
+                          Интенсивность: {Math.round(dayStats.intensity * 100)}%
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Статистика дня */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <StatItem value="4" label="Упражнений" icon="🏋️‍♂️" />
-                <StatItem value="75 мин" label="Длительность" icon="⏱️" />
-                <StatItem value="7,360кг" label="Объем" icon="📊" />
-                <StatItem value="420" label="Калорий" icon="🔥" />
-              </div>
+              {dayStats && dayStats.volume > 0 ? (
+                <>
+                  {/* 4 метрики как и было */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <StatItem
+                      value={dayStats.exercises.toString()}
+                      label="Упражнений"
+                      icon="🏋️‍♂️"
+                      detail={`Выполнено упражнений: ${dayStats.exercises}`}
+                    />
+                    <StatItem
+                      value={`${dayStats.duration} мин`}
+                      label="Длительность"
+                      icon="⏱️"
+                      detail={`${Math.floor(dayStats.duration / 60)}ч ${dayStats.duration % 60}мин`}
+                    />
+                    <StatItem
+                      value={formatVolume(dayStats.volume)}
+                      label="Объем"
+                      icon="📊"
+                      title={`${dayStats.volume.toLocaleString()} кг`}
+                      detail={`${(dayStats.volume / 1000).toFixed(2)} тонн`}
+                    />
+                    <StatItem
+                      value={dayStats.calories.toLocaleString()}
+                      label="Калорий"
+                      icon="🔥"
+                      detail={`≈ ${Math.round(dayStats.calories / 100)}% от дневной нормы`}
+                    />
+                  </div>
+
+                  {/* Дополнительная информация о тренировке */}
+                  <div className="mt-4 p-3 bg-gray-800/30 rounded-lg text-sm text-gray-400">
+                    {dayStats.volume > 10000
+                      ? '⚡ Сегодня была тяжелая тренировка!'
+                      : dayStats.volume > 5000
+                        ? '💪 Хорошая нагрузка'
+                        : '🏋️ Поддерживающая тренировка'}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8 text-gray-400">
+                  😴 В этот день тренировок не было
+                </div>
+              )}
             </div>
-
-            {/* Быстрые действия для дня */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <button className="glass p-4 rounded-xl hover:bg-gray-800/50 transition text-center group">
-                <div className="flex justify-center mb-2">
-                  <DocumentDuplicateIcon className="w-6 h-6 text-gray-400 group-hover:text-blue-400 transition" />
-                </div>
-                <div className="font-medium text-white group-hover:text-blue-300 transition">
-                  Дублировать тренировку
-                </div>
-                <div className="text-sm text-gray-400 mt-1 group-hover:text-gray-300 transition">
-                  Создать копию
-                </div>
-              </button>
-
-              <button className="glass p-4 rounded-xl hover:bg-gray-800/50 transition text-center group">
-                <div className="flex justify-center mb-2">
-                  <ArrowTrendingUpIcon className="w-6 h-6 text-gray-400 group-hover:text-green-400 transition" />
-                </div>
-                <div className="font-medium text-white group-hover:text-green-300 transition">
-                  Сравнить с прошлой
-                </div>
-                <div className="text-sm text-gray-400 mt-1 group-hover:text-gray-300 transition">
-                  Анализ прогресса
-                </div>
-              </button>
-
-              <button className="glass p-4 rounded-xl hover:bg-gray-800/50 transition text-center bg-blue-600/20 border border-blue-500/30 group">
-                <div className="flex justify-center mb-2">
-                  <HomeIcon className="w-6 h-6 text-blue-400 group-hover:text-blue-300 transition" />
-                </div>
-                <div className="font-medium text-white">Установить цель</div>
-                <div className="text-sm text-blue-300 mt-1">На следующий раз</div>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Если день не выбран */}
-        {!selectedDate && (
-          <div className="text-center py-12 glass rounded-xl">
-            <div className="flex justify-center mb-4">
-              <CalendarIcon className="w-12 h-12 text-gray-400" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">Выберите день</h3>
-            <p className="text-gray-400 mb-6">
-              Кликните на любой день в календаре, чтобы увидеть детали
-            </p>
-            <button
-              onClick={() => setSelectedDate(new Date())}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition flex items-center gap-2 mx-auto"
-            >
-              <HomeIcon className="w-4 h-4" />
-              Показать сегодня
-            </button>
           </div>
         )}
       </div>
@@ -210,17 +315,23 @@ export default function ActivityScreen() {
   );
 }
 
-// Компонент статистики
+// Обновленный StatCard
 function StatCard({
   value,
   label,
   color,
   icon,
+  title,
+  unit = '',
+  detail,
 }: {
   value: string | number;
   label: string;
   color: string;
   icon: React.ReactNode;
+  title?: string;
+  unit?: string;
+  detail?: string;
 }) {
   const colorClasses = {
     blue: 'text-blue-400',
@@ -228,7 +339,6 @@ function StatCard({
     yellow: 'text-yellow-400',
     red: 'text-red-400',
   };
-
   const iconColorClasses = {
     blue: 'text-blue-400/80',
     green: 'text-green-400/80',
@@ -236,8 +346,13 @@ function StatCard({
     red: 'text-red-400/80',
   };
 
+  const displayValue = unit ? `${value} ${unit}` : value;
+
   return (
-    <div className="text-center p-4 bg-gray-800/30 rounded-lg group hover:bg-gray-800/50 transition">
+    <div
+      className="text-center p-4 bg-gray-800/30 rounded-lg group hover:bg-gray-800/50 transition cursor-help"
+      title={detail || title}
+    >
       <div
         className={`mb-1 flex justify-center ${iconColorClasses[color as keyof typeof iconColorClasses]}`}
       >
@@ -246,19 +361,34 @@ function StatCard({
       <div
         className={`text-2xl font-bold ${colorClasses[color as keyof typeof colorClasses]} group-hover:scale-105 transition-transform`}
       >
-        {value}
+        {displayValue}
       </div>
       <div className="text-xs text-gray-400 mt-1 group-hover:text-gray-300 transition">{label}</div>
     </div>
   );
 }
 
-// Компонент статистики дня
-function StatItem({ value, label, icon }: { value: string; label: string; icon: string }) {
+// Обновленный StatItem
+function StatItem({
+  value,
+  label,
+  icon,
+  title,
+  detail,
+}: {
+  value: string;
+  label: string;
+  icon: string;
+  title?: string;
+  detail?: string;
+}) {
   return (
-    <div className="text-center p-3 bg-gray-800/30 rounded-lg">
-      <div className="text-xl mb-1">{icon}</div>
-      <div className="text-lg font-bold text-white">{value}</div>
+    <div
+      className="text-center p-4 bg-gray-800/30 rounded-lg hover:bg-gray-800/50 transition cursor-help"
+      title={detail || title}
+    >
+      <div className="text-2xl mb-2">{icon}</div>
+      <div className="text-xl font-bold text-white">{value}</div>
       <div className="text-xs text-gray-400 mt-1">{label}</div>
     </div>
   );

@@ -1,20 +1,9 @@
 import Exercise from '#models/exercise';
-import Workout from '#models/workout';
+import Workout, { WorkoutExercise, WorkoutSet } from '#models/workout';
 
 /* ------------------------------------------------------------------ */
 /* Types */
 /* ------------------------------------------------------------------ */
-
-export type WorkoutType = 'crossfit' | 'bodybuilding';
-
-export interface WorkoutExerciseInput {
-  exerciseId: string;
-  sets?: number;
-  reps?: number;
-  weight?: number;
-  rounds?: number;
-  time?: number;
-}
 
 export interface WorkoutCalculationResult {
   zonesLoad: Record<string, number>;
@@ -27,16 +16,16 @@ export interface WorkoutCalculationResult {
 /* ------------------------------------------------------------------ */
 
 const BODYBUILDING = {
-  DEFAULT_SETS: 1,
-  DEFAULT_REPS: 1,
-  DEFAULT_WEIGHT: 0,
   WEIGHT_NORMALIZATION_DIVIDER: 100,
   MAX_NORMALIZED_VOLUME: 10,
 };
 
 const CROSSFIT = {
-  DEFAULT_ROUNDS: 1,
   MAX_ROUNDS_FOR_FULL_LOAD: 5,
+};
+
+const CARDIO = {
+  MAX_TIME_FOR_FULL_LOAD: 3600, // 1 час в секундах
 };
 
 const NORMALIZATION = {
@@ -53,8 +42,8 @@ export class WorkoutCalculator {
    * Главная точка входа
    */
   static async calculateZoneLoads(
-    exercises: WorkoutExerciseInput[],
-    workoutType: WorkoutType
+    exercises: WorkoutExercise[],
+    workoutType: Workout['workoutType']
   ): Promise<WorkoutCalculationResult> {
     const zoneLoads: Record<string, number> = {};
     let totalVolume = 0;
@@ -82,7 +71,7 @@ export class WorkoutCalculator {
   /* ---------------------------------------------------------------- */
 
   private static async loadExercises(
-    inputs: WorkoutExerciseInput[]
+    inputs: WorkoutExercise[]
   ): Promise<Map<string, Exercise>> {
     const ids = [...new Set(inputs.map((e) => e.exerciseId))];
 
@@ -92,8 +81,8 @@ export class WorkoutCalculator {
 
   private static calculateExerciseLoad(
     exercise: Exercise,
-    input: WorkoutExerciseInput,
-    workoutType: WorkoutType
+    input: WorkoutExercise,
+    workoutType: Workout['workoutType']
   ): { load: number; volume: number } {
     const baseIntensity = exercise.intensity;
 
@@ -103,36 +92,53 @@ export class WorkoutCalculator {
 
       case 'crossfit':
         return this.calculateCrossfitLoad(baseIntensity, input);
+
+      case 'cardio':
+        return this.calculateCardioLoad(baseIntensity, input);
     }
   }
 
   private static calculateBodybuildingLoad(
     baseIntensity: number,
-    input: WorkoutExerciseInput
+    input: WorkoutExercise
   ): { load: number; volume: number } {
-    const sets = input.sets ?? BODYBUILDING.DEFAULT_SETS;
-    const reps = input.reps ?? BODYBUILDING.DEFAULT_REPS;
-    const weight = input.weight ?? BODYBUILDING.DEFAULT_WEIGHT;
+    if (!input.sets || input.sets.length === 0) {
+      return { load: 0, volume: 0 };
+    }
 
-    const totalVolume = sets * reps * weight;
+    let totalVolume = 0;
+    let totalNormalizedLoad = 0;
 
-    const normalizedVolume = Math.min(
-      (sets * reps * (weight / BODYBUILDING.WEIGHT_NORMALIZATION_DIVIDER)) /
-        BODYBUILDING.MAX_NORMALIZED_VOLUME,
-      NORMALIZATION.MAX_ZONE_LOAD
-    );
+    // Считаем по каждому подходу
+    input.sets.forEach((set: WorkoutSet) => {
+      const reps = set.reps || 0;
+      const weight = set.weight || 0;
+
+      totalVolume += reps * weight;
+
+      const normalizedVolume = Math.min(
+        (reps * (weight / BODYBUILDING.WEIGHT_NORMALIZATION_DIVIDER)) /
+          BODYBUILDING.MAX_NORMALIZED_VOLUME,
+        NORMALIZATION.MAX_ZONE_LOAD
+      );
+
+      totalNormalizedLoad += normalizedVolume;
+    });
+
+    // Усредняем нагрузку по подходам
+    const avgNormalizedLoad = totalNormalizedLoad / input.sets.length;
 
     return {
-      load: baseIntensity * normalizedVolume,
+      load: baseIntensity * avgNormalizedLoad,
       volume: totalVolume,
     };
   }
 
   private static calculateCrossfitLoad(
     baseIntensity: number,
-    input: WorkoutExerciseInput
+    input: WorkoutExercise
   ): { load: number; volume: number } {
-    const rounds = input.rounds ?? CROSSFIT.DEFAULT_ROUNDS;
+    const rounds = input.rounds || 1;
 
     const roundsFactor = Math.min(
       rounds / CROSSFIT.MAX_ROUNDS_FOR_FULL_LOAD,
@@ -145,11 +151,33 @@ export class WorkoutCalculator {
     };
   }
 
+  private static calculateCardioLoad(
+    baseIntensity: number,
+    input: WorkoutExercise
+  ): { load: number; volume: number } {
+    const time = input.duration || 1;
+
+    const timeFactor = Math.min(time / CARDIO.MAX_TIME_FOR_FULL_LOAD, NORMALIZATION.MAX_ZONE_LOAD);
+
+    return {
+      load: baseIntensity * timeFactor,
+      volume: 0,
+    };
+  }
+
   private static normalizeResult(
     zoneLoads: Record<string, number>,
     totalVolume: number
   ): WorkoutCalculationResult {
     const values = Object.values(zoneLoads);
+
+    if (values.length === 0) {
+      return {
+        zonesLoad: {},
+        totalIntensity: 0,
+        totalVolume: 0,
+      };
+    }
 
     const maxLoad = Math.max(...values, NORMALIZATION.MIN_DENOMINATOR);
 
@@ -172,12 +200,12 @@ export class WorkoutCalculator {
   ): {
     workoutsCount: number;
     totalVolume: number;
-    avgIntensity: number; // ← исправить на число
+    avgIntensity: number;
     byType: Record<string, number>;
-    zones: Record<string, number>; // ← нормализовать 0-1
+    zones: Record<string, number>;
     timeline: Array<{
       date: string;
-      intensity: number; // ← исправить на число
+      intensity: number;
       volume: number;
       type: string;
     }>;
@@ -187,7 +215,7 @@ export class WorkoutCalculator {
       return {
         workoutsCount: 0,
         totalVolume: 0,
-        avgIntensity: 0, // не null
+        avgIntensity: 0,
         byType: {},
         zones: {},
         timeline: [],
@@ -195,35 +223,31 @@ export class WorkoutCalculator {
       };
     }
 
-    // Считаем totalVolume и avgIntensity
     let totalVolume = 0;
     let totalIntensity = 0;
     const byType: Record<string, number> = {};
     const zones: Record<string, number> = {};
 
     workouts.forEach((workout) => {
-      // Volume
-      totalVolume += workout.totalVolume || 0;
+      // ✅ Принудительно конвертируем в число
+      const volume = Number(workout.totalVolume) || 0;
+      totalVolume += volume;
 
-      // Intensity (преобразуем строку в число если нужно)
       const intensity =
         typeof workout.totalIntensity === 'string'
           ? parseFloat(workout.totalIntensity)
           : workout.totalIntensity || 0;
       totalIntensity += intensity;
 
-      // By type
       const type = workout.workoutType || 'unknown';
       byType[type] = (byType[type] || 0) + 1;
 
-      // Zones (суммируем)
       const zonesLoad = workout.zonesLoad || {};
       Object.entries(zonesLoad).forEach(([zone, intensity]) => {
         zones[zone] = (zones[zone] || 0) + intensity;
       });
     });
 
-    // НОРМАЛИЗУЕМ zones 0-1 (как в WorkoutCalculator)
     const zoneValues = Object.values(zones);
     if (zoneValues.length > 0) {
       const maxZone = Math.max(...zoneValues, NORMALIZATION.MIN_DENOMINATOR);
@@ -232,21 +256,20 @@ export class WorkoutCalculator {
       });
     }
 
-    // Timeline с числами
     const timeline = workouts.map((w) => ({
       date: w.date.toString(),
       intensity:
         typeof w.totalIntensity === 'string' ? parseFloat(w.totalIntensity) : w.totalIntensity || 0,
-      volume: w.totalVolume || 0,
+      volume: Number(w.totalVolume) || 0, // ✅ Принудительно конвертируем в число
       type: w.workoutType || 'unknown',
     }));
 
     return {
       workoutsCount: workouts.length,
       totalVolume,
-      avgIntensity: totalIntensity / workouts.length, // число!
+      avgIntensity: totalIntensity / workouts.length,
       byType,
-      zones, // нормализованные 0-1
+      zones,
       timeline,
       period,
     };

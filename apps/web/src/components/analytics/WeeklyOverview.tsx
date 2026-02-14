@@ -14,6 +14,13 @@ interface DayData {
 
 const WEEK_DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
+const WORKOUT_TYPE_LABELS: Record<string, string> = {
+  bodybuilding: '💪 Бодибилдинг',
+  crossfit: '🏋️ Кроссфит',
+  cardio: '🏃 Кардио',
+  mixed: '🔥 Смешанная',
+};
+
 export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
   const timeline: any[] = data?.timeline || [];
 
@@ -34,7 +41,7 @@ export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
           return {
             label,
             load: Math.round((entry.intensity || 0) * 100),
-            type: entry.type || '',
+            type: WORKOUT_TYPE_LABELS[entry.type] || entry.type || '',
           };
         });
         return days;
@@ -47,7 +54,7 @@ export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
           monthMap[d] = {
             label: `${d}`,
             load: Math.round((t.intensity || 0) * 100),
-            type: t.type || '',
+            type: WORKOUT_TYPE_LABELS[t.type] || t.type || '',
           };
         });
         const maxDay = Math.max(...timeline.map((t) => new Date(t.date).getDate()));
@@ -78,7 +85,7 @@ export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
               'Дек',
             ][m],
             load: Math.round((t.intensity || 0) * 100),
-            type: t.type || '',
+            type: WORKOUT_TYPE_LABELS[t.type] || t.type || '',
           };
         });
         const days: DayData[] = [];

@@ -9,13 +9,9 @@ export function MetricsOverview({ stats }: MetricOverviewProps) {
   const zones: Record<string, number> = stats?.zones ?? {};
   const avgIntensityRaw = stats?.avgIntensity ?? 0;
 
-  // --- 1. Средняя интенсивность ---
   const avgIntensity = Math.round(avgIntensityRaw * 100);
-
-  // --- 2. Частота тренировок (среднее за 4 недели, если нет периода) ---
   const workoutsPerWeek = timeline.length > 0 ? timeline.length / 4 : 0;
 
-  // --- 3. Баланс мышц (1 - разница между макс и мин зоной) ---
   const zoneValues = Object.values(zones);
   let muscleBalance = 0;
 
@@ -27,15 +23,23 @@ export function MetricsOverview({ stats }: MetricOverviewProps) {
 
   const muscleBalancePercent = Math.round(muscleBalance * 100);
 
-  // --- 4. Прогресс в весах (по объёму: последняя vs первая тренировка) ---
   let weightProgress = 0;
+  const MIN_VOLUME = 1000;
+  const volumeWorkouts = timeline.filter((w) => (w.volume ?? 0) >= MIN_VOLUME);
 
-  if (timeline.length > 1) {
-    const first = timeline[0]?.volume ?? 0;
-    const last = timeline[timeline.length - 1]?.volume ?? 0;
+  if (volumeWorkouts.length >= 4) {
+    const mid = Math.floor(volumeWorkouts.length / 2);
 
-    if (first > 0) {
-      weightProgress = (last - first) / first;
+    const firstHalf = volumeWorkouts.slice(0, mid);
+    const secondHalf = volumeWorkouts.slice(mid);
+
+    const avgFirst =
+      firstHalf.reduce((sum, w) => sum + (w.volume ?? 0), 0) / firstHalf.length;
+    const avgSecond =
+      secondHalf.reduce((sum, w) => sum + (w.volume ?? 0), 0) / secondHalf.length;
+
+    if (avgFirst > 0) {
+      weightProgress = (avgSecond - avgFirst) / avgFirst;
     }
   }
 
@@ -43,8 +47,6 @@ export function MetricsOverview({ stats }: MetricOverviewProps) {
 
   // --- Изменения считаем по последним двум тренировкам ---
   let intensityChange = 0;
-  let workoutsChange = 0;
-  let balanceChange = 0;
   let weightChange = 0;
 
   if (timeline.length > 1) {
@@ -52,11 +54,18 @@ export function MetricsOverview({ stats }: MetricOverviewProps) {
     const last = timeline[timeline.length - 1];
 
     if (prev?.intensity && last?.intensity) {
-      intensityChange = (last.intensity - prev.intensity) * 100;
+      intensityChange = Math.round((last.intensity - prev.intensity) * 100);
     }
 
-    if (prev?.volume && last?.volume && prev.volume > 0) {
-      weightChange = ((last.volume - prev.volume) / prev.volume) * 100;
+    if (volumeWorkouts.length >= 2) {
+      const prevVolume = volumeWorkouts[volumeWorkouts.length - 2];
+      const lastVolume = volumeWorkouts[volumeWorkouts.length - 1];
+
+      if (prevVolume?.volume && lastVolume?.volume && prevVolume.volume > 0) {
+        weightChange = Math.round(
+          ((lastVolume.volume - prevVolume.volume) / prevVolume.volume) * 100
+        );
+      }
     }
   }
 
@@ -64,25 +73,25 @@ export function MetricsOverview({ stats }: MetricOverviewProps) {
     {
       title: 'Средняя интенсивность',
       value: `${avgIntensity}%`,
-      change: Math.round(intensityChange),
+      change: intensityChange,
       color: 'green' as const,
     },
     {
       title: 'Частота тренировок',
       value: `${workoutsPerWeek.toFixed(1)}/нед`,
-      change: Math.round(workoutsChange),
+      change: null,
       color: 'blue' as const,
     },
     {
       title: 'Баланс мышц',
       value: `${muscleBalancePercent}%`,
-      change: Math.round(balanceChange),
+      change: null,
       color: 'purple' as const,
     },
     {
-      title: 'Прогресс в весах',
-      value: `${weightProgressPercent}%`,
-      change: Math.round(weightChange),
+      title: 'Динамика объема',
+      value: volumeWorkouts.length >= 6 ? `${weightProgressPercent}%` : '—',
+      change: volumeWorkouts.length >= 6 ? weightChange : null,
       color: 'yellow' as const,
     },
   ];
@@ -110,7 +119,7 @@ function MetricCard({
 }: {
   title: string;
   value: string;
-  change: number;
+  change: number | null;
   color: 'green' | 'blue' | 'purple' | 'yellow';
 }) {
   const colorClasses = {
@@ -120,18 +129,20 @@ function MetricCard({
     yellow: 'text-yellow-400',
   };
 
-  const isPositive = change >= 0;
+  const isPositive = change !== null && change >= 0;
 
   return (
-    <div className="glass p-4 rounded-xl">
+    <div className="glass p-3 rounded-xl">
       <div className="text-sm text-gray-400 mb-1">{title}</div>
       <div className={`text-2xl font-bold ${colorClasses[color]}`}>{value}</div>
-      <div className="text-xs text-gray-400 mt-1">
-        <span className={isPositive ? 'text-green-400' : 'text-red-400'}>
-          {isPositive ? '↑' : '↓'} {Math.abs(change)}
-        </span>{' '}
-        за период
-      </div>
+      {change !== null && Math.abs(change) > 0 && (
+        <div className="text-xs text-gray-400 mt-1">
+          <span className={isPositive ? 'text-green-400' : 'text-red-400'}>
+            {isPositive ? '↑' : '↓'} {Math.abs(change)}
+          </span>{' '}
+          за период
+        </div>
+      )}
     </div>
   );
 }

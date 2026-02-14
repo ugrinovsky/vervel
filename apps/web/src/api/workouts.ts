@@ -1,18 +1,33 @@
-import { privateApi } from './http/privateApi'; // твой экземпляр axios
+import { privateApi } from './http/privateApi';
 
-export interface WorkoutExercise {
-  exerciseId: string;
-  sets?: number;
+/**
+ * Атомарная единица нагрузки (совпадает с бэкендом)
+ */
+export interface WorkoutSet {
+  id: string;
   reps?: number;
   weight?: number;
-  rounds?: number;
   time?: number;
-  wodType?: string;
+  distance?: number;
+  calories?: number;
+  rpe?: number;
+}
+
+/**
+ * Упражнение внутри тренировки (совпадает с бэкендом)
+ */
+export interface WorkoutExercise {
+  exerciseId: string;
+  type: 'strength' | 'cardio' | 'wod';
+  sets?: WorkoutSet[];
+  wodType?: 'amrap' | 'fortime' | 'emom' | 'tabata';
+  duration?: number;
+  rounds?: number;
 }
 
 export interface CreateWorkoutDTO {
   date: string;
-  workoutType: 'crossfit' | 'bodybuilding' | 'mixed';
+  workoutType: 'crossfit' | 'bodybuilding' | 'cardio';
   exercises: WorkoutExercise[];
   notes?: string;
 }

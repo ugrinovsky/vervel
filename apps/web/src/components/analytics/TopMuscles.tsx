@@ -12,7 +12,7 @@ interface MuscleData {
   name: string;
   displayName: string;
   percentage: number;
-  volume: string;
+  relativeLoad: string;
   trend: 'up' | 'down' | 'stable';
   change: number;
 }
@@ -29,24 +29,32 @@ const ZONE_LABELS: Record<string, string> = {
   trapezoids: 'Трапеции',
   calfMuscles: 'Икры',
   abdominalPress: 'Пресс',
+  obliquePress: 'Косые мышцы',
+  core: 'Кор',
 };
 
 export default function TopMuscles({ period, data }: TopMusclesProps) {
-  const [viewMode, setViewMode] = useState<'percentage' | 'volume'>('percentage');
+  const [viewMode, setViewMode] = useState<'percentage' | 'relative'>('percentage');
 
   const muscles: MuscleData[] = useMemo(() => {
     const zones = data?.zones || {};
     const timeline = data?.timeline || [];
-    const totalVolume = data?.totalVolume || 0;
+
+    // Если нет зон, возвращаем пустой массив
+    if (Object.keys(zones).length === 0) {
+      return [];
+    }
 
     return Object.entries(zones)
       .map(([zone, value]) => {
-        const percentage = Math.round((value as number) * 100);
+        const numValue = Number(value) || 0;
+        const percentage = Math.round(numValue * 100);
 
+        // Тренд
         let previousValue = percentage;
         if (timeline.length > 1) {
           const prevZones = timeline[timeline.length - 2]?.zones || {};
-          previousValue = Math.round((prevZones[zone] || 0) * 100);
+          previousValue = Math.round((Number(prevZones[zone]) || 0) * 100);
         }
 
         const change = percentage - previousValue;
@@ -54,14 +62,20 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
         if (change > 2) trend = 'up';
         else if (change < -2) trend = 'down';
 
-        const volume = `${Math.round(((value as number) / Math.max(...Object.values(zones), 1)) * totalVolume)}кг`;
+        // Относительная нагрузка (для отображения вместо объёма)
+        let relativeLoad = 'Низкая';
+        if (percentage >= 80) relativeLoad = 'Очень высокая';
+        else if (percentage >= 60) relativeLoad = 'Высокая';
+        else if (percentage >= 40) relativeLoad = 'Средняя';
+        else if (percentage >= 20) relativeLoad = 'Низкая';
+        else relativeLoad = 'Очень низкая';
 
         return {
           id: zone,
           name: ZONE_LABELS[zone] || zone,
           displayName: ZONE_LABELS[zone] || zone,
           percentage,
-          volume,
+          relativeLoad,
           trend,
           change,
         };
@@ -86,6 +100,16 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
     return trend === 'up' ? `↑ ${change}%` : `↓ ${Math.abs(change)}%`;
   };
 
+  // Если нет данных
+  if (muscles.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-400">
+        <p>Нет данных о нагрузке на мышцы</p>
+        <p className="text-sm mt-2">Добавьте тренировки, чтобы увидеть статистику</p>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="flex items-center justify-between mb-4">
@@ -107,12 +131,12 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
             %
           </button>
           <button
-            onClick={() => setViewMode('volume')}
+            onClick={() => setViewMode('relative')}
             className={`px-3 py-1 text-sm rounded-md transition ${
-              viewMode === 'volume' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
+              viewMode === 'relative' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
             }`}
           >
-            Объем
+            Уровень
           </button>
         </div>
       </div>
@@ -146,8 +170,8 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
                     <span className={getTrendColor(muscle.trend)}>
                       {getTrendIcon(muscle.trend, muscle.change)}
                     </span>
-                    {viewMode === 'volume' && (
-                      <span className="text-gray-500">{muscle.volume}</span>
+                    {viewMode === 'relative' && (
+                      <span className="text-gray-500">{muscle.relativeLoad}</span>
                     )}
                   </div>
                 </div>
@@ -155,10 +179,10 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
 
               <div className="text-right">
                 <div className="text-xl font-bold text-white">
-                  {viewMode === 'percentage' ? `${muscle.percentage}%` : muscle.volume}
+                  {viewMode === 'percentage' ? `${muscle.percentage}%` : muscle.relativeLoad}
                 </div>
                 <div className="text-xs text-gray-400">
-                  {viewMode === 'percentage' ? muscle.volume : `${muscle.percentage}%`}
+                  {viewMode === 'percentage' ? muscle.relativeLoad : `${muscle.percentage}%`}
                 </div>
               </div>
             </div>
@@ -192,7 +216,9 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
         <div className="flex items-center justify-between text-sm mt-1">
           <div className="text-gray-400">Средняя нагрузка:</div>
           <div className="text-green-400 font-medium">
-            {Math.round(muscles.reduce((sum, m) => sum + m.percentage, 0) / muscles.length)}%
+            {muscles.length > 0
+              ? Math.round(muscles.reduce((sum, m) => sum + m.percentage, 0) / muscles.length)
+              : 0}%
           </div>
         </div>
       </div>

@@ -14,10 +14,6 @@ export interface Recommendation {
   muscleGroups?: string[];
 }
 
-/**
- * Генерирует рекомендации на основе статистики пользователя
- * @param stats объект с данными WorkoutStats (zones, totalVolume, avgIntensity, timeline)
- */
 export function generateRecommendations(stats: any): Recommendation[] {
   const recs: Recommendation[] = [];
 
@@ -27,10 +23,7 @@ export function generateRecommendations(stats: any): Recommendation[] {
   const avgIntensity = stats.avgIntensity || 0;
 
   const zoneEntries = Object.entries(zones) as [string, number][];
-
-  /* -------------------------------------------------- */
-  /* 1️⃣ Глобальный дисбаланс нагрузки */
-  /* -------------------------------------------------- */
+  const coveredZones = new Set<string>();
 
   if (zoneEntries.length > 1) {
     const sorted = [...zoneEntries].sort((a, b) => b[1] - a[1]);
@@ -53,14 +46,14 @@ export function generateRecommendations(stats: any): Recommendation[] {
         priority: diff > 0.5 ? 'high' : 'medium',
         muscleGroups: [minZone],
       });
+      coveredZones.add(minZone);
+      coveredZones.add(maxZone);
     }
   }
 
-  /* -------------------------------------------------- */
-  /* 2️⃣ Недостаточная или избыточная нагрузка по зонам */
-  /* -------------------------------------------------- */
-
   zoneEntries.forEach(([zoneId, value]) => {
+    if (coveredZones.has(zoneId)) return;
+
     const label = getZoneLabel(zoneId);
 
     if (value < 0.3) {
@@ -74,6 +67,7 @@ export function generateRecommendations(stats: any): Recommendation[] {
         priority: 'medium',
         muscleGroups: [zoneId],
       });
+      coveredZones.add(zoneId);
     }
 
     if (value > 0.8) {
@@ -87,12 +81,9 @@ export function generateRecommendations(stats: any): Recommendation[] {
         priority: 'medium',
         muscleGroups: [zoneId],
       });
+      coveredZones.add(zoneId);
     }
   });
-
-  /* -------------------------------------------------- */
-  /* 3️⃣ Интенсивность тренировок */
-  /* -------------------------------------------------- */
 
   const INTENSITY_LOW = 0.5;
   const INTENSITY_HIGH = 0.8;
@@ -121,10 +112,6 @@ export function generateRecommendations(stats: any): Recommendation[] {
     });
   }
 
-  /* -------------------------------------------------- */
-  /* 4️⃣ Последняя тренировка относительно среднего */
-  /* -------------------------------------------------- */
-
   if (timeline.length > 0) {
     const last = timeline[timeline.length - 1];
 
@@ -142,5 +129,9 @@ export function generateRecommendations(stats: any): Recommendation[] {
     }
   }
 
-  return recs;
+  const priorityOrder = { high: 0, medium: 1, low: 2 };
+
+  return recs
+    .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority])
+    .slice(0, 5);
 }

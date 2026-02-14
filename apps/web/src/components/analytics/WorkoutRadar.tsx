@@ -44,13 +44,17 @@ function darkenColor(hex: string, percent: number) {
 }
 
 export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
-  const intensity = (data.avgIntensity || 0) * 100;
+  // Безопасное получение avgIntensity (может быть 0-1 или уже 0-100)
+  const rawIntensity = Number(data.avgIntensity) || 0;
+  const intensity = rawIntensity > 1 ? rawIntensity : rawIntensity * 100;
+  
   const zones = data.zones || {};
-  const totalVolume = data.totalVolume || 0;
-  const balance = Object.values(zones).length
-    ? Math.round(
-        (Object.values(zones).reduce((sum, v) => sum + v, 0) / Object.values(zones).length) * 100
-      )
+  const totalVolume = Number(data.totalVolume) || 0;
+  
+  // Баланс: средняя нагрузка по зонам (от 0 до 1, конвертируем в проценты)
+  const zoneValues = Object.values(zones).map(v => Number(v) || 0);
+  const balance = zoneValues.length
+    ? Math.round((zoneValues.reduce((sum, v) => sum + v, 0) / zoneValues.length) * 100)
     : 0;
 
   const metrics: RadarMetric[] = [
@@ -58,7 +62,7 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
       metric: 'Сила',
       fullName: 'Максимальная сила',
       description: 'Способность поднимать максимальные веса',
-      value: intensity,
+      value: Math.round(intensity),
       max: 100,
       icon: <BoltIcon className="w-5 h-5" />,
       color: '#0E5C4D',
@@ -76,7 +80,7 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
       metric: 'Выносливость',
       fullName: 'Мышечная выносливость',
       description: 'Способность к многоповторной работе',
-      value: intensity,
+      value: Math.round(intensity * 0.8), // Чуть меньше чем сила
       max: 100,
       icon: <HeartIcon className="w-5 h-5" />,
       color: '#0E5C4D',
@@ -103,7 +107,7 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
 
   const chartData = metrics.map((m) => ({ metric: m.metric, value: m.value, fullMark: m.max }));
 
-  const averageValue = Math.round(metrics.reduce((sum, m) => sum + m.value, 0) / metrics.length);
+  const averageValue = Math.round(metrics.reduce((sum, m) => sum + m.value, 0) / metrics.length) || 0;
   const bestMetric = metrics.reduce((best, current) =>
     current.value > best.value ? current : best
   );
@@ -139,9 +143,9 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
                     textAnchor="middle"
                     fill="#D1D5DB"
                     fontSize={12}
-                    dy={4} // смещение от точки
+                    dy={4}
                   >
-                    {payload.value} {/* Здесь будут "Сила", "Выносливость" и т.д. */}
+                    {payload.value}
                   </text>
                 )}
               />

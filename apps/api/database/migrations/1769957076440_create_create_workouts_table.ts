@@ -1,30 +1,35 @@
 import { BaseSchema } from '@adonisjs/lucid/schema';
 
-export default class extends BaseSchema {
+export default class Workouts extends BaseSchema {
   protected tableName = 'workouts';
 
-  async up() {
+  public async up() {
     this.schema.createTable(this.tableName, (table) => {
       table.increments('id').primary();
 
-      table.integer('user_id').unsigned().references('users.id').onDelete('CASCADE');
+      table.integer('user_id').unsigned().references('users.id').onDelete('CASCADE').notNullable();
 
-      table.date('date').notNullable();
+      table.timestamp('date', { useTz: true }).notNullable();
 
-      table.enum('workout_type', ['crossfit', 'bodybuilding', 'mixed']).defaultTo('bodybuilding');
+      table
+        .enum('workout_type', ['crossfit', 'bodybuilding', 'cardio'])
+        .defaultTo('bodybuilding');
+
       table.jsonb('exercises').notNullable();
       table.jsonb('zones_load').nullable();
 
-      table.decimal('total_intensity', 3, 2).nullable();
-      table.integer('total_volume').nullable();
+      table.decimal('total_intensity', 5, 2).nullable();
+      table.decimal('total_volume', 10, 2).nullable();
 
       table.text('notes').nullable();
 
       table.timestamps(true, true);
+
+      table.index(['user_id', 'date'], 'workouts_user_date_idx');
     });
   }
 
-  async down() {
+  public async down() {
     this.schema.dropTable(this.tableName);
   }
 }

@@ -1,6 +1,8 @@
 import type { HttpContext } from '@adonisjs/core/http';
+import { DateTime } from 'luxon';
 import Workout from '#models/workout';
 import { WorkoutCalculator } from '#services/WorkoutCalculator';
+import { createWorkoutValidator, updateWorkoutValidator } from '#validators/workout_validator';
 
 export default class WorkoutsController {
   /**
@@ -8,16 +10,16 @@ export default class WorkoutsController {
    */
   async store({ request, auth, response }: HttpContext) {
     const user = auth.user!;
-    const data = request.only(['date', 'workoutType', 'exercises', 'notes']);
+    const data = await request.validateUsing(createWorkoutValidator);
 
     const calculated = await WorkoutCalculator.calculateZoneLoads(data.exercises, data.workoutType);
 
     const workout = await Workout.create({
       userId: user.id,
-      date: data.date,
+      date: DateTime.fromISO(data.date),
       workoutType: data.workoutType,
       exercises: data.exercises,
-      notes: data.notes,
+      notes: data.notes || '',
       zonesLoad: calculated.zonesLoad,
       totalIntensity: calculated.totalIntensity,
       totalVolume: calculated.totalVolume,
@@ -65,12 +67,15 @@ export default class WorkoutsController {
       .where('userId', user.id)
       .firstOrFail();
 
-    const data = request.only(['date', 'workoutType', 'exercises', 'notes']);
+    const data = await request.validateUsing(updateWorkoutValidator);
 
     const calculated = await WorkoutCalculator.calculateZoneLoads(data.exercises, data.workoutType);
 
     workout.merge({
-      ...data,
+      date: DateTime.fromISO(data.date),
+      workoutType: data.workoutType,
+      exercises: data.exercises,
+      notes: data.notes || '',
       zonesLoad: calculated.zonesLoad,
       totalIntensity: calculated.totalIntensity,
       totalVolume: calculated.totalVolume,

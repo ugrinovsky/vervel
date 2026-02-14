@@ -3,6 +3,57 @@ import { BaseModel, column, belongsTo } from '@adonisjs/lucid/orm';
 import type { BelongsTo } from '@adonisjs/lucid/types/relations';
 import User from './user.js';
 
+/**
+ * Атомарная единица нагрузки
+ */
+export type WorkoutSet = {
+  id: string;
+
+  // силовые
+  reps?: number;
+  weight?: number;
+
+  // кардио
+  time?: number; // в секундах
+  distance?: number; // в метрах
+  calories?: number;
+
+  // доп
+  rpe?: number;
+};
+
+/**
+ * Упражнение внутри тренировки
+ */
+export type WorkoutExercise = {
+  exerciseId: string;
+
+  /**
+   * Тип упражнения
+   */
+  type: 'strength' | 'cardio' | 'wod';
+
+  /**
+   * Сеты (для силовых и кардио)
+   */
+  sets?: WorkoutSet[];
+
+  /**
+   * Формат WOD
+   */
+  wodType?: 'amrap' | 'fortime' | 'emom' | 'tabata';
+
+  /**
+   * Для AMRAP / EMOM
+   */
+  duration?: number; // в секундах
+
+  /**
+   * Для For Time
+   */
+  rounds?: number;
+};
+
 export default class Workout extends BaseModel {
   @column({ isPrimary: true })
   declare id: number;
@@ -14,23 +65,17 @@ export default class Workout extends BaseModel {
   declare date: DateTime;
 
   @column()
-  declare workoutType: 'crossfit' | 'bodybuilding' | 'mixed';
+  declare workoutType: 'crossfit' | 'bodybuilding' | 'cardio';
 
   @column({
     prepare: (value) => JSON.stringify(value),
+    consume: (value) => (typeof value === 'string' ? JSON.parse(value) : value),
   })
-  declare exercises: Array<{
-    exerciseId: string;
-    sets?: number;
-    reps?: number;
-    weight?: number;
-    rounds?: number;
-    time?: number;
-    wodType?: string;
-  }>;
+  declare exercises: WorkoutExercise[];
 
   @column({
     prepare: (value) => JSON.stringify(value),
+    consume: (value) => (typeof value === 'string' ? JSON.parse(value) : value),
   })
   declare zonesLoad: Record<string, number>;
 
