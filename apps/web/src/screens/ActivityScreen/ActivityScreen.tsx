@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import ActivityCalendar, { DayData } from '@/components/ActivityGraph/ActivityGraph';
 import Screen from '@/components/Screen/Screen';
+import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import { CalendarIcon, ChartBarIcon, ChartPieIcon, FireIcon } from '@heroicons/react/24/outline';
 import { useWorkoutStats } from '@/hooks/useWorkoutsStats';
 
@@ -175,10 +176,11 @@ export default function ActivityScreen() {
   return (
     <Screen>
       <div className="relative px-4 pt-6 pb-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white mb-2">Активность</h1>
-          <p className="text-[var(--color_text_muted)]">Отслеживайте ваши тренировки и прогресс</p>
-        </div>
+        <ScreenHeader
+          icon="📅"
+          title="Активность"
+          description="Отслеживайте ваши тренировки и прогресс"
+        />
 
         {/* Статистика месяца */}
         <div className="glass p-5 rounded-xl mb-6">

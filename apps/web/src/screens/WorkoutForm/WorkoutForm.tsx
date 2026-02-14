@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
+import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import ru from 'date-fns/locale/ru';
 import UiListbox from '@/components/ui/Listbox';
@@ -73,7 +74,11 @@ export default function WorkoutForm() {
   return (
     <Screen>
       <div className="p-4 max-w-md text-white">
-        <h1 className="text-2xl font-bold mb-6">Добавить тренировку</h1>
+        <ScreenHeader
+          icon="💪"
+          title="Новая тренировка"
+          description="Создайте запись о вашей тренировке"
+        />
 
         <div className="space-y-4">
           <div>

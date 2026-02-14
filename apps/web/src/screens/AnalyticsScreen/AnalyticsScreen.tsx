@@ -1,4 +1,5 @@
 import Screen from '@/components/Screen/Screen';
+import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import StatsOverview from '@/components/analytics/StatsOverview';
 import TopMuscles from '@/components/analytics/TopMuscles';
 import MuscleBalance from '@/components/analytics/MuscleBalance';
@@ -24,29 +25,31 @@ export default function AnalyticsScreen() {
   return (
     <Screen>
       <div className="p-4 pb-20">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-white mb-2">📊 Аналитика</h1>
-          <p className="text-[var(--color_text_muted)]">Детальная статистика ваших тренировок</p>
+        <ScreenHeader
+          icon="📊"
+          title="Аналитика"
+          description="Детальная статистика ваших тренировок"
+        />
 
-          <div className="flex gap-2 mt-4">
-            {['Неделя', 'Месяц', 'Год'].map((period) => (
-              <button
-                key={period}
-                onClick={() =>
-                  setTimeRange(period === 'Неделя' ? 'week' : period === 'Месяц' ? 'month' : 'year')
-                }
-                className={`px-4 py-2 rounded-full text-sm transition ${
-                  (period === 'Неделя' && timeRange === 'week') ||
-                  (period === 'Месяц' && timeRange === 'month') ||
-                  (period === 'Год' && timeRange === 'year')
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-[var(--color_bg_card)] text-[var(--color_text_secondary)] hover:bg-[var(--color_bg_card_hover)]'
-                }`}
-              >
-                {period}
-              </button>
-            ))}
-          </div>
+        {/* Фильтры периода */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          {['Неделя', 'Месяц', 'Год'].map((period) => (
+            <button
+              key={period}
+              onClick={() =>
+                setTimeRange(period === 'Неделя' ? 'week' : period === 'Месяц' ? 'month' : 'year')
+              }
+              className={`py-3 rounded-xl text-sm font-medium transition-all ${
+                (period === 'Неделя' && timeRange === 'week') ||
+                (period === 'Месяц' && timeRange === 'month') ||
+                (period === 'Год' && timeRange === 'year')
+                  ? 'bg-[var(--color_primary_light)] text-white shadow-lg shadow-[var(--color_primary_light)]/30'
+                  : 'bg-[var(--color_bg_card)] text-[var(--color_text_secondary)] hover:bg-[var(--color_bg_card_hover)] hover:text-white'
+              }`}
+            >
+              {period}
+            </button>
+          ))}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <WorkoutRadar period={timeRange} data={stats} />
