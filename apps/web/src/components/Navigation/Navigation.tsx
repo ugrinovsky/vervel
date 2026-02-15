@@ -46,9 +46,7 @@ function NavItem({ route }: { route: RouteItem }) {
   return (
     <NavLink
       to={route.path}
-      className={({ isActive }) =>
-        isActive ? 'nav-item-active' : 'nav-item-inactive'
-      }
+      className={({ isActive }) => (isActive ? 'nav-item-active' : 'nav-item-inactive')}
     >
       <route.icon className="w-6 h-6" strokeWidth={2} />
       <span className="text-[10px] font-medium leading-tight mt-1">{route.label}</span>
@@ -64,10 +62,7 @@ function ActionButtonCenter({
   navigate: ReturnType<typeof useNavigate>;
 }) {
   return (
-    <button
-      onClick={() => navigate(route.path)}
-      className="nav-button-center"
-    >
+    <button onClick={() => navigate(route.path)} className="nav-button-center main-button">
       <route.icon className="w-9 h-9" strokeWidth={2.5} />
     </button>
   );
@@ -83,10 +78,15 @@ function ActionButton({
   return (
     <button
       onClick={() => navigate(route.path)}
-      className={route.accent ? "nav-item-accent" : "nav-item-inactive"}
+      className={route.accent ? 'nav-item-accent' : 'nav-item-inactive'}
     >
-      <route.icon className={route.accent ? "w-7 h-7" : "w-6 h-6"} strokeWidth={route.accent ? 2.5 : 2} />
-      {!route.accent && <span className="text-[10px] font-medium leading-tight mt-1">{route.label}</span>}
+      <route.icon
+        className={route.accent ? 'w-7 h-7' : 'w-6 h-6'}
+        strokeWidth={route.accent ? 2.5 : 2}
+      />
+      {!route.accent && (
+        <span className="text-[10px] font-medium leading-tight mt-1">{route.label}</span>
+      )}
     </button>
   );
 }

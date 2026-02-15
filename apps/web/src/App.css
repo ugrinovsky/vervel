@@ -12,10 +12,11 @@ body,
 }
 
 html::-webkit-scrollbar {
-  display: none; /* Для Chrome, Safari и современных мобильных браузеров */
+  display: none;
 }
 
-body {
+body,
+.background {
   background: radial-gradient(circle at 50% 50%, rgb(14 92 77) 0%, rgb(14 58 72) 60%);
   background-size: 200% 200%;
   animation: float-bg 15s ease-in-out infinite;
@@ -25,4 +26,18 @@ svg:focus,
 g:focus,
 path:focus {
   outline: none;
+}
+
+.main-button {
+  background: linear-gradient(135deg, rgb(16, 185, 129) 0%, rgb(5, 150, 105) 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  box-shadow:
+    0 8px 32px rgba(16, 185, 129, 0.4),
+    0 0 20px rgba(16, 185, 129, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.2);
 }

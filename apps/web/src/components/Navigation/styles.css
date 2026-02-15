@@ -4,6 +4,9 @@
   padding: 17px;
   box-sizing: border-box;
   border-radius: 1rem;
+  border-style: var(--tw-border-style);
+  border-width: 1px;
+  border-color: color-mix(in oklab, var(--color-white) 20%, transparent);
 }
 
 .nav-background {
@@ -73,21 +76,12 @@
   height: 5rem;
   margin-top: -2rem;
   border-radius: 9999px;
-  background: linear-gradient(135deg, rgb(16, 185, 129) 0%, rgb(5, 150, 105) 100%);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.4),
-              0 0 20px rgba(16, 185, 129, 0.3);
-  border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .nav-button-center:hover {
-  box-shadow: 0 12px 40px rgba(16, 185, 129, 0.6),
-              0 0 30px rgba(16, 185, 129, 0.5);
+  box-shadow:
+    0 12px 40px rgba(16, 185, 129, 0.6),
+    0 0 30px rgba(16, 185, 129, 0.5);
   transform: translateY(-2px) scale(1.05);
   border-color: rgba(255, 255, 255, 0.3);
 }
