@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
+import { motion } from 'framer-motion';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import DatePicker, { registerLocale } from 'react-datepicker';
@@ -80,7 +81,11 @@ export default function WorkoutForm() {
           description="Создайте запись о вашей тренировке"
         />
 
-        <div className="space-y-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-4"
+        >
           <div>
             <label className="block mb-2 text-sm text-white/70">Тип тренировки</label>
             <UiListbox value={workoutType} options={workoutTypes} onChange={setWorkoutType} />
@@ -109,19 +114,37 @@ export default function WorkoutForm() {
               className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/40 resize-none"
             />
           </div>
-        </div>
+        </motion.div>
 
-        <ExercisePicker onSelect={handleAddExercise} workoutType={workoutType.id} />
-
-        <ExerciseList exercises={exercises} setExercises={setExercises} />
-
-        <button
-          onClick={handleSubmit}
-          disabled={loading}
-          className="mt-6 w-full py-3 rounded-xl bg-emerald-500 text-black font-medium disabled:opacity-50"
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
         >
-          {loading ? 'Сохраняем…' : 'Сохранить'}
-        </button>
+          <ExercisePicker onSelect={handleAddExercise} workoutType={workoutType.id} />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <ExerciseList exercises={exercises} setExercises={setExercises} />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="mt-6 w-full py-3 rounded-xl bg-emerald-500 text-black font-medium disabled:opacity-50"
+          >
+            {loading ? 'Сохраняем…' : 'Сохранить'}
+          </button>
+        </motion.div>
 
         {currentExercise && (
           <ExerciseDrawer

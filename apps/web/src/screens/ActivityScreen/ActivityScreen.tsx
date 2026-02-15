@@ -5,6 +5,7 @@ import MonthlyStats from './MonthlyStats';
 import DayDetails from './DayDetails';
 import ActivitySkeleton from './ActivitySkeleton';
 import { useActivityData } from './useActivityData';
+import { motion } from 'framer-motion';
 
 export default function ActivityScreen() {
   const {
@@ -47,9 +48,21 @@ export default function ActivityScreen() {
           description="Отслеживайте ваши тренировки и прогресс"
         />
 
-        {monthlyStats && <MonthlyStats stats={monthlyStats} />}
+        {monthlyStats && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <MonthlyStats stats={monthlyStats} />
+          </motion.div>
+        )}
 
-        <div className="mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mb-8"
+        >
           <ActivityCalendar
             selectedDate={selectedDate}
             onSelect={handleSelectDay}
@@ -57,9 +70,17 @@ export default function ActivityScreen() {
             month={currentMonth}
             days={days}
           />
-        </div>
+        </motion.div>
 
-        {selectedDate && dayStats && <DayDetails date={selectedDate} stats={dayStats} />}
+        {selectedDate && dayStats && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <DayDetails date={selectedDate} stats={dayStats} />
+          </motion.div>
+        )}
       </div>
     </Screen>
   );

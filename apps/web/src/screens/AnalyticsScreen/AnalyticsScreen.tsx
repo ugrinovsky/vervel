@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { useWorkoutStats } from '@/hooks/useWorkoutsStats';
 import CollapsibleBlock from '@/components/ui/CollapsibleBlock';
 import { MetricsOverview } from '@/components/analytics/MetricsOverview';
+import { motion } from 'framer-motion';
 
 export default function AnalyticsScreen() {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('week');
@@ -32,7 +33,11 @@ export default function AnalyticsScreen() {
         />
 
         {/* Фильтры периода */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-3 gap-3 mb-6"
+        >
           {['Неделя', 'Месяц', 'Год'].map((period) => (
             <button
               key={period}
@@ -50,8 +55,13 @@ export default function AnalyticsScreen() {
               {period}
             </button>
           ))}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+        >
           <WorkoutRadar period={timeRange} data={stats} />
 
           <CollapsibleBlock title="Топ мышц" defaultOpen={false}>
@@ -72,7 +82,7 @@ export default function AnalyticsScreen() {
           <CollapsibleBlock title="Показатели" defaultOpen={false}>
             <MetricsOverview stats={stats} />
           </CollapsibleBlock>
-        </div>
+        </motion.div>
       </div>
     </Screen>
   );

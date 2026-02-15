@@ -164,7 +164,11 @@ export default function AvatarScreen() {
           description="Текущее состояние мышц с учётом восстановления"
         />
 
-        <div className="flex flex-col lg:flex-row gap-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col lg:flex-row gap-6"
+        >
           {/* Аватар */}
           <div className="flex-shrink-0 lg:w-[360px] relative">
             {loading && (
@@ -327,7 +331,7 @@ export default function AvatarScreen() {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </Screen>
   );
