@@ -6,6 +6,9 @@ import path from 'node:path';
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    allowedHosts: true,
+  },
   plugins: [react(), tailwindcss(), svgr({ dimensions: true, svgo: false, typescript: false })],
   resolve: {
     alias: {
