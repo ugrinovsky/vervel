@@ -93,6 +93,7 @@ export default function WorkoutForm() {
               onChange={(d) => d && setDate(d)}
               dateFormat="d MMMM yyyy"
               locale="ru"
+              wrapperClassName="w-full"
               className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50"
               calendarClassName="dark-datepicker"
             />

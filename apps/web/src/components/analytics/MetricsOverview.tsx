@@ -71,25 +71,25 @@ export function MetricsOverview({ stats }: MetricOverviewProps) {
 
   const metrics = [
     {
-      title: 'Средняя интенсивность',
+      title: 'Интенсивность',
       value: `${avgIntensity}%`,
       change: intensityChange,
+      color: 'emerald' as const,
+    },
+    {
+      title: 'Частота',
+      value: `${workoutsPerWeek.toFixed(1)}/нед`,
+      change: null,
+      color: 'teal' as const,
+    },
+    {
+      title: 'Баланс',
+      value: `${muscleBalancePercent}%`,
+      change: null,
       color: 'green' as const,
     },
     {
-      title: 'Частота тренировок',
-      value: `${workoutsPerWeek.toFixed(1)}/нед`,
-      change: null,
-      color: 'blue' as const,
-    },
-    {
-      title: 'Баланс мышц',
-      value: `${muscleBalancePercent}%`,
-      change: null,
-      color: 'purple' as const,
-    },
-    {
-      title: 'Динамика объема',
+      title: 'Прогресс',
       value: volumeWorkouts.length >= METRICS.MIN_WORKOUTS_FOR_DYNAMICS ? `${weightProgressPercent}%` : '—',
       change: volumeWorkouts.length >= METRICS.MIN_WORKOUTS_FOR_DYNAMICS ? weightChange : null,
       color: 'yellow' as const,
@@ -120,24 +120,24 @@ function MetricCard({
   title: string;
   value: string;
   change: number | null;
-  color: 'green' | 'blue' | 'purple' | 'yellow';
+  color: 'emerald' | 'teal' | 'green' | 'yellow';
 }) {
   const colorClasses = {
-    green: 'text-green-400',
-    blue: 'text-emerald-400',
-    purple: 'text-purple-400',
+    emerald: 'text-emerald-400',
+    teal: 'text-teal-400',
+    green: 'text-emerald-500',
     yellow: 'text-yellow-400',
   };
 
   const isPositive = change !== null && change >= 0;
 
   return (
-    <div className="glass p-3 rounded-xl">
+    <div className="glass p-3 rounded-xl hover:bg-[var(--color_bg_card_hover)] transition">
       <div className="text-sm text-[var(--color_text_muted)] mb-1">{title}</div>
       <div className={`text-2xl font-bold ${colorClasses[color]}`}>{value}</div>
       {change !== null && Math.abs(change) > 0 && (
         <div className="text-xs text-[var(--color_text_muted)] mt-1">
-          <span className={isPositive ? 'text-green-400' : 'text-red-400'}>
+          <span className={isPositive ? 'text-emerald-400' : 'text-orange-400'}>
             {isPositive ? '↑' : '↓'} {Math.abs(change)}
           </span>{' '}
           за период

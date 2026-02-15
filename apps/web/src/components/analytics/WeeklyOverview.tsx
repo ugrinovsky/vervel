@@ -120,26 +120,31 @@ export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
   }, [timeline, period]);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {weekData.map((day) => (
-        <div key={day.label} className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 text-[var(--color_text_secondary)]">{day.label}</div>
-            {day.load > 0 ? (
-              <>
-                <div className="w-24 h-2 bg-[var(--color_border)] rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-green-500 to-yellow-500 rounded-full"
-                    style={{ width: `${day.load}%` }}
-                  />
-                </div>
-                <div className="text-sm text-[var(--color_text_muted)]">{day.type}</div>
-              </>
-            ) : (
-              <div className="text-sm text-[var(--color_text_muted)]">{period === 'week' ? '—' : ''}</div>
-            )}
+        <div
+          key={day.label}
+          className="p-3 bg-[var(--color_bg_card)]/30 rounded-lg hover:bg-[var(--color_bg_card_hover)] transition group"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <div className="w-8 text-sm font-semibold text-white">{day.label}</div>
+              {day.type && (
+                <div className="text-xs text-[var(--color_text_secondary)]">{day.type}</div>
+              )}
+            </div>
+            <div className="text-sm font-bold text-white">{day.load > 0 ? `${day.load}%` : '—'}</div>
           </div>
-          <div className="font-bold text-white">{day.load > 0 ? `${day.load}%` : '—'}</div>
+          <div className="h-1.5 bg-[var(--color_bg_card)] rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                day.load > 0
+                  ? 'bg-gradient-to-r from-emerald-500 to-emerald-600'
+                  : 'bg-transparent'
+              }`}
+              style={{ width: `${day.load}%` }}
+            />
+          </div>
         </div>
       ))}
     </div>

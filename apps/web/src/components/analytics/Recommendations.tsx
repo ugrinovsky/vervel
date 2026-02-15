@@ -25,9 +25,9 @@ export default function Recommendations({ stats }: RecommendationsProps) {
       case 'focus':
         return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
       case 'improvement':
-        return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+        return 'bg-teal-500/20 text-teal-400 border-teal-500/30';
       case 'achievement':
-        return 'bg-green-500/20 text-green-400 border-green-500/30';
+        return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
       case 'warning':
         return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
     }
@@ -49,11 +49,11 @@ export default function Recommendations({ stats }: RecommendationsProps) {
   const getPriorityColor = (priority: Recommendation['priority']) => {
     switch (priority) {
       case 'high':
-        return 'bg-red-500';
+        return 'bg-orange-500';
       case 'medium':
         return 'bg-yellow-500';
       case 'low':
-        return 'bg-green-500';
+        return 'bg-emerald-500';
     }
   };
 
@@ -72,7 +72,7 @@ export default function Recommendations({ stats }: RecommendationsProps) {
         <div className="flex items-center gap-2">
           <div
             className={`px-2 py-1 rounded-full text-xs ${
-              highPriorityCount > 0 ? 'bg-red-500/20 text-red-400' : 'bg-[var(--color_bg_card)] text-[var(--color_text_muted)]'
+              highPriorityCount > 0 ? 'bg-orange-500/20 text-orange-400' : 'bg-[var(--color_bg_card)] text-[var(--color_text_muted)]'
             }`}
           >
             {highPriorityCount} важных

@@ -194,6 +194,79 @@ export class WorkoutCalculator {
     };
   }
 
+  /**
+   * Рассчитать текущее состояние мышц с учётом затухания нагрузки.
+   * Недавние тренировки весят больше, старые — меньше.
+   * decay = e^(-λ × daysAgo), λ = 0.3
+   * → сегодня = 100%, 1д = 74%, 2д = 55%, 3д = 41%, 5д = 22%, 7д = 12%
+   *
+   * Для каждой зоны возвращает:
+   *  - intensity: текущая нагрузка с decay (0-1)
+   *  - lastTrainedDaysAgo: сколько дней назад тренировали
+   *  - peakLoad: пиковая нагрузка до decay (нормализованная)
+   */
+  static calculateRecoveryState(
+    workouts: Workout[],
+    now: Date = new Date()
+  ): {
+    zones: Record<string, { intensity: number; lastTrainedDaysAgo: number; peakLoad: number }>;
+    totalWorkouts: number;
+    lastWorkoutDaysAgo: number | null;
+  } {
+    const DECAY_LAMBDA = 0.3;
+    const rawZones: Record<string, number> = {};
+    const zoneLastTrained: Record<string, number> = {};
+    const zonePeakLoad: Record<string, number> = {};
+
+    if (workouts.length === 0) {
+      return { zones: {}, totalWorkouts: 0, lastWorkoutDaysAgo: null };
+    }
+
+    let minDaysAgo = Infinity;
+
+    for (const workout of workouts) {
+      const workoutDate = workout.date.toJSDate
+        ? workout.date.toJSDate()
+        : new Date(workout.date.toString());
+      const daysAgo = (now.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24);
+      const decayFactor = Math.exp(-DECAY_LAMBDA * daysAgo);
+
+      if (daysAgo < minDaysAgo) minDaysAgo = daysAgo;
+
+      const zonesLoad = workout.zonesLoad || {};
+      for (const [zone, load] of Object.entries(zonesLoad)) {
+        rawZones[zone] = (rawZones[zone] || 0) + load * decayFactor;
+        zonePeakLoad[zone] = (zonePeakLoad[zone] || 0) + load;
+
+        if (zoneLastTrained[zone] === undefined || daysAgo < zoneLastTrained[zone]) {
+          zoneLastTrained[zone] = daysAgo;
+        }
+      }
+    }
+
+    // Нормализация intensity и peakLoad относительно максимумов
+    const rawValues = Object.values(rawZones);
+    const peakValues = Object.values(zonePeakLoad);
+    const maxRaw = Math.max(...rawValues, NORMALIZATION.MIN_DENOMINATOR);
+    const maxPeak = Math.max(...peakValues, NORMALIZATION.MIN_DENOMINATOR);
+
+    const zones: Record<string, { intensity: number; lastTrainedDaysAgo: number; peakLoad: number }> = {};
+
+    for (const zone of Object.keys(rawZones)) {
+      zones[zone] = {
+        intensity: Math.min(rawZones[zone] / maxRaw, NORMALIZATION.MAX_ZONE_LOAD),
+        lastTrainedDaysAgo: Math.round(zoneLastTrained[zone] ?? 0),
+        peakLoad: Math.min(zonePeakLoad[zone] / maxPeak, NORMALIZATION.MAX_ZONE_LOAD),
+      };
+    }
+
+    return {
+      zones,
+      totalWorkouts: workouts.length,
+      lastWorkoutDaysAgo: minDaysAgo === Infinity ? null : Math.round(minDaysAgo),
+    };
+  }
+
   static calculatePeriodStats(
     workouts: Workout[],
     period: string = 'custom'

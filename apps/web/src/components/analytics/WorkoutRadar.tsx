@@ -166,22 +166,36 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
                   const rectHeight = 26;
                   const offsetY = 20;
 
+                  let additionalOffsetX = 0;
+                  let additionalOffsetY = 0;
+
+                  if (text === 'Баланс') {
+                    additionalOffsetX = -10;
+                  } else if (text === 'Сила') {
+                    additionalOffsetY = -35;
+                  } else if (text === 'Объем') {
+                    additionalOffsetX = 10;
+                  }
+
+                  const finalX = Number(x) + additionalOffsetX;
+                  const finalY = Number(y) + additionalOffsetY;
+
                   return (
                     <g>
                       <rect
-                        x={Number(x) - rectWidth / 2}
-                        y={Number(y) - rectHeight / 2 + offsetY}
+                        x={finalX - rectWidth / 2}
+                        y={finalY - rectHeight / 2 + offsetY}
                         width={rectWidth}
                         height={rectHeight}
-                        fill="rgba(5, 46, 37, 0.95)"
+                        fill="rgba(16, 185, 129, 0.15)"
                         stroke="#10B981"
                         strokeWidth={1.5}
                         rx={8}
                         ry={8}
                       />
                       <text
-                        x={x}
-                        y={y}
+                        x={finalX}
+                        y={finalY}
                         textAnchor="middle"
                         fill="#10B981"
                         fontSize={13}
@@ -211,27 +225,36 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
           </ResponsiveContainer>
         </div>
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between text-[var(--color_text_secondary)] text-sm mb-2">
-            Лучший показатель:
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="font-bold text-white">{bestMetric.metric}</div>
-            <div className="font-bold">{bestMetric.value}%</div>
-          </div>
-
-          <div className="flex items-center justify-between text-[var(--color_text_secondary)] text-sm mt-2">
-            Для улучшения:
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="font-bold text-white">{worstMetric.metric}</div>
-            <div className="font-bold">{worstMetric.value}%</div>
+        <div className="space-y-3">
+          {/* Лучший показатель */}
+          <div className="p-4 bg-[var(--color_bg_card)]/30 rounded-lg hover:bg-[var(--color_bg_card_hover)] transition">
+            <div className="text-xs text-[var(--color_text_muted)] mb-2 font-medium">
+              🏆 Лучший показатель
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="font-bold text-white text-lg">{bestMetric.metric}</div>
+              <div className="text-2xl font-bold text-emerald-400">{bestMetric.value}%</div>
+            </div>
           </div>
 
-          <div className="flex items-center justify-between text-[var(--color_text_secondary)] text-sm mt-2">
-            Общий балл:
+          {/* Для улучшения */}
+          <div className="p-4 bg-[var(--color_bg_card)]/30 rounded-lg hover:bg-[var(--color_bg_card_hover)] transition">
+            <div className="text-xs text-[var(--color_text_muted)] mb-2 font-medium">
+              📈 Для улучшения
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="font-bold text-white text-lg">{worstMetric.metric}</div>
+              <div className="text-2xl font-bold text-yellow-400">{worstMetric.value}%</div>
+            </div>
           </div>
-          <div className="text-2xl font-bold text-emerald-400">{averageValue}%</div>
+
+          {/* Общий балл */}
+          <div className="p-4 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 rounded-lg border border-emerald-500/30">
+            <div className="text-xs text-emerald-300/80 mb-2 font-medium">
+              ⭐ Общий балл
+            </div>
+            <div className="text-3xl font-bold text-emerald-400">{averageValue}%</div>
+          </div>
         </div>
       </div>
     </div>

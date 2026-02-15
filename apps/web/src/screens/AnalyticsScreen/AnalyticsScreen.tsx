@@ -24,7 +24,7 @@ export default function AnalyticsScreen() {
 
   return (
     <Screen>
-      <div className="p-4 pb-20">
+      <div className="p-4">
         <ScreenHeader
           icon="📊"
           title="Аналитика"
@@ -69,7 +69,7 @@ export default function AnalyticsScreen() {
           <CollapsibleBlock title="Рекомендации" defaultOpen={false}>
             <Recommendations stats={stats} />
           </CollapsibleBlock>
-          <CollapsibleBlock title="Метрики" defaultOpen={false}>
+          <CollapsibleBlock title="Показатели" defaultOpen={false}>
             <MetricsOverview stats={stats} />
           </CollapsibleBlock>
         </div>

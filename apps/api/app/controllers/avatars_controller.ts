@@ -10,31 +10,45 @@ export default class AvatarsController {
     try {
       const user = auth.user!;
 
-      // Параметры запроса
-      const period = request.input('period', 'week'); // day, week, month, year, all
+      const mode = request.input('mode', 'recovery'); // recovery | period
+      const period = request.input('period', 'week');
       const from = request.input('from');
       const to = request.input('to');
 
-      // Вычисляем даты
+      if (mode === 'recovery') {
+        // Режим «текущее состояние» — берём тренировки за 14 дней, применяем decay
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 14);
+
+        const workouts = await Workout.query()
+          .where('userId', user.id)
+          .where('date', '>=', startDate)
+          .orderBy('date', 'asc');
+
+        const stats = WorkoutCalculator.calculateRecoveryState(workouts);
+
+        return response.json({
+          success: true,
+          data: stats,
+        });
+      }
+
+      // Режим «за период» — старое поведение
       let startDate: Date;
       let endDate = new Date();
 
       if (from && to) {
-        // Если указаны конкретные даты
         startDate = new Date(from);
         endDate = new Date(to);
       } else {
-        // Иначе вычисляем на основе периода
         startDate = this.calculateStartDate(period);
       }
 
-      // Получаем тренировки за период
       const workouts = await Workout.query()
         .where('userId', user.id)
         .whereBetween('date', [startDate, endDate])
         .orderBy('date', 'asc');
 
-      // Используем калькулятор для агрегации данных
       const stats = WorkoutCalculator.calculatePeriodStats(workouts, period);
 
       return response.json({

@@ -94,7 +94,7 @@ export default function StatsOverview({ period, data }: StatsOverviewProps) {
         />
 
         <Metric
-          icon={<FireIcon className="w-5 h-5 text-red-400" />}
+          icon={<FireIcon className="w-5 h-5 text-orange-400" />}
           label="Интенсивность"
           value={`${avgIntensity}%`}
           sub="средняя"
@@ -155,8 +155,8 @@ export default function StatsOverview({ period, data }: StatsOverviewProps) {
       <div className="mt-6 pt-4 border-t border-[var(--color_border)]">
         <div className="text-sm text-[var(--color_text_muted)] mb-2">Самая нагруженная зона:</div>
         <div className="flex items-center gap-3 p-3 bg-[var(--color_bg_card)]/30 rounded-lg">
-          <div className="w-10 h-10 flex items-center justify-center bg-red-500/20 rounded-lg">
-            <FireIcon className="w-5 h-5 text-red-400" />
+          <div className="w-10 h-10 flex items-center justify-center bg-emerald-500/20 rounded-lg">
+            <FireIcon className="w-5 h-5 text-emerald-400" />
           </div>
           <div className="flex-1">
             <div className="font-bold text-white">{zonesStats.mostLoaded[0]}</div>
@@ -182,12 +182,12 @@ function Metric({
   sub: string;
 }) {
   return (
-    <div className="p-4 bg-[var(--color_bg_card)]/30 rounded-lg">
+    <div className="p-4 bg-[var(--color_bg_card)]/30 rounded-lg hover:bg-[var(--color_bg_card_hover)] transition">
       <div className="flex items-center gap-3 mb-2">
-        <div className="p-2 bg-white/10 rounded-lg">{icon}</div>
-        <div className="text-sm text-[var(--color_text_muted)]">{label}</div>
+        <div className="p-2 bg-white/5 rounded-lg shrink-0">{icon}</div>
+        <div className="text-3xl font-bold text-white">{value}</div>
       </div>
-      <div className="text-2xl font-bold text-white">{value}</div>
+      <div className="text-sm text-[var(--color_text_secondary)] font-medium">{label}</div>
       <div className="text-xs text-[var(--color_text_muted)] mt-1">{sub}</div>
     </div>
   );
@@ -204,7 +204,7 @@ function ZoneBar({ zone, percent, isTop }: { zone: string; percent: number; isTo
         <div
           className={`h-full ${
             isTop
-              ? 'bg-gradient-to-r from-red-500 to-yellow-500'
+              ? 'bg-gradient-to-r from-emerald-500 to-emerald-600'
               : 'bg-gradient-to-r from-emerald-500 to-emerald-400'
           }`}
           style={{ width: `${Math.min(percent, DISPLAY.PERCENT_MULTIPLIER)}%` }}

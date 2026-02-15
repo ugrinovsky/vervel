@@ -136,12 +136,12 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
                     w-7 h-7 flex items-center justify-center rounded-lg
                     ${
                       index === 0
-                        ? 'bg-red-500/20 text-red-400'
+                        ? 'bg-emerald-600/20 text-emerald-400'
                         : index === 1
-                          ? 'bg-orange-500/20 text-orange-400'
+                          ? 'bg-emerald-500/20 text-emerald-400'
                           : index === 2
-                            ? 'bg-yellow-500/20 text-yellow-400'
-                            : 'bg-[var(--color_bg_card)] text-[var(--color_text_muted)]'
+                            ? 'bg-emerald-400/20 text-emerald-300'
+                            : 'bg-emerald-300/20 text-emerald-200'
                     }
                   `}
                 >
@@ -178,12 +178,12 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
                   h-full rounded-full transition-all duration-500
                   ${
                     index === 0
-                      ? 'bg-gradient-to-r from-red-500 to-red-600'
+                      ? 'bg-gradient-to-r from-emerald-500 to-emerald-600'
                       : index === 1
-                        ? 'bg-gradient-to-r from-orange-500 to-orange-600'
+                        ? 'bg-gradient-to-r from-emerald-400 to-emerald-500'
                         : index === 2
-                          ? 'bg-gradient-to-r from-yellow-500 to-yellow-600'
-                          : 'bg-gradient-to-r from-blue-500 to-blue-600'
+                          ? 'bg-gradient-to-r from-emerald-300 to-emerald-400'
+                          : 'bg-gradient-to-r from-teal-300 to-teal-400'
                   }
                 `}
                 style={{ width: `${muscle.percentage}%` }}

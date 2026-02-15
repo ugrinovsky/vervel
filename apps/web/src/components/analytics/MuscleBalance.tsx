@@ -83,37 +83,37 @@ export default function MuscleBalance({ period }: MuscleBalanceProps) {
   const getStatusColor = (status: BalanceMetric['status']) => {
     switch (status) {
       case 'good':
-        return 'text-green-400';
+        return 'text-emerald-400';
       case 'warning':
         return 'text-yellow-400';
       case 'bad':
-        return 'text-red-400';
+        return 'text-orange-400';
     }
   };
 
   const getStatusBgColor = (status: BalanceMetric['status']) => {
     switch (status) {
       case 'good':
-        return 'bg-green-500';
+        return 'bg-emerald-500';
       case 'warning':
         return 'bg-yellow-500';
       case 'bad':
-        return 'bg-red-500';
+        return 'bg-orange-500';
     }
   };
 
   const getCircleColor = (id: string) => {
     switch (id) {
       case 'upper_lower':
-        return 'text-blue-500';
+        return 'text-emerald-600';
       case 'front_back':
-        return 'text-purple-500';
+        return 'text-emerald-500';
       case 'left_right':
-        return 'text-green-500';
+        return 'text-emerald-400';
       case 'push_pull':
-        return 'text-red-500';
+        return 'text-teal-400';
       default:
-        return 'text-gray-500';
+        return 'text-emerald-300';
     }
   };
 
@@ -135,7 +135,7 @@ export default function MuscleBalance({ period }: MuscleBalanceProps) {
 
           return (
             <div key={metric.id} className="text-center">
-              <div className="relative w-20 h-20 mx-auto mb-2">
+              <div className="relative w-28 h-28 mx-auto mb-2">
                 <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                   <path
                     d="M18 2.0845
@@ -193,7 +193,7 @@ export default function MuscleBalance({ period }: MuscleBalanceProps) {
 
       <div className="grid grid-cols-3 gap-2 text-xs">
         <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+          <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
           <span className="text-[var(--color_text_secondary)]">Хорошо</span>
         </div>
         <div className="flex items-center gap-1">
@@ -201,7 +201,7 @@ export default function MuscleBalance({ period }: MuscleBalanceProps) {
           <span className="text-[var(--color_text_secondary)]">Норма</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-red-500"></div>
+          <div className="w-2 h-2 rounded-full bg-orange-500"></div>
           <span className="text-[var(--color_text_secondary)]">Слабо</span>
         </div>
       </div>
@@ -209,11 +209,11 @@ export default function MuscleBalance({ period }: MuscleBalanceProps) {
       <div className="mt-4 pt-4 border-t border-[var(--color_border)]">
         <div className="flex items-center justify-between">
           <div className="text-sm text-[var(--color_text_muted)]">Общий баланс</div>
-          <div className="text-lg font-bold text-green-400">
+          <div className="text-lg font-bold text-emerald-400">
             {Math.round(metrics.reduce((sum, m) => sum + m.value, 0) / metrics.length)}%
           </div>
         </div>
-        <div className="text-xs text-[var(--color_text_muted)] mt-1">Средний показатель по всем метрикам</div>
+        <div className="text-xs text-[var(--color_text_muted)] mt-1">Средний показатель баланса</div>
       </div>
     </>
   );

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { format, startOfMonth, endOfMonth, isSameDay, isToday, getDay } from 'date-fns';
+import { format, startOfMonth, isSameDay, isToday, getDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
 export type LoadType = 'none' | 'low' | 'medium' | 'high';
@@ -8,7 +8,7 @@ export interface DayData {
   date: Date;
   load: LoadType;
   workoutType?: 'strength' | 'cardio' | 'crossfit' | 'rest';
-  intensity?: number; // 0-1 для градиента
+  intensity?: number;
 }
 
 interface ActivityCalendarProps {
@@ -19,32 +19,32 @@ interface ActivityCalendarProps {
   days: DayData[];
 }
 
-const getColor = (load: LoadType, intensity?: number) => {
-  switch (load) {
-    case 'high':
-      return intensity ? `bg-gradient-to-br from-red-500 to-red-700` : 'bg-red-600';
-    case 'medium':
-      return intensity ? `bg-gradient-to-br from-yellow-500 to-yellow-700` : 'bg-yellow-500';
-    case 'low':
-      return intensity ? `bg-gradient-to-br from-green-400 to-green-600` : 'bg-green-400';
-    case 'none':
-    default:
-      return 'bg-[var(--color_bg_card)]';
-  }
+const loadColors: Record<LoadType, string> = {
+  none: 'bg-(--color_bg_card)',
+  low: 'bg-emerald-800',
+  medium: 'bg-emerald-600',
+  high: 'bg-emerald-400',
 };
 
-const getLoadLabel = (load: LoadType): string => {
-  switch (load) {
-    case 'high':
-      return 'Высокая';
-    case 'medium':
-      return 'Средняя';
-    case 'low':
-      return 'Низкая';
-    default:
-      return 'Нет';
-  }
+const loadLabels: Record<LoadType, string> = {
+  none: 'Нет',
+  low: 'Низкая',
+  medium: 'Средняя',
+  high: 'Высокая',
 };
+
+const legendItems: { load: LoadType; label: string }[] = [
+  { load: 'low', label: 'Низкая' },
+  { load: 'medium', label: 'Средняя' },
+  { load: 'high', label: 'Высокая' },
+];
+
+const WEEK_DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+function getMondayIndex(date: Date): number {
+  const day = getDay(date);
+  return day === 0 ? 6 : day - 1;
+}
 
 export default function ActivityCalendar({
   selectedDate,
@@ -55,24 +55,15 @@ export default function ActivityCalendar({
 }: ActivityCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState<Date>(month);
 
-  // Синхронизация с пропом month
   useEffect(() => {
     setCurrentMonth(month);
   }, [month]);
 
-  // Навигация по месяцам
-  const goToPreviousMonth = () => {
-    const newDate = new Date(currentMonth);
-    newDate.setMonth(currentMonth.getMonth() - 1);
-    setCurrentMonth(newDate);
-    onMonthChange?.(newDate);
-  };
-
-  const goToNextMonth = () => {
-    const newDate = new Date(currentMonth);
-    newDate.setMonth(currentMonth.getMonth() + 1);
-    setCurrentMonth(newDate);
-    onMonthChange?.(newDate);
+  const navigate = (delta: number) => {
+    const next = new Date(currentMonth);
+    next.setMonth(currentMonth.getMonth() + delta);
+    setCurrentMonth(next);
+    onMonthChange?.(next);
   };
 
   const goToToday = () => {
@@ -81,39 +72,25 @@ export default function ActivityCalendar({
     onMonthChange?.(today);
   };
 
-  // Дни недели (начинаем с понедельника)
-  const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-
-  // Получаем первый день месяца
-  const firstDayOfMonth = startOfMonth(currentMonth);
-
-  // Корректируем индекс для понедельника (в date-fns неделя начинается с воскресенья (0))
-  let startDayIndex = getDay(firstDayOfMonth);
-  // Преобразуем воскресенье (0) в 6, чтобы понедельник был 0
-  startDayIndex = startDayIndex === 0 ? 6 : startDayIndex - 1;
-
-  console.log('First day index:', startDayIndex); // Для отладки
+  const startDayIndex = getMondayIndex(startOfMonth(currentMonth));
 
   return (
     <div className="glass p-6 rounded-xl">
-      {/* Шапка календаря */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <button
-            onClick={goToPreviousMonth}
-            className="p-2 hover:bg-[var(--color_bg_card_hover)] rounded-full transition"
+            onClick={() => navigate(-1)}
+            className="p-2 hover:bg-(--color_bg_card_hover) rounded-full transition"
             aria-label="Предыдущий месяц"
           >
             ←
           </button>
-
-          <h2 className="text-xl font-bold text-white">
+          <h2 className="text-xl font-bold text-white capitalize">
             {format(currentMonth, 'LLLL yyyy', { locale: ru })}
           </h2>
-
           <button
-            onClick={goToNextMonth}
-            className="p-2 hover:bg-[var(--color_bg_card_hover)] rounded-full transition"
+            onClick={() => navigate(1)}
+            className="p-2 hover:bg-(--color_bg_card_hover) rounded-full transition"
             aria-label="Следующий месяц"
           >
             →
@@ -122,32 +99,29 @@ export default function ActivityCalendar({
 
         <button
           onClick={goToToday}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition"
+          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm font-medium transition text-white"
         >
           Сегодня
         </button>
       </div>
 
-      {/* Дни недели */}
       <div className="grid grid-cols-7 gap-2 mb-3">
-        {weekDays.map((day) => (
-          <div key={day} className="text-center text-sm text-[var(--color_text_muted)] font-medium">
+        {WEEK_DAYS.map((day) => (
+          <div key={day} className="text-center text-sm text-(--color_text_muted) font-medium">
             {day}
           </div>
         ))}
       </div>
 
-      {/* Календарная сетка */}
       <div className="grid grid-cols-7 gap-2">
-        {/* Пустые ячейки для начала месяца */}
-        {Array.from({ length: startDayIndex }).map((_, i) => (
-          <div key={`empty-start-${i}`} className="h-12" />
+        {Array.from({ length: startDayIndex }, (_, i) => (
+          <div key={`empty-${i}`} className="h-12" />
         ))}
 
-        {/* Дни месяца */}
         {days.map((day, i) => {
           const isActive = selectedDate && isSameDay(day.date, selectedDate);
           const isCurrentDay = isToday(day.date);
+          const hasLoad = day.load !== 'none';
 
           return (
             <button
@@ -155,54 +129,44 @@ export default function ActivityCalendar({
               onClick={() => onSelect(day)}
               className={`
                 relative h-12 rounded-lg transition-all duration-200
-                ${getColor(day.load, day.intensity)}
-                ${
-                  isActive
-                    ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-gray-900 transform scale-105'
-                    : 'hover:opacity-90 hover:scale-105'
+                flex items-center justify-center
+                ${loadColors[day.load]}
+                ${isActive
+                  ? 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-gray-900 scale-105'
+                  : 'hover:opacity-90 hover:scale-105'
                 }
-                ${isCurrentDay && !isActive ? 'ring-1 ring-white' : ''}
-                ${day.load === 'none' ? 'hover:bg-[var(--color_bg_card_hover)]' : ''}
-                flex flex-col items-center justify-center
+                ${isCurrentDay && !isActive ? 'ring-1 ring-white/40' : ''}
+                ${!hasLoad ? 'hover:bg-(--color_bg_card_hover)' : ''}
               `}
-              title={`${format(day.date, 'd MMMM yyyy')} - ${getLoadLabel(day.load)} нагрузка`}
+              title={`${format(day.date, 'd MMMM yyyy', { locale: ru })} — ${loadLabels[day.load]} нагрузка`}
             >
-              {/* Число */}
               <span
                 className={`
-                text-sm font-bold
-                ${day.load === 'none' ? 'text-[var(--color_text_muted)]' : 'text-white'}
-                ${isCurrentDay ? 'text-yellow-300' : ''}
-              `}
+                  text-sm font-bold
+                  ${hasLoad ? 'text-white' : 'text-(--color_text_muted)'}
+                  ${isCurrentDay ? 'text-emerald-300' : ''}
+                `}
               >
                 {format(day.date, 'd')}
               </span>
-              {/* Индикатор сегодняшнего дня */}
               {isCurrentDay && (
-                <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full" />
+                <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full" />
               )}
             </button>
           );
         })}
       </div>
 
-      {/* Легенда */}
-      <div className="mt-6 pt-6 border-t border-[var(--color_border)]">
+      <div className="mt-6 pt-4 border-t border-(--color_border)">
         <div className="flex justify-between items-center">
-          <div className="text-sm text-[var(--color_text_muted)]">Легенда нагрузки:</div>
+          <span className="text-sm text-(--color_text_muted)">Нагрузка:</span>
           <div className="flex gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-400 rounded"></div>
-              <span className="text-xs text-[var(--color_text_secondary)]">Низкая</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-              <span className="text-xs text-[var(--color_text_secondary)]">Средняя</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-600 rounded"></div>
-              <span className="text-xs text-[var(--color_text_secondary)]">Высокая</span>
-            </div>
+            {legendItems.map(({ load, label }) => (
+              <div key={load} className="flex items-center gap-2">
+                <div className={`w-3 h-3 rounded ${loadColors[load]}`} />
+                <span className="text-xs text-(--color_text_secondary)">{label}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
