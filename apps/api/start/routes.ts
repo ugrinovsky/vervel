@@ -29,5 +29,9 @@ router
     router.resource('workouts', WorkoutsController).apiOnly();
 
     router.get('avatar/stats', '#controllers/avatars_controller.getZoneIntensities');
+
+    router.get('profile', '#controllers/profile_controller.getProfile');
+    router.put('profile', '#controllers/profile_controller.updateProfile');
+    router.put('profile/password', '#controllers/profile_controller.changePassword');
   })
   .use(middleware.auth());

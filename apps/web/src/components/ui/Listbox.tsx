@@ -43,7 +43,7 @@ export default function UiListbox<T>({
             absolute z-10 mt-2 w-full
             max-h-50 overflow-y-auto 
             rounded-lg border border-white/20
-            bg-[rgb(14,58,72)]
+            bg-[var(--color_primary_dark)]
             shadow-lg
           "
         >

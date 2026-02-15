@@ -6,6 +6,11 @@
   --color_primary_dark: rgb(14 58 72);
   --color_primary_light: rgb(16 185 129);
 
+  /* Channel-only (for use with opacity): rgb(var(--c) / 0.4) */
+  --color_primary_ch: 14 92 77;
+  --color_primary_dark_ch: 14 58 72;
+  --color_primary_light_ch: 16 185 129;
+
   /* Background colors */
   --color_bg_card: rgba(255, 255, 255, 0.08);
   --color_bg_card_hover: rgba(255, 255, 255, 0.12);
@@ -24,6 +29,6 @@
 input:focus {
   /* outline: none; дефолтный outline не нужен */
   /* border-color: #10b981; цвет фокуса, например emerald-400 */
-  outline-color: var(--color-emerald-400);
+  outline-color: var(--color_primary_light);
   outline-style: solid;
 }

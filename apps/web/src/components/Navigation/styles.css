@@ -12,11 +12,11 @@
 .nav-background {
   background: linear-gradient(
     to top,
-    rgba(14, 92, 77, 0.4) 0%,
-    rgba(14, 58, 72, 0.3) 50%,
-    rgba(14, 58, 72, 0.1) 100%
+    rgb(var(--color_primary_ch) / 0.4) 0%,
+    rgb(var(--color_primary_dark_ch) / 0.3) 50%,
+    rgb(var(--color_primary_dark_ch) / 0.1) 100%
   );
-  border-top: 1px solid rgba(14, 92, 77, 0.5);
+  border-top: 1px solid rgb(var(--color_primary_ch) / 0.5);
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
 }
 
@@ -28,9 +28,9 @@
   gap: 0.25rem;
   padding: 0;
   height: 3.5rem;
-  color: rgb(16, 185, 129);
+  color: var(--color_primary_light);
   transition: all 0.2s;
-  filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.5));
+  filter: drop-shadow(0 0 8px rgb(var(--color_primary_light_ch) / 0.5));
 }
 
 .nav-item-inactive {
@@ -46,7 +46,7 @@
 }
 
 .nav-item-inactive:hover {
-  color: rgb(16, 185, 129);
+  color: var(--color_primary_light);
   transform: translateY(-2px);
 }
 
@@ -56,18 +56,18 @@
   justify-content: center;
   width: 3.5rem;
   height: 3.5rem;
-  color: rgb(16, 185, 129);
-  background: rgba(16, 185, 129, 0.15);
+  color: var(--color_primary_light);
+  background: rgb(var(--color_primary_light_ch) / 0.15);
   border-radius: 9999px;
   transition: all 0.3s ease;
-  filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.4));
+  filter: drop-shadow(0 0 10px rgb(var(--color_primary_light_ch) / 0.4));
 }
 
 .nav-item-accent:hover {
-  color: rgb(16, 185, 129);
-  background: rgba(16, 185, 129, 0.25);
+  color: var(--color_primary_light);
+  background: rgb(var(--color_primary_light_ch) / 0.25);
   transform: translateY(-3px) scale(1.15);
-  filter: drop-shadow(0 0 16px rgba(16, 185, 129, 0.7));
+  filter: drop-shadow(0 0 16px rgb(var(--color_primary_light_ch) / 0.7));
 }
 
 .nav-button-center {
@@ -80,8 +80,8 @@
 
 .nav-button-center:hover {
   box-shadow:
-    0 12px 40px rgba(16, 185, 129, 0.6),
-    0 0 30px rgba(16, 185, 129, 0.5);
+    0 12px 40px rgb(var(--color_primary_light_ch) / 0.6),
+    0 0 30px rgb(var(--color_primary_light_ch) / 0.5);
   transform: translateY(-2px) scale(1.05);
   border-color: rgba(255, 255, 255, 0.3);
 }

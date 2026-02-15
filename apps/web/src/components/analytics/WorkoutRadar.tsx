@@ -151,8 +151,8 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
             <RadarChart data={chartData}>
               <defs>
                 <radialGradient id="radarGradient" cx="50%" cy="50%">
-                  <stop offset="0%" stopColor="#10B981" stopOpacity={0.8} />
-                  <stop offset="100%" stopColor="#059669" stopOpacity={0.4} />
+                  <stop offset="0%" stopColor="var(--color_primary_light)" stopOpacity={0.8} />
+                  <stop offset="100%" stopColor="var(--color_primary)" stopOpacity={0.4} />
                 </radialGradient>
               </defs>
               <PolarGrid stroke="#9CA3AF" />
@@ -188,7 +188,7 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
                         width={rectWidth}
                         height={rectHeight}
                         fill="rgba(16, 185, 129, 0.15)"
-                        stroke="#10B981"
+                        stroke="var(--color_primary_light)"
                         strokeWidth={1.5}
                         rx={8}
                         ry={8}
@@ -197,7 +197,7 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
                         x={finalX}
                         y={finalY}
                         textAnchor="middle"
-                        fill="#10B981"
+                        fill="var(--color_primary_light)"
                         fontSize={13}
                         fontWeight={600}
                         dy={offsetY + 5}
@@ -216,7 +216,7 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
               />
               <Radar
                 dataKey="value"
-                stroke="#10B981"
+                stroke="var(--color_primary_light)"
                 fill="url(#radarGradient)"
                 fillOpacity={0.6}
                 strokeWidth={2.5}

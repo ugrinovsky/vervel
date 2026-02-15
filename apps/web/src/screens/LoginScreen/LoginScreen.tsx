@@ -78,7 +78,7 @@ export default function LoginScreen() {
     <div
       className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
       style={{
-        background: 'radial-gradient(circle at 50% 52.5%, rgb(14, 92, 77) 0%, rgb(14, 58, 72) 90%)',
+        background: 'radial-gradient(circle at 50% 52.5%, var(--color_primary) 0%, var(--color_primary_dark) 90%)',
       }}
     >
       {/* СЛОЙ 1: ДВИЖУЩИЕСЯ ЗВЕЗДЫ (z-0) */}
@@ -332,7 +332,7 @@ export default function LoginScreen() {
               <div
                 className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
                 style={{
-                  background: 'linear-gradient(135deg, rgb(16,185,129), rgb(14,92,77))',
+                  background: 'linear-gradient(135deg, var(--color_primary_light), var(--color_primary))',
                 }}
               />
             </motion.button>

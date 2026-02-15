@@ -17,7 +17,7 @@ html::-webkit-scrollbar {
 
 body,
 .background {
-  background: radial-gradient(circle at 50% 50%, rgb(14 92 77) 0%, rgb(14 58 72) 60%);
+  background: radial-gradient(circle at 50% 50%, var(--color_primary) 0%, var(--color_primary_dark) 60%);
   background-size: 200% 200%;
   animation: float-bg 15s ease-in-out infinite;
 }
@@ -29,7 +29,7 @@ path:focus {
 }
 
 .main-button {
-  background: linear-gradient(135deg, rgb(16, 185, 129) 0%, rgb(5, 150, 105) 100%);
+  background: linear-gradient(135deg, var(--color_primary_light) 0%, var(--color_primary) 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -37,7 +37,7 @@ path:focus {
   transition: all 0.3s ease;
   cursor: pointer;
   box-shadow:
-    0 8px 32px rgba(16, 185, 129, 0.4),
-    0 0 20px rgba(16, 185, 129, 0.3);
+    0 8px 32px rgb(var(--color_primary_light_ch) / 0.4),
+    0 0 20px rgb(var(--color_primary_light_ch) / 0.3);
   border: 2px solid rgba(255, 255, 255, 0.2);
 }

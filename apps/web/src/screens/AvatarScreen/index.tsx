@@ -43,38 +43,39 @@ function getPhase(zone: ZoneState): Phase {
   return 'recovered';
 }
 
-const PHASE_CONFIG: Record<Phase, { label: string; color: string; barColor: string; tip: string }> = {
-  destroyed: {
-    label: 'Убита',
-    color: 'text-red-400',
-    barColor: 'from-red-600 to-red-400',
-    tip: 'Мышца получила серьёзную нагрузку. Не тренируйте её минимум 48 часов.',
-  },
-  recovering: {
-    label: 'Восстанавливается',
-    color: 'text-orange-400',
-    barColor: 'from-orange-500 to-yellow-400',
-    tip: 'Мышца ещё восстанавливается. Лучше поработать с другими группами.',
-  },
-  almost_ready: {
-    label: 'Почти готова',
-    color: 'text-yellow-300',
-    barColor: 'from-yellow-500 to-green-400',
-    tip: 'Почти восстановилась. Лёгкая нагрузка допустима.',
-  },
-  recovered: {
-    label: 'Отдохнула',
-    color: 'text-green-400',
-    barColor: 'from-green-500 to-green-400',
-    tip: 'Мышца полностью восстановилась. Можно нагружать.',
-  },
-  untrained: {
-    label: 'Не тренировалась',
-    color: 'text-[var(--color_text_muted)]',
-    barColor: 'from-gray-600 to-gray-500',
-    tip: 'Эта группа мышц не получала нагрузки. Обратите на неё внимание.',
-  },
-};
+const PHASE_CONFIG: Record<Phase, { label: string; color: string; barColor: string; tip: string }> =
+  {
+    destroyed: {
+      label: 'Убита',
+      color: 'text-red-400',
+      barColor: 'from-red-600 to-red-400',
+      tip: 'Мышца получила серьёзную нагрузку. Не тренируйте её минимум 48 часов.',
+    },
+    recovering: {
+      label: 'Восстанавливается',
+      color: 'text-orange-400',
+      barColor: 'from-orange-500 to-yellow-400',
+      tip: 'Мышца ещё восстанавливается. Лучше поработать с другими группами.',
+    },
+    almost_ready: {
+      label: 'Почти готова',
+      color: 'text-yellow-300',
+      barColor: 'from-yellow-500 to-green-400',
+      tip: 'Почти восстановилась. Лёгкая нагрузка допустима.',
+    },
+    recovered: {
+      label: 'Отдохнула',
+      color: 'text-green-400',
+      barColor: 'from-green-500 to-green-400',
+      tip: 'Мышца полностью восстановилась. Можно нагружать.',
+    },
+    untrained: {
+      label: 'Не тренировалась',
+      color: 'text-[var(--color_text_muted)]',
+      barColor: 'from-gray-600 to-gray-500',
+      tip: 'Эта группа мышц не получала нагрузки. Обратите на неё внимание.',
+    },
+  };
 
 function getDaysAgoText(days: number | null): string {
   if (days === null) return 'Нет тренировок';
@@ -214,7 +215,9 @@ export default function AvatarScreen() {
               <div className="grid grid-cols-3 gap-4">
                 <div className="bg-[var(--color_bg_card)] rounded-xl p-3">
                   <div className="text-2xl font-bold text-white">{totalWorkouts}</div>
-                  <div className="text-xs text-[var(--color_text_muted)]">За 14 дней</div>
+                  <div className="text-xs text-[var(--color_text_muted)]">
+                    Тренировок за 14 дней
+                  </div>
                 </div>
                 <div className="bg-[var(--color_bg_card)] rounded-xl p-3">
                   <div className="text-2xl font-bold text-white">
@@ -234,7 +237,9 @@ export default function AvatarScreen() {
                 <div className="mt-4 flex flex-col gap-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-[var(--color_text_muted)]">Самая уставшая</span>
-                    <span className={`font-medium ${PHASE_CONFIG[getPhase(summary.max.zone)].color}`}>
+                    <span
+                      className={`font-medium ${PHASE_CONFIG[getPhase(summary.max.zone)].color}`}
+                    >
                       {ZONE_LABELS[summary.max.name] || summary.max.name} —{' '}
                       {PHASE_CONFIG[getPhase(summary.max.zone)].label}
                     </span>
@@ -242,7 +247,9 @@ export default function AvatarScreen() {
                   {summary.min && summary.min.name !== summary.max.name && (
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-[var(--color_text_muted)]">Самая отдохнувшая</span>
-                      <span className={`font-medium ${PHASE_CONFIG[getPhase(summary.min.zone)].color}`}>
+                      <span
+                        className={`font-medium ${PHASE_CONFIG[getPhase(summary.min.zone)].color}`}
+                      >
                         {ZONE_LABELS[summary.min.name] || summary.min.name} —{' '}
                         {PHASE_CONFIG[getPhase(summary.min.zone)].label}
                       </span>
@@ -306,7 +313,9 @@ export default function AvatarScreen() {
                         <div className="w-24 h-1.5 bg-[var(--color_border)] rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full bg-gradient-to-r ${getBarColorByIntensity(zoneState.intensity)}`}
-                            style={{ width: `${Math.max(Math.round(zoneState.intensity * 100), 2)}%` }}
+                            style={{
+                              width: `${Math.max(Math.round(zoneState.intensity * 100), 2)}%`,
+                            }}
                           />
                         </div>
                         <span className={`text-xs w-28 text-right font-medium ${cfg.color}`}>
@@ -362,7 +371,9 @@ function ZoneDetail({ zone }: { zone: ZoneState }) {
         <div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-[var(--color_text_muted)]">Пиковая нагрузка</span>
-            <span className="text-sm font-semibold text-white">{Math.round(zone.peakLoad * 100)}%</span>
+            <span className="text-sm font-semibold text-white">
+              {Math.round(zone.peakLoad * 100)}%
+            </span>
           </div>
           <div className="h-2 bg-[var(--color_border)] rounded-full overflow-hidden">
             <div

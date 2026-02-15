@@ -1,6 +1,7 @@
 import ActivityScreen from '@/screens/ActivityScreen/ActivityScreen';
 import AnalyticsScreen from '@/screens/AnalyticsScreen/AnalyticsScreen';
 import AvatarScreen from '@/screens/AvatarScreen';
+import ProfileScreen from '@/screens/ProfileScreen/ProfileScreen';
 import WorkoutForm from '@/screens/WorkoutForm/WorkoutForm';
 import {
   ChartBarIcon,
@@ -50,6 +51,7 @@ export const routes: RouteItem[] = [
     path: '/profile',
     label: 'Профиль',
     icon: Cog6ToothIcon,
+    element: <ProfileScreen />,
     toolbarPosition: 'right',
   },
   {
