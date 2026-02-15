@@ -78,7 +78,8 @@ export default function LoginScreen() {
     <div
       className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
       style={{
-        background: 'radial-gradient(circle at 50% 52.5%, var(--color_primary) 0%, var(--color_primary_dark) 90%)',
+        background:
+          'radial-gradient(circle at 50% 52.5%, var(--color_primary) 0%, var(--color_primary_dark) 90%)',
       }}
     >
       {/* СЛОЙ 1: ДВИЖУЩИЕСЯ ЗВЕЗДЫ (z-0) */}
@@ -120,8 +121,7 @@ export default function LoginScreen() {
         <motion.div
           className="absolute -top-20 -right-20 w-64 h-64 rounded-full"
           style={{
-            background:
-              'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2), rgba(14,92,77,0.8))',
+            background: `radial-gradient(circle at 30% 30%, rgba(255,255,255,0.2), rgb(var(--color_primary_ch) / 0.8))`,
             filter: 'blur(30px)',
           }}
           animate={{
@@ -135,8 +135,7 @@ export default function LoginScreen() {
         <motion.div
           className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full"
           style={{
-            background:
-              'radial-gradient(circle at 70% 70%, rgba(16,185,129,0.3), rgba(14,58,72,0.9))',
+            background: `radial-gradient(circle at 70% 70%, rgb(var(--color_primary_light_ch) / 0.3), rgb(var(--color_primary_dark_ch) / 0.9))`,
             filter: 'blur(40px)',
           }}
           animate={{
@@ -188,7 +187,7 @@ export default function LoginScreen() {
             key={`asteroid-${asteroid.id}`}
             className="absolute w-3 h-3 rounded-full"
             style={{
-              background: `rgba(16,185,129,${asteroid.opacity})`,
+              background: `rgb(var(--color_primary_light_ch) / ${asteroid.opacity})`,
               top: asteroid.top,
               left: asteroid.left,
               filter: 'blur(1px)',
@@ -225,7 +224,7 @@ export default function LoginScreen() {
         <div
           className="rounded-3xl p-8 border relative overflow-hidden background glass"
           style={{
-            backgroundColor: 'rgba(14, 58, 72, 0.95)',
+            backgroundColor: 'rgb(var(--color_primary_dark_ch) / 0.95)',
           }}
         >
           {/* Эффект свечения */}
@@ -332,7 +331,8 @@ export default function LoginScreen() {
               <div
                 className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
                 style={{
-                  background: 'linear-gradient(135deg, var(--color_primary_light), var(--color_primary))',
+                  background:
+                    'linear-gradient(135deg, var(--color_primary_light), var(--color_primary))',
                 }}
               />
             </motion.button>
