@@ -9,7 +9,7 @@
 |
 */
 
-import { Env } from '@adonisjs/core/env'
+import { Env } from '@adonisjs/core/env';
 
 export default await Env.create(new URL('../', import.meta.url), {
   NODE_ENV: Env.schema.enum(['development', 'production', 'test'] as const),
@@ -34,11 +34,11 @@ export default await Env.create(new URL('../', import.meta.url), {
   | Variables for OAuth providers
   |----------------------------------------------------------
   */
-  VK_CLIENT_ID: Env.schema.string(),
-  VK_CLIENT_SECRET: Env.schema.string(),
-  VK_REDIRECT_URI: Env.schema.string(),
+  // VK_CLIENT_ID: Env.schema.string(),
+  // VK_CLIENT_SECRET: Env.schema.string(),
+  // VK_REDIRECT_URI: Env.schema.string(),
 
-  YANDEX_CLIENT_ID: Env.schema.string(),
-  YANDEX_CLIENT_SECRET: Env.schema.string(),
-  YANDEX_REDIRECT_URI: Env.schema.string(),
-})
+  // YANDEX_CLIENT_ID: Env.schema.string(),
+  // YANDEX_CLIENT_SECRET: Env.schema.string(),
+  // YANDEX_REDIRECT_URI: Env.schema.string(),
+});
