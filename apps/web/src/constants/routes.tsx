@@ -3,6 +3,9 @@ import AnalyticsScreen from '@/screens/AnalyticsScreen/AnalyticsScreen';
 import AvatarScreen from '@/screens/AvatarScreen';
 import ProfileScreen from '@/screens/ProfileScreen/ProfileScreen';
 import WorkoutForm from '@/screens/WorkoutForm/WorkoutForm';
+import TrainerDashboardScreen from '@/screens/TrainerDashboardScreen/TrainerDashboardScreen';
+import TrainerCalendarScreen from '@/screens/TrainerCalendarScreen/TrainerCalendarScreen';
+import TrainerPersonalScreen from '@/screens/TrainerPersonalScreen/TrainerPersonalScreen';
 import {
   ChartBarIcon,
   PlusIcon,
@@ -10,6 +13,8 @@ import {
   UserIcon,
   Cog6ToothIcon,
   SparklesIcon,
+  UserGroupIcon,
+  ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline';
 
 export interface RouteItem {
@@ -23,7 +28,8 @@ export interface RouteItem {
   accent?: boolean;
 }
 
-export const routes: RouteItem[] = [
+/** Routes for athletes (default navigation) */
+export const athleteRoutes: RouteItem[] = [
   {
     path: '/analytics',
     label: 'Аналитика',
@@ -38,7 +44,6 @@ export const routes: RouteItem[] = [
     element: <ActivityScreen />,
     toolbarPosition: 'left',
   },
-
   {
     path: '/',
     label: 'Avatar',
@@ -46,7 +51,6 @@ export const routes: RouteItem[] = [
     element: <AvatarScreen />,
     toolbarPosition: 'center',
   },
-
   {
     path: '/profile',
     label: 'Профиль',
@@ -70,3 +74,38 @@ export const routes: RouteItem[] = [
     element: <AvatarScreen />,
   },
 ];
+
+/** Routes for trainers (different navigation) */
+export const trainerRoutes: RouteItem[] = [
+  {
+    path: '/trainer',
+    label: 'Группы',
+    icon: UserGroupIcon,
+    element: <TrainerDashboardScreen />,
+    toolbarPosition: 'left',
+  },
+  {
+    path: '/trainer/calendar',
+    label: 'Календарь',
+    icon: CalendarIcon,
+    element: <TrainerCalendarScreen />,
+    toolbarPosition: 'left',
+  },
+  {
+    path: '/trainer/personal',
+    label: 'Тренировки',
+    icon: ClipboardDocumentListIcon,
+    element: <TrainerPersonalScreen />,
+    toolbarPosition: 'right',
+  },
+  {
+    path: '/profile',
+    label: 'Профиль',
+    icon: Cog6ToothIcon,
+    element: <ProfileScreen />,
+    toolbarPosition: 'right',
+  },
+];
+
+/** All routes combined (for App.tsx route definitions) */
+export const routes: RouteItem[] = [...athleteRoutes, ...trainerRoutes];

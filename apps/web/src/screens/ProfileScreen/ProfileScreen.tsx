@@ -7,9 +7,11 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import { profileApi, type ProfileData } from '@/api/profile';
 import { ZONE_LABELS } from '@/constants/AnalyticsConstants';
 import { THEME_PRESETS, getStoredHue, saveHue } from '@/util/theme';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ProfileScreen() {
   const navigate = useNavigate();
+  const { logout, isAthlete } = useAuth();
   const [data, setData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -106,8 +108,7 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    logout();
     navigate('/login');
   };
 
@@ -376,6 +377,29 @@ export default function ProfileScreen() {
             </div>
           </div>
         </motion.div>
+
+        {/* QR Code for athletes */}
+        {isAthlete && data && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="bg-[var(--color_bg_card)] rounded-2xl p-6 border border-[var(--color_border)] mb-6"
+          >
+            <h2 className="text-lg font-semibold text-white mb-3">QR-код для тренера</h2>
+            <p className="text-sm text-[var(--color_text_muted)] mb-4">
+              Покажите этот код тренеру, чтобы он мог добавить вас
+            </p>
+            <div className="flex items-center justify-center p-4 bg-white rounded-xl">
+              <div className="text-center">
+                <div className="text-4xl font-mono font-bold text-black">
+                  ID: {data.user.id}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">{data.user.email}</div>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Logout */}
         <motion.div

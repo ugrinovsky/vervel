@@ -1,15 +1,25 @@
 import { publicApi } from './http/publicApi';
 
+export type UserRole = 'athlete' | 'trainer' | 'both';
+
 export interface LoginDTO {
   email: string;
   password: string;
 }
 
-export interface LoginResponse {
+export interface RegisterDTO {
+  fullName: string;
+  email: string;
+  password: string;
+  role: UserRole;
+}
+
+export interface AuthResponse {
   user: {
     id: number;
     email: string;
     fullName: string;
+    role: UserRole;
   };
   token: {
     type: string;
@@ -22,5 +32,6 @@ export interface LoginResponse {
 }
 
 export const authApi = {
-  login: (data: LoginDTO) => publicApi.post<LoginResponse>('/login', data),
+  login: (data: LoginDTO) => publicApi.post<AuthResponse>('/login', data),
+  register: (data: RegisterDTO) => publicApi.post<AuthResponse>('/register', data),
 };

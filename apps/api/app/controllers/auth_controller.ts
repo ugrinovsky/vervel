@@ -1,6 +1,7 @@
 import type { HttpContext } from '@adonisjs/core/http';
 import hash from '@adonisjs/core/services/hash';
 import User from '#models/user';
+import { registerValidator } from '#validators/auth_validator';
 
 export default class AuthController {
   public async login({ request, response }: HttpContext) {
@@ -24,6 +25,35 @@ export default class AuthController {
         id: user.id,
         email: user.email,
         fullName: user.fullName,
+        role: user.role,
+      },
+      token,
+    });
+  }
+
+  public async register({ request, response }: HttpContext) {
+    const data = await request.validateUsing(registerValidator);
+
+    const existing = await User.findBy('email', data.email);
+    if (existing) {
+      return response.conflict({ message: 'Email уже зарегистрирован' });
+    }
+
+    const user = await User.create({
+      fullName: data.fullName,
+      email: data.email,
+      password: data.password,
+      role: data.role,
+    });
+
+    const token = await User.accessTokens.create(user);
+
+    return response.created({
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
       },
       token,
     });

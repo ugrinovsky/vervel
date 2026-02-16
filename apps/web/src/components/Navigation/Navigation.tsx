@@ -1,13 +1,32 @@
 import './styles.css';
 import { NavLink, useNavigate } from 'react-router';
-import { routes, RouteItem } from '@/constants/routes';
+import { athleteRoutes, trainerRoutes, RouteItem } from '@/constants/routes';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Navigation() {
   const navigate = useNavigate();
+  const { isTrainer } = useAuth();
 
-  const leftItems = routes.filter((r) => r.toolbarPosition === 'left');
-  const rightItems = routes.filter((r) => r.toolbarPosition === 'right');
-  const centerItem = routes.find((r) => r.toolbarPosition === 'center');
+  // Trainer gets a completely different nav
+  if (isTrainer) {
+    const navItems = trainerRoutes.filter((r) => r.toolbarPosition);
+    return (
+      <nav className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-md nav-background">
+        <div className="max-w-md mx-auto px-6 h-20">
+          <div className="flex items-center justify-around h-full">
+            {navItems.map((route) => (
+              <NavItem key={route.path} route={route} />
+            ))}
+          </div>
+        </div>
+      </nav>
+    );
+  }
+
+  // Athlete navigation (with center button)
+  const leftItems = athleteRoutes.filter((r) => r.toolbarPosition === 'left');
+  const rightItems = athleteRoutes.filter((r) => r.toolbarPosition === 'right');
+  const centerItem = athleteRoutes.find((r) => r.toolbarPosition === 'center');
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-md nav-background">

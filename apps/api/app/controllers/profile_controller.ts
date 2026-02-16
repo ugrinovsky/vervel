@@ -21,6 +21,7 @@ export default class ProfileController {
             id: user.id,
             fullName: user.fullName,
             email: user.email,
+            role: user.role,
             createdAt: user.createdAt,
           },
           stats: {
@@ -56,6 +57,7 @@ export default class ProfileController {
             id: user.id,
             fullName: user.fullName,
             email: user.email,
+            role: user.role,
             createdAt: user.createdAt,
           },
         },

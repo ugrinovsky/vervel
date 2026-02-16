@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, Link } from 'react-router';
 import { authApi } from '@/api/auth';
+import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 
@@ -40,6 +41,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -62,8 +64,7 @@ export default function LoginScreen() {
       const { token, user } = response.data;
       const tokenValue = typeof token === 'string' ? token : token?.token || '';
 
-      localStorage.setItem('token', tokenValue);
-      localStorage.setItem('user', JSON.stringify(user));
+      login(user, tokenValue);
 
       toast.success(`Добро пожаловать, ${user.fullName}!`);
       navigate('/');
@@ -229,7 +230,7 @@ export default function LoginScreen() {
         >
           {/* Эффект свечения */}
           <div
-            className="absolute inset-0 opacity-20"
+            className="absolute inset-0 opacity-20 pointer-events-none"
             style={{
               background:
                 'radial-gradient(circle at 50% 0%, rgba(16,185,129,0.4), transparent 70%)',
@@ -365,9 +366,12 @@ export default function LoginScreen() {
           {/* Ссылка на регистрацию */}
           <p className="text-center mt-6 text-sm text-emerald-200/70">
             Нет аккаунта?{' '}
-            <a href="#" className="text-emerald-400 hover:text-emerald-300 font-medium transition">
+            <Link
+              to="/register"
+              className="text-emerald-400 hover:text-emerald-300 font-medium transition"
+            >
               Создать
-            </a>
+            </Link>
           </p>
         </div>
       </motion.div>
