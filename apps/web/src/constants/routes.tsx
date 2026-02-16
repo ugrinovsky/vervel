@@ -3,6 +3,7 @@ import AnalyticsScreen from '@/screens/AnalyticsScreen/AnalyticsScreen';
 import AvatarScreen from '@/screens/AvatarScreen';
 import ProfileScreen from '@/screens/ProfileScreen/ProfileScreen';
 import WorkoutForm from '@/screens/WorkoutForm/WorkoutForm';
+import StreakScreen from '@/screens/StreakScreen/StreakScreen';
 import TrainerDashboardScreen from '@/screens/TrainerDashboardScreen/TrainerDashboardScreen';
 import TrainerCalendarScreen from '@/screens/TrainerCalendarScreen/TrainerCalendarScreen';
 import TrainerPersonalScreen from '@/screens/TrainerPersonalScreen/TrainerPersonalScreen';
@@ -72,6 +73,12 @@ export const athleteRoutes: RouteItem[] = [
     label: 'Achivements',
     icon: SparklesIcon,
     element: <AvatarScreen />,
+  },
+  {
+    path: '/streak',
+    label: 'Streak',
+    icon: SparklesIcon,
+    element: <StreakScreen />,
   },
 ];
 

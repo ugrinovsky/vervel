@@ -35,6 +35,14 @@ router
     router.put('profile', '#controllers/profile_controller.updateProfile');
     router.put('profile/password', '#controllers/profile_controller.changePassword');
 
+    // Streak routes
+    router.get('streak', '#controllers/streak_controller.show');
+    router.get('streak/history', '#controllers/streak_controller.history');
+
+    // Achievement routes
+    router.get('achievements', '#controllers/streak_controller.achievements');
+    router.post('achievements/seen', '#controllers/streak_controller.markAchievementsSeen');
+
     // Invite
     router.post('invite/accept', '#controllers/invite_controller.acceptInvite');
     router.get('profile/qr-data', '#controllers/invite_controller.getQrData');

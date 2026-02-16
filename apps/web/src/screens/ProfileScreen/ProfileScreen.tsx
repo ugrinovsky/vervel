@@ -204,6 +204,11 @@ export default function ProfileScreen() {
             <div className="text-xs text-[var(--color_text_muted)] mt-1">
               Дней подряд
             </div>
+            {data.stats.longestStreak > 0 && (
+              <div className="text-xs text-[var(--color_text_muted)] mt-2">
+                Рекорд: {data.stats.longestStreak}
+              </div>
+            )}
           </div>
           <div className="bg-[var(--color_bg_card)] rounded-xl p-4 border border-[var(--color_border)] text-center">
             <div className="text-2xl font-bold text-white text-base">
@@ -215,30 +220,22 @@ export default function ProfileScreen() {
           </div>
         </motion.div>
 
-        {/* Achievements placeholder */}
+        {/* Achievements */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-[var(--color_bg_card)] rounded-2xl p-6 border border-[var(--color_border)] mb-6"
+          className="bg-[var(--color_bg_card)] rounded-2xl p-6 border border-[var(--color_border)] mb-6 cursor-pointer hover:bg-[var(--color_bg_card_hover)] transition-colors"
+          onClick={() => navigate('/streak')}
         >
-          <h2 className="text-lg font-semibold text-white mb-3">Ачивки</h2>
-          <div className="flex items-center gap-3 text-[var(--color_text_muted)]">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="w-8 h-8 opacity-50"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
-              />
-            </svg>
-            <span className="text-sm">Скоро здесь появятся ваши достижения</span>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-white mb-1">Ачивки и Streak</h2>
+              <p className="text-sm text-[var(--color_text_muted)]">
+                Нажмите, чтобы посмотреть ваши достижения
+              </p>
+            </div>
+            <div className="text-3xl">🏆</div>
           </div>
         </motion.div>
 

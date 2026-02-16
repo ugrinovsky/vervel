@@ -1,6 +1,7 @@
 import Workout from '#models/workout';
 import hash from '@adonisjs/core/services/hash';
 import { HttpContext } from '@adonisjs/core/http';
+import { StreakService } from '#services/StreakService';
 
 export default class ProfileController {
   async getProfile({ auth, response }: HttpContext) {
@@ -11,7 +12,9 @@ export default class ProfileController {
         .where('userId', user.id)
         .orderBy('date', 'desc');
 
-      const streak = this.calculateStreak(workouts);
+      const userStreak = await StreakService.getUserStreak(user.id);
+      const streak = userStreak?.currentStreak || 0;
+      const longestStreak = userStreak?.longestStreak || 0;
       const topZones = this.calculateTopZones(workouts);
 
       return response.json({
@@ -27,6 +30,7 @@ export default class ProfileController {
           stats: {
             totalWorkouts: workouts.length,
             streak,
+            longestStreak,
             topZones,
           },
         },
@@ -98,41 +102,6 @@ export default class ProfileController {
         message: 'Ошибка при смене пароля',
       });
     }
-  }
-
-  private calculateStreak(workouts: Workout[]): number {
-    if (workouts.length === 0) return 0;
-
-    const uniqueDates = [
-      ...new Set(
-        workouts.map((w) => {
-          const d = w.date.toJSDate ? w.date.toJSDate() : new Date(w.date.toString());
-          return d.toISOString().slice(0, 10);
-        })
-      ),
-    ].sort().reverse();
-
-    const today = new Date().toISOString().slice(0, 10);
-    let streak = 0;
-    const expectedDate = new Date(today);
-
-    if (uniqueDates[0] !== today) {
-      expectedDate.setDate(expectedDate.getDate() - 1);
-      if (uniqueDates[0] !== expectedDate.toISOString().slice(0, 10)) {
-        return 0;
-      }
-    }
-
-    for (const dateStr of uniqueDates) {
-      if (dateStr === expectedDate.toISOString().slice(0, 10)) {
-        streak++;
-        expectedDate.setDate(expectedDate.getDate() - 1);
-      } else if (dateStr < expectedDate.toISOString().slice(0, 10)) {
-        break;
-      }
-    }
-
-    return streak;
   }
 
   private calculateTopZones(workouts: Workout[]): Array<{ zone: string; total: number }> {

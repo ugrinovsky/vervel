@@ -2,6 +2,7 @@ import type { HttpContext } from '@adonisjs/core/http';
 import { DateTime } from 'luxon';
 import Workout from '#models/workout';
 import { WorkoutCalculator } from '#services/WorkoutCalculator';
+import { StreakService } from '#services/StreakService';
 import { createWorkoutValidator, updateWorkoutValidator } from '#validators/workout_validator';
 
 export default class WorkoutsController {
@@ -25,7 +26,22 @@ export default class WorkoutsController {
       totalVolume: calculated.totalVolume,
     });
 
-    return response.created(workout);
+    // Обновить streak после создания тренировки
+    const streakResult = await StreakService.updateStreakAfterWorkout(user.id, workout.date);
+
+    return response.created({
+      workout,
+      streak: {
+        currentStreak: streakResult.streak.currentStreak,
+        status: streakResult.streakStatus,
+        newAchievements: streakResult.newAchievements.map((a) => ({
+          id: a.id,
+          key: a.key,
+          title: a.title,
+          icon: a.icon,
+        })),
+      },
+    });
   }
 
   /**

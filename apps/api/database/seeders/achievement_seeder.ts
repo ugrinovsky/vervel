@@ -1,0 +1,88 @@
+import { BaseSeeder } from '@adonisjs/lucid/seeders'
+import Achievement from '#models/achievement'
+
+export default class extends BaseSeeder {
+  async run() {
+    const achievements = [
+      {
+        key: 'streak_3',
+        category: 'streak' as const,
+        title: 'Первые шаги',
+        description: 'Тренируйтесь 3 дня подряд',
+        icon: '🔥',
+        color: 'orange',
+        requirementType: 'streak_days',
+        requirementValue: 3,
+        isActive: true,
+      },
+      {
+        key: 'streak_7',
+        category: 'streak' as const,
+        title: 'Неделя силы',
+        description: 'Тренируйтесь 7 дней подряд',
+        icon: '💪',
+        color: 'emerald',
+        requirementType: 'streak_days',
+        requirementValue: 7,
+        isActive: true,
+      },
+      {
+        key: 'streak_14',
+        category: 'streak' as const,
+        title: 'Две недели без остановки',
+        description: 'Тренируйтесь 14 дней подряд',
+        icon: '🎯',
+        color: 'blue',
+        requirementType: 'streak_days',
+        requirementValue: 14,
+        isActive: true,
+      },
+      {
+        key: 'streak_30',
+        category: 'streak' as const,
+        title: 'Месяц дисциплины',
+        description: 'Тренируйтесь 30 дней подряд',
+        icon: '🏆',
+        color: 'yellow',
+        requirementType: 'streak_days',
+        requirementValue: 30,
+        isActive: true,
+      },
+      {
+        key: 'streak_60',
+        category: 'streak' as const,
+        title: 'Два месяца упорства',
+        description: 'Тренируйтесь 60 дней подряд',
+        icon: '👑',
+        color: 'purple',
+        requirementType: 'streak_days',
+        requirementValue: 60,
+        isActive: true,
+      },
+      {
+        key: 'streak_100',
+        category: 'streak' as const,
+        title: 'Сотня',
+        description: 'Тренируйтесь 100 дней подряд',
+        icon: '💯',
+        color: 'pink',
+        requirementType: 'streak_days',
+        requirementValue: 100,
+        isActive: true,
+      },
+      {
+        key: 'streak_365',
+        category: 'streak' as const,
+        title: 'Год без перерыва',
+        description: 'Тренируйтесь 365 дней подряд',
+        icon: '🌟',
+        color: 'gold',
+        requirementType: 'streak_days',
+        requirementValue: 365,
+        isActive: true,
+      },
+    ]
+
+    await Achievement.updateOrCreateMany('key', achievements)
+  }
+}

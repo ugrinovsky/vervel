@@ -10,6 +10,7 @@ export interface ProfileData {
   stats: {
     totalWorkouts: number;
     streak: number;
+    longestStreak: number;
     topZones: Array<{ zone: string; total: number }>;
   };
 }
