@@ -13,6 +13,13 @@ export default class AuthController {
       return response.unauthorized({ message: 'Invalid credentials' });
     }
 
+    // Check if user has password (not OAuth-only user)
+    if (!user.password) {
+      return response.unauthorized({
+        message: 'Этот аккаунт использует социальный вход. Войдите через VK или Yandex.',
+      });
+    }
+
     const isValid = await hash.verify(user.password, password);
     if (!isValid) {
       return response.unauthorized({ message: 'Invalid credentials' });

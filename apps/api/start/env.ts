@@ -27,5 +27,18 @@ export default await Env.create(new URL('../', import.meta.url), {
   DB_PORT: Env.schema.number(),
   DB_USER: Env.schema.string(),
   DB_PASSWORD: Env.schema.string.optional(),
-  DB_DATABASE: Env.schema.string()
+  DB_DATABASE: Env.schema.string(),
+
+  /*
+  |----------------------------------------------------------
+  | Variables for OAuth providers
+  |----------------------------------------------------------
+  */
+  VK_CLIENT_ID: Env.schema.string(),
+  VK_CLIENT_SECRET: Env.schema.string(),
+  VK_REDIRECT_URI: Env.schema.string(),
+
+  YANDEX_CLIENT_ID: Env.schema.string(),
+  YANDEX_CLIENT_SECRET: Env.schema.string(),
+  YANDEX_REDIRECT_URI: Env.schema.string(),
 })

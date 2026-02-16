@@ -5,6 +5,8 @@ import { routes } from '@/constants/routes';
 import { Toaster } from 'react-hot-toast';
 import LoginScreen from '@/screens/LoginScreen/LoginScreen';
 import RegisterScreen from '@/screens/RegisterScreen/RegisterScreen';
+import OAuthCallbackScreen from '@/screens/OAuthCallbackScreen/OAuthCallbackScreen';
+import SelectRoleScreen from '@/screens/SelectRoleScreen/SelectRoleScreen';
 import TrainerAthleteDetailScreen from '@/screens/TrainerAthleteDetailScreen/TrainerAthleteDetailScreen';
 import TrainerGroupDetailScreen from '@/screens/TrainerGroupDetailScreen/TrainerGroupDetailScreen';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
@@ -25,7 +27,11 @@ function ProtectedRoute({ children }: { children: JSX.Element }) {
 
 function AppContent(): JSX.Element {
   const location = useLocation();
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const isAuthPage =
+    location.pathname === '/login' ||
+    location.pathname === '/register' ||
+    location.pathname === '/auth/callback' ||
+    location.pathname === '/select-role';
 
   // Deduplicate routes (profile appears in both athlete and trainer routes)
   const uniqueRoutes = routes.filter(
@@ -47,6 +53,8 @@ function AppContent(): JSX.Element {
       <Routes>
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/register" element={<RegisterScreen />} />
+        <Route path="/auth/callback" element={<OAuthCallbackScreen />} />
+        <Route path="/select-role" element={<SelectRoleScreen />} />
         {uniqueRoutes.map((rout) => (
           <Route
             key={rout.path}

@@ -9,6 +9,7 @@ import TrainerAthlete from './trainer_athlete.js';
 import TrainerGroup from './trainer_group.js';
 import UserStreak from './user_streak.js';
 import UserAchievement from './user_achievement.js';
+import OAuthProvider from './oauth_provider.js';
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
   uids: ['email'],
@@ -26,7 +27,7 @@ export default class User extends compose(BaseModel, AuthFinder) {
   declare email: string;
 
   @column({ serializeAs: null })
-  declare password: string;
+  declare password: string | null;
 
   @column()
   declare role: 'athlete' | 'trainer' | 'both';
@@ -48,6 +49,9 @@ export default class User extends compose(BaseModel, AuthFinder) {
 
   @hasMany(() => UserAchievement)
   declare achievements: HasMany<typeof UserAchievement>;
+
+  @hasMany(() => OAuthProvider)
+  declare oauthProviders: HasMany<typeof OAuthProvider>;
 
   get isTrainer(): boolean {
     return this.role === 'trainer' || this.role === 'both';

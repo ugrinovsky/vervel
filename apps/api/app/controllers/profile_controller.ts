@@ -80,6 +80,14 @@ export default class ProfileController {
       const user = auth.user!;
       const { currentPassword, newPassword } = request.only(['currentPassword', 'newPassword']);
 
+      // OAuth users don't have password
+      if (!user.password) {
+        return response.badRequest({
+          success: false,
+          message: 'Этот аккаунт использует социальный вход. Пароль не установлен.',
+        });
+      }
+
       const isValid = await hash.verify(user.password, currentPassword);
       if (!isValid) {
         return response.badRequest({

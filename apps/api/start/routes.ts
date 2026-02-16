@@ -12,9 +12,15 @@ import { middleware } from './kernel.js';
 import WorkoutsController from '#controllers/workouts_controller';
 
 const AuthController = () => import('#controllers/auth_controller');
+const OAuthController = () => import('#controllers/oauth_controller');
 
 router.post('/login', [AuthController, 'login']);
 router.post('/register', [AuthController, 'register']);
+
+// OAuth routes
+router.get('/oauth/:provider/redirect', [OAuthController, 'redirect']);
+router.get('/oauth/:provider/callback', [OAuthController, 'callback']);
+router.post('/oauth/set-role', [OAuthController, 'setRole']);
 
 router.get('/', async () => {
   return {
