@@ -10,6 +10,10 @@ import TrainerGroup from './trainer_group.js';
 import UserStreak from './user_streak.js';
 import UserAchievement from './user_achievement.js';
 import OAuthProvider from './oauth_provider.js';
+import Chat from './chat.js';
+import Message from './message.js';
+import ScheduledWorkout from './scheduled_workout.js';
+import WorkoutTemplate from './workout_template.js';
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
   uids: ['email'],
@@ -52,6 +56,18 @@ export default class User extends compose(BaseModel, AuthFinder) {
 
   @hasMany(() => OAuthProvider)
   declare oauthProviders: HasMany<typeof OAuthProvider>;
+
+  @hasMany(() => Chat, { foreignKey: 'trainerId' })
+  declare chats: HasMany<typeof Chat>;
+
+  @hasMany(() => Message, { foreignKey: 'senderId' })
+  declare sentMessages: HasMany<typeof Message>;
+
+  @hasMany(() => ScheduledWorkout, { foreignKey: 'trainerId' })
+  declare scheduledWorkouts: HasMany<typeof ScheduledWorkout>;
+
+  @hasMany(() => WorkoutTemplate, { foreignKey: 'trainerId' })
+  declare workoutTemplates: HasMany<typeof WorkoutTemplate>;
 
   get isTrainer(): boolean {
     return this.role === 'trainer' || this.role === 'both';

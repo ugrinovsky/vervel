@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import { profileApi, type ProfileData } from '@/api/profile';
+import { trainerApi, type WorkoutTemplate } from '@/api/trainer';
 import { ZONE_LABELS } from '@/constants/AnalyticsConstants';
 import { THEME_PRESETS, getStoredHue, saveHue } from '@/util/theme';
 import { useAuth } from '@/contexts/AuthContext';
+import { PlusIcon, TrashIcon, PencilIcon } from '@heroicons/react/24/outline';
 
 export default function ProfileScreen() {
   const navigate = useNavigate();
-  const { logout, isAthlete } = useAuth();
+  const { logout, isAthlete, isTrainer } = useAuth();
   const [data, setData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -29,9 +31,22 @@ export default function ProfileScreen() {
   // Theme
   const [activeHue, setActiveHue] = useState(getStoredHue);
 
+  // Templates (for trainers)
+  const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [showTemplateForm, setShowTemplateForm] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<WorkoutTemplate | null>(null);
+  const [templateName, setTemplateName] = useState('');
+  const [templateType, setTemplateType] = useState<'crossfit' | 'bodybuilding' | 'cardio'>('crossfit');
+  const [templateDescription, setTemplateDescription] = useState('');
+  const [savingTemplate, setSavingTemplate] = useState(false);
+
   useEffect(() => {
     loadProfile();
-  }, []);
+    if (isTrainer) {
+      loadTemplates();
+    }
+  }, [isTrainer]);
 
   useEffect(() => {
     if (data) {
@@ -51,6 +66,18 @@ export default function ProfileScreen() {
       toast.error('Не удалось загрузить профиль');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadTemplates = async () => {
+    try {
+      setLoadingTemplates(true);
+      const response = await trainerApi.getWorkoutTemplates();
+      setTemplates(response.data.data);
+    } catch {
+      toast.error('Ошибка загрузки шаблонов');
+    } finally {
+      setLoadingTemplates(false);
     }
   };
 
@@ -110,6 +137,67 @@ export default function ProfileScreen() {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleCreateTemplate = () => {
+    setEditingTemplate(null);
+    setTemplateName('');
+    setTemplateType('crossfit');
+    setTemplateDescription('');
+    setShowTemplateForm(true);
+  };
+
+  const handleEditTemplate = (template: WorkoutTemplate) => {
+    setEditingTemplate(template);
+    setTemplateName(template.name);
+    setTemplateType(template.workoutType);
+    setTemplateDescription(template.description || '');
+    setShowTemplateForm(true);
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!templateName.trim()) {
+      toast.error('Укажите название шаблона');
+      return;
+    }
+
+    try {
+      setSavingTemplate(true);
+      const payload = {
+        name: templateName,
+        workoutType: templateType,
+        exercises: [],
+        description: templateDescription || undefined,
+        isPublic: false,
+      };
+
+      if (editingTemplate) {
+        await trainerApi.updateWorkoutTemplate(editingTemplate.id, payload);
+        toast.success('Шаблон обновлён');
+      } else {
+        await trainerApi.createWorkoutTemplate(payload);
+        toast.success('Шаблон создан');
+      }
+
+      setShowTemplateForm(false);
+      loadTemplates();
+    } catch {
+      toast.error('Ошибка сохранения шаблона');
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
+  const handleDeleteTemplate = async (id: number) => {
+    if (!confirm('Удалить этот шаблон?')) return;
+
+    try {
+      await trainerApi.deleteWorkoutTemplate(id);
+      toast.success('Шаблон удалён');
+      loadTemplates();
+    } catch {
+      toast.error('Ошибка удаления');
+    }
   };
 
   const getInitials = () => {
@@ -293,6 +381,163 @@ export default function ProfileScreen() {
             />
           </div>
         </motion.div>
+
+        {/* Workout Templates (for trainers) */}
+        {isTrainer && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.27 }}
+            className="bg-[var(--color_bg_card)] rounded-2xl p-6 border border-[var(--color_border)] mb-6"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">Шаблоны тренировок</h2>
+              {!showTemplateForm && (
+                <button
+                  onClick={handleCreateTemplate}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color_primary_light)] text-white text-sm font-medium hover:opacity-90 transition-opacity"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  Создать
+                </button>
+              )}
+            </div>
+
+            {/* Create/Edit Form */}
+            <AnimatePresence>
+              {showTemplateForm && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mb-4 p-4 bg-[var(--color_bg_card_hover)] rounded-xl border border-[var(--color_border)]"
+                >
+                  <h3 className="text-sm font-semibold text-white mb-3">
+                    {editingTemplate ? 'Редактировать шаблон' : 'Новый шаблон'}
+                  </h3>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs text-[var(--color_text_muted)] mb-1 block">
+                        Название
+                      </label>
+                      <input
+                        type="text"
+                        value={templateName}
+                        onChange={(e) => setTemplateName(e.target.value)}
+                        placeholder="Название шаблона..."
+                        className="w-full bg-[var(--color_bg_input)] border border-[var(--color_border)] rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-[var(--color_primary_light)] transition-colors"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-[var(--color_text_muted)] mb-1 block">
+                        Тип тренировки
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(['crossfit', 'bodybuilding', 'cardio'] as const).map((type) => (
+                          <button
+                            key={type}
+                            onClick={() => setTemplateType(type)}
+                            className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                              templateType === type
+                                ? 'bg-[var(--color_primary_light)] text-white'
+                                : 'bg-[var(--color_bg_card)] text-[var(--color_text_muted)] hover:text-white'
+                            }`}
+                          >
+                            {type === 'crossfit' ? 'CrossFit' : type === 'bodybuilding' ? 'Силовая' : 'Кардио'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-[var(--color_text_muted)] mb-1 block">
+                        Описание (опционально)
+                      </label>
+                      <textarea
+                        value={templateDescription}
+                        onChange={(e) => setTemplateDescription(e.target.value)}
+                        placeholder="Описание шаблона..."
+                        rows={2}
+                        className="w-full bg-[var(--color_bg_input)] border border-[var(--color_border)] rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-[var(--color_primary_light)] transition-colors resize-none"
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSaveTemplate}
+                        disabled={savingTemplate}
+                        className="flex-1 py-2 rounded-lg bg-[var(--color_primary_light)] text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                      >
+                        {savingTemplate ? 'Сохранение...' : editingTemplate ? 'Сохранить' : 'Создать'}
+                      </button>
+                      <button
+                        onClick={() => setShowTemplateForm(false)}
+                        disabled={savingTemplate}
+                        className="px-4 py-2 rounded-lg bg-[var(--color_bg_card)] text-[var(--color_text_muted)] text-sm hover:text-white transition-colors disabled:opacity-50"
+                      >
+                        Отмена
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Templates List */}
+            {loadingTemplates ? (
+              <div className="text-center py-6 text-[var(--color_text_muted)] text-sm">
+                Загрузка...
+              </div>
+            ) : templates.length === 0 ? (
+              <div className="text-center py-6 text-[var(--color_text_muted)] text-sm">
+                Пока нет шаблонов. Создайте первый!
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {templates.map((template) => (
+                  <div
+                    key={template.id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-[var(--color_bg_card_hover)] hover:bg-[var(--color_border)] transition-colors"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm font-medium text-white truncate">
+                          {template.name}
+                        </div>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color_primary_light)] text-white shrink-0">
+                          {template.workoutType === 'crossfit' ? 'CrossFit' : template.workoutType === 'bodybuilding' ? 'Силовая' : 'Кардио'}
+                        </span>
+                      </div>
+                      {template.description && (
+                        <div className="text-xs text-[var(--color_text_muted)] mt-1 truncate">
+                          {template.description}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 ml-2">
+                      <button
+                        onClick={() => handleEditTemplate(template)}
+                        className="p-1.5 text-[var(--color_text_muted)] hover:text-white transition-colors"
+                        title="Редактировать"
+                      >
+                        <PencilIcon className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTemplate(template.id)}
+                        className="p-1.5 text-[var(--color_text_muted)] hover:text-red-400 transition-colors"
+                        title="Удалить"
+                      >
+                        <TrashIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
 
         {/* Settings */}
         <motion.div

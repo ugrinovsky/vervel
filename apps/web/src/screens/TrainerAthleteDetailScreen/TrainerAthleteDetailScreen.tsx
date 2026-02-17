@@ -1,8 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
+import ChatBox from '@/components/ChatBox/ChatBox';
+import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
 import WorkoutRadar from '@/components/analytics/WorkoutRadar';
 import StatsOverview from '@/components/analytics/StatsOverview';
 import TopMuscles from '@/components/analytics/TopMuscles';
@@ -11,20 +14,34 @@ import CollapsibleBlock from '@/components/ui/CollapsibleBlock';
 import Avatar from '@/components/Avatar/Avatar';
 import { useAthleteStats, type StatsPeriod } from '@/hooks/useAthleteStats';
 import { useAthleteAvatar } from '@/hooks/useAthleteAvatar';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { trainerApi } from '@/api/trainer';
+import { ArrowLeftIcon, ChatBubbleLeftIcon, ChartBarIcon, UserIcon, PlusIcon } from '@heroicons/react/24/outline';
 
-type Tab = 'analytics' | 'avatar';
+type Tab = 'chat' | 'analytics' | 'avatar' | 'create';
 
 export default function TrainerAthleteDetailScreen() {
   const { athleteId } = useParams<{ athleteId: string }>();
   const navigate = useNavigate();
   const id = Number(athleteId);
 
-  const [tab, setTab] = useState<Tab>('analytics');
+  const [tab, setTab] = useState<Tab>('chat');
   const [timeRange, setTimeRange] = useState<StatsPeriod>('week');
+  const [chatId, setChatId] = useState<number | null>(null);
 
   const { data: stats } = useAthleteStats(id, timeRange);
   const { data: avatarData, loading: avatarLoading } = useAthleteAvatar(id);
+
+  useEffect(() => {
+    const loadChat = async () => {
+      try {
+        const res = await trainerApi.getOrCreateAthleteChat(id);
+        setChatId(res.data.data.chatId);
+      } catch {
+        toast.error('Ошибка загрузки чата');
+      }
+    };
+    loadChat();
+  }, [id]);
 
   const zoneIntensities = useMemo(() => {
     if (!avatarData?.zones) return {};
@@ -40,42 +57,76 @@ export default function TrainerAthleteDetailScreen() {
       <div className="p-4 w-full max-w-2xl mx-auto">
         {/* Back button */}
         <button
-          onClick={() => navigate('/trainer')}
+          onClick={() => navigate('/trainer/athletes')}
           className="flex items-center gap-2 text-[var(--color_text_muted)] hover:text-white transition-colors mb-4"
         >
           <ArrowLeftIcon className="w-5 h-5" />
           <span className="text-sm">Назад</span>
         </button>
 
-        <ScreenHeader icon="📊" title="Данные атлета" description="Аналитика и восстановление" />
+        <ScreenHeader icon="🏃" title="Атлет" description="Чат, аналитика и восстановление" />
 
         {/* Tabs */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-2 gap-3 mb-6"
+          className="grid grid-cols-4 gap-2 mb-6"
         >
           <button
+            onClick={() => setTab('chat')}
+            className={`flex items-center justify-center gap-1 py-3 rounded-xl text-sm font-medium transition-all ${
+              tab === 'chat'
+                ? 'bg-[var(--color_primary_light)] text-white shadow-lg'
+                : 'bg-[var(--color_bg_card)] text-[var(--color_text_secondary)] hover:text-white'
+            }`}
+          >
+            <ChatBubbleLeftIcon className="w-4 h-4" />
+            Чат
+          </button>
+          <button
             onClick={() => setTab('analytics')}
-            className={`py-3 rounded-xl text-sm font-medium transition-all ${
+            className={`flex items-center justify-center gap-1 py-3 rounded-xl text-sm font-medium transition-all ${
               tab === 'analytics'
                 ? 'bg-[var(--color_primary_light)] text-white shadow-lg'
                 : 'bg-[var(--color_bg_card)] text-[var(--color_text_secondary)] hover:text-white'
             }`}
           >
+            <ChartBarIcon className="w-4 h-4" />
             Аналитика
           </button>
           <button
             onClick={() => setTab('avatar')}
-            className={`py-3 rounded-xl text-sm font-medium transition-all ${
+            className={`flex items-center justify-center gap-1 py-3 rounded-xl text-sm font-medium transition-all ${
               tab === 'avatar'
                 ? 'bg-[var(--color_primary_light)] text-white shadow-lg'
                 : 'bg-[var(--color_bg_card)] text-[var(--color_text_secondary)] hover:text-white'
             }`}
           >
-            Карта нагрузки
+            <UserIcon className="w-4 h-4" />
+            Нагрузка
+          </button>
+          <button
+            onClick={() => setTab('create')}
+            className={`flex items-center justify-center gap-1 py-3 rounded-xl text-sm font-medium transition-all ${
+              tab === 'create'
+                ? 'bg-[var(--color_primary_light)] text-white shadow-lg'
+                : 'bg-[var(--color_bg_card)] text-[var(--color_text_secondary)] hover:text-white'
+            }`}
+          >
+            <PlusIcon className="w-4 h-4" />
           </button>
         </motion.div>
+
+        {/* Chat tab */}
+        {tab === 'chat' && chatId && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-[var(--color_bg_card)] rounded-2xl border border-[var(--color_border)] overflow-hidden"
+          >
+            <ChatBox chatId={chatId} />
+          </motion.div>
+        )}
 
         {/* Analytics tab */}
         {tab === 'analytics' && (
@@ -183,6 +234,27 @@ export default function TrainerAthleteDetailScreen() {
                 Нет данных
               </div>
             )}
+          </motion.div>
+        )}
+
+        {/* Create workout tab */}
+        {tab === 'create' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <WorkoutInlineForm
+              preselectedAssignee={{
+                type: 'athlete',
+                id: id,
+                name: 'Атлет',
+              }}
+              onSuccess={() => {
+                toast.success('Тренировка создана');
+                setTab('chat');
+              }}
+              onCancel={() => setTab('chat')}
+            />
           </motion.div>
         )}
       </div>

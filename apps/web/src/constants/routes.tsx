@@ -4,7 +4,9 @@ import AvatarScreen from '@/screens/AvatarScreen';
 import ProfileScreen from '@/screens/ProfileScreen/ProfileScreen';
 import WorkoutForm from '@/screens/WorkoutForm/WorkoutForm';
 import StreakScreen from '@/screens/StreakScreen/StreakScreen';
-import TrainerDashboardScreen from '@/screens/TrainerDashboardScreen/TrainerDashboardScreen';
+import TrainerTodayScreen from '@/screens/TrainerTodayScreen/TrainerTodayScreen';
+import TrainerGroupsListScreen from '@/screens/TrainerGroupsListScreen/TrainerGroupsListScreen';
+import TrainerAthletesListScreen from '@/screens/TrainerAthletesListScreen/TrainerAthletesListScreen';
 import TrainerCalendarScreen from '@/screens/TrainerCalendarScreen/TrainerCalendarScreen';
 import TrainerPersonalScreen from '@/screens/TrainerPersonalScreen/TrainerPersonalScreen';
 import {
@@ -15,7 +17,8 @@ import {
   Cog6ToothIcon,
   SparklesIcon,
   UserGroupIcon,
-  ClipboardDocumentListIcon,
+  ClockIcon,
+  UsersIcon,
 } from '@heroicons/react/24/outline';
 
 export interface RouteItem {
@@ -86,9 +89,23 @@ export const athleteRoutes: RouteItem[] = [
 export const trainerRoutes: RouteItem[] = [
   {
     path: '/trainer',
+    label: 'Сегодня',
+    icon: ClockIcon,
+    element: <TrainerTodayScreen />,
+    toolbarPosition: 'left',
+  },
+  {
+    path: '/trainer/groups',
     label: 'Группы',
     icon: UserGroupIcon,
-    element: <TrainerDashboardScreen />,
+    element: <TrainerGroupsListScreen />,
+    toolbarPosition: 'left',
+  },
+  {
+    path: '/trainer/athletes',
+    label: 'Атлеты',
+    icon: UsersIcon,
+    element: <TrainerAthletesListScreen />,
     toolbarPosition: 'left',
   },
   {
@@ -96,13 +113,6 @@ export const trainerRoutes: RouteItem[] = [
     label: 'Календарь',
     icon: CalendarIcon,
     element: <TrainerCalendarScreen />,
-    toolbarPosition: 'left',
-  },
-  {
-    path: '/trainer/personal',
-    label: 'Тренировки',
-    icon: ClipboardDocumentListIcon,
-    element: <TrainerPersonalScreen />,
     toolbarPosition: 'right',
   },
   {

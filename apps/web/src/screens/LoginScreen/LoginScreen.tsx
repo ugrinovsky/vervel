@@ -373,8 +373,7 @@ export default function LoginScreen() {
             </div>
           </div>
 
-          {/* OAuth buttons */}
-          <div className="space-y-3 relative z-10">
+          {/* <div className="space-y-3 relative z-10">
             <motion.a
               href={getOAuthRedirectUrl('vk')}
               className="w-full py-3 px-4 rounded-xl font-medium flex items-center justify-center space-x-2 bg-[#0077FF] hover:bg-[#0066DD] text-white transition-colors"
@@ -398,7 +397,7 @@ export default function LoginScreen() {
               </svg>
               <span>Yandex</span>
             </motion.a>
-          </div>
+          </div> */}
 
           {/* Тестовые данные */}
           <motion.div

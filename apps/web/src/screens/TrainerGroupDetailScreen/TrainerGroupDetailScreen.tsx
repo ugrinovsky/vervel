@@ -4,32 +4,40 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
+import ChatBox from '@/components/ChatBox/ChatBox';
+import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
 import { trainerApi, type AthleteListItem, type TrainerGroupItem } from '@/api/trainer';
-import { ArrowLeftIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, TrashIcon, PlusIcon, UsersIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
+
+type Tab = 'members' | 'chat' | 'create';
 
 export default function TrainerGroupDetailScreen() {
   const { groupId } = useParams<{ groupId: string }>();
   const navigate = useNavigate();
   const id = Number(groupId);
 
+  const [activeTab, setActiveTab] = useState<Tab>('members');
   const [group, setGroup] = useState<TrainerGroupItem | null>(null);
   const [athletes, setAthletes] = useState<AthleteListItem[]>([]);
   const [allAthletes, setAllAthletes] = useState<AthleteListItem[]>([]);
+  const [chatId, setChatId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddPicker, setShowAddPicker] = useState(false);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [groupsRes, groupAthletesRes, allAthletesRes] = await Promise.all([
+      const [groupsRes, groupAthletesRes, allAthletesRes, chatRes] = await Promise.all([
         trainerApi.listGroups(),
         trainerApi.getGroupAthletes(id),
         trainerApi.listAthletes(),
+        trainerApi.getOrCreateGroupChat(id),
       ]);
       const foundGroup = groupsRes.data.data.find((g) => g.id === id);
       setGroup(foundGroup || null);
       setAthletes(groupAthletesRes.data.data);
       setAllAthletes(allAthletesRes.data.data);
+      setChatId(chatRes.data.data.chatId);
     } catch {
       toast.error('Ошибка загрузки');
     } finally {
@@ -79,7 +87,7 @@ export default function TrainerGroupDetailScreen() {
     <Screen>
       <div className="p-4 w-full max-w-2xl mx-auto">
         <button
-          onClick={() => navigate('/trainer')}
+          onClick={() => navigate('/trainer/groups')}
           className="flex items-center gap-2 text-[var(--color_text_muted)] hover:text-white transition-colors mb-4"
         >
           <ArrowLeftIcon className="w-5 h-5" />
@@ -92,80 +100,149 @@ export default function TrainerGroupDetailScreen() {
           description={`${athletes.length} атлетов`}
         />
 
-        {/* Athletes in group */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-[var(--color_bg_card)] rounded-2xl p-5 border border-[var(--color_border)] mb-6"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Участники</h2>
-            {availableAthletes.length > 0 && (
-              <button
-                onClick={() => setShowAddPicker(!showAddPicker)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color_primary_light)] text-white text-sm font-medium hover:opacity-90 transition-opacity"
-              >
-                <PlusIcon className="w-4 h-4" />
-                Добавить
-              </button>
-            )}
-          </div>
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab('members')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-colors ${
+              activeTab === 'members'
+                ? 'bg-[var(--color_primary_light)] text-white'
+                : 'bg-[var(--color_bg_card)] text-[var(--color_text_muted)] hover:text-white'
+            }`}
+          >
+            <UsersIcon className="w-4 h-4" />
+            Участники
+          </button>
+          <button
+            onClick={() => setActiveTab('chat')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-colors ${
+              activeTab === 'chat'
+                ? 'bg-[var(--color_primary_light)] text-white'
+                : 'bg-[var(--color_bg_card)] text-[var(--color_text_muted)] hover:text-white'
+            }`}
+          >
+            <ChatBubbleLeftIcon className="w-4 h-4" />
+            Чат
+          </button>
+          <button
+            onClick={() => setActiveTab('create')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-colors ${
+              activeTab === 'create'
+                ? 'bg-[var(--color_primary_light)] text-white'
+                : 'bg-[var(--color_bg_card)] text-[var(--color_text_muted)] hover:text-white'
+            }`}
+          >
+            <PlusIcon className="w-4 h-4" />
+            Создать
+          </button>
+        </div>
 
-          {/* Add picker */}
-          {showAddPicker && (
-            <div className="mb-4 space-y-1">
-              <p className="text-xs text-[var(--color_text_muted)] mb-2">
-                Выберите атлета для добавления:
-              </p>
-              {availableAthletes.map((a) => (
+        {/* Tab Content */}
+        {activeTab === 'members' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-[var(--color_bg_card)] rounded-2xl p-5 border border-[var(--color_border)] mb-6"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">Участники</h2>
+              {availableAthletes.length > 0 && (
                 <button
-                  key={a.id}
-                  onClick={() => handleAddToGroup(a.id)}
-                  className="w-full flex items-center gap-3 p-2.5 rounded-lg bg-[var(--color_bg_card_hover)] hover:bg-[var(--color_border)] transition-colors text-left"
+                  onClick={() => setShowAddPicker(!showAddPicker)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color_primary_light)] text-white text-sm font-medium hover:opacity-90 transition-opacity"
                 >
-                  <span className="text-sm text-white">
-                    {a.fullName || a.email}
-                  </span>
-                  <span className="text-xs text-[var(--color_text_muted)]">{a.email}</span>
+                  <PlusIcon className="w-4 h-4" />
+                  Добавить
                 </button>
-              ))}
+              )}
             </div>
-          )}
 
-          {athletes.length === 0 ? (
-            <p className="text-sm text-[var(--color_text_muted)] text-center py-4">
-              В группе пока нет атлетов
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {athletes.map((athlete) => (
-                <div
-                  key={athlete.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-[var(--color_bg_card_hover)] hover:bg-[var(--color_border)] transition-colors cursor-pointer"
-                  onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}
-                >
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-white truncate">
-                      {athlete.fullName || 'Без имени'}
-                    </div>
-                    <div className="text-xs text-[var(--color_text_muted)] truncate">
-                      {athlete.email}
-                    </div>
-                  </div>
+            {/* Add picker */}
+            {showAddPicker && (
+              <div className="mb-4 space-y-1">
+                <p className="text-xs text-[var(--color_text_muted)] mb-2">
+                  Выберите атлета для добавления:
+                </p>
+                {availableAthletes.map((a) => (
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoveFromGroup(athlete.id);
-                    }}
-                    className="text-[var(--color_text_muted)] hover:text-red-400 transition-colors p-1"
+                    key={a.id}
+                    onClick={() => handleAddToGroup(a.id)}
+                    className="w-full flex items-center gap-3 p-2.5 rounded-lg bg-[var(--color_bg_card_hover)] hover:bg-[var(--color_border)] transition-colors text-left"
                   >
-                    <TrashIcon className="w-4 h-4" />
+                    <span className="text-sm text-white">
+                      {a.fullName || a.email}
+                    </span>
+                    <span className="text-xs text-[var(--color_text_muted)]">{a.email}</span>
                   </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </motion.div>
+                ))}
+              </div>
+            )}
+
+            {athletes.length === 0 ? (
+              <p className="text-sm text-[var(--color_text_muted)] text-center py-4">
+                В группе пока нет атлетов
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {athletes.map((athlete) => (
+                  <div
+                    key={athlete.id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-[var(--color_bg_card_hover)] hover:bg-[var(--color_border)] transition-colors cursor-pointer"
+                    onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}
+                  >
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-white truncate">
+                        {athlete.fullName || 'Без имени'}
+                      </div>
+                      <div className="text-xs text-[var(--color_text_muted)] truncate">
+                        {athlete.email}
+                      </div>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveFromGroup(athlete.id);
+                      }}
+                      className="text-[var(--color_text_muted)] hover:text-red-400 transition-colors p-1"
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {activeTab === 'chat' && chatId && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-[var(--color_bg_card)] rounded-2xl border border-[var(--color_border)] overflow-hidden"
+          >
+            <ChatBox chatId={chatId} />
+          </motion.div>
+        )}
+
+        {activeTab === 'create' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <WorkoutInlineForm
+              preselectedAssignee={{
+                type: 'group',
+                id: id,
+                name: group?.name || 'Группа',
+              }}
+              onSuccess={() => {
+                toast.success('Тренировка создана');
+                setActiveTab('members');
+              }}
+              onCancel={() => setActiveTab('members')}
+            />
+          </motion.div>
+        )}
       </div>
     </Screen>
   );

@@ -58,6 +58,9 @@ router
 // Trainer routes
 router
   .group(() => {
+    // Today overview
+    router.get('today', '#controllers/trainer_controller.getTodayOverview');
+
     // Athletes
     router.get('athletes', '#controllers/trainer_controller.listAthletes');
     router.post('athletes/by-email', '#controllers/trainer_controller.addAthleteByEmail');
@@ -77,6 +80,26 @@ router
     router.get('groups/:id/athletes', '#controllers/trainer_controller.getGroupAthletes');
     router.post('groups/:id/athletes', '#controllers/trainer_controller.addAthleteToGroup');
     router.delete('groups/:id/athletes/:athleteId', '#controllers/trainer_controller.removeAthleteFromGroup');
+
+    // Chats
+    router.get('chats/group/:groupId', '#controllers/chat_controller.getOrCreateGroupChat');
+    router.get('chats/athlete/:athleteId', '#controllers/chat_controller.getOrCreateAthleteChat');
+    router.get('chats/:chatId/messages', '#controllers/chat_controller.getMessages');
+    router.post('chats/:chatId/messages', '#controllers/chat_controller.sendMessage');
+    router.get('chats/:chatId/last', '#controllers/chat_controller.getLastMessage');
+
+    // Scheduled workouts
+    router.get('scheduled-workouts', '#controllers/scheduled_workout_controller.list');
+    router.get('scheduled-workouts/today', '#controllers/scheduled_workout_controller.today');
+    router.post('scheduled-workouts', '#controllers/scheduled_workout_controller.create');
+    router.put('scheduled-workouts/:id', '#controllers/scheduled_workout_controller.update');
+    router.delete('scheduled-workouts/:id', '#controllers/scheduled_workout_controller.delete');
+
+    // Workout templates
+    router.get('workout-templates', '#controllers/workout_template_controller.list');
+    router.post('workout-templates', '#controllers/workout_template_controller.create');
+    router.put('workout-templates/:id', '#controllers/workout_template_controller.update');
+    router.delete('workout-templates/:id', '#controllers/workout_template_controller.delete');
   })
   .prefix('trainer')
   .use([middleware.auth(), middleware.trainer()]);

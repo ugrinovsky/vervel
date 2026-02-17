@@ -1,9 +1,11 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import { randomUUID } from 'node:crypto'
+import { DateTime } from 'luxon'
 import User from '#models/user'
 import Workout from '#models/workout'
 import TrainerAthlete from '#models/trainer_athlete'
 import TrainerGroup from '#models/trainer_group'
+import ScheduledWorkout from '#models/scheduled_workout'
 import { WorkoutCalculator } from '#services/WorkoutCalculator'
 import {
   createGroupValidator,
@@ -12,6 +14,49 @@ import {
 } from '#validators/trainer_validator'
 
 export default class TrainerController {
+  /**
+   * Get today overview for trainer
+   * GET /trainer/today
+   */
+  async getTodayOverview({ auth, response }: HttpContext) {
+    const trainer = auth.user!
+    const today = DateTime.now().startOf('day')
+    const tomorrow = today.plus({ days: 1 })
+
+    // Today's scheduled workouts
+    const todayWorkouts = await ScheduledWorkout.query()
+      .where('trainerId', trainer.id)
+      .whereBetween('scheduledDate', [today.toJSDate(), tomorrow.toJSDate()])
+      .where('status', 'scheduled')
+      .orderBy('scheduledDate', 'asc')
+
+    // Total stats
+    const athleteCount = await TrainerAthlete.query()
+      .where('trainerId', trainer.id)
+      .whereNotNull('athleteId')
+      .where('status', 'active')
+      .count('* as total')
+
+    const groupCount = await TrainerGroup.query().where('trainerId', trainer.id).count('* as total')
+
+    return response.ok({
+      success: true,
+      data: {
+        todayWorkouts: todayWorkouts.map((w) => ({
+          id: w.id,
+          scheduledDate: w.scheduledDate,
+          workoutData: w.workoutData,
+          assignedTo: w.assignedTo,
+        })),
+        stats: {
+          athleteCount: Number(athleteCount[0].$extras.total),
+          groupCount: Number(groupCount[0].$extras.total),
+          todayWorkoutsCount: todayWorkouts.length,
+        },
+      },
+    })
+  }
+
   // ─── Athlete management ───
 
   async listAthletes({ auth, response }: HttpContext) {

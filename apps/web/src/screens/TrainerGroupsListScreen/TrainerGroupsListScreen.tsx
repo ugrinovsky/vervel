@@ -4,27 +4,20 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
-import AddAthleteDrawer from '@/components/AddAthleteDrawer/AddAthleteDrawer';
-import { trainerApi, type AthleteListItem, type TrainerGroupItem } from '@/api/trainer';
+import { trainerApi, type TrainerGroupItem } from '@/api/trainer';
 import { PlusIcon, UserGroupIcon, TrashIcon } from '@heroicons/react/24/outline';
 
-export default function TrainerDashboardScreen() {
+export default function TrainerGroupsListScreen() {
   const navigate = useNavigate();
-  const [athletes, setAthletes] = useState<AthleteListItem[]>([]);
   const [groups, setGroups] = useState<TrainerGroupItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddDrawer, setShowAddDrawer] = useState(false);
   const [showGroupInput, setShowGroupInput] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [athletesRes, groupsRes] = await Promise.all([
-        trainerApi.listAthletes(),
-        trainerApi.listGroups(),
-      ]);
-      setAthletes(athletesRes.data.data);
+      const groupsRes = await trainerApi.listGroups();
       setGroups(groupsRes.data.data);
     } catch {
       toast.error('Ошибка загрузки данных');
@@ -60,16 +53,6 @@ export default function TrainerDashboardScreen() {
     }
   };
 
-  const handleRemoveAthlete = async (athleteId: number) => {
-    try {
-      await trainerApi.removeAthlete(athleteId);
-      toast.success('Атлет отвязан');
-      loadData();
-    } catch {
-      toast.error('Ошибка при отвязке атлета');
-    }
-  };
-
   if (loading) {
     return (
       <Screen>
@@ -83,25 +66,19 @@ export default function TrainerDashboardScreen() {
   return (
     <Screen>
       <div className="p-4 w-full max-w-2xl mx-auto">
-        <ScreenHeader icon="👥" title="Команда" description="Управление атлетами и группами" />
+        <ScreenHeader icon="👥" title="Группы" description="Управление тренировочными группами" />
 
         {/* Stats */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-2 gap-3 mb-6"
+          className="bg-[var(--color_bg_card)] rounded-xl p-4 border border-[var(--color_border)] text-center mb-6"
         >
-          <div className="bg-[var(--color_bg_card)] rounded-xl p-4 border border-[var(--color_border)] text-center">
-            <div className="text-2xl font-bold text-white">{athletes.length}</div>
-            <div className="text-xs text-[var(--color_text_muted)] mt-1">Атлетов</div>
-          </div>
-          <div className="bg-[var(--color_bg_card)] rounded-xl p-4 border border-[var(--color_border)] text-center">
-            <div className="text-2xl font-bold text-white">{groups.length}</div>
-            <div className="text-xs text-[var(--color_text_muted)] mt-1">Групп</div>
-          </div>
+          <div className="text-2xl font-bold text-white">{groups.length}</div>
+          <div className="text-xs text-[var(--color_text_muted)] mt-1">Групп</div>
         </motion.div>
 
-        {/* Athletes */}
+        {/* Groups */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -109,63 +86,10 @@ export default function TrainerDashboardScreen() {
           className="bg-[var(--color_bg_card)] rounded-2xl p-5 border border-[var(--color_border)] mb-6"
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Атлеты</h2>
-            <button
-              onClick={() => setShowAddDrawer(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color_primary_light)] text-white text-sm font-medium hover:opacity-90 transition-opacity"
-            >
-              <PlusIcon className="w-4 h-4" />
-              Добавить
-            </button>
-          </div>
-
-          {athletes.length === 0 ? (
-            <p className="text-sm text-[var(--color_text_muted)] text-center py-4">
-              Пока нет привязанных атлетов
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {athletes.map((athlete) => (
-                <div
-                  key={athlete.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-[var(--color_bg_card_hover)] hover:bg-[var(--color_border)] transition-colors cursor-pointer"
-                  onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}
-                >
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-white truncate">
-                      {athlete.fullName || 'Без имени'}
-                    </div>
-                    <div className="text-xs text-[var(--color_text_muted)] truncate">
-                      {athlete.email}
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoveAthlete(athlete.id);
-                    }}
-                    className="text-[var(--color_text_muted)] hover:text-red-400 transition-colors p-1"
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </motion.div>
-
-        {/* Groups */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-[var(--color_bg_card)] rounded-2xl p-5 border border-[var(--color_border)] mb-6"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Группы</h2>
+            <h2 className="text-lg font-semibold text-white">Все группы</h2>
             <button
               onClick={() => setShowGroupInput(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color_bg_card_hover)] text-white text-sm font-medium hover:opacity-90 transition-opacity"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color_primary_light)] text-white text-sm font-medium hover:opacity-90 transition-opacity"
             >
               <PlusIcon className="w-4 h-4" />
               Создать
@@ -229,12 +153,6 @@ export default function TrainerDashboardScreen() {
           )}
         </motion.div>
       </div>
-
-      <AddAthleteDrawer
-        open={showAddDrawer}
-        onClose={() => setShowAddDrawer(false)}
-        onAdded={loadData}
-      />
     </Screen>
   );
 }
