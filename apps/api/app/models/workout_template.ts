@@ -31,7 +31,8 @@ export default class WorkoutTemplate extends BaseModel {
 
   @column({
     prepare: (value: ExerciseData[]) => JSON.stringify(value),
-    consume: (value: string) => JSON.parse(value),
+    consume: (value: string | ExerciseData[]) =>
+      typeof value === 'string' ? JSON.parse(value) : value,
   })
   declare exercises: ExerciseData[]
 

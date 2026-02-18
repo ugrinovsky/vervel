@@ -78,9 +78,9 @@ export default class ScheduledWorkoutController {
       'templateId',
     ])
 
-    if (!scheduledDate || !workoutData || !assignedTo || assignedTo.length === 0) {
+    if (!scheduledDate || !workoutData) {
       return response.badRequest({
-        message: 'scheduledDate, workoutData и assignedTo обязательны',
+        message: 'scheduledDate и workoutData обязательны',
       })
     }
 
@@ -88,7 +88,7 @@ export default class ScheduledWorkoutController {
       trainerId: trainer.id,
       scheduledDate: DateTime.fromISO(scheduledDate),
       workoutData,
-      assignedTo,
+      assignedTo: assignedTo || [],
       status: 'scheduled',
       notes: notes || null,
       templateId: templateId || null,

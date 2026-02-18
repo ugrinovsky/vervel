@@ -45,7 +45,8 @@ export interface ExerciseData {
   weight?: number;
   duration?: number;
   distance?: number;
-  notes?: string;
+  notes?: string;       // тренерский комментарий к упражнению
+  blockId?: string;     // упражнения с одинаковым blockId — суперсет
 }
 
 export interface WorkoutData {

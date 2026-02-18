@@ -41,9 +41,9 @@ export default class WorkoutTemplateController {
       'isPublic',
     ])
 
-    if (!name || !workoutType || !exercises || exercises.length === 0) {
+    if (!name || !workoutType) {
       return response.badRequest({
-        message: 'name, workoutType и exercises обязательны',
+        message: 'name и workoutType обязательны',
       })
     }
 
@@ -51,7 +51,7 @@ export default class WorkoutTemplateController {
       trainerId: trainer.id,
       name,
       workoutType,
-      exercises,
+      exercises: exercises || [],
       description: description || null,
       isPublic: isPublic || false,
     })

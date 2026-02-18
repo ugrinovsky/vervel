@@ -27,20 +27,26 @@ export default function TrainerAthleteDetailScreen() {
   const [tab, setTab] = useState<Tab>('chat');
   const [timeRange, setTimeRange] = useState<StatsPeriod>('week');
   const [chatId, setChatId] = useState<number | null>(null);
+  const [athleteName, setAthleteName] = useState('Атлет');
 
   const { data: stats } = useAthleteStats(id, timeRange);
   const { data: avatarData, loading: avatarLoading } = useAthleteAvatar(id);
 
   useEffect(() => {
-    const loadChat = async () => {
+    const loadData = async () => {
       try {
-        const res = await trainerApi.getOrCreateAthleteChat(id);
-        setChatId(res.data.data.chatId);
+        const [chatRes, athletesRes] = await Promise.all([
+          trainerApi.getOrCreateAthleteChat(id),
+          trainerApi.listAthletes(),
+        ]);
+        setChatId(chatRes.data.data.chatId);
+        const found = athletesRes.data.data.find((a) => a.id === id);
+        if (found) setAthleteName(found.fullName || found.email);
       } catch {
-        toast.error('Ошибка загрузки чата');
+        toast.error('Ошибка загрузки данных');
       }
     };
-    loadChat();
+    loadData();
   }, [id]);
 
   const zoneIntensities = useMemo(() => {
@@ -64,7 +70,7 @@ export default function TrainerAthleteDetailScreen() {
           <span className="text-sm">Назад</span>
         </button>
 
-        <ScreenHeader icon="🏃" title="Атлет" description="Чат, аналитика и восстановление" />
+        <ScreenHeader icon="🏃" title={athleteName} description="Чат, аналитика и восстановление" />
 
         {/* Tabs */}
         <motion.div
@@ -247,7 +253,7 @@ export default function TrainerAthleteDetailScreen() {
               preselectedAssignee={{
                 type: 'athlete',
                 id: id,
-                name: 'Атлет',
+                name: athleteName,
               }}
               onSuccess={() => {
                 toast.success('Тренировка создана');

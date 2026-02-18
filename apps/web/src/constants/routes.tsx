@@ -8,7 +8,6 @@ import TrainerTodayScreen from '@/screens/TrainerTodayScreen/TrainerTodayScreen'
 import TrainerGroupsListScreen from '@/screens/TrainerGroupsListScreen/TrainerGroupsListScreen';
 import TrainerAthletesListScreen from '@/screens/TrainerAthletesListScreen/TrainerAthletesListScreen';
 import TrainerCalendarScreen from '@/screens/TrainerCalendarScreen/TrainerCalendarScreen';
-import TrainerPersonalScreen from '@/screens/TrainerPersonalScreen/TrainerPersonalScreen';
 import {
   ChartBarIcon,
   PlusIcon,

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
@@ -7,6 +8,7 @@ import { trainerApi, type TodayOverview } from '@/api/trainer';
 import { ClockIcon, UserGroupIcon, UsersIcon } from '@heroicons/react/24/outline';
 
 export default function TrainerTodayScreen() {
+  const navigate = useNavigate();
   const [overview, setOverview] = useState<TodayOverview | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -115,7 +117,9 @@ export default function TrainerTodayScreen() {
                   </div>
 
                   <div className="mb-2">
-                    <div className="text-xs text-[var(--color_text_muted)] mb-1">Назначено для:</div>
+                    <div className="text-xs text-[var(--color_text_muted)] mb-1">
+                      Назначено для:
+                    </div>
                     <div className="flex flex-wrap gap-1">
                       {workout.assignedTo.map((assigned, idx) => (
                         <span
@@ -150,7 +154,7 @@ export default function TrainerTodayScreen() {
           className="grid grid-cols-2 gap-3"
         >
           <button
-            onClick={() => (window.location.href = '/trainer/groups')}
+            onClick={() => navigate('/trainer/groups')}
             className="p-4 rounded-xl bg-[var(--color_bg_card)] border border-[var(--color_border)] hover:bg-[var(--color_bg_card_hover)] transition-colors text-left"
           >
             <UserGroupIcon className="w-5 h-5 text-[var(--color_primary_light)] mb-2" />
@@ -158,7 +162,7 @@ export default function TrainerTodayScreen() {
             <div className="text-xs text-[var(--color_text_muted)]">Управление группами</div>
           </button>
           <button
-            onClick={() => (window.location.href = '/trainer/athletes')}
+            onClick={() => navigate('/trainer/athletes')}
             className="p-4 rounded-xl bg-[var(--color_bg_card)] border border-[var(--color_border)] hover:bg-[var(--color_bg_card_hover)] transition-colors text-left"
           >
             <UsersIcon className="w-5 h-5 text-[var(--color_primary_light)] mb-2" />

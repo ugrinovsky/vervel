@@ -32,13 +32,15 @@ export default class ScheduledWorkout extends BaseModel {
 
   @column({
     prepare: (value: WorkoutData) => JSON.stringify(value),
-    consume: (value: string) => JSON.parse(value),
+    consume: (value: string | WorkoutData) =>
+      typeof value === 'string' ? JSON.parse(value) : value,
   })
   declare workoutData: WorkoutData
 
   @column({
     prepare: (value: AssignedTo[]) => JSON.stringify(value),
-    consume: (value: string) => JSON.parse(value),
+    consume: (value: string | AssignedTo[]) =>
+      typeof value === 'string' ? JSON.parse(value) : value,
   })
   declare assignedTo: AssignedTo[]
 

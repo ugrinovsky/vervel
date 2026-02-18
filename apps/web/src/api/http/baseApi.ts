@@ -16,6 +16,9 @@ export function createApi(): AxiosInstance {
       console.error('API error', error.response?.data || error.message);
 
       if (error.response?.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
         return Promise.reject(new Error('Не авторизован'));
       }
 
