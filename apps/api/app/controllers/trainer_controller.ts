@@ -183,13 +183,15 @@ export default class TrainerController {
     const binding = await TrainerAthlete.query()
       .where('trainerId', trainer.id)
       .where('athleteId', params.athleteId)
+      .where('status', 'active')
       .first()
 
     if (!binding) {
       return response.notFound({ message: 'Связь не найдена' })
     }
 
-    await binding.delete()
+    binding.status = 'inactive'
+    await binding.save()
 
     return response.ok({ success: true, message: 'Атлет отвязан' })
   }
@@ -380,6 +382,33 @@ export default class TrainerController {
     }))
 
     return response.ok({ success: true, data: athletes })
+  }
+
+  /**
+   * Get profile stats for trainer
+   * GET /trainer/profile-stats
+   */
+  async getProfileStats({ auth, response }: HttpContext) {
+    const trainer = auth.user!
+
+    const [athleteRows, groupRows, workoutRows] = await Promise.all([
+      TrainerAthlete.query()
+        .where('trainerId', trainer.id)
+        .whereNotNull('athleteId')
+        .where('status', 'active')
+        .count('* as total'),
+      TrainerGroup.query().where('trainerId', trainer.id).count('* as total'),
+      ScheduledWorkout.query().where('trainerId', trainer.id).count('* as total'),
+    ])
+
+    return response.ok({
+      success: true,
+      data: {
+        athleteCount: Number(athleteRows[0].$extras.total),
+        groupCount: Number(groupRows[0].$extras.total),
+        totalScheduledWorkouts: Number(workoutRows[0].$extras.total),
+      },
+    })
   }
 
   // ─── Helpers ───

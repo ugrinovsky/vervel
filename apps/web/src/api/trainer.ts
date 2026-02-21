@@ -77,6 +77,18 @@ export interface WorkoutTemplate {
   createdAt?: string;
 }
 
+export interface TrainerProfileStats {
+  athleteCount: number;
+  groupCount: number;
+  totalScheduledWorkouts: number;
+}
+
+export interface UnreadCounts {
+  total: number;
+  groups: Array<{ groupId: number; chatId: number; unread: number }>;
+  athletes: Array<{ athleteId: number; chatId: number; unread: number }>;
+}
+
 export interface TodayOverview {
   todayWorkouts: Array<{
     id: number;
@@ -95,6 +107,10 @@ export const trainerApi = {
   // Today overview
   getTodayOverview: () =>
     privateApi.get<{ success: boolean; data: TodayOverview }>('/trainer/today'),
+  getProfileStats: () =>
+    privateApi.get<{ success: boolean; data: TrainerProfileStats }>('/trainer/profile-stats'),
+  getUnreadCounts: () =>
+    privateApi.get<{ success: boolean; data: UnreadCounts }>('/trainer/unread-counts'),
 
   // Athletes
   listAthletes: () =>

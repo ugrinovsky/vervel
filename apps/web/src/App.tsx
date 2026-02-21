@@ -9,6 +9,7 @@ import OAuthCallbackScreen from '@/screens/OAuthCallbackScreen/OAuthCallbackScre
 import SelectRoleScreen from '@/screens/SelectRoleScreen/SelectRoleScreen';
 import TrainerAthleteDetailScreen from '@/screens/TrainerAthleteDetailScreen/TrainerAthleteDetailScreen';
 import TrainerGroupDetailScreen from '@/screens/TrainerGroupDetailScreen/TrainerGroupDetailScreen';
+import AvatarScreen from '@/screens/AvatarScreen';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 
 import 'tailwindcss';
@@ -23,6 +24,16 @@ function ProtectedRoute({ children }: { children: JSX.Element }) {
   }
 
   return children;
+}
+
+/** Root screen: redirects trainers (or 'both' in trainer mode) to /trainer */
+function HomeScreen(): JSX.Element {
+  const { isTrainer, isAthlete, activeMode } = useAuth();
+  const showTrainerNav = isTrainer && (!isAthlete || activeMode === 'trainer');
+  if (showTrainerNav) {
+    return <Navigate to="/trainer" replace />;
+  }
+  return <AvatarScreen />;
 }
 
 function AppContent(): JSX.Element {
@@ -55,6 +66,10 @@ function AppContent(): JSX.Element {
         <Route path="/register" element={<RegisterScreen />} />
         <Route path="/auth/callback" element={<OAuthCallbackScreen />} />
         <Route path="/select-role" element={<SelectRoleScreen />} />
+        <Route
+          path="/"
+          element={<ProtectedRoute><HomeScreen /></ProtectedRoute>}
+        />
         {uniqueRoutes.map((rout) => (
           <Route
             key={rout.path}

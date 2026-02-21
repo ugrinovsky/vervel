@@ -4,19 +4,24 @@ import { useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
-import { trainerApi, type TodayOverview } from '@/api/trainer';
-import { ClockIcon, UserGroupIcon, UsersIcon } from '@heroicons/react/24/outline';
+import { trainerApi, type TodayOverview, type UnreadCounts } from '@/api/trainer';
+import { ClockIcon, UserGroupIcon, UsersIcon, ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline';
 
 export default function TrainerTodayScreen() {
   const navigate = useNavigate();
   const [overview, setOverview] = useState<TodayOverview | null>(null);
+  const [unreadCounts, setUnreadCounts] = useState<UnreadCounts | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const res = await trainerApi.getTodayOverview();
-      setOverview(res.data.data);
+      const [overviewRes, unreadRes] = await Promise.all([
+        trainerApi.getTodayOverview(),
+        trainerApi.getUnreadCounts(),
+      ]);
+      setOverview(overviewRes.data.data);
+      setUnreadCounts(unreadRes.data.data);
     } catch {
       toast.error('Ошибка загрузки данных');
     } finally {
@@ -57,6 +62,63 @@ export default function TrainerTodayScreen() {
     <Screen>
       <div className="p-4 w-full max-w-2xl mx-auto">
         <ScreenHeader icon="☀️" title="Сегодня" description="Обзор дня" />
+
+        {/* Unread messages banners */}
+        {unreadCounts && (
+          <>
+            {(() => {
+              const groupsWithUnread = unreadCounts.groups.filter((g) => g.unread > 0);
+              const groupsTotal = groupsWithUnread.reduce((s, g) => s + g.unread, 0);
+              if (groupsTotal === 0) return null;
+              return (
+                <motion.button
+                  key="groups-unread"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  onClick={() => navigate('/trainer/groups')}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) mb-3 hover:bg-(--color_bg_card_hover) transition-colors text-left"
+                >
+                  <ChatBubbleLeftEllipsisIcon className="w-6 h-6 text-(--color_primary_light) shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-white">Группы</div>
+                    <div className="text-xs text-(--color_text_muted)">
+                      {groupsWithUnread.length} {groupsWithUnread.length === 1 ? 'группа' : 'групп'} с непрочитанными
+                    </div>
+                  </div>
+                  <div className="min-w-6 h-6 px-1.5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
+                    {groupsTotal > 99 ? '99+' : groupsTotal}
+                  </div>
+                </motion.button>
+              );
+            })()}
+            {(() => {
+              const athletesWithUnread = unreadCounts.athletes.filter((a) => a.unread > 0);
+              const athletesTotal = athletesWithUnread.reduce((s, a) => s + a.unread, 0);
+              if (athletesTotal === 0) return null;
+              return (
+                <motion.button
+                  key="athletes-unread"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05 }}
+                  onClick={() => navigate('/trainer/athletes')}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) mb-3 hover:bg-(--color_bg_card_hover) transition-colors text-left"
+                >
+                  <ChatBubbleLeftEllipsisIcon className="w-6 h-6 text-(--color_primary_light) shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-white">Персоналки</div>
+                    <div className="text-xs text-(--color_text_muted)">
+                      {athletesWithUnread.length} {athletesWithUnread.length === 1 ? 'атлет' : 'атлетов'} с непрочитанными
+                    </div>
+                  </div>
+                  <div className="min-w-6 h-6 px-1.5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
+                    {athletesTotal > 99 ? '99+' : athletesTotal}
+                  </div>
+                </motion.button>
+              );
+            })()}
+          </>
+        )}
 
         {/* Stats */}
         <motion.div

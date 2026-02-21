@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { trainerApi, type ChatMessage } from '@/api/trainer';
+import { chatApi } from '@/api/chat';
+import type { ChatMessage } from '@/api/trainer';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -23,12 +24,15 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const fetchMessages = async () => {
+  const fetchMessages = async (markRead = false) => {
     try {
-      const res = await trainerApi.getChatMessages(chatId);
+      const res = await chatApi.getMessages(chatId);
       setMessages(res.data.data);
       if (loading) {
         setTimeout(scrollToBottom, 100);
+      }
+      if (markRead) {
+        chatApi.markAsRead(chatId).catch(() => {});
       }
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -41,11 +45,11 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
   };
 
   useEffect(() => {
-    fetchMessages();
+    fetchMessages(true); // mark as read on open
 
     // Polling every 10 seconds
     const interval = setInterval(() => {
-      fetchMessages();
+      fetchMessages(true);
     }, 10000);
 
     return () => clearInterval(interval);
@@ -63,7 +67,7 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
     setSending(true);
 
     try {
-      const res = await trainerApi.sendMessage(chatId, messageContent);
+      const res = await chatApi.sendMessage(chatId, messageContent);
       setMessages((prev) => [...prev, res.data.data]);
       scrollToBottom();
     } catch {

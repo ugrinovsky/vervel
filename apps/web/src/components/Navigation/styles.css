@@ -22,12 +22,9 @@
 
 .nav-item-active {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
   padding: 0;
-  height: 3.5rem;
   color: var(--color_primary_light);
   transition: all 0.2s;
   filter: drop-shadow(0 0 8px rgb(var(--color_primary_light_ch) / 0.5));
@@ -35,12 +32,9 @@
 
 .nav-item-inactive {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
   padding: 0;
-  height: 3.5rem;
   color: rgba(203, 213, 225, 0.9);
   transition: all 0.2s;
 }
@@ -54,8 +48,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 3.5rem;
-  height: 3.5rem;
+  width: 3.25rem;
+  height: 3.25rem;
   color: var(--color_primary_light);
   background: rgb(var(--color_primary_light_ch) / 0.15);
   border-radius: 9999px;
@@ -72,8 +66,8 @@
 
 .nav-button-center {
   position: relative;
-  width: 5rem;
-  height: 5rem;
+  width: 4.75rem;
+  height: 4.75rem;
   margin-top: -2rem;
   border-radius: 9999px;
 }

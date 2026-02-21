@@ -7,7 +7,9 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import ChatBox from '@/components/ChatBox/ChatBox';
 import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
 import { trainerApi, type AthleteListItem, type TrainerGroupItem } from '@/api/trainer';
-import { ArrowLeftIcon, TrashIcon, PlusIcon, UsersIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
+import AthleteAvatarsRow from '@/components/AthleteAvatarsRow/AthleteAvatarsRow';
+import InlineAthleteAvatar from '@/components/MiniAvatar/InlineAthleteAvatar';
+import { ArrowLeftIcon, TrashIcon, PlusIcon, UsersIcon, ChatBubbleLeftIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 type Tab = 'members' | 'chat' | 'create';
 
@@ -23,6 +25,7 @@ export default function TrainerGroupDetailScreen() {
   const [chatId, setChatId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddPicker, setShowAddPicker] = useState(false);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<number | null>(null);
 
   const loadData = async () => {
     try {
@@ -63,6 +66,7 @@ export default function TrainerGroupDetailScreen() {
   const handleRemoveFromGroup = async (athleteId: number) => {
     try {
       await trainerApi.removeAthleteFromGroup(id, athleteId);
+      setConfirmRemoveId(null);
       toast.success('Атлет убран из группы');
       loadData();
     } catch {
@@ -178,6 +182,16 @@ export default function TrainerGroupDetailScreen() {
               </div>
             )}
 
+            {/* Мини-аватары нагрузки */}
+            {athletes.length > 0 && (
+              <div className="mb-4 p-3 bg-(--color_bg_card_hover) rounded-xl">
+                <p className="text-[10px] text-(--color_text_muted) mb-2 uppercase tracking-wider">
+                  Нагрузка зон мышц
+                </p>
+                <AthleteAvatarsRow athletes={athletes} />
+              </div>
+            )}
+
             {athletes.length === 0 ? (
               <p className="text-sm text-[var(--color_text_muted)] text-center py-4">
                 В группе пока нет атлетов
@@ -187,26 +201,50 @@ export default function TrainerGroupDetailScreen() {
                 {athletes.map((athlete) => (
                   <div
                     key={athlete.id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-[var(--color_bg_card_hover)] hover:bg-[var(--color_border)] transition-colors cursor-pointer"
+                    className="flex items-center gap-3 p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors cursor-pointer"
                     onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}
                   >
-                    <div className="min-w-0">
+                    <InlineAthleteAvatar athleteId={athlete.id} />
+                    <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium text-white truncate">
                         {athlete.fullName || 'Без имени'}
                       </div>
-                      <div className="text-xs text-[var(--color_text_muted)] truncate">
+                      <div className="text-xs text-(--color_text_muted) truncate">
                         {athlete.email}
                       </div>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemoveFromGroup(athlete.id);
-                      }}
-                      className="text-[var(--color_text_muted)] hover:text-red-400 transition-colors p-1"
-                    >
-                      <TrashIcon className="w-4 h-4" />
-                    </button>
+                    {confirmRemoveId === athlete.id ? (
+                      <div
+                        className="flex items-center gap-1 shrink-0"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <span className="text-xs text-red-400 mr-1">Убрать?</span>
+                        <button
+                          onClick={() => handleRemoveFromGroup(athlete.id)}
+                          className="p-1 text-red-400 hover:text-red-300 transition-colors"
+                          title="Да"
+                        >
+                          <CheckIcon className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setConfirmRemoveId(null)}
+                          className="p-1 text-[var(--color_text_muted)] hover:text-white transition-colors"
+                          title="Отмена"
+                        >
+                          <XMarkIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmRemoveId(athlete.id);
+                        }}
+                        className="text-[var(--color_text_muted)] hover:text-red-400 transition-colors p-1"
+                      >
+                        <TrashIcon className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>

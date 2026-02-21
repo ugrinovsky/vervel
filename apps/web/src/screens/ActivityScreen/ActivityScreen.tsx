@@ -5,7 +5,7 @@ import MonthlyStats from './MonthlyStats';
 import DayDetails from './DayDetails';
 import ActivitySkeleton from './ActivitySkeleton';
 import { useActivityData } from './useActivityData';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ActivityScreen() {
   const {
@@ -20,68 +20,74 @@ export default function ActivityScreen() {
     monthlyStats,
   } = useActivityData();
 
-  if (loading) {
-    return (
-      <Screen>
-        <ActivitySkeleton />
-      </Screen>
-    );
-  }
-
-  if (!stats) {
-    return (
-      <Screen>
-        <div className="text-center text-white mt-12">Нет данных</div>
-      </Screen>
-    );
-  }
-
   const handleSelectDay = (day: DayData) => setSelectedDate(day.date);
   const handleMonthChange = (newMonth: Date) => setCurrentMonth(newMonth);
 
   return (
     <Screen>
-      <div className="relative p-4">
-        <ScreenHeader
-          icon="📅"
-          title="Активность"
-          description="Отслеживайте ваши тренировки и прогресс"
-        />
-
-        {monthlyStats && (
+      <AnimatePresence mode="wait">
+        {loading ? (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            key="skeleton"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
           >
-            <MonthlyStats stats={monthlyStats} />
+            <ActivitySkeleton />
+          </motion.div>
+        ) : !stats ? (
+          <motion.div
+            key="empty"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
+            className="text-center text-white mt-12"
+          >
+            Нет данных
+          </motion.div>
+        ) : (
+          <motion.div
+            key="content"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.25 }}
+            className="relative p-4"
+          >
+            <ScreenHeader
+              icon="📅"
+              title="Активность"
+              description="Отслеживайте ваши тренировки и прогресс"
+            />
+
+            {monthlyStats && <MonthlyStats stats={monthlyStats} />}
+
+            <div className="mb-8">
+              <ActivityCalendar
+                selectedDate={selectedDate}
+                onSelect={handleSelectDay}
+                onMonthChange={handleMonthChange}
+                month={currentMonth}
+                days={days}
+              />
+            </div>
+
+            <AnimatePresence>
+              {selectedDate && dayStats && (
+                <motion.div
+                  key={selectedDate.toISOString()}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <DayDetails date={selectedDate} stats={dayStats} />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-8"
-        >
-          <ActivityCalendar
-            selectedDate={selectedDate}
-            onSelect={handleSelectDay}
-            onMonthChange={handleMonthChange}
-            month={currentMonth}
-            days={days}
-          />
-        </motion.div>
-
-        {selectedDate && dayStats && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <DayDetails date={selectedDate} stats={dayStats} />
-          </motion.div>
-        )}
-      </div>
+      </AnimatePresence>
     </Screen>
   );
 }

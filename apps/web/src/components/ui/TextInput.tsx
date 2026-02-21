@@ -9,6 +9,7 @@ export default function TextInput({ label, className = '', ...props }: TextInput
     <div className="w-full">
       {label && <label className="block mb-1 text-xs text-white/60">{label}</label>}
       <input
+        onClick={(e) => { if (e.button === 0) (e.target as HTMLInputElement).select(); props.onClick?.(e); }}
         {...props}
         className={`
           w-full px-3 py-2 rounded-lg

@@ -1,5 +1,6 @@
 // ExerciseSetRow.tsx
 import type { ExerciseSet } from '@/types/Exercise';
+import UiTextInput from '@/components/ui/TextInput';
 
 interface Props {
   index: number;
@@ -23,40 +24,36 @@ export default function ExerciseSetRow({
   return (
     <div className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2 hover:bg-white/10 transition">
       {/* Номер */}
-      <div className="w-6 text-sm font-medium text-white/70 shrink-0">
-        {index + 1}
-      </div>
+      <div className="w-6 text-sm font-medium text-white/70 shrink-0">{index + 1}</div>
 
       {/* Повторения */}
       <div className="flex-1 min-w-0">
-        <input
+        <UiTextInput
           type="number"
           value={set.reps}
           onChange={(e) => {
             const val = parseInt(e.target.value);
             if (!isNaN(val)) onUpdate(index, 'reps', val);
           }}
-          onFocus={(e) => e.target.select()}
-          className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded focus:outline-none focus:ring-1 focus:ring-emerald-400 text-white text-center"
           min={1}
           placeholder="10"
+          className="text-center"
         />
       </div>
 
       {/* Вес */}
       <div className="flex-1 min-w-0">
-        <input
+        <UiTextInput
           type="number"
           value={set.weight || ''}
           onChange={(e) => {
             const val = parseFloat(e.target.value);
             onUpdate(index, 'weight', isNaN(val) ? 0 : val);
           }}
-          onFocus={(e) => e.target.select()}
-          className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded focus:outline-none focus:ring-1 focus:ring-emerald-400 text-white text-center"
           min={0}
           step={2.5}
           placeholder="0"
+          className="text-center"
         />
       </div>
 

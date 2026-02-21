@@ -4,7 +4,15 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import toast from 'react-hot-toast';
-import { trainerApi, type AssignedTo, type WorkoutData, type ExerciseData, type AthleteListItem, type TrainerGroupItem } from '@/api/trainer';
+import {
+  trainerApi,
+  type AssignedTo,
+  type WorkoutData,
+  type ExerciseData,
+  type AthleteListItem,
+  type TrainerGroupItem,
+  type WorkoutTemplate,
+} from '@/api/trainer';
 import { exercisesApi } from '@/api/exercises';
 import type { Exercise } from '@/types/Exercise';
 import { XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
@@ -46,9 +54,16 @@ export default function WorkoutInlineForm({
     return d;
   });
 
-  const [workoutType, setWorkoutType] = useState<'crossfit' | 'bodybuilding' | 'cardio'>('crossfit');
+  const [workoutType, setWorkoutType] = useState<'crossfit' | 'bodybuilding' | 'cardio'>(
+    'crossfit'
+  );
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Templates
+  const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
 
   // Assignee selection
   const [groups, setGroups] = useState<TrainerGroupItem[]>([]);
@@ -73,7 +88,15 @@ export default function WorkoutInlineForm({
 
   useEffect(() => {
     exercisesApi.list().then((res) => setAllExercises(res ?? []));
+    trainerApi.getWorkoutTemplates().then((res) => setTemplates(res.data.data)).catch(() => {});
   }, []);
+
+  const applyTemplate = (template: WorkoutTemplate) => {
+    setWorkoutType(template.workoutType);
+    setExercises(template.exercises ?? []);
+    setSelectedTemplateId(template.id);
+    setShowTemplatePicker(false);
+  };
 
   useEffect(() => {
     if (!showAssigneePicker) return;
@@ -99,20 +122,30 @@ export default function WorkoutInlineForm({
     const item: AssignedTo = { type: 'group', id: group.id, name: group.name };
     setSelectedAssignees((prev) => {
       const exists = prev.find((a) => a.type === 'group' && a.id === group.id);
-      return exists ? prev.filter((a) => !(a.type === 'group' && a.id === group.id)) : [...prev, item];
+      return exists
+        ? prev.filter((a) => !(a.type === 'group' && a.id === group.id))
+        : [...prev, item];
     });
   };
 
   const toggleAthlete = (athlete: AthleteListItem) => {
-    const item: AssignedTo = { type: 'athlete', id: athlete.id, name: athlete.fullName || athlete.email };
+    const item: AssignedTo = {
+      type: 'athlete',
+      id: athlete.id,
+      name: athlete.fullName || athlete.email,
+    };
     setSelectedAssignees((prev) => {
       const exists = prev.find((a) => a.type === 'athlete' && a.id === athlete.id);
-      return exists ? prev.filter((a) => !(a.type === 'athlete' && a.id === athlete.id)) : [...prev, item];
+      return exists
+        ? prev.filter((a) => !(a.type === 'athlete' && a.id === athlete.id))
+        : [...prev, item];
     });
   };
 
-  const isGroupSelected = (id: number) => selectedAssignees.some((a) => a.type === 'group' && a.id === id);
-  const isAthleteSelected = (id: number) => selectedAssignees.some((a) => a.type === 'athlete' && a.id === id);
+  const isGroupSelected = (id: number) =>
+    selectedAssignees.some((a) => a.type === 'group' && a.id === id);
+  const isAthleteSelected = (id: number) =>
+    selectedAssignees.some((a) => a.type === 'athlete' && a.id === id);
 
   const filteredExercises = allExercises.filter((ex) =>
     ex.title.toLowerCase().includes(exSearch.toLowerCase())
@@ -183,6 +216,7 @@ export default function WorkoutInlineForm({
         workoutData,
         assignedTo,
         notes: notes || undefined,
+        templateId: selectedTemplateId ?? undefined,
       });
 
       toast.success('Тренировка создана');
@@ -237,6 +271,61 @@ export default function WorkoutInlineForm({
           </div>
         </div>
 
+        {/* Template picker */}
+        {templates.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs text-(--color_text_muted)">Из шаблона</label>
+              {selectedTemplateId && (
+                <button
+                  onClick={() => { setSelectedTemplateId(null); setExercises([]); }}
+                  className="text-xs text-(--color_text_muted) hover:text-white transition-colors"
+                >
+                  Сбросить
+                </button>
+              )}
+            </div>
+            {showTemplatePicker ? (
+              <div className="rounded-xl bg-(--color_bg_card_hover) divide-y divide-(--color_border) border border-(--color_border) mb-1">
+                {templates.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => applyTemplate(t)}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left text-white hover:bg-(--color_border) transition-colors"
+                  >
+                    <span className="shrink-0 text-xs px-1.5 py-0.5 rounded bg-(--color_primary_light)">
+                      {t.workoutType === 'crossfit' ? 'CF' : t.workoutType === 'bodybuilding' ? 'Сил' : 'Кард'}
+                    </span>
+                    <span className="flex-1 truncate">{t.name}</span>
+                    {t.exercises?.length > 0 && (
+                      <span className="text-xs text-(--color_text_muted) shrink-0">{t.exercises.length} упр.</span>
+                    )}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setShowTemplatePicker(false)}
+                  className="w-full px-3 py-2 text-xs text-(--color_text_muted) hover:text-white transition-colors text-center"
+                >
+                  Отмена
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowTemplatePicker(true)}
+                className={`w-full py-2 px-3 rounded-xl text-sm text-left transition-colors border ${
+                  selectedTemplateId
+                    ? 'bg-(--color_primary_light)/10 border-(--color_primary_light) text-white'
+                    : 'bg-(--color_bg_card_hover) border-(--color_border) text-(--color_text_muted) hover:text-white'
+                }`}
+              >
+                {selectedTemplateId
+                  ? `📋 ${templates.find((t) => t.id === selectedTemplateId)?.name}`
+                  : '📋 Выбрать шаблон'}
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Workout Type */}
         <div>
           <label className="text-xs text-(--color_text_muted) mb-2 block">Тип тренировки</label>
@@ -261,7 +350,8 @@ export default function WorkoutInlineForm({
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="text-xs font-medium text-white">
-              Упражнения{exercises.length > 0 && (
+              Упражнения
+              {exercises.length > 0 && (
                 <span className="text-(--color_text_muted) ml-1">({exercises.length})</span>
               )}
             </label>
@@ -330,9 +420,7 @@ export default function WorkoutInlineForm({
                         <button
                           onClick={() => toggleLink(i)}
                           className={`ml-2 text-sm leading-none transition-colors ${
-                            isLinkedToNext
-                              ? 'text-amber-400'
-                              : 'text-white/20 hover:text-amber-400'
+                            isLinkedToNext ? 'text-amber-400' : 'text-white/20 hover:text-amber-400'
                           }`}
                           title={isLinkedToNext ? 'Разъединить суперсет' : 'Связать в суперсет'}
                         >
@@ -355,7 +443,11 @@ export default function WorkoutInlineForm({
               <input
                 type="text"
                 value={exSearch}
-                onChange={(e) => { setExSearch(e.target.value); setSelectedEx(null); setExHighlight(-1); }}
+                onChange={(e) => {
+                  setExSearch(e.target.value);
+                  setSelectedEx(null);
+                  setExHighlight(-1);
+                }}
                 placeholder="Поиск упражнения..."
                 autoFocus
                 className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-(--color_text_muted)"
@@ -366,35 +458,46 @@ export default function WorkoutInlineForm({
                     e.preventDefault();
                     const next = Math.min(exHighlight + 1, list.length - 1);
                     setExHighlight(next);
-                    listboxRef.current
-                      ?.children[next]
-                      ?.scrollIntoView({ block: 'nearest' });
+                    listboxRef.current?.children[next]?.scrollIntoView({ block: 'nearest' });
                   } else if (e.key === 'ArrowUp') {
                     e.preventDefault();
                     const next = Math.max(exHighlight - 1, 0);
                     setExHighlight(next);
-                    listboxRef.current
-                      ?.children[next]
-                      ?.scrollIntoView({ block: 'nearest' });
+                    listboxRef.current?.children[next]?.scrollIntoView({ block: 'nearest' });
                   } else if (e.key === 'Enter' && exHighlight >= 0) {
                     e.preventDefault();
                     const picked = list[exHighlight];
-                    if (picked) { setSelectedEx(picked); setExSearch(picked.title); }
+                    if (picked) {
+                      setSelectedEx(picked);
+                      setExSearch(picked.title);
+                    }
                   } else if (e.key === 'Escape') {
-                    setShowExPicker(false); setSelectedEx(null); setExSearch(''); setExHighlight(-1);
+                    setShowExPicker(false);
+                    setSelectedEx(null);
+                    setExSearch('');
+                    setExHighlight(-1);
                   }
                 }}
               />
 
               {exSearch && !selectedEx && (
-                <div ref={listboxRef} className="max-h-36 overflow-y-auto rounded-lg bg-(--color_bg_card) divide-y divide-(--color_border)">
+                <div
+                  ref={listboxRef}
+                  className="max-h-36 overflow-y-auto rounded-lg bg-(--color_bg_card) divide-y divide-(--color_border)"
+                >
                   {filteredExercises.length === 0 ? (
-                    <div className="text-xs text-(--color_text_muted) text-center py-3">Не найдено</div>
+                    <div className="text-xs text-(--color_text_muted) text-center py-3">
+                      Не найдено
+                    </div>
                   ) : (
                     filteredExercises.slice(0, 8).map((ex, idx) => (
                       <button
                         key={ex.id}
-                        onClick={() => { setSelectedEx(ex); setExSearch(ex.title); setExHighlight(-1); }}
+                        onClick={() => {
+                          setSelectedEx(ex);
+                          setExSearch(ex.title);
+                          setExHighlight(-1);
+                        }}
                         className={`w-full text-left px-3 py-2 text-sm text-white transition-colors ${
                           idx === exHighlight
                             ? 'bg-(--color_primary_light)'
@@ -408,44 +511,68 @@ export default function WorkoutInlineForm({
                 </div>
               )}
 
-              {selectedEx && (
-                workoutType === 'cardio' ? (
+              {selectedEx &&
+                (workoutType === 'cardio' ? (
                   <div>
-                    <label className="text-[10px] text-(--color_text_muted) mb-1 block">Длительность (мин)</label>
+                    <label className="text-[10px] text-(--color_text_muted) mb-1 block">
+                      Длительность (мин)
+                    </label>
                     <input
                       type="number"
                       value={exDuration}
                       min={1}
                       onChange={(e) => setExDuration(+e.target.value)}
+                      onClick={(e) => { if (e.button === 0) e.currentTarget.select(); }}
                       className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-lg px-3 py-1.5 text-white text-sm outline-none"
                     />
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label className="text-[10px] text-(--color_text_muted) mb-1 block">Подходы</label>
-                      <input type="number" value={exSets} min={1}
+                      <label className="text-[10px] text-(--color_text_muted) mb-1 block">
+                        Подходы
+                      </label>
+                      <input
+                        type="number"
+                        value={exSets}
+                        min={0}
+                        placeholder="0"
                         onChange={(e) => setExSets(+e.target.value)}
+                        onClick={(e) => { if (e.button === 0) e.currentTarget.select(); }}
                         className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-lg px-3 py-1.5 text-white text-sm outline-none"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-(--color_text_muted) mb-1 block">Повторы</label>
-                      <input type="number" value={exReps} min={1}
+                      <label className="text-[10px] text-(--color_text_muted) mb-1 block">
+                        Повторы
+                      </label>
+                      <input
+                        type="number"
+                        value={exReps}
+                        min={0}
+                        placeholder="0"
                         onChange={(e) => setExReps(+e.target.value)}
+                        onClick={(e) => { if (e.button === 0) e.currentTarget.select(); }}
                         className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-lg px-3 py-1.5 text-white text-sm outline-none"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-(--color_text_muted) mb-1 block">Вес кг</label>
-                      <input type="number" value={exWeight} min={0} step={2.5}
+                      <label className="text-[10px] text-(--color_text_muted) mb-1 block">
+                        Вес кг
+                      </label>
+                      <input
+                        type="number"
+                        value={exWeight}
+                        min={0}
+                        step={2.5}
+                        placeholder="0"
                         onChange={(e) => setExWeight(+e.target.value)}
+                        onClick={(e) => { if (e.button === 0) e.currentTarget.select(); }}
                         className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-lg px-3 py-1.5 text-white text-sm outline-none"
                       />
                     </div>
                   </div>
-                )
-              )}
+                ))}
 
               <div className="flex gap-2">
                 <button
@@ -456,7 +583,11 @@ export default function WorkoutInlineForm({
                   Добавить
                 </button>
                 <button
-                  onClick={() => { setShowExPicker(false); setSelectedEx(null); setExSearch(''); }}
+                  onClick={() => {
+                    setShowExPicker(false);
+                    setSelectedEx(null);
+                    setExSearch('');
+                  }}
                   className="px-3 py-1.5 rounded-lg bg-(--color_bg_card) text-(--color_text_muted) text-sm hover:text-white transition-colors"
                 >
                   Отмена
@@ -482,7 +613,10 @@ export default function WorkoutInlineForm({
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-medium text-white">Кому назначить</label>
               {selectedAssignees.length > 0 && (
-                <button onClick={() => setSelectedAssignees([])} className="text-xs text-(--color_text_muted) hover:text-white transition-colors">
+                <button
+                  onClick={() => setSelectedAssignees([])}
+                  className="text-xs text-(--color_text_muted) hover:text-white transition-colors"
+                >
                   Сбросить
                 </button>
               )}
@@ -491,9 +625,19 @@ export default function WorkoutInlineForm({
             {selectedAssignees.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {selectedAssignees.map((a) => (
-                  <span key={`${a.type}-${a.id}`} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-(--color_primary_light) text-white text-xs">
+                  <span
+                    key={`${a.type}-${a.id}`}
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-(--color_primary_light) text-white text-xs"
+                  >
                     {a.type === 'group' ? '👥' : '🏃'} {a.name}
-                    <button onClick={() => setSelectedAssignees((prev) => prev.filter((x) => !(x.type === a.type && x.id === a.id)))} className="ml-0.5 hover:opacity-70">
+                    <button
+                      onClick={() =>
+                        setSelectedAssignees((prev) =>
+                          prev.filter((x) => !(x.type === a.type && x.id === a.id))
+                        )
+                      }
+                      className="ml-0.5 hover:opacity-70"
+                    >
                       <XMarkIcon className="w-3 h-3" />
                     </button>
                   </span>
@@ -506,31 +650,47 @@ export default function WorkoutInlineForm({
             ) : (
               <div className="max-h-52 overflow-y-auto rounded-xl bg-(--color_bg_card_hover) divide-y divide-(--color_border)">
                 {groups.length === 0 && athletes.length === 0 && (
-                  <div className="text-xs text-(--color_text_muted) text-center py-4">Нет групп и атлетов</div>
+                  <div className="text-xs text-(--color_text_muted) text-center py-4">
+                    Нет групп и атлетов
+                  </div>
                 )}
                 {groups.length > 0 && (
                   <div>
-                    <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-(--color_text_muted)">Группы</div>
+                    <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-(--color_text_muted)">
+                      Группы
+                    </div>
                     {groups.map((group) => (
-                      <button key={`group-${group.id}`} onClick={() => toggleGroup(group)}
+                      <button
+                        key={`group-${group.id}`}
+                        onClick={() => toggleGroup(group)}
                         className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left transition-colors ${
-                          isGroupSelected(group.id) ? 'bg-(--color_primary_light) text-white' : 'text-white hover:bg-(--color_border)'
+                          isGroupSelected(group.id)
+                            ? 'bg-(--color_primary_light) text-white'
+                            : 'text-white hover:bg-(--color_border)'
                         }`}
                       >
                         <span>👥</span>
                         <span className="truncate font-medium">{group.name}</span>
-                        <span className="ml-auto text-xs opacity-60 shrink-0">{group.athleteCount} чел.</span>
+                        <span className="ml-auto text-xs opacity-60 shrink-0">
+                          {group.athleteCount} чел.
+                        </span>
                       </button>
                     ))}
                   </div>
                 )}
                 {athletes.length > 0 && (
                   <div>
-                    <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-(--color_text_muted)">Персональные</div>
+                    <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-(--color_text_muted)">
+                      Персональные
+                    </div>
                     {athletes.map((athlete) => (
-                      <button key={`athlete-${athlete.id}`} onClick={() => toggleAthlete(athlete)}
+                      <button
+                        key={`athlete-${athlete.id}`}
+                        onClick={() => toggleAthlete(athlete)}
                         className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left transition-colors ${
-                          isAthleteSelected(athlete.id) ? 'bg-(--color_primary_light) text-white' : 'text-white hover:bg-(--color_border)'
+                          isAthleteSelected(athlete.id)
+                            ? 'bg-(--color_primary_light) text-white'
+                            : 'text-white hover:bg-(--color_border)'
                         }`}
                       >
                         <span>🏃</span>
@@ -546,7 +706,9 @@ export default function WorkoutInlineForm({
 
         {/* Notes */}
         <div>
-          <label className="text-xs text-(--color_text_muted) mb-1 block">Заметки (опционально)</label>
+          <label className="text-xs text-(--color_text_muted) mb-1 block">
+            Заметки (опционально)
+          </label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}

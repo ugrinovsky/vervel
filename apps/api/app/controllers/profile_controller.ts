@@ -75,6 +75,33 @@ export default class ProfileController {
     }
   }
 
+  async becomeAthlete({ auth, response }: HttpContext) {
+    const user = auth.user!
+
+    if (user.role === 'athlete' || user.role === 'both') {
+      return response.badRequest({
+        success: false,
+        message: 'Режим атлета уже активирован',
+      })
+    }
+
+    user.role = 'both'
+    await user.save()
+
+    return response.json({
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role,
+          createdAt: user.createdAt,
+        },
+      },
+    })
+  }
+
   async changePassword({ auth, request, response }: HttpContext) {
     try {
       const user = auth.user!;

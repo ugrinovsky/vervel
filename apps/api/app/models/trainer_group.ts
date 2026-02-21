@@ -1,9 +1,11 @@
 import { DateTime } from 'luxon'
+import { compose } from '@adonisjs/core/helpers'
 import { BaseModel, column, belongsTo, manyToMany } from '@adonisjs/lucid/orm'
+import { SoftDeletes } from 'adonis-lucid-soft-deletes'
 import type { BelongsTo, ManyToMany } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
 
-export default class TrainerGroup extends BaseModel {
+export default class TrainerGroup extends compose(BaseModel, SoftDeletes) {
   @column({ isPrimary: true })
   declare id: number
 
@@ -22,6 +24,7 @@ export default class TrainerGroup extends BaseModel {
     pivotForeignKey: 'group_id',
     relatedKey: 'id',
     pivotRelatedForeignKey: 'athlete_id',
+    pivotTimestamps: { createdAt: 'created_at', updatedAt: false },
   })
   declare athletes: ManyToMany<typeof User>
 

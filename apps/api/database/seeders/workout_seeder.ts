@@ -7,7 +7,13 @@ import { randomUUID } from 'node:crypto';
 
 export default class extends BaseSeeder {
   async run() {
-    const user = await User.first();
+    const user = await User.firstOrCreate(
+      { email: 'test@example.com' },
+      { fullName: 'Test User', password: '123456' }
+    );
+
+    // Idempotency: remove previous workouts for this user
+    await Workout.query().where('userId', user.id).delete();
 
     const exercisesData = [
       {

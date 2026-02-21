@@ -1,5 +1,7 @@
 import { DateTime } from 'luxon';
+import { compose } from '@adonisjs/core/helpers';
 import { BaseModel, column, belongsTo } from '@adonisjs/lucid/orm';
+import { SoftDeletes } from 'adonis-lucid-soft-deletes';
 import type { BelongsTo } from '@adonisjs/lucid/types/relations';
 import User from './user.js';
 
@@ -54,7 +56,7 @@ export type WorkoutExercise = {
   rounds?: number;
 };
 
-export default class Workout extends BaseModel {
+export default class Workout extends compose(BaseModel, SoftDeletes) {
   @column({ isPrimary: true })
   declare id: number;
 

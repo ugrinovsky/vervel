@@ -8,6 +8,8 @@ import TrainerTodayScreen from '@/screens/TrainerTodayScreen/TrainerTodayScreen'
 import TrainerGroupsListScreen from '@/screens/TrainerGroupsListScreen/TrainerGroupsListScreen';
 import TrainerAthletesListScreen from '@/screens/TrainerAthletesListScreen/TrainerAthletesListScreen';
 import TrainerCalendarScreen from '@/screens/TrainerCalendarScreen/TrainerCalendarScreen';
+import TrainerTemplatesScreen from '@/screens/TrainerTemplatesScreen/TrainerTemplatesScreen';
+import AthleteMyTeamScreen from '@/screens/AthleteMyTeamScreen/AthleteMyTeamScreen';
 import {
   ChartBarIcon,
   PlusIcon,
@@ -18,6 +20,7 @@ import {
   UserGroupIcon,
   ClockIcon,
   UsersIcon,
+  RectangleStackIcon,
 } from '@heroicons/react/24/outline';
 
 export interface RouteItem {
@@ -55,6 +58,20 @@ export const athleteRoutes: RouteItem[] = [
     toolbarPosition: 'center',
   },
   {
+    path: '/my-team',
+    label: 'Команда',
+    icon: UserGroupIcon,
+    element: <AthleteMyTeamScreen />,
+    toolbarPosition: 'left',
+  },
+  {
+    path: '/streak',
+    label: 'Ачивки',
+    icon: SparklesIcon,
+    element: <StreakScreen />,
+    toolbarPosition: 'right',
+  },
+  {
     path: '/profile',
     label: 'Профиль',
     icon: Cog6ToothIcon,
@@ -69,18 +86,6 @@ export const athleteRoutes: RouteItem[] = [
     toolbarPosition: 'right',
     isButton: true,
     accent: true,
-  },
-  {
-    path: '/achivements',
-    label: 'Achivements',
-    icon: SparklesIcon,
-    element: <AvatarScreen />,
-  },
-  {
-    path: '/streak',
-    label: 'Streak',
-    icon: SparklesIcon,
-    element: <StreakScreen />,
   },
 ];
 
@@ -106,6 +111,13 @@ export const trainerRoutes: RouteItem[] = [
     icon: UsersIcon,
     element: <TrainerAthletesListScreen />,
     toolbarPosition: 'left',
+  },
+  {
+    path: '/trainer/templates',
+    label: 'Шаблоны',
+    icon: RectangleStackIcon,
+    element: <TrainerTemplatesScreen />,
+    toolbarPosition: 'right',
   },
   {
     path: '/trainer/calendar',

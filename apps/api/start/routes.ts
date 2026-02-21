@@ -40,6 +40,7 @@ router
     router.get('profile', '#controllers/profile_controller.getProfile');
     router.put('profile', '#controllers/profile_controller.updateProfile');
     router.put('profile/password', '#controllers/profile_controller.changePassword');
+    router.post('profile/become-athlete', '#controllers/profile_controller.becomeAthlete');
 
     // Streak routes
     router.get('streak', '#controllers/streak_controller.show');
@@ -52,6 +53,17 @@ router
     // Invite
     router.post('invite/accept', '#controllers/invite_controller.acceptInvite');
     router.get('profile/qr-data', '#controllers/invite_controller.getQrData');
+
+    // Athlete: my groups and trainers
+    router.get('athlete/my-groups', '#controllers/athlete_controller.getMyGroups');
+    router.get('athlete/my-trainers', '#controllers/athlete_controller.getMyTrainers');
+    router.get('athlete/chats/group/:groupId', '#controllers/athlete_controller.getOrCreateGroupChat');
+    router.get('athlete/chats/trainer/:trainerId', '#controllers/athlete_controller.getOrCreatePersonalChat');
+
+    // Shared chat messages (trainer or athlete participant)
+    router.get('chats/:chatId/messages', '#controllers/chat_controller.getMessagesShared');
+    router.post('chats/:chatId/messages', '#controllers/chat_controller.sendMessageShared');
+    router.post('chats/:chatId/read', '#controllers/chat_controller.markAsRead');
   })
   .use(middleware.auth());
 
@@ -60,6 +72,8 @@ router
   .group(() => {
     // Today overview
     router.get('today', '#controllers/trainer_controller.getTodayOverview');
+    router.get('profile-stats', '#controllers/trainer_controller.getProfileStats');
+    router.get('unread-counts', '#controllers/chat_controller.getUnreadCounts');
 
     // Athletes
     router.get('athletes', '#controllers/trainer_controller.listAthletes');

@@ -4,21 +4,27 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
-import { trainerApi, type TrainerGroupItem } from '@/api/trainer';
-import { PlusIcon, UserGroupIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { trainerApi, type TrainerGroupItem, type UnreadCounts } from '@/api/trainer';
+import { PlusIcon, UserGroupIcon, TrashIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 export default function TrainerGroupsListScreen() {
   const navigate = useNavigate();
   const [groups, setGroups] = useState<TrainerGroupItem[]>([]);
+  const [unreadCounts, setUnreadCounts] = useState<UnreadCounts | null>(null);
   const [loading, setLoading] = useState(true);
   const [showGroupInput, setShowGroupInput] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const groupsRes = await trainerApi.listGroups();
+      const [groupsRes, unreadRes] = await Promise.all([
+        trainerApi.listGroups(),
+        trainerApi.getUnreadCounts(),
+      ]);
       setGroups(groupsRes.data.data);
+      setUnreadCounts(unreadRes.data.data);
     } catch {
       toast.error('Ошибка загрузки данных');
     } finally {
@@ -46,12 +52,16 @@ export default function TrainerGroupsListScreen() {
   const handleDeleteGroup = async (id: number) => {
     try {
       await trainerApi.deleteGroup(id);
+      setConfirmDeleteId(null);
       toast.success('Группа удалена');
       loadData();
     } catch {
       toast.error('Ошибка удаления группы');
     }
   };
+
+  const getGroupUnread = (groupId: number) =>
+    unreadCounts?.groups.find((g) => g.groupId === groupId)?.unread ?? 0;
 
   if (loading) {
     return (
@@ -123,32 +133,62 @@ export default function TrainerGroupsListScreen() {
             </p>
           ) : (
             <div className="space-y-2">
-              {groups.map((group) => (
-                <div
-                  key={group.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-[var(--color_bg_card_hover)] hover:bg-[var(--color_border)] transition-colors cursor-pointer"
-                  onClick={() => navigate(`/trainer/groups/${group.id}`)}
-                >
-                  <div className="flex items-center gap-3">
-                    <UserGroupIcon className="w-5 h-5 text-[var(--color_primary_light)]" />
-                    <div>
-                      <div className="text-sm font-medium text-white">{group.name}</div>
-                      <div className="text-xs text-[var(--color_text_muted)]">
-                        {group.athleteCount} атлетов
+              {groups.map((group) => {
+                const unread = getGroupUnread(group.id);
+                return (
+                  <div
+                    key={group.id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors cursor-pointer"
+                    onClick={() => navigate(`/trainer/groups/${group.id}`)}
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <UserGroupIcon className="w-5 h-5 text-(--color_primary_light) shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-white truncate">{group.name}</div>
+                        <div className="text-xs text-(--color_text_muted)">
+                          {group.athleteCount} атлетов
+                        </div>
                       </div>
                     </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      {unread > 0 && (
+                        <div className="min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">
+                          {unread > 99 ? '99+' : unread}
+                        </div>
+                      )}
+                      {confirmDeleteId === group.id ? (
+                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                          <span className="text-xs text-red-400 mr-1">Удалить?</span>
+                          <button
+                            onClick={() => handleDeleteGroup(group.id)}
+                            className="p-1 text-red-400 hover:text-red-300 transition-colors"
+                            title="Да"
+                          >
+                            <CheckIcon className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="p-1 text-(--color_text_muted) hover:text-white transition-colors"
+                            title="Отмена"
+                          >
+                            <XMarkIcon className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmDeleteId(group.id);
+                          }}
+                          className="text-(--color_text_muted) hover:text-red-400 transition-colors p-1"
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteGroup(group.id);
-                    }}
-                    className="text-[var(--color_text_muted)] hover:text-red-400 transition-colors p-1"
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </motion.div>

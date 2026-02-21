@@ -35,7 +35,7 @@ export const useWorkoutStats = (period: StatsPeriod): UseWorkoutStatsResult => {
     zones: {},
     timeline: [],
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchStats = useCallback(async () => {

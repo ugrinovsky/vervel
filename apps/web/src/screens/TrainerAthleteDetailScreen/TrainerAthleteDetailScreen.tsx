@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
-import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import ChatBox from '@/components/ChatBox/ChatBox';
 import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
 import WorkoutRadar from '@/components/analytics/WorkoutRadar';
@@ -12,12 +11,16 @@ import TopMuscles from '@/components/analytics/TopMuscles';
 import MuscleBalance from '@/components/analytics/MuscleBalance';
 import CollapsibleBlock from '@/components/ui/CollapsibleBlock';
 import Avatar from '@/components/Avatar/Avatar';
+import MiniAvatar from '@/components/MiniAvatar/MiniAvatar';
 import { useAthleteStats, type StatsPeriod } from '@/hooks/useAthleteStats';
 import { useAthleteAvatar } from '@/hooks/useAthleteAvatar';
 import { trainerApi } from '@/api/trainer';
 import { ArrowLeftIcon, ChatBubbleLeftIcon, ChartBarIcon, UserIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 type Tab = 'chat' | 'analytics' | 'avatar' | 'create';
+
+const TAB_ACTIVE = 'bg-(--color_primary_light) text-white shadow-lg';
+const TAB_IDLE = 'bg-(--color_bg_card) text-(--color_text_secondary) hover:text-white';
 
 export default function TrainerAthleteDetailScreen() {
   const { athleteId } = useParams<{ athleteId: string }>();
@@ -61,16 +64,23 @@ export default function TrainerAthleteDetailScreen() {
   return (
     <Screen>
       <div className="p-4 w-full max-w-2xl mx-auto">
-        {/* Back button */}
+        {/* Back */}
         <button
           onClick={() => navigate('/trainer/athletes')}
-          className="flex items-center gap-2 text-[var(--color_text_muted)] hover:text-white transition-colors mb-4"
+          className="flex items-center gap-2 text-(--color_text_muted) hover:text-white transition-colors mb-4"
         >
           <ArrowLeftIcon className="w-5 h-5" />
           <span className="text-sm">Назад</span>
         </button>
 
-        <ScreenHeader icon="🏃" title={athleteName} description="Чат, аналитика и восстановление" />
+        {/* Header: мини-аватар + имя атлета */}
+        <div className="flex items-center gap-4 mb-6">
+          <MiniAvatar zoneIntensities={zoneIntensities} size="md" name={athleteName} />
+          <div>
+            <h1 className="text-xl font-bold text-white">{athleteName}</h1>
+            <p className="text-sm text-(--color_text_muted) mt-0.5">Чат, аналитика и восстановление</p>
+          </div>
+        </div>
 
         {/* Tabs */}
         <motion.div
@@ -80,44 +90,28 @@ export default function TrainerAthleteDetailScreen() {
         >
           <button
             onClick={() => setTab('chat')}
-            className={`flex items-center justify-center gap-1 py-3 rounded-xl text-sm font-medium transition-all ${
-              tab === 'chat'
-                ? 'bg-[var(--color_primary_light)] text-white shadow-lg'
-                : 'bg-[var(--color_bg_card)] text-[var(--color_text_secondary)] hover:text-white'
-            }`}
+            className={`flex items-center justify-center gap-1 py-3 rounded-xl text-sm font-medium transition-all ${tab === 'chat' ? TAB_ACTIVE : TAB_IDLE}`}
           >
             <ChatBubbleLeftIcon className="w-4 h-4" />
             Чат
           </button>
           <button
             onClick={() => setTab('analytics')}
-            className={`flex items-center justify-center gap-1 py-3 rounded-xl text-sm font-medium transition-all ${
-              tab === 'analytics'
-                ? 'bg-[var(--color_primary_light)] text-white shadow-lg'
-                : 'bg-[var(--color_bg_card)] text-[var(--color_text_secondary)] hover:text-white'
-            }`}
+            className={`flex items-center justify-center gap-1 py-3 rounded-xl text-sm font-medium transition-all ${tab === 'analytics' ? TAB_ACTIVE : TAB_IDLE}`}
           >
             <ChartBarIcon className="w-4 h-4" />
             Аналитика
           </button>
           <button
             onClick={() => setTab('avatar')}
-            className={`flex items-center justify-center gap-1 py-3 rounded-xl text-sm font-medium transition-all ${
-              tab === 'avatar'
-                ? 'bg-[var(--color_primary_light)] text-white shadow-lg'
-                : 'bg-[var(--color_bg_card)] text-[var(--color_text_secondary)] hover:text-white'
-            }`}
+            className={`flex items-center justify-center gap-1 py-3 rounded-xl text-sm font-medium transition-all ${tab === 'avatar' ? TAB_ACTIVE : TAB_IDLE}`}
           >
             <UserIcon className="w-4 h-4" />
             Нагрузка
           </button>
           <button
             onClick={() => setTab('create')}
-            className={`flex items-center justify-center gap-1 py-3 rounded-xl text-sm font-medium transition-all ${
-              tab === 'create'
-                ? 'bg-[var(--color_primary_light)] text-white shadow-lg'
-                : 'bg-[var(--color_bg_card)] text-[var(--color_text_secondary)] hover:text-white'
-            }`}
+            className={`flex items-center justify-center gap-1 py-3 rounded-xl text-sm font-medium transition-all ${tab === 'create' ? TAB_ACTIVE : TAB_IDLE}`}
           >
             <PlusIcon className="w-4 h-4" />
           </button>
@@ -128,7 +122,7 @@ export default function TrainerAthleteDetailScreen() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-[var(--color_bg_card)] rounded-2xl border border-[var(--color_border)] overflow-hidden"
+            className="bg-(--color_bg_card) rounded-2xl border border-(--color_border) overflow-hidden"
           >
             <ChatBox chatId={chatId} />
           </motion.div>
@@ -137,7 +131,6 @@ export default function TrainerAthleteDetailScreen() {
         {/* Analytics tab */}
         {tab === 'analytics' && (
           <>
-            {/* Period filter */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -150,8 +143,8 @@ export default function TrainerAthleteDetailScreen() {
                   onClick={() => setTimeRange(period)}
                   className={`py-3 rounded-xl text-sm font-medium transition-all ${
                     timeRange === period
-                      ? 'bg-[var(--color_primary_light)] text-white shadow-lg shadow-[var(--color_primary_light)]/30'
-                      : 'bg-[var(--color_bg_card)] text-[var(--color_text_secondary)] hover:text-white'
+                      ? 'bg-(--color_primary_light) text-white shadow-lg shadow-(--color_primary_light)/30'
+                      : 'bg-(--color_bg_card) text-(--color_text_secondary) hover:text-white'
                   }`}
                 >
                   {period === 'week' ? 'Неделя' : period === 'month' ? 'Месяц' : 'Год'}
@@ -180,7 +173,7 @@ export default function TrainerAthleteDetailScreen() {
             )}
 
             {!stats && (
-              <div className="text-center text-[var(--color_text_muted)] py-12">
+              <div className="text-center text-(--color_text_muted) py-12">
                 Нет данных за выбранный период
               </div>
             )}
@@ -202,17 +195,12 @@ export default function TrainerAthleteDetailScreen() {
 
             {!avatarLoading && avatarData && (
               <div className="space-y-4">
-                {/* Stats summary */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-[var(--color_bg_card)] rounded-xl p-4 border border-[var(--color_border)] text-center">
-                    <div className="text-2xl font-bold text-white">
-                      {avatarData.totalWorkouts}
-                    </div>
-                    <div className="text-xs text-[var(--color_text_muted)] mt-1">
-                      Тренировок за 14 дней
-                    </div>
+                  <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+                    <div className="text-2xl font-bold text-white">{avatarData.totalWorkouts}</div>
+                    <div className="text-xs text-(--color_text_muted) mt-1">Тренировок за 14 дней</div>
                   </div>
-                  <div className="bg-[var(--color_bg_card)] rounded-xl p-4 border border-[var(--color_border)] text-center">
+                  <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
                     <div className="text-2xl font-bold text-white">
                       {avatarData.lastWorkoutDaysAgo === null
                         ? '—'
@@ -220,13 +208,10 @@ export default function TrainerAthleteDetailScreen() {
                           ? 'Сегодня'
                           : `${avatarData.lastWorkoutDaysAgo} дн.`}
                     </div>
-                    <div className="text-xs text-[var(--color_text_muted)] mt-1">
-                      Последняя тренировка
-                    </div>
+                    <div className="text-xs text-(--color_text_muted) mt-1">Последняя тренировка</div>
                   </div>
                 </div>
 
-                {/* Avatar */}
                 <Avatar
                   zoneIntensities={zoneIntensities}
                   selectedZone={null}
@@ -236,25 +221,16 @@ export default function TrainerAthleteDetailScreen() {
             )}
 
             {!avatarLoading && !avatarData && (
-              <div className="text-center text-[var(--color_text_muted)] py-12">
-                Нет данных
-              </div>
+              <div className="text-center text-(--color_text_muted) py-12">Нет данных</div>
             )}
           </motion.div>
         )}
 
         {/* Create workout tab */}
         {tab === 'create' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <WorkoutInlineForm
-              preselectedAssignee={{
-                type: 'athlete',
-                id: id,
-                name: athleteName,
-              }}
+              preselectedAssignee={{ type: 'athlete', id: id, name: athleteName }}
               onSuccess={() => {
                 toast.success('Тренировка создана');
                 setTab('chat');

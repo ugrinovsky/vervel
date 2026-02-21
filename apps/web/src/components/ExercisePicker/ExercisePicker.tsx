@@ -25,18 +25,18 @@ export default function ExercisePicker({ onSelect, workoutType }: IProps) {
   }, []);
 
   const handleAdd = () => {
-    // Создаём начальный сет с ID
-    const initialSet = {
+    const count = Math.max(1, params.sets || 1);
+    const initialSets = Array.from({ length: count }, () => ({
       id: crypto.randomUUID(),
       reps: params.reps || 10,
       weight: params.weight || 0,
-    };
+    }));
 
     onSelect({
       exerciseId: selectedExercise.value,
       title: selectedExercise.label,
-      sets: [initialSet], // массив с одним сетом
-      params: { ...params }, // оставляем для обратной совместимости
+      sets: initialSets,
+      params: { ...params },
     });
 
     setSelectedExercise(null);

@@ -14,7 +14,7 @@ export default class TrainerAthlete extends BaseModel {
   declare athleteId: number | null
 
   @column()
-  declare status: 'active' | 'pending'
+  declare status: 'active' | 'pending' | 'inactive'
 
   @column()
   declare inviteToken: string | null
