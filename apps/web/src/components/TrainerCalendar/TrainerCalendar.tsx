@@ -32,8 +32,8 @@ function countToLoad(count: number): 'none' | 'low' | 'medium' | 'high' {
 
 const loadColors = {
   none: 'bg-[var(--color_bg_card)]',
-  low: 'bg-emerald-800',
-  medium: 'bg-emerald-600',
+  low: 'bg-emerald-600',
+  medium: 'bg-emerald-500',
   high: 'bg-emerald-400',
 };
 

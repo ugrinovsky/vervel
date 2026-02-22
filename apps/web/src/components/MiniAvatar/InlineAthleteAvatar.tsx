@@ -4,9 +4,10 @@ import { trainerApi } from '@/api/trainer';
 
 interface Props {
   athleteId: number;
+  size?: 'sm' | 'md' | 'lg';
 }
 
-export default function InlineAthleteAvatar({ athleteId }: Props) {
+export default function InlineAthleteAvatar({ athleteId, size = 'lg' }: Props) {
   const [zones, setZones] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -23,5 +24,5 @@ export default function InlineAthleteAvatar({ athleteId }: Props) {
       .catch(() => {});
   }, [athleteId]);
 
-  return <MiniAvatar zoneIntensities={zones} size="sm" />;
+  return <MiniAvatar zoneIntensities={zones} size={size} />;
 }

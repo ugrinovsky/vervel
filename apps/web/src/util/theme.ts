@@ -21,7 +21,16 @@ export function applyTheme(hue: number) {
 
   const primary = hslToRgb(h, 74, 21);
   const primaryDark = hslToRgb(hDark, 67, 17);
-  const primaryLight = hslToRgb(hLight, 84, 39);
+  // Optimized for solid button backgrounds with white text.
+  // Perceptual compensation: blue/purple are inherently darker in HSL, need higher L.
+  // Yellow/orange are perceptually bright, need lower L to avoid neon.
+  const hN = ((hLight % 360) + 360) % 360;
+  const lightL =
+    hN >= 30 && hN <= 100 ? 38   // yellow/orange: very bright hues, keep low
+    : hN >= 100 && hN <= 170 ? 38 // green/teal: reduce to match emerald-500 feel (~39%)
+    : hN >= 200 && hN <= 290 ? 50 // blue/purple: perceptually darker, needs higher L
+    : 44;                          // red/pink/other: moderate
+  const primaryLight = hslToRgb(hLight, 75, lightL);
 
   // Custom app variables
   root.style.setProperty('--color_primary', `rgb(${primary})`);
@@ -37,27 +46,26 @@ export function applyTheme(hue: number) {
     `radial-gradient(circle at 50% 52.5%, rgb(${primary}) 0%, rgb(${primaryDark}) 90%)`
   );
 
-  // Override Tailwind color families so all emerald/teal/green classes follow theme
-  // [saturation, lightness] — light shades (100-400) are bright for readability on dark bg
+  // Override Tailwind color families so all emerald/teal/green classes follow theme.
+  // [saturation, lightness] — calibrated to match Tailwind's original emerald scale proportions.
   const shades: Record<string, [number, number]> = {
-    '100': [70, 95],
-    '200': [75, 88],
-    '300': [70, 78],
-    '400': [60, 68],
-    '500': [75, 55],
-    '600': [80, 45],
-    '700': [85, 35],
-    '800': [80, 25],
-    '900': [75, 18],
+    '100': [65, 92],
+    '200': [70, 82],
+    '300': [68, 72],
+    '400': [68, 55],
+    '500': [78, 40],
+    '600': [82, 31],
+    '700': [84, 23],
+    '800': [80, 17],
+    '900': [75, 13],
   };
 
-  // Map color families to hue offsets from the base theme hue
+  // Only remap green-family classes to follow the theme hue.
+  // Yellow/orange are warm accent colors — keep Tailwind defaults (no override).
   const families: Record<string, number> = {
     emerald: hLight,
     teal: hLight,
     green: hLight,
-    yellow: (hLight + 40) % 360,
-    orange: (hLight + 60) % 360,
   };
 
   for (const [shade, [sat, light]] of Object.entries(shades)) {
@@ -83,12 +91,16 @@ export function initTheme() {
 }
 
 export const THEME_PRESETS = [
-  { label: 'Бирюзовый', hue: 168 },
-  { label: 'Синий', hue: 220 },
-  { label: 'Фиолетовый', hue: 270 },
-  { label: 'Розовый', hue: 330 },
-  { label: 'Красный', hue: 0 },
-  { label: 'Оранжевый', hue: 25 },
-  { label: 'Жёлтый', hue: 50 },
   { label: 'Зелёный', hue: 140 },
+  { label: 'Мятный', hue: 163 },
+  { label: 'Бирюзовый', hue: 175 },
+  { label: 'Лазурный', hue: 195 },
+  { label: 'Синий', hue: 218 },
+  { label: 'Индиго', hue: 248 },
+  { label: 'Фиолетовый', hue: 270 },
+  { label: 'Сиреневый', hue: 285 },
+  { label: 'Розовый', hue: 318 },
+  { label: 'Малиновый', hue: 345 },
+  { label: 'Коралловый', hue: 8 },
+  { label: 'Янтарный', hue: 38 },
 ];

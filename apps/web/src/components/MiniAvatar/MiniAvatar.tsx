@@ -2,7 +2,8 @@ import muscleZones from '@/components/Avatar/manZones';
 
 // sm: встраивается в строку списка (20×52px)
 // md: в блоке сравнения группы (40×104px)
-type Size = 'sm' | 'md';
+// lg: карточка атлета (64×164px)
+type Size = 'sm' | 'md' | 'lg';
 
 interface MiniAvatarProps {
   zoneIntensities: Record<string, number>;
@@ -26,8 +27,9 @@ function getFillColor(zoneName: string, zoneIntensities: Record<string, number>)
 }
 
 const SIZE_CLASSES: Record<Size, { wrapper: string; label: string }> = {
-  sm: { wrapper: 'w-5 h-[52px]',  label: 'hidden' },
+  sm: { wrapper: 'w-5 h-[52px]',   label: 'hidden' },
   md: { wrapper: 'w-10 h-[104px]', label: 'text-[10px] text-(--color_text_secondary) truncate max-w-[44px] text-center leading-tight' },
+  lg: { wrapper: 'w-24 h-[246px]', label: 'hidden' },
 };
 
 export default function MiniAvatar({

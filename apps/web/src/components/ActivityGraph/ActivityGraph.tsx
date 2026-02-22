@@ -21,8 +21,8 @@ interface ActivityCalendarProps {
 
 const loadColors: Record<LoadType, string> = {
   none: 'bg-(--color_bg_card)',
-  low: 'bg-emerald-800',
-  medium: 'bg-emerald-600',
+  low: 'bg-emerald-600',
+  medium: 'bg-emerald-500',
   high: 'bg-emerald-400',
 };
 

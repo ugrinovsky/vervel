@@ -414,7 +414,7 @@ export default function TrainerTemplatesScreen() {
               {templates.map((template) => (
                 <div
                   key={template.id}
-                  className="p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors"
+                  className="relative p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors"
                 >
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 flex-1">
@@ -429,28 +429,28 @@ export default function TrainerTemplatesScreen() {
                       )}
                     </div>
                     <div className="flex items-center gap-1 ml-2 shrink-0">
-                      {confirmDeleteId === template.id ? (
-                        <>
-                          <span className="text-xs text-red-400 mr-1">Удалить?</span>
-                          <button onClick={() => handleDelete(template.id)} className="p-1.5 text-red-400 hover:text-red-300 transition-colors" title="Да">
-                            <CheckIcon className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => setConfirmDeleteId(null)} className="p-1.5 text-(--color_text_muted) hover:text-white transition-colors" title="Отмена">
-                            <XMarkIcon className="w-4 h-4" />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button onClick={() => openEdit(template)} className="p-1.5 text-(--color_text_muted) hover:text-white transition-colors" title="Редактировать">
-                            <PencilIcon className="w-4 h-4" />
-                          </button>
-                          <button onClick={() => setConfirmDeleteId(template.id)} className="p-1.5 text-(--color_text_muted) hover:text-red-400 transition-colors" title="Удалить">
-                            <TrashIcon className="w-4 h-4" />
-                          </button>
-                        </>
-                      )}
+                      <button onClick={() => openEdit(template)} className="p-1.5 text-(--color_text_muted) hover:text-white transition-colors" title="Редактировать">
+                        <PencilIcon className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => setConfirmDeleteId(template.id)} className="p-1.5 text-(--color_text_muted) hover:text-red-400 transition-colors" title="Удалить">
+                        <TrashIcon className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
+                  {confirmDeleteId === template.id && (
+                    <div
+                      className="absolute inset-0 rounded-xl bg-black/40 backdrop-blur-sm flex items-center justify-center gap-3 z-10"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span className="text-sm text-red-400 font-medium">Удалить шаблон?</span>
+                      <button onClick={() => handleDelete(template.id)} className="p-1.5 text-red-400 hover:text-red-300 transition-colors" title="Да">
+                        <CheckIcon className="w-5 h-5" />
+                      </button>
+                      <button onClick={() => setConfirmDeleteId(null)} className="p-1.5 text-white/60 hover:text-white transition-colors" title="Отмена">
+                        <XMarkIcon className="w-5 h-5" />
+                      </button>
+                    </div>
+                  )}
 
                   {/* Exercises preview */}
                   {template.exercises?.length > 0 && (

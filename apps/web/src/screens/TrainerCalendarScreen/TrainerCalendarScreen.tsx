@@ -7,7 +7,7 @@ import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm'
 import TrainerCalendar, { type TrainerDayData } from '@/components/TrainerCalendar/TrainerCalendar';
 import { trainerApi, type ScheduledWorkout } from '@/api/trainer';
 
-import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 const WORKOUT_TYPE_LABELS: Record<string, string> = {
   crossfit: 'CrossFit',
@@ -16,9 +16,9 @@ const WORKOUT_TYPE_LABELS: Record<string, string> = {
 };
 
 const WORKOUT_TYPE_COLORS: Record<string, string> = {
-  crossfit: 'bg-emerald-700',
-  bodybuilding: 'bg-blue-700',
-  cardio: 'bg-orange-700',
+  crossfit: 'bg-white/10 ring-1 ring-inset ring-white/20',
+  bodybuilding: 'bg-violet-500/15 ring-1 ring-inset ring-violet-500/30',
+  cardio: 'bg-amber-500/15 ring-1 ring-inset ring-amber-500/30',
 };
 
 // Hours shown on timeline (7:00 – 22:00)
@@ -55,6 +55,7 @@ export default function TrainerCalendarScreen() {
   // selectedTime: null = form hidden, string = form open with that time pre-filled
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [editingWorkout, setEditingWorkout] = useState<ScheduledWorkout | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   const loadWorkouts = async (month: Date) => {
     try {
@@ -121,6 +122,7 @@ export default function TrainerCalendarScreen() {
   const handleDelete = async (id: number) => {
     try {
       await trainerApi.deleteScheduledWorkout(id);
+      setConfirmDeleteId(null);
       toast.success('Тренировка удалена');
       loadWorkouts(currentMonth);
     } catch {
@@ -231,8 +233,8 @@ export default function TrainerCalendarScreen() {
                             key={workout.id}
                             initial={{ opacity: 0, x: -8 }}
                             animate={{ opacity: 1, x: 0 }}
-                            onClick={() => openEditForm(workout)}
-                            className={`rounded-xl px-3 py-2 flex items-center justify-between gap-2 cursor-pointer hover:opacity-90 transition-opacity ${
+                            onClick={() => { setConfirmDeleteId(null); openEditForm(workout); }}
+                            className={`relative rounded-xl px-3 py-2 flex items-center justify-between gap-2 cursor-pointer hover:opacity-90 transition-opacity ${
                               editingWorkout?.id === workout.id ? 'ring-2 ring-white/40' : ''
                             } ${
                               WORKOUT_TYPE_COLORS[workout.workoutData.type] ??
@@ -256,11 +258,25 @@ export default function TrainerCalendarScreen() {
                               )}
                             </div>
                             <button
-                              onClick={(e) => { e.stopPropagation(); handleDelete(workout.id); }}
-                              className="text-white/40 hover:text-red-400 transition-colors shrink-0"
+                              onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(workout.id); }}
+                              className="text-white/40 hover:text-red-400 transition-colors shrink-0 p-1"
                             >
                               <TrashIcon className="w-3.5 h-3.5" />
                             </button>
+                            {confirmDeleteId === workout.id && (
+                              <div
+                                className="absolute inset-0 rounded-xl bg-black/40 backdrop-blur-sm flex items-center justify-center gap-3 z-10"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <span className="text-sm text-red-400 font-medium">Удалить?</span>
+                                <button onClick={() => handleDelete(workout.id)} className="p-1.5 text-red-400 hover:text-red-300 transition-colors" title="Да">
+                                  <CheckIcon className="w-5 h-5" />
+                                </button>
+                                <button onClick={() => setConfirmDeleteId(null)} className="p-1.5 text-white/60 hover:text-white transition-colors" title="Отмена">
+                                  <XMarkIcon className="w-5 h-5" />
+                                </button>
+                              </div>
+                            )}
                           </motion.div>
                         ))}
 

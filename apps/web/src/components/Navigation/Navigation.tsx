@@ -109,6 +109,7 @@ function NavItem({ route, unread = 0 }: { route: RouteItem; unread?: number }) {
   return (
     <NavLink
       to={route.path}
+      end
       className={({ isActive }) => (isActive ? 'nav-item-active' : 'nav-item-inactive')}
     >
       <div className="relative">

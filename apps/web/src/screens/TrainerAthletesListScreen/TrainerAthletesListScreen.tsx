@@ -7,7 +7,7 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import AddAthleteDrawer from '@/components/AddAthleteDrawer/AddAthleteDrawer';
 import { trainerApi, type AthleteListItem, type UnreadCounts } from '@/api/trainer';
 import InlineAthleteAvatar from '@/components/MiniAvatar/InlineAthleteAvatar';
-import { PlusIcon, TrashIcon, CheckIcon, XMarkIcon, UsersIcon, ClockIcon, ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, CheckIcon, XMarkIcon, UsersIcon, ClockIcon, ChatBubbleLeftEllipsisIcon, Squares2X2Icon, ViewColumnsIcon } from '@heroicons/react/24/outline';
 
 export default function TrainerAthletesListScreen() {
   const navigate = useNavigate();
@@ -16,6 +16,10 @@ export default function TrainerAthletesListScreen() {
   const [loading, setLoading] = useState(true);
   const [showAddDrawer, setShowAddDrawer] = useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = useState<number | null>(null);
+  const [cols, setCols] = useState<2 | 3>(() => {
+    const stored = localStorage.getItem('athletes_grid_cols');
+    return stored === '3' ? 3 : 2;
+  });
 
   const loadData = async () => {
     try {
@@ -93,85 +97,88 @@ export default function TrainerAthletesListScreen() {
           </div>
         </motion.div>
 
-        {/* Athletes */}
+        {/* Athletes grid */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-[var(--color_bg_card)] rounded-2xl p-5 border border-[var(--color_border)] mb-6"
         >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Все атлеты</h2>
-            <button
-              onClick={() => setShowAddDrawer(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color_primary_light)] text-white text-sm font-medium hover:opacity-90 transition-opacity"
-            >
-              <PlusIcon className="w-4 h-4" />
-              Добавить
-            </button>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-(--color_text_muted) uppercase tracking-wide">Атлеты</h2>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const next = cols === 2 ? 3 : 2;
+                  setCols(next);
+                  localStorage.setItem('athletes_grid_cols', String(next));
+                }}
+                className="p-1.5 rounded-lg bg-(--color_bg_card) border border-(--color_border) text-(--color_text_muted) hover:text-white transition-colors"
+                title={cols === 2 ? '3 колонки' : '2 колонки'}
+              >
+                {cols === 2 ? <ViewColumnsIcon className="w-4 h-4" /> : <Squares2X2Icon className="w-4 h-4" />}
+              </button>
+              <button
+                onClick={() => setShowAddDrawer(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                <PlusIcon className="w-4 h-4" />
+                Добавить
+              </button>
+            </div>
           </div>
 
           {athletes.length === 0 ? (
-            <p className="text-sm text-(--color_text_muted) text-center py-4">
+            <p className="text-sm text-(--color_text_muted) text-center py-8">
               Пока нет привязанных атлетов
             </p>
           ) : (
-            <div className="space-y-2">
+            <div className={`grid gap-3 ${cols === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
               {athletes.map((athlete) => {
                 const unread = getAthleteUnread(athlete.id);
                 return (
-                  <div
+                  <motion.div
                     key={athlete.id}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors cursor-pointer"
+                    whileTap={{ scale: 0.97 }}
+                    className="relative flex flex-col items-center gap-3 p-4 rounded-2xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors cursor-pointer"
                     onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}
                   >
-                    <InlineAthleteAvatar athleteId={athlete.id} />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium text-white truncate">
-                        {athlete.fullName || 'Без имени'}
-                      </div>
-                      <div className="text-xs text-(--color_text_muted) truncate">
-                        {athlete.email}
-                      </div>
-                    </div>
-                    {unread > 0 && confirmRemoveId !== athlete.id && (
-                      <div className="min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
+                    {unread > 0 && (
+                      <div className="absolute top-2.5 right-2.5 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center z-10">
                         {unread > 99 ? '99+' : unread}
                       </div>
                     )}
-                    {confirmRemoveId === athlete.id ? (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setConfirmRemoveId(athlete.id); }}
+                      className="absolute top-2.5 left-2.5 text-(--color_text_muted) hover:text-red-400 transition-colors p-0.5 z-10"
+                    >
+                      <TrashIcon className="w-3.5 h-3.5" />
+                    </button>
+                    <InlineAthleteAvatar athleteId={athlete.id} size={cols === 2 ? 'lg' : 'md'} />
+                    <div className="w-full text-center">
+                      <div className={`font-semibold text-white leading-tight line-clamp-2 ${cols === 2 ? 'text-sm' : 'text-xs'}`}>
+                        {athlete.fullName || 'Без имени'}
+                      </div>
+                      <div className="text-[11px] text-(--color_text_muted) truncate mt-0.5">
+                        {athlete.status === 'pending' ? '⏳ Ожидает' : athlete.email}
+                      </div>
+                    </div>
+                    {confirmRemoveId === athlete.id && (
                       <div
-                        className="flex items-center gap-1 shrink-0"
+                        className="absolute inset-0 rounded-2xl bg-black/50 backdrop-blur-sm flex flex-col items-center justify-center gap-2 z-10"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <span className="text-xs text-red-400 mr-1">Отвязать?</span>
-                        <button
-                          onClick={() => handleRemoveAthlete(athlete.id)}
-                          className="p-1 text-red-400 hover:text-red-300 transition-colors"
-                          title="Да"
-                        >
-                          <CheckIcon className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setConfirmRemoveId(null)}
-                          className="p-1 text-(--color_text_muted) hover:text-white transition-colors"
-                          title="Отмена"
-                        >
-                          <XMarkIcon className="w-4 h-4" />
-                        </button>
+                        <span className="text-xs text-red-400 font-medium">Отвязать?</span>
+                        <div className="flex gap-2">
+                          <button onClick={() => handleRemoveAthlete(athlete.id)} className="p-1.5 text-red-400 hover:text-red-300 transition-colors" title="Да">
+                            <CheckIcon className="w-5 h-5" />
+                          </button>
+                          <button onClick={() => setConfirmRemoveId(null)} className="p-1.5 text-white/60 hover:text-white transition-colors" title="Отмена">
+                            <XMarkIcon className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
-                    ) : (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setConfirmRemoveId(athlete.id);
-                        }}
-                        className="text-(--color_text_muted) hover:text-red-400 transition-colors p-1 shrink-0"
-                      >
-                        <TrashIcon className="w-4 h-4" />
-                      </button>
                     )}
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
