@@ -32,10 +32,19 @@ export function applyTheme(hue: number) {
     : 44;                          // red/pink/other: moderate
   const primaryLight = hslToRgb(hLight, 75, lightL);
 
+  // Icon color — brighter than button for visibility on dark backgrounds.
+  const iconL =
+    hN >= 30 && hN <= 100 ? 58
+    : hN >= 100 && hN <= 170 ? 60
+    : hN >= 200 && hN <= 290 ? 70
+    : 63;
+  const primaryIcon = hslToRgb(hLight, 72, iconL);
+
   // Custom app variables
   root.style.setProperty('--color_primary', `rgb(${primary})`);
   root.style.setProperty('--color_primary_dark', `rgb(${primaryDark})`);
   root.style.setProperty('--color_primary_light', `rgb(${primaryLight})`);
+  root.style.setProperty('--color_primary_icon', `rgb(${primaryIcon})`);
 
   root.style.setProperty('--color_primary_ch', primary);
   root.style.setProperty('--color_primary_dark_ch', primaryDark);
@@ -60,12 +69,13 @@ export function applyTheme(hue: number) {
     '900': [75, 13],
   };
 
-  // Only remap green-family classes to follow the theme hue.
-  // Yellow/orange are warm accent colors — keep Tailwind defaults (no override).
+  // All color families follow the theme hue.
   const families: Record<string, number> = {
     emerald: hLight,
     teal: hLight,
     green: hLight,
+    amber: hLight,
+    orange: hLight,
   };
 
   for (const [shade, [sat, light]] of Object.entries(shades)) {
@@ -74,6 +84,8 @@ export function applyTheme(hue: number) {
       root.style.setProperty(`--color-${family}-${shade}`, rgb);
     }
   }
+
+  document.dispatchEvent(new CustomEvent('themechange'));
 }
 
 export function getStoredHue(): number {

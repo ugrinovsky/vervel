@@ -77,7 +77,7 @@ export default function TrainerAthletesListScreen() {
           className="grid grid-cols-3 gap-3 mb-6"
         >
           <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
-            <UsersIcon className="w-5 h-5 text-(--color_primary_light)" />
+            <UsersIcon className="w-5 h-5 text-(--color_primary_icon)" />
             <div className="text-xl font-bold text-white">{athletes.length}</div>
             <div className="text-[11px] text-(--color_text_muted) text-center">Всего</div>
           </div>

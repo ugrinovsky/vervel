@@ -143,7 +143,7 @@ export default function AthleteMyTeamScreen() {
                 className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) mb-4"
               >
                 <div className="flex items-center gap-2 mb-4">
-                  <UsersIcon className="w-5 h-5 text-(--color_primary_light)" />
+                  <UsersIcon className="w-5 h-5 text-(--color_primary_icon)" />
                   <h2 className="text-lg font-semibold text-white">Персональные тренеры</h2>
                 </div>
                 <div className="space-y-2">
@@ -194,7 +194,7 @@ export default function AthleteMyTeamScreen() {
                 className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
               >
                 <div className="flex items-center gap-2 mb-4">
-                  <UserGroupIcon className="w-5 h-5 text-(--color_primary_light)" />
+                  <UserGroupIcon className="w-5 h-5 text-(--color_primary_icon)" />
                   <h2 className="text-lg font-semibold text-white">Мои группы</h2>
                 </div>
                 <div className="space-y-2">
@@ -207,7 +207,7 @@ export default function AthleteMyTeamScreen() {
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-full bg-(--color_primary_light)/20 flex items-center justify-center shrink-0">
-                            <UserGroupIcon className="w-4 h-4 text-(--color_primary_light)" />
+                            <UserGroupIcon className="w-4 h-4 text-(--color_primary_icon)" />
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="text-sm font-medium text-white truncate">

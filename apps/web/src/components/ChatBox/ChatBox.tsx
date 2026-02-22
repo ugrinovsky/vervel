@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { chatApi } from '@/api/chat';
@@ -94,7 +95,8 @@ function WorkoutPreviewCard({ data, onClick }: { data: WorkoutPreviewData; onCli
   );
 }
 
-function WorkoutDetailSheet({ data, onClose }: { data: WorkoutPreviewData; onClose: () => void }) {
+function WorkoutDetailSheet({ data, open, onClose }: { data: WorkoutPreviewData | null; open: boolean; onClose: () => void }) {
+  if (!data) return null;
   const [y, m, d] = data.date.split('-').map(Number);
   const dateStr = format(new Date(y, m - 1, d), 'd MMMM yyyy', { locale: ru });
   const cfg = TYPE_CONFIG[data.workoutType];
@@ -112,43 +114,20 @@ function WorkoutDetailSheet({ data, onClose }: { data: WorkoutPreviewData; onClo
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-end"
-      onClick={onClose}
-    >
-      <div className="absolute inset-0 bg-black/60" />
-      <motion.div
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-        onClick={(e) => e.stopPropagation()}
-        className="background relative w-full rounded-t-3xl p-6 pb-24 space-y-4 max-h-[85vh] overflow-y-auto"
-        style={{ backgroundColor: 'var(--color_bg_card)' }}
-      >
-        {/* Handle */}
-        <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-white/20" />
-
-        {/* Header */}
-        <div className="flex items-start justify-between pt-2">
-          <div>
-            <div className="flex items-center gap-2 mb-0.5">
-              <span className="text-2xl">{cfg.emoji}</span>
-              <span className="text-lg font-bold text-white">Тренировка</span>
-            </div>
-            <span className={`text-sm font-semibold ${cfg.color}`}>{cfg.label}</span>
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      header={
+        <div>
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-2xl">{cfg.emoji}</span>
+            <span className="text-lg font-bold text-white">Тренировка</span>
           </div>
-          <button
-            onClick={onClose}
-            className="text-white/40 hover:text-white transition-colors p-1 text-lg leading-none"
-          >
-            ✕
-          </button>
+          <span className={`text-sm font-semibold ${cfg.color}`}>{cfg.label}</span>
         </div>
-
+      }
+    >
+      <div className="space-y-4">
         {/* Date & time */}
         <div
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-white/10"
@@ -251,8 +230,8 @@ function WorkoutDetailSheet({ data, onClose }: { data: WorkoutPreviewData; onClo
             </div>
           </div>
         )}
-      </motion.div>
-    </motion.div>
+      </div>
+    </BottomSheet>
   );
 }
 
@@ -451,11 +430,11 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
       </div>
 
       {/* Workout detail sheet */}
-      <AnimatePresence>
-        {openPreview && (
-          <WorkoutDetailSheet data={openPreview} onClose={() => setOpenPreview(null)} />
-        )}
-      </AnimatePresence>
+      <WorkoutDetailSheet
+        data={openPreview}
+        open={!!openPreview}
+        onClose={() => setOpenPreview(null)}
+      />
     </div>
   );
 }

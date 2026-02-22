@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import Drawer from '@/components/Drawer';
+import BottomSheet from '@/components/BottomSheet/BottomSheet';
+import QrScanner from '@/components/QrScanner/QrScanner';
 import { trainerApi } from '@/api/trainer';
 
 interface Props {
@@ -11,6 +12,83 @@ interface Props {
 }
 
 type Tab = 'email' | 'invite' | 'qr';
+
+function QrScanTab({ active, onAdded }: { active: boolean; onAdded: () => void }) {
+  const [state, setState] = useState<'scanning' | 'loading' | 'success' | 'error'>('scanning');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const handleScan = async (raw: string) => {
+    setState('loading');
+    try {
+      const parsed = JSON.parse(raw) as { athleteId?: number };
+      if (!parsed.athleteId) throw new Error('invalid qr');
+      await trainerApi.addByQr(parsed.athleteId);
+      setState('success');
+      toast.success('Атлет добавлен');
+      setTimeout(onAdded, 800);
+    } catch {
+      setErrorMsg('Не удалось добавить атлета. Попробуйте снова.');
+      setState('error');
+    }
+  };
+
+  const reset = () => setState('scanning');
+
+  if (state === 'success') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col items-center gap-3 py-10"
+      >
+        <div className="w-14 h-14 rounded-full bg-(--color_primary_light) flex items-center justify-center text-2xl text-white">
+          ✓
+        </div>
+        <p className="text-sm text-white font-medium">Атлет добавлен</p>
+      </motion.div>
+    );
+  }
+
+  if (state === 'error') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col items-center gap-4 py-6"
+      >
+        <p className="text-sm text-red-400 text-center">{errorMsg}</p>
+        <button
+          onClick={reset}
+          className="px-6 py-2.5 rounded-xl text-sm font-medium bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity"
+        >
+          Попробовать снова
+        </button>
+      </motion.div>
+    );
+  }
+
+  if (state === 'loading') {
+    return (
+      <div className="flex flex-col items-center gap-3 py-10">
+        <div className="w-8 h-8 border-2 border-(--color_primary_light) border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-(--color_text_muted)">Добавляем атлета...</p>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-3"
+    >
+      <QrScanner active={active} onScan={handleScan} />
+      <p className="text-xs text-center text-(--color_text_muted)">
+        Наведите камеру на QR-код из профиля атлета
+      </p>
+    </motion.div>
+  );
+}
 
 export default function AddAthleteDrawer({ open, onClose, onAdded }: Props) {
   const [tab, setTab] = useState<Tab>('email');
@@ -61,107 +139,95 @@ export default function AddAthleteDrawer({ open, onClose, onAdded }: Props) {
   ];
 
   return (
-    <Drawer
-      open={open}
-      onClose={onClose}
-      header={<span className="text-lg font-semibold text-white">Добавить атлета</span>}
-    >
+    <BottomSheet open={open} onClose={onClose} title="Добавить атлета" emoji="➕">
       <div className="space-y-4">
         {/* Tabs */}
-        <div className="flex gap-2">
-          {tabs.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                tab === t.key
-                  ? 'bg-[var(--color_primary_light)] text-white'
-                  : 'bg-[var(--color_bg_card)] text-[var(--color_text_muted)] hover:text-white'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+            <div className="flex gap-2">
+              {tabs.map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
+                    tab === t.key
+                      ? 'bg-(--color_primary_light) text-white'
+                      : 'bg-(--color_bg_card_hover) text-(--color_text_muted) hover:text-white'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
 
-        {/* Email tab */}
-        {tab === 'email' && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-3"
-          >
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="email@example.com"
-              className="w-full bg-[var(--color_bg_input)] border border-[var(--color_border)] rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-[var(--color_primary_light)] transition-colors"
-              onKeyDown={(e) => e.key === 'Enter' && handleAddByEmail()}
-            />
-            <button
-              onClick={handleAddByEmail}
-              disabled={loading || !email.trim()}
-              className="w-full py-3 rounded-xl text-sm font-medium bg-[var(--color_primary_light)] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              {loading ? 'Добавляем...' : 'Добавить'}
-            </button>
-          </motion.div>
-        )}
-
-        {/* Invite link tab */}
-        {tab === 'invite' && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-3"
-          >
-            {!inviteLink ? (
-              <button
-                onClick={handleGenerateInvite}
-                disabled={loading}
-                className="w-full py-3 rounded-xl text-sm font-medium bg-[var(--color_primary_light)] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+            {/* Email tab */}
+            {tab === 'email' && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-3"
               >
-                {loading ? 'Генерируем...' : 'Сгенерировать ссылку'}
-              </button>
-            ) : (
-              <div className="space-y-3">
-                <div className="bg-[var(--color_bg_input)] border border-[var(--color_border)] rounded-xl px-4 py-3 text-sm text-white break-all">
-                  {inviteLink}
-                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="email@example.com"
+                  className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors"
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddByEmail()}
+                />
                 <button
-                  onClick={handleCopyLink}
-                  className="w-full py-3 rounded-xl text-sm font-medium bg-[var(--color_bg_card_hover)] text-white hover:opacity-90 transition-opacity"
+                  onClick={handleAddByEmail}
+                  disabled={loading || !email.trim()}
+                  className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
-                  Скопировать
+                  {loading ? 'Добавляем...' : 'Добавить'}
                 </button>
-                <button
-                  onClick={() => setInviteLink(null)}
-                  className="w-full py-2 text-sm text-[var(--color_text_muted)] hover:text-white transition-colors"
-                >
-                  Создать новую
-                </button>
-              </div>
+              </motion.div>
             )}
-          </motion.div>
-        )}
 
-        {/* QR tab */}
-        {tab === 'qr' && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center py-8"
-          >
-            <p className="text-[var(--color_text_muted)] text-sm">
-              Попросите атлета показать QR-код из профиля и отсканируйте его камерой телефона
-            </p>
-            <p className="text-xs text-[var(--color_text_muted)] mt-4 opacity-60">
-              Сканер QR будет доступен в следующем обновлении
-            </p>
-          </motion.div>
-        )}
+            {/* Invite link tab */}
+            {tab === 'invite' && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-3"
+              >
+                {!inviteLink ? (
+                  <button
+                    onClick={handleGenerateInvite}
+                    disabled={loading}
+                    className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    {loading ? 'Генерируем...' : 'Сгенерировать ссылку'}
+                  </button>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-sm text-white break-all">
+                      {inviteLink}
+                    </div>
+                    <button
+                      onClick={handleCopyLink}
+                      className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_bg_card_hover) text-white hover:opacity-90 transition-opacity"
+                    >
+                      Скопировать
+                    </button>
+                    <button
+                      onClick={() => setInviteLink(null)}
+                      className="w-full py-2 text-sm text-(--color_text_muted) hover:text-white transition-colors"
+                    >
+                      Создать новую
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* QR tab */}
+            {tab === 'qr' && (
+              <QrScanTab
+                active={tab === 'qr' && open}
+                onAdded={() => { onAdded(); onClose(); }}
+              />
+            )}
       </div>
-    </Drawer>
+    </BottomSheet>
   );
 }

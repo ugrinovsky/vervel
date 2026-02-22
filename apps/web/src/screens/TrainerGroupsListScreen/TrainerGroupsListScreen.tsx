@@ -85,12 +85,12 @@ export default function TrainerGroupsListScreen() {
           className="grid grid-cols-3 gap-3 mb-6"
         >
           <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
-            <UserGroupIcon className="w-5 h-5 text-(--color_primary_light)" />
+            <UserGroupIcon className="w-5 h-5 text-(--color_primary_icon)" />
             <div className="text-xl font-bold text-white">{groups.length}</div>
             <div className="text-[11px] text-(--color_text_muted) text-center">Групп</div>
           </div>
           <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
-            <UsersIcon className="w-5 h-5 text-(--color_primary_light)" />
+            <UsersIcon className="w-5 h-5 text-(--color_primary_icon)" />
             <div className="text-xl font-bold text-white">
               {groups.reduce((s, g) => s + g.athleteCount, 0)}
             </div>
@@ -159,7 +159,7 @@ export default function TrainerGroupsListScreen() {
                     onClick={() => navigate(`/trainer/groups/${group.id}`)}
                   >
                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <UserGroupIcon className="w-5 h-5 text-(--color_primary_light) shrink-0" />
+                      <UserGroupIcon className="w-5 h-5 text-(--color_primary_icon) shrink-0" />
                       <div className="min-w-0">
                         <div className="text-sm font-medium text-white truncate">{group.name}</div>
                         <div className="text-xs text-(--color_text_muted)">

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
+import AthleteQrCode from '@/components/AthleteQrCode/AthleteQrCode';
 import { profileApi, type ProfileData } from '@/api/profile';
 import { trainerApi, type TrainerProfileStats } from '@/api/trainer';
 import { ZONE_LABELS } from '@/constants/AnalyticsConstants';
@@ -504,13 +505,12 @@ export default function ProfileScreen() {
             <p className="text-sm text-[var(--color_text_muted)] mb-4">
               Покажите этот код тренеру, чтобы он мог добавить вас
             </p>
-            <div className="flex items-center justify-center p-4 bg-white rounded-xl">
-              <div className="text-center">
-                <div className="text-4xl font-mono font-bold text-black">
-                  ID: {data.user.id}
-                </div>
-                <div className="text-xs text-gray-500 mt-1">{data.user.email}</div>
-              </div>
+            <div className="flex items-center justify-center">
+              <AthleteQrCode
+                athleteId={data.user.id}
+                name={data.user.fullName}
+                email={data.user.email}
+              />
             </div>
           </motion.div>
         )}

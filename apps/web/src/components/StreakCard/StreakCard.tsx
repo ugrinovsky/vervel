@@ -75,7 +75,7 @@ export default function StreakCard({
           >
             {currentStreak}
           </motion.div>
-          <div className="text-lg text-[var(--color_primary_light)] pb-2">
+          <div className="text-lg text-(--color_primary_icon) pb-2">
             {getDayWord(currentStreak)}
           </div>
         </div>
@@ -85,7 +85,7 @@ export default function StreakCard({
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 text-[var(--color_primary_light)] text-sm font-medium mb-2"
+            className="flex items-center gap-2 text-(--color_primary_icon) text-sm font-medium mb-2"
           >
             <span>⚡</span>
             <span>Это ваш рекорд!</span>

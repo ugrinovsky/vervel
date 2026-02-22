@@ -78,7 +78,7 @@ export default function TrainerTodayScreen() {
                   onClick={() => navigate('/trainer/groups')}
                   className="w-full flex items-center gap-3 p-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) mb-3 hover:bg-(--color_bg_card_hover) transition-colors text-left"
                 >
-                  <ChatBubbleLeftEllipsisIcon className="w-6 h-6 text-(--color_primary_light) shrink-0" />
+                  <ChatBubbleLeftEllipsisIcon className="w-6 h-6 text-(--color_primary_icon) shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-white">Группы</div>
                     <div className="text-xs text-(--color_text_muted)">
@@ -104,7 +104,7 @@ export default function TrainerTodayScreen() {
                   onClick={() => navigate('/trainer/athletes')}
                   className="w-full flex items-center gap-3 p-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) mb-3 hover:bg-(--color_bg_card_hover) transition-colors text-left"
                 >
-                  <ChatBubbleLeftEllipsisIcon className="w-6 h-6 text-(--color_primary_light) shrink-0" />
+                  <ChatBubbleLeftEllipsisIcon className="w-6 h-6 text-(--color_primary_icon) shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-white">Персоналки</div>
                     <div className="text-xs text-(--color_text_muted)">
@@ -127,17 +127,17 @@ export default function TrainerTodayScreen() {
           className="grid grid-cols-3 gap-3 mb-6"
         >
           <div className="bg-[var(--color_bg_card)] rounded-xl p-4 border border-[var(--color_border)] text-center">
-            <ClockIcon className="w-6 h-6 text-[var(--color_primary_light)] mx-auto mb-2" />
+            <ClockIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
             <div className="text-2xl font-bold text-white">{overview.stats.todayWorkoutsCount}</div>
             <div className="text-xs text-[var(--color_text_muted)] mt-1">Тренировок</div>
           </div>
           <div className="bg-[var(--color_bg_card)] rounded-xl p-4 border border-[var(--color_border)] text-center">
-            <UsersIcon className="w-6 h-6 text-[var(--color_primary_light)] mx-auto mb-2" />
+            <UsersIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
             <div className="text-2xl font-bold text-white">{overview.stats.athleteCount}</div>
             <div className="text-xs text-[var(--color_text_muted)] mt-1">Атлетов</div>
           </div>
           <div className="bg-[var(--color_bg_card)] rounded-xl p-4 border border-[var(--color_border)] text-center">
-            <UserGroupIcon className="w-6 h-6 text-[var(--color_primary_light)] mx-auto mb-2" />
+            <UserGroupIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
             <div className="text-2xl font-bold text-white">{overview.stats.groupCount}</div>
             <div className="text-xs text-[var(--color_text_muted)] mt-1">Групп</div>
           </div>
@@ -168,7 +168,7 @@ export default function TrainerTodayScreen() {
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <ClockIcon className="w-4 h-4 text-[var(--color_primary_light)]" />
+                      <ClockIcon className="w-4 h-4 text-(--color_primary_icon)" />
                       <span className="text-sm font-medium text-white">
                         {formatTime(workout.scheduledDate)}
                       </span>
@@ -219,7 +219,7 @@ export default function TrainerTodayScreen() {
             onClick={() => navigate('/trainer/groups')}
             className="p-4 rounded-xl bg-[var(--color_bg_card)] border border-[var(--color_border)] hover:bg-[var(--color_bg_card_hover)] transition-colors text-left"
           >
-            <UserGroupIcon className="w-5 h-5 text-[var(--color_primary_light)] mb-2" />
+            <UserGroupIcon className="w-5 h-5 text-(--color_primary_icon) mb-2" />
             <div className="text-sm font-medium text-white">Группы</div>
             <div className="text-xs text-[var(--color_text_muted)]">Управление группами</div>
           </button>
@@ -227,7 +227,7 @@ export default function TrainerTodayScreen() {
             onClick={() => navigate('/trainer/athletes')}
             className="p-4 rounded-xl bg-[var(--color_bg_card)] border border-[var(--color_border)] hover:bg-[var(--color_bg_card_hover)] transition-colors text-left"
           >
-            <UsersIcon className="w-5 h-5 text-[var(--color_primary_light)] mb-2" />
+            <UsersIcon className="w-5 h-5 text-(--color_primary_icon) mb-2" />
             <div className="text-sm font-medium text-white">Атлеты</div>
             <div className="text-xs text-[var(--color_text_muted)]">Управление атлетами</div>
           </button>

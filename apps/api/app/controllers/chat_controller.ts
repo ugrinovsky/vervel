@@ -283,9 +283,12 @@ export default class ChatController {
       return response.notFound({ message: 'Чат не найден или нет доступа' })
     }
 
-    await ChatRead.updateOrCreate(
-      { chatId, userId: user.id },
-      { lastReadAt: DateTime.now() }
+    await db.rawQuery(
+      `INSERT INTO chat_reads (chat_id, user_id, last_read_at)
+       VALUES (?, ?, ?)
+       ON CONFLICT (chat_id, user_id)
+       DO UPDATE SET last_read_at = EXCLUDED.last_read_at`,
+      [chatId, user.id, DateTime.now().toISO()]
     )
 
     return response.ok({ success: true })
