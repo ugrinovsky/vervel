@@ -18,12 +18,12 @@ const muscleZonesWithoutBody = muscleZones.filter((z) => z.name !== 'body');
 
 function getFillColor(zoneName: string, zoneIntensities: Record<string, number>): string {
   const intensity = zoneIntensities[zoneName] || 0;
-  if (intensity > 0) {
-    const hue = 120 - intensity * 120;
-    const alpha = 0.35 + intensity * 0.5;
-    return `hsla(${hue}, 70%, 50%, ${alpha})`;
-  }
-  return 'transparent';
+  if (intensity <= 0) return 'transparent';
+  const hue = intensity <= 0.5
+    ? 140 - intensity * 2 * 92
+    : 48 - (intensity - 0.5) * 2 * 53;
+  const alpha = 0.35 + intensity * 0.5;
+  return `hsla(${hue}, 88%, 58%, ${alpha})`;
 }
 
 const SIZE_CLASSES: Record<Size, { wrapper: string; label: string }> = {
