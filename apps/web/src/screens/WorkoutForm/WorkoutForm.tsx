@@ -16,6 +16,8 @@ import { getLocalDateISOString } from '@/util/exercise';
 import { workoutsApi, WorkoutExercise } from '@/api/workouts';
 import type { ExerciseWithSets } from '@/types/Exercise';
 import { WorkoutTypeOption, workoutTypes } from '@/constants/workoutTypes';
+import AiWorkoutRecognizer from '@/components/AiWorkoutRecognizer/AiWorkoutRecognizer';
+import type { AiWorkoutResult } from '@/api/ai';
 import 'react-datepicker/dist/react-datepicker.css';
 import '@/styles/datepicker.css';
 
@@ -46,6 +48,28 @@ export default function WorkoutForm() {
     setExercises([...exercises, exercise]);
     setCurrentExercise(null);
     setShowDrawer(false);
+  };
+
+  const handleAiResult = (result: AiWorkoutResult) => {
+    // Устанавливаем тип тренировки из AI
+    const typeOption = workoutTypes.find((t) => t.value === result.workoutType) ?? workoutTypes[0];
+    setWorkoutType(typeOption);
+
+    // Конвертируем AiExercise[] → ExerciseWithSets[]
+    // exerciseId: реальный из каталога (для расчёта зон мышц) или временный 'ai-N'
+    const converted: ExerciseWithSets[] = result.exercises.map((ex, i) => ({
+      exerciseId: ex.exerciseId ?? `ai-${i}`,
+      title: ex.name,
+      notes: ex.notes,
+      sets: Array.from({ length: ex.sets }, () => ({
+        id: crypto.randomUUID(),
+        reps: ex.reps ?? 0,
+        weight: ex.weight ?? 0,
+      })),
+    }));
+    setExercises(converted);
+    if (result.notes) setNotes(result.notes);
+    toast.success(`AI распознал ${converted.length} упражнений`);
   };
 
   const handleSubmit = async () => {
@@ -145,7 +169,9 @@ export default function WorkoutForm() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
+          className="space-y-2"
         >
+          <AiWorkoutRecognizer onResult={handleAiResult} />
           <ExercisePicker onSelect={handleAddExercise} workoutType={workoutType.value} />
         </motion.div>
 

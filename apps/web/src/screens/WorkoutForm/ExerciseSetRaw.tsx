@@ -45,7 +45,6 @@ export default function ExerciseSetRow({
       <div className="flex-1 min-w-0">
         <UiTextInput
           type="number"
-          value={set.weight || ''}
           onChange={(e) => {
             const val = parseFloat(e.target.value);
             onUpdate(index, 'weight', isNaN(val) ? 0 : val);

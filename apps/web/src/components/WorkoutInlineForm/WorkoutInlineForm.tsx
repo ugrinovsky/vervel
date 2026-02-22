@@ -17,6 +17,8 @@ import {
 import { exercisesApi } from '@/api/exercises';
 import type { Exercise } from '@/types/Exercise';
 import { XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
+import AiWorkoutGenerator from '@/components/AiWorkoutGenerator/AiWorkoutGenerator';
+import type { AiWorkoutResult } from '@/api/ai';
 import 'react-datepicker/dist/react-datepicker.css';
 import '@/styles/datepicker.css';
 
@@ -125,6 +127,23 @@ export default function WorkoutInlineForm({
     setExercises(template.exercises ?? []);
     setSelectedTemplateId(template.id);
     setShowTemplatePicker(false);
+  };
+
+  const handleAiResult = (result: AiWorkoutResult) => {
+    setWorkoutType(result.workoutType);
+    const converted: ExerciseData[] = result.exercises.map((ex, i) => ({
+      exerciseId: ex.exerciseId ?? `ai-${i}`,
+      name: ex.name,
+      sets: ex.sets,
+      reps: ex.reps,
+      weight: ex.weight,
+      duration: ex.duration,
+      notes: ex.notes,
+    }));
+    setExercises(converted);
+    if (result.notes) setNotes(result.notes);
+    setSelectedTemplateId(null);
+    toast.success(`AI сгенерировал ${converted.length} упражнений`);
   };
 
   useEffect(() => {
@@ -426,6 +445,9 @@ export default function WorkoutInlineForm({
               </button>
             )}
           </div>
+
+          {/* AI Generator — вне flex-строки, полная ширина */}
+          <AiWorkoutGenerator onResult={handleAiResult} />
 
           {/* Added exercises */}
           {exercises.length > 0 && (

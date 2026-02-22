@@ -68,6 +68,16 @@ router
   })
   .use(middleware.auth());
 
+// AI routes (athlete: recognize workout from image; trainer: generate from text)
+router
+  .group(() => {
+    router.get('status', '#controllers/ai_controller.status')
+    router.post('recognize-workout', '#controllers/ai_controller.recognizeWorkout')
+    router.post('generate-workout', '#controllers/ai_controller.generateWorkout')
+  })
+  .prefix('ai')
+  .use(middleware.auth());
+
 // Trainer routes
 router
   .group(() => {

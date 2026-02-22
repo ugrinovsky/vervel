@@ -41,4 +41,14 @@ export default await Env.create(new URL('../', import.meta.url), {
   // YANDEX_CLIENT_ID: Env.schema.string(),
   // YANDEX_CLIENT_SECRET: Env.schema.string(),
   // YANDEX_REDIRECT_URI: Env.schema.string(),
+
+  /*
+  |----------------------------------------------------------
+  | Variables for AI Workout Recognition (Yandex Cloud)
+  |----------------------------------------------------------
+  */
+  FEATURE_AI_WORKOUT: Env.schema.string.optional(),
+  YANDEX_CLOUD_API_KEY: Env.schema.string.optional(),
+  YANDEX_FOLDER_ID: Env.schema.string.optional(),
+  YANDEX_OCR_MODEL: Env.schema.string.optional(),
 });
