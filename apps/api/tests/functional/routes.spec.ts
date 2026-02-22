@@ -31,9 +31,9 @@ test.group('Публичные роуты', () => {
     response.assertStatus(200);
   });
 
-  test('POST /login возвращает 400 при неверных данных', async ({ client }) => {
+  test('POST /login возвращает 401 при неверных данных', async ({ client }) => {
     const response = await client.post('/login').json({ email: 'no@no.com', password: 'wrong' });
-    response.assertStatus(400);
+    response.assertStatus(401);
   });
 });
 
@@ -216,7 +216,10 @@ test.group('Trainer routes: доступ тренеру', () => {
 
   test('GET /trainer/scheduled-workouts возвращает список', async ({ client }) => {
     const trainer = await trainerUser();
-    const response = await client.get('/trainer/scheduled-workouts').loginAs(trainer);
+    const response = await client
+      .get('/trainer/scheduled-workouts')
+      .qs({ from: '2026-02-01', to: '2026-02-28' })
+      .loginAs(trainer);
     response.assertStatus(200);
     response.assertBodyContains({ success: true });
   });
@@ -245,8 +248,7 @@ test.group('Trainer routes: доступ тренеру', () => {
       .loginAs(trainer)
       .json({
         scheduledDate: '2026-03-01',
-        scheduledTime: '10:00',
-        workoutType: 'crossfit',
+        workoutData: { type: 'crossfit', exercises: [] },
         assignedTo: [],
       });
     response.assertStatus(201);
