@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import { trainerApi, type TrainerGroupItem, type UnreadCounts } from '@/api/trainer';
-import { PlusIcon, UserGroupIcon, TrashIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, UserGroupIcon, TrashIcon, CheckIcon, XMarkIcon, UsersIcon, ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline';
 
 export default function TrainerGroupsListScreen() {
   const navigate = useNavigate();
@@ -82,10 +82,27 @@ export default function TrainerGroupsListScreen() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-[var(--color_bg_card)] rounded-xl p-4 border border-[var(--color_border)] text-center mb-6"
+          className="grid grid-cols-3 gap-3 mb-6"
         >
-          <div className="text-2xl font-bold text-white">{groups.length}</div>
-          <div className="text-xs text-[var(--color_text_muted)] mt-1">Групп</div>
+          <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
+            <UserGroupIcon className="w-5 h-5 text-(--color_primary_light)" />
+            <div className="text-xl font-bold text-white">{groups.length}</div>
+            <div className="text-[11px] text-(--color_text_muted) text-center">Групп</div>
+          </div>
+          <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
+            <UsersIcon className="w-5 h-5 text-(--color_primary_light)" />
+            <div className="text-xl font-bold text-white">
+              {groups.reduce((s, g) => s + g.athleteCount, 0)}
+            </div>
+            <div className="text-[11px] text-(--color_text_muted) text-center">Атлетов</div>
+          </div>
+          <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
+            <ChatBubbleLeftEllipsisIcon className={`w-5 h-5 ${(unreadCounts?.groups.reduce((s, g) => s + g.unread, 0) ?? 0) > 0 ? 'text-red-400' : 'text-(--color_text_muted)'}`} />
+            <div className={`text-xl font-bold ${(unreadCounts?.groups.reduce((s, g) => s + g.unread, 0) ?? 0) > 0 ? 'text-red-400' : 'text-white'}`}>
+              {unreadCounts?.groups.reduce((s, g) => s + g.unread, 0) ?? 0}
+            </div>
+            <div className="text-[11px] text-(--color_text_muted) text-center">Новых сообщ.</div>
+          </div>
         </motion.div>
 
         {/* Groups */}

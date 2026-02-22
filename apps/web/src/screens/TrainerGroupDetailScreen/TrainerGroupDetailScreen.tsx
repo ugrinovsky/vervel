@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
-import ChatBox from '@/components/ChatBox/ChatBox';
+import FullScreenChat from '@/components/FullScreenChat/FullScreenChat';
 import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
 import { trainerApi, type AthleteListItem, type TrainerGroupItem } from '@/api/trainer';
 import AthleteAvatarsRow from '@/components/AthleteAvatarsRow/AthleteAvatarsRow';
@@ -89,6 +89,13 @@ export default function TrainerGroupDetailScreen() {
 
   return (
     <Screen>
+      <FullScreenChat
+        open={activeTab === 'chat'}
+        chatId={chatId}
+        title={`Чат: ${group?.name || 'Группа'}`}
+        onClose={() => setActiveTab('members')}
+      />
+
       <div className="p-4 w-full max-w-2xl mx-auto">
         <button
           onClick={() => navigate('/trainer/groups')}
@@ -252,15 +259,6 @@ export default function TrainerGroupDetailScreen() {
           </motion.div>
         )}
 
-        {activeTab === 'chat' && chatId && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-[var(--color_bg_card)] rounded-2xl border border-[var(--color_border)] overflow-hidden"
-          >
-            <ChatBox chatId={chatId} />
-          </motion.div>
-        )}
 
         {activeTab === 'create' && (
           <motion.div
@@ -273,10 +271,7 @@ export default function TrainerGroupDetailScreen() {
                 id: id,
                 name: group?.name || 'Группа',
               }}
-              onSuccess={() => {
-                toast.success('Тренировка создана');
-                setActiveTab('members');
-              }}
+              onSuccess={() => setActiveTab('members')}
               onCancel={() => setActiveTab('members')}
             />
           </motion.div>

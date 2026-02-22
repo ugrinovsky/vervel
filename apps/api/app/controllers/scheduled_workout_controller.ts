@@ -1,6 +1,108 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
+import db from '@adonisjs/lucid/services/db'
 import ScheduledWorkout from '#models/scheduled_workout'
+import Workout from '#models/workout'
+import { WorkoutCalculator } from '#services/WorkoutCalculator'
+import type { WorkoutExercise, WorkoutSet } from '#models/workout'
+
+// ExerciseData as sent from the frontend (ScheduledWorkout format)
+interface ExerciseData {
+  exerciseId?: string
+  name: string
+  sets?: number
+  reps?: number
+  weight?: number
+  duration?: number
+  notes?: string
+  blockId?: string
+}
+
+/**
+ * Convert simplified ExerciseData (from trainer form) to WorkoutExercise format
+ * required by WorkoutCalculator. Skips exercises without exerciseId.
+ */
+function toWorkoutExercises(
+  exercises: ExerciseData[],
+  workoutType: 'crossfit' | 'bodybuilding' | 'cardio'
+): WorkoutExercise[] {
+  return exercises
+    .filter((ex) => !!ex.exerciseId)
+    .map((ex) => {
+      if (workoutType === 'cardio') {
+        const set: WorkoutSet = { id: crypto.randomUUID(), time: (ex.duration ?? 20) * 60 }
+        return { exerciseId: ex.exerciseId!, type: 'cardio' as const, sets: [set] }
+      }
+      const sets: WorkoutSet[] = Array.from({ length: ex.sets ?? 3 }, () => ({
+        id: crypto.randomUUID(),
+        reps: ex.reps,
+        weight: ex.weight,
+      }))
+      return {
+        exerciseId: ex.exerciseId!,
+        type: workoutType === 'crossfit' ? ('wod' as const) : ('strength' as const),
+        sets,
+      }
+    })
+}
+
+/**
+ * Resolve assignedTo list to a flat array of athlete user IDs.
+ */
+async function resolveAthleteIds(
+  assignedTo: { type: 'group' | 'athlete'; id: number }[]
+): Promise<number[]> {
+  const ids = new Set<number>()
+  for (const a of assignedTo) {
+    if (a.type === 'athlete') {
+      ids.add(a.id)
+    } else {
+      const rows = await db.from('group_athletes').where('group_id', a.id)
+      for (const r of rows) ids.add(r.athlete_id)
+    }
+  }
+  return [...ids]
+}
+
+/**
+ * Create Workout entries for all assigned athletes.
+ */
+async function createAthleteWorkouts(
+  scheduledWorkoutId: number,
+  scheduledDate: DateTime,
+  workoutData: { type: 'crossfit' | 'bodybuilding' | 'cardio'; exercises: ExerciseData[]; notes?: string },
+  assignedTo: { type: 'group' | 'athlete'; id: number }[]
+): Promise<void> {
+  const athleteIds = await resolveAthleteIds(assignedTo)
+  if (athleteIds.length === 0) return
+
+  const workoutExercises = toWorkoutExercises(workoutData.exercises, workoutData.type)
+
+  let calculated = { zonesLoad: {} as Record<string, number>, totalIntensity: 0, totalVolume: 0 }
+  if (workoutExercises.length > 0) {
+    try {
+      calculated = await WorkoutCalculator.calculateZoneLoads(workoutExercises, workoutData.type)
+    } catch {
+      // zone calculation failed — create workout with empty zones
+    }
+  }
+
+  await Promise.all(
+    athleteIds.map((athleteId) =>
+      Workout.create({
+        userId: athleteId,
+        date: scheduledDate,
+        workoutType: workoutData.type,
+        exercises: workoutExercises,
+        notes: workoutData.notes || '',
+        zonesLoad: calculated.zonesLoad,
+        totalIntensity: calculated.totalIntensity,
+        totalVolume: calculated.totalVolume,
+        scheduledWorkoutId,
+      })
+    )
+  )
+}
 
 export default class ScheduledWorkoutController {
   /**
@@ -65,7 +167,7 @@ export default class ScheduledWorkoutController {
   }
 
   /**
-   * Create scheduled workout
+   * Create scheduled workout and corresponding athlete Workout entries
    * POST /trainer/scheduled-workouts
    */
   async create({ auth, request, response }: HttpContext) {
@@ -84,15 +186,24 @@ export default class ScheduledWorkoutController {
       })
     }
 
+    const parsedDate = DateTime.fromISO(scheduledDate)
+
     const workout = await ScheduledWorkout.create({
       trainerId: trainer.id,
-      scheduledDate: DateTime.fromISO(scheduledDate),
+      scheduledDate: parsedDate,
       workoutData,
       assignedTo: assignedTo || [],
       status: 'scheduled',
       notes: notes || null,
       templateId: templateId || null,
     })
+
+    // Create Workout entries for each assigned athlete
+    if (Array.isArray(assignedTo) && assignedTo.length > 0) {
+      await createAthleteWorkouts(workout.id, parsedDate, workoutData, assignedTo).catch(() => {
+        // Do not fail the request if workout creation fails
+      })
+    }
 
     return response.created({
       success: true,
@@ -108,7 +219,7 @@ export default class ScheduledWorkoutController {
   }
 
   /**
-   * Update scheduled workout
+   * Update scheduled workout and sync athlete Workout entries
    * PUT /trainer/scheduled-workouts/:id
    */
   async update({ auth, params, request, response }: HttpContext) {
@@ -131,23 +242,26 @@ export default class ScheduledWorkoutController {
       'notes',
     ])
 
-    if (scheduledDate) {
-      workout.scheduledDate = DateTime.fromISO(scheduledDate)
-    }
-    if (workoutData) {
-      workout.workoutData = workoutData
-    }
-    if (assignedTo) {
-      workout.assignedTo = assignedTo
-    }
-    if (status) {
-      workout.status = status
-    }
-    if (notes !== undefined) {
-      workout.notes = notes
-    }
+    if (scheduledDate) workout.scheduledDate = DateTime.fromISO(scheduledDate)
+    if (workoutData) workout.workoutData = workoutData
+    if (assignedTo) workout.assignedTo = assignedTo
+    if (status) workout.status = status
+    if (notes !== undefined) workout.notes = notes
 
     await workout.save()
+
+    // Sync: delete old athlete workouts and recreate them
+    const newData = workoutData ?? workout.workoutData
+    const newAssignedTo = assignedTo ?? workout.assignedTo
+    if (newAssignedTo.length > 0) {
+      await Workout.query().where('scheduledWorkoutId', workout.id).delete()
+      await createAthleteWorkouts(
+        workout.id,
+        workout.scheduledDate,
+        newData,
+        newAssignedTo
+      ).catch(() => {})
+    }
 
     return response.ok({
       success: true,
@@ -163,7 +277,7 @@ export default class ScheduledWorkoutController {
   }
 
   /**
-   * Delete scheduled workout
+   * Delete scheduled workout and its athlete Workout entries
    * DELETE /trainer/scheduled-workouts/:id
    */
   async delete({ auth, params, response }: HttpContext) {
@@ -177,6 +291,9 @@ export default class ScheduledWorkoutController {
     if (!workout) {
       return response.notFound({ message: 'Тренировка не найдена' })
     }
+
+    // Delete linked athlete Workout entries first
+    await Workout.query().where('scheduledWorkoutId', workout.id).delete()
 
     await workout.delete()
 

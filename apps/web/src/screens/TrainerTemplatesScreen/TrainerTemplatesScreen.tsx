@@ -77,8 +77,8 @@ export default function TrainerTemplatesScreen() {
     if (!selectedEx) return;
     const ex: ExerciseData =
       templateType === 'cardio'
-        ? { name: selectedEx.title, duration: exDuration }
-        : { name: selectedEx.title, sets: exSets, reps: exReps, weight: exWeight || undefined };
+        ? { exerciseId: selectedEx.id, name: selectedEx.title, duration: exDuration }
+        : { exerciseId: selectedEx.id, name: selectedEx.title, sets: exSets, reps: exReps, weight: exWeight || undefined };
     setTemplateExercises((prev) => [...prev, ex]);
     setShowExPicker(false);
     setSelectedEx(null);

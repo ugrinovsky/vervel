@@ -283,12 +283,10 @@ export default class ChatController {
       return response.notFound({ message: 'Чат не найден или нет доступа' })
     }
 
-    await ChatRead.query()
-      .where('chatId', chatId)
-      .where('userId', user.id)
-      .delete()
-
-    await ChatRead.create({ chatId, userId: user.id, lastReadAt: DateTime.now() })
+    await ChatRead.updateOrCreate(
+      { chatId, userId: user.id },
+      { lastReadAt: DateTime.now() }
+    )
 
     return response.ok({ success: true })
   }

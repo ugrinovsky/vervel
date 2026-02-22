@@ -90,6 +90,9 @@ export default class Workout extends compose(BaseModel, SoftDeletes) {
   @column()
   declare notes: string;
 
+  @column()
+  declare scheduledWorkoutId: number | null;
+
   @belongsTo(() => User)
   declare user: BelongsTo<typeof User>;
 }

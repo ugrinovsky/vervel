@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
 import DatePicker, { registerLocale } from 'react-datepicker';
+import { ru } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import {
   trainerApi,
@@ -12,6 +12,7 @@ import {
   type AthleteListItem,
   type TrainerGroupItem,
   type WorkoutTemplate,
+  type ScheduledWorkout,
 } from '@/api/trainer';
 import { exercisesApi } from '@/api/exercises';
 import type { Exercise } from '@/types/Exercise';
@@ -21,7 +22,25 @@ import '@/styles/datepicker.css';
 
 registerLocale('ru', ru);
 
+function buildWorkoutPreviewMessage(
+  date: Date,
+  time: Date,
+  type: 'crossfit' | 'bodybuilding' | 'cardio',
+  exercises: ExerciseData[],
+  notes?: string,
+): string {
+  return JSON.stringify({
+    __type: 'workout_preview',
+    date: format(date, 'yyyy-MM-dd'),
+    time: format(time, 'HH:mm'),
+    workoutType: type,
+    exercises,
+    notes: notes || undefined,
+  });
+}
+
 interface WorkoutInlineFormProps {
+  editWorkout?: ScheduledWorkout;
   preselectedAssignee?: AssignedTo;
   preselectedDate?: string; // YYYY-MM-DD
   preselectedTime?: string; // HH:mm
@@ -30,6 +49,7 @@ interface WorkoutInlineFormProps {
 }
 
 export default function WorkoutInlineForm({
+  editWorkout,
   preselectedAssignee,
   preselectedDate,
   preselectedTime,
@@ -37,6 +57,7 @@ export default function WorkoutInlineForm({
   onCancel,
 }: WorkoutInlineFormProps) {
   const [dateState, setDateState] = useState<Date>(() => {
+    if (editWorkout) return new Date(editWorkout.scheduledDate);
     if (preselectedDate) {
       const [y, m, d] = preselectedDate.split('-').map(Number);
       return new Date(y, m - 1, d);
@@ -44,6 +65,7 @@ export default function WorkoutInlineForm({
     return new Date();
   });
   const [timeState, setTimeState] = useState<Date>(() => {
+    if (editWorkout) return new Date(editWorkout.scheduledDate);
     const d = new Date();
     if (preselectedTime) {
       const [h, m] = preselectedTime.split(':').map(Number);
@@ -55,9 +77,9 @@ export default function WorkoutInlineForm({
   });
 
   const [workoutType, setWorkoutType] = useState<'crossfit' | 'bodybuilding' | 'cardio'>(
-    'crossfit'
+    editWorkout?.workoutData.type ?? 'crossfit'
   );
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState(editWorkout?.notes ?? '');
   const [loading, setLoading] = useState(false);
 
   // Templates
@@ -68,11 +90,18 @@ export default function WorkoutInlineForm({
   // Assignee selection
   const [groups, setGroups] = useState<TrainerGroupItem[]>([]);
   const [athletes, setAthletes] = useState<AthleteListItem[]>([]);
-  const [selectedAssignees, setSelectedAssignees] = useState<AssignedTo[]>([]);
+  const [selectedAssignees, setSelectedAssignees] = useState<AssignedTo[]>(
+    editWorkout?.assignedTo ?? []
+  );
   const [loadingAssignees, setLoadingAssignees] = useState(false);
+  const [assigneeMode, setAssigneeMode] = useState<'group' | 'athlete'>(() => {
+    if (editWorkout?.assignedTo?.length) return editWorkout.assignedTo[0].type;
+    if (preselectedAssignee) return preselectedAssignee.type;
+    return 'group';
+  });
 
   // Exercises (simple plan — no per-set detail needed for scheduling)
-  const [exercises, setExercises] = useState<ExerciseData[]>([]);
+  const [exercises, setExercises] = useState<ExerciseData[]>(editWorkout?.workoutData.exercises ?? []);
   const [allExercises, setAllExercises] = useState<Exercise[]>([]);
   const [showExPicker, setShowExPicker] = useState(false);
   const [exSearch, setExSearch] = useState('');
@@ -118,6 +147,11 @@ export default function WorkoutInlineForm({
     load();
   }, [showAssigneePicker]);
 
+  const switchMode = (mode: 'group' | 'athlete') => {
+    setAssigneeMode(mode);
+    setSelectedAssignees([]);
+  };
+
   const toggleGroup = (group: TrainerGroupItem) => {
     const item: AssignedTo = { type: 'group', id: group.id, name: group.name };
     setSelectedAssignees((prev) => {
@@ -128,17 +162,16 @@ export default function WorkoutInlineForm({
     });
   };
 
-  const toggleAthlete = (athlete: AthleteListItem) => {
+  // Athletes are single-select (personal workout = one athlete)
+  const selectAthlete = (athlete: AthleteListItem) => {
     const item: AssignedTo = {
       type: 'athlete',
       id: athlete.id,
       name: athlete.fullName || athlete.email,
     };
     setSelectedAssignees((prev) => {
-      const exists = prev.find((a) => a.type === 'athlete' && a.id === athlete.id);
-      return exists
-        ? prev.filter((a) => !(a.type === 'athlete' && a.id === athlete.id))
-        : [...prev, item];
+      const alreadySelected = prev.length === 1 && prev[0].type === 'athlete' && prev[0].id === athlete.id;
+      return alreadySelected ? [] : [item];
     });
   };
 
@@ -155,8 +188,8 @@ export default function WorkoutInlineForm({
     if (!selectedEx) return;
     const ex: ExerciseData =
       workoutType === 'cardio'
-        ? { name: selectedEx.title, duration: exDuration }
-        : { name: selectedEx.title, sets: exSets, reps: exReps, weight: exWeight || undefined };
+        ? { exerciseId: selectedEx.id, name: selectedEx.title, duration: exDuration }
+        : { exerciseId: selectedEx.id, name: selectedEx.title, sets: exSets, reps: exReps, weight: exWeight || undefined };
     setExercises((prev) => [...prev, ex]);
     setShowExPicker(false);
     setSelectedEx(null);
@@ -211,18 +244,44 @@ export default function WorkoutInlineForm({
 
       const assignedTo = preselectedAssignee ? [preselectedAssignee] : selectedAssignees;
 
-      await trainerApi.createScheduledWorkout({
-        scheduledDate,
-        workoutData,
-        assignedTo,
-        notes: notes || undefined,
-        templateId: selectedTemplateId ?? undefined,
-      });
+      if (editWorkout) {
+        await trainerApi.updateScheduledWorkout(editWorkout.id, {
+          scheduledDate,
+          workoutData,
+          assignedTo,
+          notes: notes || undefined,
+        });
+        toast.success('Тренировка обновлена');
+      } else {
+        await trainerApi.createScheduledWorkout({
+          scheduledDate,
+          workoutData,
+          assignedTo,
+          notes: notes || undefined,
+          templateId: selectedTemplateId ?? undefined,
+        });
 
-      toast.success('Тренировка создана');
+        // Send workout preview to each assignee's chat
+        const previewMessage = buildWorkoutPreviewMessage(dateState, timeState, workoutType, exercises, notes);
+        await Promise.all(
+          assignedTo.map(async (a) => {
+            try {
+              const chatRes = a.type === 'group'
+                ? await trainerApi.getOrCreateGroupChat(a.id)
+                : await trainerApi.getOrCreateAthleteChat(a.id);
+              await trainerApi.sendMessage(chatRes.data.data.chatId, previewMessage);
+            } catch {
+              // silent — не ломаем основной флоу если чат недоступен
+            }
+          })
+        );
+
+        toast.success('Тренировка создана');
+      }
+
       onSuccess?.();
     } catch {
-      toast.error('Ошибка создания тренировки');
+      toast.error(editWorkout ? 'Ошибка обновления тренировки' : 'Ошибка создания тренировки');
     } finally {
       setLoading(false);
     }
@@ -235,7 +294,9 @@ export default function WorkoutInlineForm({
       exit={{ opacity: 0, height: 0 }}
       className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
     >
-      <h3 className="text-lg font-semibold text-white mb-4">Создать тренировку</h3>
+      <h3 className="text-lg font-semibold text-white mb-4">
+        {editWorkout ? 'Редактировать тренировку' : 'Создать тренировку'}
+      </h3>
 
       <div className="space-y-4">
         {/* Date + Time */}
@@ -622,6 +683,30 @@ export default function WorkoutInlineForm({
               )}
             </div>
 
+            {/* Mode toggle */}
+            <div className="grid grid-cols-2 gap-1.5 mb-2 p-1 rounded-xl bg-(--color_bg_card_hover)">
+              <button
+                onClick={() => switchMode('group')}
+                className={`py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  assigneeMode === 'group'
+                    ? 'bg-(--color_primary_light) text-white'
+                    : 'text-(--color_text_muted) hover:text-white'
+                }`}
+              >
+                👥 Группа
+              </button>
+              <button
+                onClick={() => switchMode('athlete')}
+                className={`py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  assigneeMode === 'athlete'
+                    ? 'bg-(--color_primary_light) text-white'
+                    : 'text-(--color_text_muted) hover:text-white'
+                }`}
+              >
+                🏃 Персональная
+              </button>
+            </div>
+
             {selectedAssignees.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {selectedAssignees.map((a) => (
@@ -649,56 +734,49 @@ export default function WorkoutInlineForm({
               <div className="text-xs text-(--color_text_muted) py-2">Загрузка...</div>
             ) : (
               <div className="max-h-52 overflow-y-auto rounded-xl bg-(--color_bg_card_hover) divide-y divide-(--color_border)">
-                {groups.length === 0 && athletes.length === 0 && (
+                {assigneeMode === 'group' && groups.length === 0 && (
                   <div className="text-xs text-(--color_text_muted) text-center py-4">
-                    Нет групп и атлетов
+                    Нет групп
                   </div>
                 )}
-                {groups.length > 0 && (
-                  <div>
-                    <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-(--color_text_muted)">
-                      Группы
-                    </div>
-                    {groups.map((group) => (
-                      <button
-                        key={`group-${group.id}`}
-                        onClick={() => toggleGroup(group)}
-                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left transition-colors ${
-                          isGroupSelected(group.id)
-                            ? 'bg-(--color_primary_light) text-white'
-                            : 'text-white hover:bg-(--color_border)'
-                        }`}
-                      >
-                        <span>👥</span>
-                        <span className="truncate font-medium">{group.name}</span>
-                        <span className="ml-auto text-xs opacity-60 shrink-0">
-                          {group.athleteCount} чел.
-                        </span>
-                      </button>
-                    ))}
+                {assigneeMode === 'athlete' && athletes.length === 0 && (
+                  <div className="text-xs text-(--color_text_muted) text-center py-4">
+                    Нет атлетов
                   </div>
                 )}
-                {athletes.length > 0 && (
-                  <div>
-                    <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-(--color_text_muted)">
-                      Персональные
-                    </div>
-                    {athletes.map((athlete) => (
-                      <button
-                        key={`athlete-${athlete.id}`}
-                        onClick={() => toggleAthlete(athlete)}
-                        className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left transition-colors ${
-                          isAthleteSelected(athlete.id)
-                            ? 'bg-(--color_primary_light) text-white'
-                            : 'text-white hover:bg-(--color_border)'
-                        }`}
-                      >
-                        <span>🏃</span>
-                        <span className="truncate">{athlete.fullName || athlete.email}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                {assigneeMode === 'group' &&
+                  groups.map((group) => (
+                    <button
+                      key={`group-${group.id}`}
+                      onClick={() => toggleGroup(group)}
+                      className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left transition-colors ${
+                        isGroupSelected(group.id)
+                          ? 'bg-(--color_primary_light) text-white'
+                          : 'text-white hover:bg-(--color_border)'
+                      }`}
+                    >
+                      <span>👥</span>
+                      <span className="truncate font-medium">{group.name}</span>
+                      <span className="ml-auto text-xs opacity-60 shrink-0">
+                        {group.athleteCount} чел.
+                      </span>
+                    </button>
+                  ))}
+                {assigneeMode === 'athlete' &&
+                  athletes.map((athlete) => (
+                    <button
+                      key={`athlete-${athlete.id}`}
+                      onClick={() => selectAthlete(athlete)}
+                      className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left transition-colors ${
+                        isAthleteSelected(athlete.id)
+                          ? 'bg-(--color_primary_light) text-white'
+                          : 'text-white hover:bg-(--color_border)'
+                      }`}
+                    >
+                      <span>🏃</span>
+                      <span className="truncate">{athlete.fullName || athlete.email}</span>
+                    </button>
+                  ))}
               </div>
             )}
           </div>
@@ -725,7 +803,7 @@ export default function WorkoutInlineForm({
             disabled={loading}
             className="flex-1 py-2 rounded-xl bg-(--color_primary_light) text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {loading ? 'Создание...' : 'Создать'}
+            {loading ? (editWorkout ? 'Сохранение...' : 'Создание...') : (editWorkout ? 'Сохранить' : 'Создать')}
           </button>
           {onCancel && (
             <button

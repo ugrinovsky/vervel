@@ -1,10 +1,260 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 import { chatApi } from '@/api/chat';
-import type { ChatMessage } from '@/api/trainer';
+import type { ChatMessage, ExerciseData } from '@/api/trainer';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
+
+interface WorkoutPreviewData {
+  __type: 'workout_preview';
+  date: string;
+  time: string;
+  workoutType: 'crossfit' | 'bodybuilding' | 'cardio';
+  exercises: ExerciseData[];
+  notes?: string;
+}
+
+function parseWorkoutPreview(content: string): WorkoutPreviewData | null {
+  try {
+    const parsed = JSON.parse(content);
+    if (parsed.__type === 'workout_preview') return parsed as WorkoutPreviewData;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+const TYPE_CONFIG = {
+  crossfit: { emoji: '🔥', label: 'CrossFit', color: 'text-orange-400' },
+  bodybuilding: { emoji: '💪', label: 'Силовая', color: 'text-blue-400' },
+  cardio: { emoji: '🏃', label: 'Кардио', color: 'text-green-400' },
+};
+
+function WorkoutPreviewCard({ data, onClick }: { data: WorkoutPreviewData; onClick?: () => void }) {
+  const [y, m, d] = data.date.split('-').map(Number);
+  const dateStr = format(new Date(y, m - 1, d), 'd MMMM', { locale: ru });
+  const cfg = TYPE_CONFIG[data.workoutType];
+
+  return (
+    <div
+      onClick={onClick}
+      className={`rounded-2xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-sm w-full ${onClick ? 'cursor-pointer hover:bg-white/10 transition-colors active:scale-[0.99]' : ''}`}
+    >
+      {/* Header */}
+      <div className="px-4 py-3 bg-white/5 border-b border-white/10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-base">{cfg.emoji}</span>
+            <span className="text-sm font-semibold text-white">Тренировка</span>
+          </div>
+          <span className={`text-xs font-medium ${cfg.color}`}>{cfg.label}</span>
+        </div>
+        <div className="text-xs text-white/50 mt-0.5">
+          📅 {dateStr} · {data.time}
+        </div>
+      </div>
+
+      {/* Exercises */}
+      {data.exercises.length > 0 && (
+        <div className="px-4 py-3 space-y-1.5">
+          {data.exercises.map((ex, i) => (
+            <div key={i} className="flex items-baseline justify-between gap-2">
+              <span className="text-sm text-white/90 truncate">{ex.name}</span>
+              <span className="text-xs text-white/40 shrink-0">
+                {ex.duration
+                  ? `${ex.duration} мин`
+                  : [
+                      ex.sets && ex.reps ? `${ex.sets}×${ex.reps}` : null,
+                      ex.weight ? `${ex.weight} кг` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Notes */}
+      {data.notes && (
+        <div className="px-4 py-2.5 border-t border-white/10 text-xs text-white/50 italic">
+          📝 {data.notes}
+        </div>
+      )}
+
+      {onClick && (
+        <div className="px-4 py-2 border-t border-white/10 text-xs text-white/30 text-center">
+          Нажмите для просмотра
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WorkoutDetailSheet({ data, onClose }: { data: WorkoutPreviewData; onClose: () => void }) {
+  const [y, m, d] = data.date.split('-').map(Number);
+  const dateStr = format(new Date(y, m - 1, d), 'd MMMM yyyy', { locale: ru });
+  const cfg = TYPE_CONFIG[data.workoutType];
+
+  // Group consecutive exercises with same blockId into supersets
+  type ExBlock = { superset: boolean; blockId?: string; items: typeof data.exercises };
+  const blocks: ExBlock[] = [];
+  for (const ex of data.exercises) {
+    const last = blocks[blocks.length - 1];
+    if (ex.blockId && last && last.blockId === ex.blockId) {
+      last.items.push(ex);
+    } else {
+      blocks.push({ superset: !!ex.blockId, blockId: ex.blockId, items: [ex] });
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-end"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-black/60" />
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
+        className="background relative w-full rounded-t-3xl p-6 pb-24 space-y-4 max-h-[85vh] overflow-y-auto"
+        style={{ backgroundColor: 'var(--color_bg_card)' }}
+      >
+        {/* Handle */}
+        <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-white/20" />
+
+        {/* Header */}
+        <div className="flex items-start justify-between pt-2">
+          <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="text-2xl">{cfg.emoji}</span>
+              <span className="text-lg font-bold text-white">Тренировка</span>
+            </div>
+            <span className={`text-sm font-semibold ${cfg.color}`}>{cfg.label}</span>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-white/40 hover:text-white transition-colors p-1 text-lg leading-none"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Date & time */}
+        <div
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-white/10"
+          style={{ backgroundColor: 'var(--color_bg_card_hover)' }}
+        >
+          <span className="text-xl">📅</span>
+          <div>
+            <div className="text-sm font-semibold text-white">{dateStr}</div>
+            <div className="text-xs text-white/50">{data.time}</div>
+          </div>
+        </div>
+
+        {/* Exercises */}
+        {data.exercises.length > 0 && (
+          <div>
+            <div className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">
+              Упражнения ({data.exercises.length})
+            </div>
+            <div className="space-y-2">
+              {blocks.map((block, bi) =>
+                block.superset ? (
+                  /* Superset block */
+                  <div key={bi} className="rounded-xl border border-amber-500/30 overflow-hidden">
+                    <div
+                      className="px-3 py-1 text-[10px] font-semibold text-amber-400 uppercase tracking-wider"
+                      style={{ backgroundColor: 'rgba(245,158,11,0.08)' }}
+                    >
+                      ⚡ Суперсет
+                    </div>
+                    {block.items.map((ex, i) => (
+                      <div
+                        key={i}
+                        className={`px-3 py-2.5 ${i < block.items.length - 1 ? 'border-b border-amber-500/20' : ''}`}
+                        style={{ backgroundColor: 'rgba(245,158,11,0.04)' }}
+                      >
+                        <div className="flex items-baseline justify-between gap-2 mb-1">
+                          <span className="text-sm font-medium text-white">{ex.name}</span>
+                          <span className="text-sm text-white/60 shrink-0">
+                            {ex.duration
+                              ? `${ex.duration} мин`
+                              : [
+                                  ex.sets && ex.reps ? `${ex.sets}×${ex.reps}` : null,
+                                  ex.weight ? `${ex.weight} кг` : null,
+                                ]
+                                  .filter(Boolean)
+                                  .join(' · ')}
+                          </span>
+                        </div>
+                        {ex.notes && (
+                          <div className="text-xs text-amber-300/60 italic">{ex.notes}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  /* Single exercise */
+                  block.items.map((ex, i) => (
+                    <div
+                      key={i}
+                      className="rounded-xl border border-white/10 overflow-hidden"
+                      style={{ backgroundColor: 'var(--color_bg_card_hover)' }}
+                    >
+                      <div className="flex items-baseline justify-between gap-2 px-3 py-2.5">
+                        <span className="text-sm font-medium text-white">{ex.name}</span>
+                        <span className="text-sm text-white/60 shrink-0">
+                          {ex.duration
+                            ? `${ex.duration} мин`
+                            : [
+                                ex.sets && ex.reps ? `${ex.sets}×${ex.reps}` : null,
+                                ex.weight ? `${ex.weight} кг` : null,
+                              ]
+                                .filter(Boolean)
+                                .join(' · ')}
+                        </span>
+                      </div>
+                      {ex.notes && (
+                        <div className="px-3 pb-2.5 text-xs text-white/50 italic border-t border-white/5 pt-1.5">
+                          💬 {ex.notes}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* General notes */}
+        {data.notes && (
+          <div>
+            <div className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">
+              Заметки тренера
+            </div>
+            <div
+              className="px-3 py-2.5 rounded-xl border border-white/10 text-sm text-white/70 italic"
+              style={{ backgroundColor: 'var(--color_bg_card_hover)' }}
+            >
+              📝 {data.notes}
+            </div>
+          </div>
+        )}
+      </motion.div>
+    </motion.div>
+  );
+}
 
 interface ChatBoxProps {
   chatId: number;
@@ -17,6 +267,7 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [openPreview, setOpenPreview] = useState<WorkoutPreviewData | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -101,11 +352,7 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
   return (
     <div className={`flex flex-col h-full ${className}`}>
       {/* Messages */}
-      <div
-        ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-3"
-        style={{ maxHeight: 'calc(100vh - 300px)' }}
-      >
+      <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 ? (
           <div className="text-center py-8">
             <div className="text-4xl mb-2">💬</div>
@@ -117,8 +364,31 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
           <AnimatePresence>
             {messages.map((message, index) => {
               const isCurrentUser = message.senderId === user?.id;
-              const showSender =
-                index === 0 || messages[index - 1].senderId !== message.senderId;
+              const showSender = index === 0 || messages[index - 1].senderId !== message.senderId;
+              const preview = parseWorkoutPreview(message.content);
+
+              if (preview) {
+                return (
+                  <motion.div
+                    key={message.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="w-full"
+                  >
+                    {showSender && (
+                      <div className="text-xs text-[var(--color_text_muted)] mb-1.5 px-1">
+                        {message.sender.fullName || 'Тренер'}
+                      </div>
+                    )}
+                    <WorkoutPreviewCard data={preview} onClick={() => setOpenPreview(preview)} />
+                    <div className="text-xs text-(--color_text_muted) mt-1 px-1">
+                      {formatTime(message.createdAt)}
+                    </div>
+                  </motion.div>
+                );
+              }
 
               return (
                 <motion.div
@@ -159,7 +429,7 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-[var(--color_border)]">
+      <div className="p-4 border-t border-[var(--color_border)] mb-4">
         <div className="flex gap-2">
           <input
             type="text"
@@ -179,6 +449,13 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
           </button>
         </div>
       </div>
+
+      {/* Workout detail sheet */}
+      <AnimatePresence>
+        {openPreview && (
+          <WorkoutDetailSheet data={openPreview} onClose={() => setOpenPreview(null)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import Screen from '@/components/Screen/Screen';
 import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
 import TrainerCalendar, { type TrainerDayData } from '@/components/TrainerCalendar/TrainerCalendar';
 import { trainerApi, type ScheduledWorkout } from '@/api/trainer';
+
 import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 const WORKOUT_TYPE_LABELS: Record<string, string> = {
@@ -53,6 +54,7 @@ export default function TrainerCalendarScreen() {
   const [selectedDate, setSelectedDate] = useState<Date>(today);
   // selectedTime: null = form hidden, string = form open with that time pre-filled
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [editingWorkout, setEditingWorkout] = useState<ScheduledWorkout | null>(null);
 
   const loadWorkouts = async (month: Date) => {
     try {
@@ -129,10 +131,21 @@ export default function TrainerCalendarScreen() {
   const selectedDateStr = toDateKey(selectedDate);
 
   const openFormAt = (time: string) => {
+    setEditingWorkout(null);
     setSelectedTime(time);
-    // scroll form into view after render
     setTimeout(() => {
-      document.getElementById('workout-create-form')?.scrollIntoView({
+      document.getElementById('workout-form')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }, 100);
+  };
+
+  const openEditForm = (workout: ScheduledWorkout) => {
+    setSelectedTime(null);
+    setEditingWorkout(workout);
+    setTimeout(() => {
+      document.getElementById('workout-form')?.scrollIntoView({
         behavior: 'smooth',
         block: 'start',
       });
@@ -218,7 +231,10 @@ export default function TrainerCalendarScreen() {
                             key={workout.id}
                             initial={{ opacity: 0, x: -8 }}
                             animate={{ opacity: 1, x: 0 }}
-                            className={`rounded-xl px-3 py-2 flex items-center justify-between gap-2 ${
+                            onClick={() => openEditForm(workout)}
+                            className={`rounded-xl px-3 py-2 flex items-center justify-between gap-2 cursor-pointer hover:opacity-90 transition-opacity ${
+                              editingWorkout?.id === workout.id ? 'ring-2 ring-white/40' : ''
+                            } ${
                               WORKOUT_TYPE_COLORS[workout.workoutData.type] ??
                               'bg-(--color_bg_card)'
                             }`}
@@ -240,7 +256,7 @@ export default function TrainerCalendarScreen() {
                               )}
                             </div>
                             <button
-                              onClick={() => handleDelete(workout.id)}
+                              onClick={(e) => { e.stopPropagation(); handleDelete(workout.id); }}
                               className="text-white/40 hover:text-red-400 transition-colors shrink-0"
                             >
                               <TrashIcon className="w-3.5 h-3.5" />
@@ -280,26 +296,38 @@ export default function TrainerCalendarScreen() {
             })}
           </div>
 
-          {/* Inline create form */}
+          {/* Inline create / edit form */}
           <AnimatePresence>
-            {selectedTime !== null && (
+            {(selectedTime !== null || editingWorkout !== null) && (
               <motion.div
-                id="workout-create-form"
-                key={`${selectedDateStr}-${selectedTime}`}
+                id="workout-form"
+                key={editingWorkout ? `edit-${editingWorkout.id}` : `${selectedDateStr}-${selectedTime}`}
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 className="px-3 mb-3"
               >
-                <WorkoutInlineForm
-                  preselectedDate={selectedDateStr}
-                  preselectedTime={selectedTime}
-                  onSuccess={() => {
-                    setSelectedTime(null);
-                    loadWorkouts(currentMonth);
-                  }}
-                  onCancel={() => setSelectedTime(null)}
-                />
+                {editingWorkout ? (
+                  <WorkoutInlineForm
+                    key={editingWorkout.id}
+                    editWorkout={editingWorkout}
+                    onSuccess={() => {
+                      setEditingWorkout(null);
+                      loadWorkouts(currentMonth);
+                    }}
+                    onCancel={() => setEditingWorkout(null)}
+                  />
+                ) : (
+                  <WorkoutInlineForm
+                    preselectedDate={selectedDateStr}
+                    preselectedTime={selectedTime!}
+                    onSuccess={() => {
+                      setSelectedTime(null);
+                      loadWorkouts(currentMonth);
+                    }}
+                    onCancel={() => setSelectedTime(null)}
+                  />
+                )}
               </motion.div>
             )}
           </AnimatePresence>

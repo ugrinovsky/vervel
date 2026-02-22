@@ -39,6 +39,7 @@ export interface AssignedTo {
 }
 
 export interface ExerciseData {
+  exerciseId?: string;  // UUID упражнения из БД (нужен для расчёта зон нагрузки)
   name: string;
   sets?: number;
   reps?: number;

@@ -7,7 +7,7 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import AddAthleteDrawer from '@/components/AddAthleteDrawer/AddAthleteDrawer';
 import { trainerApi, type AthleteListItem, type UnreadCounts } from '@/api/trainer';
 import InlineAthleteAvatar from '@/components/MiniAvatar/InlineAthleteAvatar';
-import { PlusIcon, TrashIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, CheckIcon, XMarkIcon, UsersIcon, ClockIcon, ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline';
 
 export default function TrainerAthletesListScreen() {
   const navigate = useNavigate();
@@ -70,10 +70,27 @@ export default function TrainerAthletesListScreen() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-[var(--color_bg_card)] rounded-xl p-4 border border-[var(--color_border)] text-center mb-6"
+          className="grid grid-cols-3 gap-3 mb-6"
         >
-          <div className="text-2xl font-bold text-white">{athletes.length}</div>
-          <div className="text-xs text-[var(--color_text_muted)] mt-1">Атлетов</div>
+          <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
+            <UsersIcon className="w-5 h-5 text-(--color_primary_light)" />
+            <div className="text-xl font-bold text-white">{athletes.length}</div>
+            <div className="text-[11px] text-(--color_text_muted) text-center">Всего</div>
+          </div>
+          <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
+            <ClockIcon className={`w-5 h-5 ${athletes.filter((a) => a.status === 'pending').length > 0 ? 'text-amber-400' : 'text-(--color_text_muted)'}`} />
+            <div className={`text-xl font-bold ${athletes.filter((a) => a.status === 'pending').length > 0 ? 'text-amber-400' : 'text-white'}`}>
+              {athletes.filter((a) => a.status === 'pending').length}
+            </div>
+            <div className="text-[11px] text-(--color_text_muted) text-center">Ожидают</div>
+          </div>
+          <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
+            <ChatBubbleLeftEllipsisIcon className={`w-5 h-5 ${(unreadCounts?.athletes.reduce((s, a) => s + a.unread, 0) ?? 0) > 0 ? 'text-red-400' : 'text-(--color_text_muted)'}`} />
+            <div className={`text-xl font-bold ${(unreadCounts?.athletes.reduce((s, a) => s + a.unread, 0) ?? 0) > 0 ? 'text-red-400' : 'text-white'}`}>
+              {unreadCounts?.athletes.reduce((s, a) => s + a.unread, 0) ?? 0}
+            </div>
+            <div className="text-[11px] text-(--color_text_muted) text-center">Новых сообщ.</div>
+          </div>
         </motion.div>
 
         {/* Athletes */}

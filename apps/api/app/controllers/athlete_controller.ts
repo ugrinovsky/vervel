@@ -1,6 +1,8 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import db from '@adonisjs/lucid/services/db'
 import Chat from '#models/chat'
+import Message from '#models/message'
+import ChatRead from '#models/chat_read'
 import TrainerGroup from '#models/trainer_group'
 import TrainerAthlete from '#models/trainer_athlete'
 
@@ -71,6 +73,53 @@ export default class AthleteController {
     )
 
     return response.ok({ success: true, data: result })
+  }
+
+  /**
+   * Unread message count for athlete across all their chats
+   * GET /athlete/unread-counts
+   */
+  async getUnreadCounts({ auth, response }: HttpContext) {
+    const athlete = auth.user!
+
+    // Personal chats (trainer → athlete)
+    const personalChats = await Chat.query()
+      .where('type', 'personal')
+      .where('athleteId', athlete.id)
+
+    // Group chats (groups the athlete is a member of)
+    const groupRows = await db.from('group_athletes').where('athlete_id', athlete.id)
+    const groupIds = groupRows.map((r: any) => r.group_id)
+    const groupChats = groupIds.length > 0
+      ? await Chat.query().where('type', 'group').whereIn('groupId', groupIds)
+      : []
+
+    const allChats = [...personalChats, ...groupChats]
+    if (allChats.length === 0) {
+      return response.ok({ success: true, data: { total: 0 } })
+    }
+
+    const chatIds = allChats.map((c) => c.id)
+    const reads = await ChatRead.query().whereIn('chatId', chatIds).where('userId', athlete.id)
+    const readMap = new Map(reads.map((r) => [r.chatId, r.lastReadAt]))
+
+    let total = 0
+    const chats: { chatId: number; unread: number }[] = []
+    for (const chat of allChats) {
+      const lastRead = readMap.get(chat.id)
+      let query = Message.query()
+        .where('chatId', chat.id)
+        .whereNot('senderId', athlete.id)
+      if (lastRead) {
+        query = query.where('createdAt', '>', lastRead.toISO()!)
+      }
+      const count = await query.count('* as total')
+      const unread = Number(count[0].$extras.total)
+      total += unread
+      chats.push({ chatId: chat.id, unread })
+    }
+
+    return response.ok({ success: true, data: { total, chats } })
   }
 
   /**

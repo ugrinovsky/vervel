@@ -35,4 +35,7 @@ export const athleteApi = {
     privateApi.get<{ success: boolean; data: { chatId: number } }>(
       `/athlete/chats/trainer/${trainerId}`
     ),
+
+  getUnreadCounts: () =>
+    privateApi.get<{ success: boolean; data: { total: number; chats: { chatId: number; unread: number }[] } }>('/athlete/unread-counts'),
 };

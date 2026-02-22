@@ -57,6 +57,7 @@ router
     // Athlete: my groups and trainers
     router.get('athlete/my-groups', '#controllers/athlete_controller.getMyGroups');
     router.get('athlete/my-trainers', '#controllers/athlete_controller.getMyTrainers');
+    router.get('athlete/unread-counts', '#controllers/athlete_controller.getUnreadCounts');
     router.get('athlete/chats/group/:groupId', '#controllers/athlete_controller.getOrCreateGroupChat');
     router.get('athlete/chats/trainer/:trainerId', '#controllers/athlete_controller.getOrCreatePersonalChat');
 

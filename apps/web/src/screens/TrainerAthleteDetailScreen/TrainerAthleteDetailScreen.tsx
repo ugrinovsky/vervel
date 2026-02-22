@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
-import ChatBox from '@/components/ChatBox/ChatBox';
+import FullScreenChat from '@/components/FullScreenChat/FullScreenChat';
 import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
 import WorkoutRadar from '@/components/analytics/WorkoutRadar';
 import StatsOverview from '@/components/analytics/StatsOverview';
@@ -15,7 +15,13 @@ import MiniAvatar from '@/components/MiniAvatar/MiniAvatar';
 import { useAthleteStats, type StatsPeriod } from '@/hooks/useAthleteStats';
 import { useAthleteAvatar } from '@/hooks/useAthleteAvatar';
 import { trainerApi } from '@/api/trainer';
-import { ArrowLeftIcon, ChatBubbleLeftIcon, ChartBarIcon, UserIcon, PlusIcon } from '@heroicons/react/24/outline';
+import {
+  ArrowLeftIcon,
+  ChatBubbleLeftIcon,
+  ChartBarIcon,
+  UserIcon,
+  PlusIcon,
+} from '@heroicons/react/24/outline';
 
 type Tab = 'chat' | 'analytics' | 'avatar' | 'create';
 
@@ -27,7 +33,7 @@ export default function TrainerAthleteDetailScreen() {
   const navigate = useNavigate();
   const id = Number(athleteId);
 
-  const [tab, setTab] = useState<Tab>('chat');
+  const [tab, setTab] = useState<Tab>('analytics');
   const [timeRange, setTimeRange] = useState<StatsPeriod>('week');
   const [chatId, setChatId] = useState<number | null>(null);
   const [athleteName, setAthleteName] = useState('Атлет');
@@ -63,6 +69,13 @@ export default function TrainerAthleteDetailScreen() {
 
   return (
     <Screen>
+      <FullScreenChat
+        open={tab === 'chat'}
+        chatId={chatId}
+        title={athleteName}
+        onClose={() => setTab('analytics')}
+      />
+
       <div className="p-4 w-full max-w-2xl mx-auto">
         {/* Back */}
         <button
@@ -78,7 +91,9 @@ export default function TrainerAthleteDetailScreen() {
           <MiniAvatar zoneIntensities={zoneIntensities} size="md" name={athleteName} />
           <div>
             <h1 className="text-xl font-bold text-white">{athleteName}</h1>
-            <p className="text-sm text-(--color_text_muted) mt-0.5">Чат, аналитика и восстановление</p>
+            <p className="text-sm text-(--color_text_muted) mt-0.5">
+              Чат, аналитика и восстановление
+            </p>
           </div>
         </div>
 
@@ -99,14 +114,12 @@ export default function TrainerAthleteDetailScreen() {
             onClick={() => setTab('analytics')}
             className={`flex items-center justify-center gap-1 py-3 rounded-xl text-sm font-medium transition-all ${tab === 'analytics' ? TAB_ACTIVE : TAB_IDLE}`}
           >
-            <ChartBarIcon className="w-4 h-4" />
             Аналитика
           </button>
           <button
             onClick={() => setTab('avatar')}
             className={`flex items-center justify-center gap-1 py-3 rounded-xl text-sm font-medium transition-all ${tab === 'avatar' ? TAB_ACTIVE : TAB_IDLE}`}
           >
-            <UserIcon className="w-4 h-4" />
             Нагрузка
           </button>
           <button
@@ -116,17 +129,6 @@ export default function TrainerAthleteDetailScreen() {
             <PlusIcon className="w-4 h-4" />
           </button>
         </motion.div>
-
-        {/* Chat tab */}
-        {tab === 'chat' && chatId && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-(--color_bg_card) rounded-2xl border border-(--color_border) overflow-hidden"
-          >
-            <ChatBox chatId={chatId} />
-          </motion.div>
-        )}
 
         {/* Analytics tab */}
         {tab === 'analytics' && (
@@ -198,7 +200,9 @@ export default function TrainerAthleteDetailScreen() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
                     <div className="text-2xl font-bold text-white">{avatarData.totalWorkouts}</div>
-                    <div className="text-xs text-(--color_text_muted) mt-1">Тренировок за 14 дней</div>
+                    <div className="text-xs text-(--color_text_muted) mt-1">
+                      Тренировок за 14 дней
+                    </div>
                   </div>
                   <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
                     <div className="text-2xl font-bold text-white">
@@ -208,7 +212,9 @@ export default function TrainerAthleteDetailScreen() {
                           ? 'Сегодня'
                           : `${avatarData.lastWorkoutDaysAgo} дн.`}
                     </div>
-                    <div className="text-xs text-(--color_text_muted) mt-1">Последняя тренировка</div>
+                    <div className="text-xs text-(--color_text_muted) mt-1">
+                      Последняя тренировка
+                    </div>
                   </div>
                 </div>
 
@@ -231,10 +237,7 @@ export default function TrainerAthleteDetailScreen() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <WorkoutInlineForm
               preselectedAssignee={{ type: 'athlete', id: id, name: athleteName }}
-              onSuccess={() => {
-                toast.success('Тренировка создана');
-                setTab('chat');
-              }}
+              onSuccess={() => setTab('chat')}
               onCancel={() => setTab('chat')}
             />
           </motion.div>
