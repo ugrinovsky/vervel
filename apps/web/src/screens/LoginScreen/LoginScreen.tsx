@@ -42,6 +42,8 @@ export default function LoginScreen() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const navigate = useNavigate();
   const { login } = useAuth();
+  // Read invite token from ?invite= param or router state
+  const inviteToken = new URLSearchParams(window.location.search).get('invite');
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -86,7 +88,7 @@ export default function LoginScreen() {
       login(user, tokenValue);
 
       toast.success(`Добро пожаловать, ${user.fullName}!`);
-      navigate('/');
+      navigate(inviteToken ? `/invite/${inviteToken}` : '/');
     } catch (error) {
       toast.error('Неверный email или пароль');
     } finally {

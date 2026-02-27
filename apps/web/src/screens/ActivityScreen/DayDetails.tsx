@@ -41,10 +41,15 @@ export default function DayDetails({ date, stats }: DayDetailsProps) {
             {format(date, 'd MMMM yyyy', { locale: ru })}
           </h2>
           {stats.type && (
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
               <span className="text-sm px-2 py-1 bg-(--color_bg_card_hover) rounded-full text-(--color_text_secondary)">
                 {getWorkoutTypeLabel(stats.type)}
               </span>
+              {stats.fromTrainer && (
+                <span className="text-sm px-2 py-1 bg-violet-500/20 text-violet-300 rounded-full border border-violet-500/30">
+                  📋 От тренера
+                </span>
+              )}
               {stats.intensity > 0 && (
                 <span className="text-sm text-(--color_text_muted)">
                   Интенсивность: {Math.round(stats.intensity * 100)}%

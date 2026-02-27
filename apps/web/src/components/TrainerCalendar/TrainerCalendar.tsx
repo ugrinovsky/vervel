@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { format, startOfMonth, isSameDay, isToday, getDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { CalendarDaysIcon } from '@heroicons/react/24/outline';
 
 export interface TrainerDayData {
   date: Date;
@@ -79,7 +80,8 @@ export default function TrainerCalendar({
           >
             ←
           </button>
-          <h2 className="text-base font-bold text-white capitalize">
+          <h2 className="text-base font-bold text-white capitalize flex items-center gap-1.5">
+            <CalendarDaysIcon className="w-4 h-4 text-(--color_text_muted) shrink-0" />
             {format(currentMonth, 'LLLL yyyy', { locale: ru })}
           </h2>
           <button

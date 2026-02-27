@@ -18,28 +18,30 @@ export interface AiWorkoutResult {
 }
 
 // Системный промпт для парсинга текста тренировки в JSON
-const PARSE_SYSTEM_PROMPT = `Ты — фитнес-ассистент. Тебе дан текст, распознанный с фотографии тренировочной доски или листка. Разбери его в строгом JSON-формате.
+const PARSE_SYSTEM_PROMPT = `You are a fitness assistant. You are given text recognized from a photo of a workout board or sheet. Parse it into strict JSON format.
 
-Требования:
-1. Только JSON, никакого текста вокруг него
-2. Формат: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"название упражнения","sets":3,"reps":10,"weight":80,"duration":null,"notes":null}],"notes":"общие заметки"}
-3. weight — в килограммах, duration — в секундах
-4. Если параметр не указан — используй null
-5. Тип тренировки определи по контексту (CrossFit = WOD/AMRAP/For Time, бодибилдинг = изолирующие упражнения, кардио = бег/велосипед/плавание)
-6. Переводи названия упражнений на русский язык
-7. Интерпретируй сокращения: "5х10" = 5 подходов по 10 повторений, "x" или "×" = подходы×повторения`
+Requirements:
+1. Return only JSON, no surrounding text
+2. Format: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"Exercise Name","sets":3,"reps":10,"weight":80,"duration":null,"notes":null}],"notes":"general notes"}
+3. weight — in kilograms, duration — in seconds
+4. If a parameter is not specified — use null
+5. Determine workout type from context (CrossFit = WOD/AMRAP/For Time, bodybuilding = isolation exercises, cardio = running/cycling/swimming)
+6. IMPORTANT: Output exercise names in standard English gym terminology (e.g. "Barbell Bench Press", "Back Squat", "Pull-Up", "Deadlift", "Push-Up"). Translate Russian/other language names to English.
+7. Interpret abbreviations: "5х10" = 5 sets of 10 reps, "x" or "×" = sets×reps
+8. notes field — write in Russian for user readability`
 
 // Системный промпт для генерации тренировки по текстовому описанию
-const GENERATE_SYSTEM_PROMPT = `Ты — профессиональный тренер по фитнесу. Сгенерируй готовую тренировку по описанию и верни её в строгом JSON-формате.
+const GENERATE_SYSTEM_PROMPT = `You are a professional fitness trainer. Generate a complete workout based on the description and return it in strict JSON format.
 
-Требования:
-1. Только JSON, никакого текста вокруг него
-2. Формат: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"название упражнения","sets":3,"reps":10,"weight":null,"duration":null,"notes":"подсказка по технике"}],"notes":"общие рекомендации"}
-3. weight — в килограммах (null если не применимо), duration — в секундах (null если не применимо)
-4. Генерируй реалистичную тренировку с правильными объёмами и интенсивностью
-5. Учитывай уровень подготовки если указан: новичок, средний, продвинутый
-6. Все названия упражнений на русском языке
-7. 4-8 упражнений для обычной тренировки`
+Requirements:
+1. Return only JSON, no surrounding text
+2. Format: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"Exercise Name","sets":3,"reps":10,"weight":null,"duration":null,"notes":"technique tip in Russian"}],"notes":"general recommendations in Russian"}
+3. weight — in kilograms (null if not applicable), duration — in seconds (null if not applicable)
+4. Generate a realistic workout with correct volume and intensity
+5. Take into account fitness level if specified: beginner, intermediate, advanced
+6. IMPORTANT: Output exercise names in standard English gym terminology (e.g. "Barbell Bench Press", "Back Squat", "Pull-Up", "Deadlift", "Dumbbell Curl"). This is required for catalog matching.
+7. 4-8 exercises for a standard workout
+8. notes and technique tips — write in Russian for user readability`
 
 // Yandex Vision OCR — специализированный OCR для текста (включая рукописный)
 const VISION_OCR_URL = 'https://ocr.api.cloud.yandex.net/ocr/v1/recognizeText'
@@ -201,7 +203,7 @@ export class YandexAiService {
         'x-folder-id': folderId,
       },
       body: JSON.stringify({
-        model: `gpt://${folderId}/yandexgpt/latest`,
+        model: `gpt://${folderId}/${env.get('YANDEX_GPT_MODEL', 'yandexgpt-lite')}/latest`,
         messages: [
           { role: 'system', content: instructions },
           { role: 'user', content: input },

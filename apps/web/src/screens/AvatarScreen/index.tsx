@@ -1,9 +1,23 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router';
 import Avatar from '@/components/Avatar/Avatar';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import { avatarApi, ZoneState } from '@/api/avatar';
+import { athleteApi } from '@/api/athlete';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const WORKOUT_LABELS: Record<string, string> = {
+  crossfit: 'CrossFit',
+  bodybuilding: 'Бодибилдинг',
+  cardio: 'Кардио',
+};
+
+const WORKOUT_COLORS: Record<string, string> = {
+  crossfit: 'from-orange-500 to-red-500',
+  bodybuilding: 'from-violet-500 to-purple-500',
+  cardio: 'from-blue-500 to-cyan-500',
+};
 
 const ZONE_LABELS: Record<string, string> = {
   chests: 'Грудь',
@@ -17,6 +31,24 @@ const ZONE_LABELS: Record<string, string> = {
   triceps: 'Трицепс',
   forearms: 'Предплечья',
   calfMuscles: 'Икры',
+  // ExerciseCatalog zone IDs (mapped from backend)
+  back: 'Спина',
+  legs: 'Ноги',
+  core: 'Пресс',
+  glutes: 'Ягодицы',
+};
+
+/**
+ * Maps ExerciseCatalog zone IDs → SVG zone names used in Avatar.
+ * The backend stores zones as 'back', 'legs', 'core', 'glutes',
+ * but the SVG avatar uses 'backMuscles', 'legMuscles', 'abdominalPress'.
+ */
+const CATALOG_TO_SVG_ZONE: Record<string, string> = {
+  back: 'backMuscles',
+  legs: 'legMuscles',
+  core: 'abdominalPress',
+  // glutes: SVG glutealMuscles is commented out — map to legMuscles as closest
+  glutes: 'legMuscles',
 };
 
 /**
@@ -92,21 +124,40 @@ function getBarColorByIntensity(intensity: number): string {
   return 'from-gray-600 to-gray-500';
 }
 
+interface TodayWorkout {
+  id: number;
+  workoutType: string;
+  exerciseCount: number;
+  notes: string | null;
+}
+
 export default function AvatarScreen() {
+  const navigate = useNavigate();
   const [zones, setZones] = useState<Record<string, ZoneState>>({});
   const [totalWorkouts, setTotalWorkouts] = useState(0);
   const [lastWorkoutDaysAgo, setLastWorkoutDaysAgo] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
+  const [todayWorkout, setTodayWorkout] = useState<TodayWorkout | null>(null);
 
   const loadStats = async () => {
     try {
       setLoading(true);
-      const response = await avatarApi.getRecoveryState();
-      if (response.data.success) {
-        setZones(response.data.data.zones);
-        setTotalWorkouts(response.data.data.totalWorkouts);
-        setLastWorkoutDaysAgo(response.data.data.lastWorkoutDaysAgo);
+      const [avatarRes, workoutsRes] = await Promise.all([
+        avatarApi.getRecoveryState(),
+        athleteApi.getUpcomingWorkouts(),
+      ]);
+      if (avatarRes.data.success) {
+        setZones(avatarRes.data.data.zones);
+        setTotalWorkouts(avatarRes.data.data.totalWorkouts);
+        setLastWorkoutDaysAgo(avatarRes.data.data.lastWorkoutDaysAgo);
+      }
+      if (workoutsRes.data.success) {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const found = workoutsRes.data.data.find(
+          (w) => (w.date as string).slice(0, 10) === todayStr
+        );
+        setTodayWorkout(found ?? null);
       }
     } catch (error) {
       console.error('Failed to load avatar stats:', error);
@@ -119,11 +170,13 @@ export default function AvatarScreen() {
     loadStats();
   }, []);
 
-  // Для Avatar компонента — плоская карта intensity
+  // Для Avatar компонента — плоская карта intensity.
+  // Ремапим зоны ExerciseCatalog (back/legs/core/glutes) → имена SVG-зон аватара.
   const zoneIntensities = useMemo(() => {
     const result: Record<string, number> = {};
     for (const [name, state] of Object.entries(zones)) {
-      result[name] = state.intensity;
+      const svgName = CATALOG_TO_SVG_ZONE[name] ?? name;
+      result[svgName] = Math.max(result[svgName] ?? 0, state.intensity);
     }
     return result;
   }, [zones]);
@@ -205,6 +258,38 @@ export default function AvatarScreen() {
 
           {/* Правая колонка */}
           <div className="flex-1 space-y-4">
+            {/* Тренировка от тренера сегодня */}
+            <AnimatePresence>
+              {todayWorkout && (
+                <motion.button
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  onClick={() => navigate('/activity')}
+                  className={`w-full text-left rounded-2xl p-4 bg-gradient-to-r ${WORKOUT_COLORS[todayWorkout.workoutType] ?? 'from-violet-500 to-purple-500'} relative overflow-hidden`}
+                >
+                  <div className="absolute inset-0 bg-black/20" />
+                  <div className="relative flex items-center gap-3">
+                    <div className="text-2xl">📋</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-medium text-white/70 uppercase tracking-wider mb-0.5">
+                        Тренировка от тренера · Сегодня
+                      </div>
+                      <div className="text-base font-bold text-white truncate">
+                        {WORKOUT_LABELS[todayWorkout.workoutType] ?? todayWorkout.workoutType}
+                        {' · '}
+                        {todayWorkout.exerciseCount} упр.
+                      </div>
+                      {todayWorkout.notes && (
+                        <div className="text-xs text-white/70 mt-0.5 truncate">{todayWorkout.notes}</div>
+                      )}
+                    </div>
+                    <div className="text-white/60 text-sm shrink-0">→</div>
+                  </div>
+                </motion.button>
+              )}
+            </AnimatePresence>
+
             {/* Сводка */}
             <div className="glass rounded-2xl p-5">
               <div className="flex items-center justify-between mb-4">

@@ -7,7 +7,7 @@ import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm'
 import TrainerCalendar, { type TrainerDayData } from '@/components/TrainerCalendar/TrainerCalendar';
 import { trainerApi, type ScheduledWorkout } from '@/api/trainer';
 
-import { PlusIcon, TrashIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, CheckIcon, XMarkIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 
 const WORKOUT_TYPE_LABELS: Record<string, string> = {
   crossfit: 'CrossFit',
@@ -157,8 +157,14 @@ export default function TrainerCalendarScreen() {
   return (
     <Screen>
       <div className="flex flex-col h-full">
+        {/* ── Page header ── */}
+        <div className="px-4 pt-3 pb-1 shrink-0 flex items-center gap-2">
+          <CalendarDaysIcon className="w-5 h-5 text-(--color_primary_light) shrink-0" />
+          <h1 className="text-lg font-bold text-white">Календарь</h1>
+        </div>
+
         {/* ── Calendar (top) ── */}
-        <div className="px-2 pt-2 pb-1 shrink-0">
+        <div className="px-2 pt-1 pb-1 shrink-0">
           <TrainerCalendar
             days={calendarDays}
             selectedDate={selectedDate}
@@ -183,7 +189,8 @@ export default function TrainerCalendarScreen() {
           {/* Day header */}
           <div className="flex items-center justify-between px-3 pt-3 pb-2 shrink-0">
             <div>
-              <div className="text-sm font-semibold text-white capitalize">
+              <div className="text-sm font-semibold text-white capitalize flex items-center gap-1.5">
+                <CalendarDaysIcon className="w-4 h-4 text-(--color_text_muted) shrink-0" />
                 {selectedDate.toLocaleDateString('ru-RU', {
                   weekday: 'long',
                   day: 'numeric',

@@ -6,15 +6,25 @@ import MuscleBalance from '@/components/analytics/MuscleBalance';
 import WeeklyOverview from '@/components/analytics/WeeklyOverview';
 import Recommendations from '@/components/analytics/Recommendations';
 import WorkoutRadar from '@/components/analytics/WorkoutRadar';
-import { useState } from 'react';
+import PeriodizationChart from '@/components/analytics/PeriodizationChart';
+import { useState, useEffect } from 'react';
 import { useWorkoutStats } from '@/hooks/useWorkoutsStats';
 import CollapsibleBlock from '@/components/ui/CollapsibleBlock';
 import { MetricsOverview } from '@/components/analytics/MetricsOverview';
 import { motion } from 'framer-motion';
+import { athleteApi } from '@/api/athlete';
+import type { PeriodizationData } from '@/api/trainer';
 
 export default function AnalyticsScreen() {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('week');
   const { data: stats } = useWorkoutStats(timeRange);
+  const [periodization, setPeriodization] = useState<PeriodizationData | null>(null);
+
+  useEffect(() => {
+    athleteApi.getMyPeriodization().then((res) => {
+      if (res.data.success) setPeriodization(res.data.data);
+    }).catch(() => {});
+  }, []);
 
   if (!stats) {
     return null;
@@ -82,6 +92,11 @@ export default function AnalyticsScreen() {
           <CollapsibleBlock title="Показатели" defaultOpen={false}>
             <MetricsOverview stats={stats} />
           </CollapsibleBlock>
+          {periodization && (
+            <CollapsibleBlock title="Периодизация" defaultOpen={false}>
+              <PeriodizationChart data={periodization} />
+            </CollapsibleBlock>
+          )}
         </motion.div>
       </div>
     </Screen>

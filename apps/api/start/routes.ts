@@ -17,6 +17,9 @@ const OAuthController = () => import('#controllers/oauth_controller');
 router.post('/login', [AuthController, 'login']);
 router.post('/register', [AuthController, 'register']);
 
+// Public invite info (no auth)
+router.get('/invite/info/:token', '#controllers/invite_controller.getInviteInfo');
+
 // OAuth routes
 router.get('/oauth/:provider/redirect', [OAuthController, 'redirect']);
 router.get('/oauth/:provider/callback', [OAuthController, 'callback']);
@@ -29,6 +32,7 @@ router.get('/', async () => {
 });
 
 router.get('/exercises', '#controllers/exercises_controller.index');
+router.get('/exercises/:id', '#controllers/exercises_controller.show');
 
 router
   .group(() => {
@@ -39,8 +43,12 @@ router
 
     router.get('profile', '#controllers/profile_controller.getProfile');
     router.put('profile', '#controllers/profile_controller.updateProfile');
+    router.post('profile/photo', '#controllers/profile_controller.uploadPhoto');
     router.put('profile/password', '#controllers/profile_controller.changePassword');
     router.post('profile/become-athlete', '#controllers/profile_controller.becomeAthlete');
+
+    // Публичный профиль тренера (для атлетов)
+    router.get('athlete/trainers/:trainerId/profile', '#controllers/profile_controller.getTrainerPublicProfile');
 
     // Streak routes
     router.get('streak', '#controllers/streak_controller.show');
@@ -58,6 +66,8 @@ router
     router.get('athlete/my-groups', '#controllers/athlete_controller.getMyGroups');
     router.get('athlete/my-trainers', '#controllers/athlete_controller.getMyTrainers');
     router.get('athlete/unread-counts', '#controllers/athlete_controller.getUnreadCounts');
+    router.get('athlete/upcoming-workouts', '#controllers/athlete_controller.getUpcomingWorkouts');
+    router.get('athlete/periodization', '#controllers/athlete_controller.getMyPeriodization');
     router.get('athlete/chats/group/:groupId', '#controllers/athlete_controller.getOrCreateGroupChat');
     router.get('athlete/chats/trainer/:trainerId', '#controllers/athlete_controller.getOrCreatePersonalChat');
 
@@ -96,6 +106,7 @@ router
     // Athlete data
     router.get('athletes/:athleteId/stats', '#controllers/trainer_controller.getAthleteStats');
     router.get('athletes/:athleteId/avatar', '#controllers/trainer_controller.getAthleteAvatar');
+    router.get('athletes/:athleteId/periodization', '#controllers/trainer_controller.getAthletePeriodization');
 
     // Groups
     router.get('groups', '#controllers/trainer_controller.listGroups');

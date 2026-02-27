@@ -21,7 +21,7 @@ export default function FullScreenChat({ open, chatId, title, onClose }: FullScr
           className="background fixed inset-0 z-50"
           onClick={onClose}
         >
-          {/* <div className="absolute inset-0 bg-black/60" /> */}
+          {/* <div className="absolutуe inset-0 bg-black/60" /> */}
           <motion.div
             initial={{ y: '100%' }}
             animate={{ y: 0 }}

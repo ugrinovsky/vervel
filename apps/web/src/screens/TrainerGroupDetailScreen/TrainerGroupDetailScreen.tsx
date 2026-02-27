@@ -9,7 +9,8 @@ import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm'
 import { trainerApi, type AthleteListItem, type TrainerGroupItem } from '@/api/trainer';
 import AthleteAvatarsRow from '@/components/AthleteAvatarsRow/AthleteAvatarsRow';
 import InlineAthleteAvatar from '@/components/MiniAvatar/InlineAthleteAvatar';
-import { ArrowLeftIcon, TrashIcon, PlusIcon, UsersIcon, ChatBubbleLeftIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { TrashIcon, PlusIcon, UsersIcon, ChatBubbleLeftIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import BackButton from '@/components/BackButton/BackButton';
 
 type Tab = 'members' | 'chat' | 'create';
 
@@ -97,13 +98,7 @@ export default function TrainerGroupDetailScreen() {
       />
 
       <div className="p-4 w-full max-w-2xl mx-auto">
-        <button
-          onClick={() => navigate('/trainer/groups')}
-          className="flex items-center gap-2 text-[var(--color_text_muted)] hover:text-white transition-colors mb-4"
-        >
-          <ArrowLeftIcon className="w-5 h-5" />
-          <span className="text-sm">Назад</span>
-        </button>
+        <BackButton onClick={() => navigate('/trainer/groups')} />
 
         <ScreenHeader
           icon="👥"

@@ -26,8 +26,9 @@ function QrScanTab({ active, onAdded }: { active: boolean; onAdded: () => void }
       setState('success');
       toast.success('Атлет добавлен');
       setTimeout(onAdded, 800);
-    } catch {
-      setErrorMsg('Не удалось добавить атлета. Попробуйте снова.');
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Не удалось добавить атлета. Попробуйте снова.';
+      setErrorMsg(msg);
       setState('error');
     }
   };

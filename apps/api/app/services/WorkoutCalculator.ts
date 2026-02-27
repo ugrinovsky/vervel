@@ -1,4 +1,4 @@
-import Exercise from '#models/exercise';
+import { ExerciseCatalog, type CatalogExercise } from '#services/ExerciseCatalog'
 import Workout, { WorkoutExercise, WorkoutSet } from '#models/workout';
 
 /* ------------------------------------------------------------------ */
@@ -72,15 +72,13 @@ export class WorkoutCalculator {
 
   private static async loadExercises(
     inputs: WorkoutExercise[]
-  ): Promise<Map<string, Exercise>> {
+  ): Promise<Map<string, CatalogExercise>> {
     const ids = [...new Set(inputs.map((e) => e.exerciseId))];
-
-    const exercises = await Exercise.query().whereIn('id', ids);
-    return new Map(exercises.map((e) => [e.id, e]));
+    return ExerciseCatalog.findMany(ids);
   }
 
   private static calculateExerciseLoad(
-    exercise: Exercise,
+    exercise: CatalogExercise,
     input: WorkoutExercise,
     workoutType: Workout['workoutType']
   ): { load: number; volume: number } {
@@ -244,17 +242,17 @@ export class WorkoutCalculator {
       }
     }
 
-    // Нормализация intensity и peakLoad относительно максимумов
-    const rawValues = Object.values(rawZones);
+    // peakLoad нормализуется относительно максимума (показывает, какая зона нагружалась больше всего)
+    // intensity НЕ нормализуется относительно maxRaw — иначе самая нагруженная зона всегда будет 100%
+    // независимо от того, сколько прошло дней. Используем абсолютный cap в 1.0.
     const peakValues = Object.values(zonePeakLoad);
-    const maxRaw = Math.max(...rawValues, NORMALIZATION.MIN_DENOMINATOR);
     const maxPeak = Math.max(...peakValues, NORMALIZATION.MIN_DENOMINATOR);
 
     const zones: Record<string, { intensity: number; lastTrainedDaysAgo: number; peakLoad: number }> = {};
 
     for (const zone of Object.keys(rawZones)) {
       zones[zone] = {
-        intensity: Math.min(rawZones[zone] / maxRaw, NORMALIZATION.MAX_ZONE_LOAD),
+        intensity: Math.min(rawZones[zone], NORMALIZATION.MAX_ZONE_LOAD),
         lastTrainedDaysAgo: Math.round(zoneLastTrained[zone] ?? 0),
         peakLoad: Math.min(zonePeakLoad[zone] / maxPeak, NORMALIZATION.MAX_ZONE_LOAD),
       };
@@ -335,6 +333,7 @@ export class WorkoutCalculator {
         typeof w.totalIntensity === 'string' ? parseFloat(w.totalIntensity) : w.totalIntensity || 0,
       volume: Number(w.totalVolume) || 0, // ✅ Принудительно конвертируем в число
       type: w.workoutType || 'unknown',
+      scheduledWorkoutId: w.scheduledWorkoutId ?? null,
     }));
 
     return {

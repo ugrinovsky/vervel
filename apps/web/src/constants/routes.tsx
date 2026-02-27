@@ -9,6 +9,7 @@ import TrainerGroupsListScreen from '@/screens/TrainerGroupsListScreen/TrainerGr
 import TrainerAthletesListScreen from '@/screens/TrainerAthletesListScreen/TrainerAthletesListScreen';
 import TrainerCalendarScreen from '@/screens/TrainerCalendarScreen/TrainerCalendarScreen';
 import TrainerTemplatesScreen from '@/screens/TrainerTemplatesScreen/TrainerTemplatesScreen';
+import TrainerExerciseLibraryScreen from '@/screens/TrainerExerciseLibraryScreen/TrainerExerciseLibraryScreen';
 import AthleteMyTeamScreen from '@/screens/AthleteMyTeamScreen/AthleteMyTeamScreen';
 import {
   ChartBarIcon,
@@ -21,6 +22,7 @@ import {
   ClockIcon,
   UsersIcon,
   RectangleStackIcon,
+  BookOpenIcon,
 } from '@heroicons/react/24/outline';
 
 export interface RouteItem {
@@ -124,6 +126,13 @@ export const trainerRoutes: RouteItem[] = [
     label: 'Календарь',
     icon: CalendarIcon,
     element: <TrainerCalendarScreen />,
+    toolbarPosition: 'right',
+  },
+  {
+    path: '/trainer/library',
+    label: 'Упражнения',
+    icon: BookOpenIcon,
+    element: <TrainerExerciseLibraryScreen />,
     toolbarPosition: 'right',
   },
   {

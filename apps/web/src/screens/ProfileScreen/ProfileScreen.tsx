@@ -303,6 +303,26 @@ export default function ProfileScreen() {
           </motion.div>
         )}
 
+        {/* Professional profile link (for trainers) */}
+        {inTrainerMode && (
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            onClick={() => navigate('/trainer/personal')}
+            className="w-full flex items-center gap-4 p-5 bg-[var(--color_bg_card)] rounded-2xl border border-[var(--color_border)] mb-6 hover:bg-[var(--color_bg_card_hover)] transition-colors text-left"
+          >
+            <div className="text-3xl">🪪</div>
+            <div className="flex-1">
+              <div className="text-sm font-medium text-white">Профессиональный профиль</div>
+              <div className="text-xs text-[var(--color_text_muted)] mt-0.5">
+                Фото, специализации, образование — видно атлетам
+              </div>
+            </div>
+            <div className="text-[var(--color_text_muted)] text-sm">→</div>
+          </motion.button>
+        )}
+
         {/* Cabinet switcher (for 'both' role) */}
         {isBoth && (
           <motion.button

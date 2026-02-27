@@ -34,6 +34,7 @@ export interface DayStats {
   calories: number;
   type: string | null;
   intensity: number;
+  fromTrainer: boolean;
 }
 
 export interface MonthlyStatsData {
@@ -53,6 +54,7 @@ const EMPTY_DAY_STATS: DayStats = {
   calories: 0,
   type: null,
   intensity: 0,
+  fromTrainer: false,
 };
 
 export function useActivityData() {
@@ -78,6 +80,7 @@ export function useActivityData() {
         load: getLoadLevel(workout?.volume),
         workoutType: workout?.type,
         intensity: workout?.intensity,
+        fromTrainer: workout?.scheduledWorkoutId != null,
       };
     });
   }, [stats, currentMonth]);
@@ -100,6 +103,7 @@ export function useActivityData() {
         calories: acc.calories + Math.round((w.volume || 0) * CALORIES_PER_KG),
         type: w.type || acc.type,
         intensity: w.intensity || acc.intensity,
+        fromTrainer: acc.fromTrainer || w.scheduledWorkoutId != null,
       }),
       { ...EMPTY_DAY_STATS },
     );

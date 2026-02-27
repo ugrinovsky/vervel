@@ -23,19 +23,27 @@ export default class InviteController {
       return response.badRequest({ message: 'Нельзя принять своё приглашение' })
     }
 
-    // Check if already linked to this trainer
+    // Check if ANY binding exists (active or inactive) — unique constraint (trainer_id, athlete_id)
     const existing = await TrainerAthlete.query()
       .where('trainerId', invite.trainerId)
       .where('athleteId', user.id)
-      .where('status', 'active')
       .first()
 
     if (existing) {
-      // Clean up pending invite
+      // Delete the pending invite token record first
       await invite.delete()
-      return response.conflict({ message: 'Вы уже привязаны к этому тренеру' })
+
+      if (existing.status === 'active') {
+        return response.conflict({ message: 'Вы уже привязаны к этому тренеру' })
+      }
+
+      // Reactivate removed binding
+      existing.status = 'active'
+      await existing.save()
+      return response.ok({ success: true, message: 'Вы привязаны к тренеру' })
     }
 
+    // No existing binding — reuse the pending invite record
     invite.athleteId = user.id
     invite.status = 'active'
     invite.inviteToken = null
@@ -53,6 +61,31 @@ export default class InviteController {
         athleteId: user.id,
         fullName: user.fullName,
         email: user.email,
+      },
+    })
+  }
+
+  /**
+   * Get trainer info for an invite token (no auth required)
+   * GET /invite/info/:token
+   */
+  async getInviteInfo({ params, response }: HttpContext) {
+    const invite = await TrainerAthlete.query()
+      .where('inviteToken', params.token)
+      .where('status', 'pending')
+      .preload('trainer')
+      .first()
+
+    if (!invite) {
+      return response.notFound({ message: 'Приглашение не найдено или уже использовано' })
+    }
+
+    return response.ok({
+      success: true,
+      data: {
+        trainerName: invite.trainer.fullName || invite.trainer.email,
+        trainerPhotoUrl: invite.trainer.photoUrl ?? null,
+        trainerSpecializations: invite.trainer.specializations ?? null,
       },
     })
   }

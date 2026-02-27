@@ -1,132 +1,320 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ChevronLeftIcon, MagnifyingGlassIcon, PlusIcon } from '@heroicons/react/24/outline';
+import BottomSheet from '@/components/BottomSheet/BottomSheet';
+import { ExerciseDetailContent } from '@/components/ExerciseDetailSheet/ExerciseDetailSheet';
+import type { Exercise, ExerciseFull, ExerciseCategory, MuscleZone, ExerciseWithSets } from '@/types/Exercise';
 import { exercisesApi } from '@/api/exercises';
-import UiTextInput from '../ui/TextInput';
-import UiCombobox from '../ui/Combobox';
 
-interface IProps {
-  onSelect: (exercise: any) => void;
+/* ------------------------------------------------------------------ */
+/* Labels                                                               */
+/* ------------------------------------------------------------------ */
+
+const ZONE_LABELS: Record<MuscleZone, string> = {
+  chests: 'Грудь',
+  back: 'Спина',
+  legs: 'Ноги',
+  shoulders: 'Плечи',
+  biceps: 'Бицепс',
+  triceps: 'Трицепс',
+  core: 'Кор',
+  glutes: 'Ягодицы',
+  forearms: 'Предплечья',
+};
+
+const CATEGORY_LABELS: Record<ExerciseCategory, string> = {
+  strength: 'Силовые',
+  olympic: 'Олимп.',
+  gymnastics: 'Гимнастика',
+  functional: 'Функц.',
+  cardio: 'Кардио',
+};
+
+/* ------------------------------------------------------------------ */
+/* ExerciseCard                                                         */
+/* ------------------------------------------------------------------ */
+
+function ExerciseCard({
+  exercise,
+  onClick,
+}: {
+  exercise: Exercise;
+  onClick: () => void;
+}) {
+  const [imgError, setImgError] = useState(false);
+
+  return (
+    <button
+      onClick={onClick}
+      className="flex flex-col rounded-xl overflow-hidden border border-white/10 bg-white/5 hover:bg-white/10 active:scale-95 transition-all text-left"
+    >
+      {/* Image */}
+      <div className="w-full aspect-video bg-black/30 overflow-hidden">
+        {exercise.imageUrl && !imgError ? (
+          <img
+            src={exercise.imageUrl}
+            alt={exercise.title}
+            loading="lazy"
+            onError={() => setImgError(true)}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-900/60 to-purple-900/60">
+            <span className="text-2xl font-bold text-white/20">{exercise.title[0]}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="p-2 flex-1">
+        <p className="text-xs font-medium text-white leading-snug line-clamp-2 mb-1.5">
+          {exercise.title}
+        </p>
+        <div className="flex flex-wrap gap-1">
+          {exercise.zones.slice(0, 2).map((zone) => (
+            <span
+              key={zone}
+              className="text-[10px] px-1.5 py-0.5 rounded-full bg-(--color_primary_light)/15 text-(--color_primary_light)"
+            >
+              {ZONE_LABELS[zone as MuscleZone] ?? zone}
+            </span>
+          ))}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* FilterChip                                                           */
+/* ------------------------------------------------------------------ */
+
+function FilterChip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+        active
+          ? 'bg-(--color_primary_light) text-white'
+          : 'bg-white/10 text-white/60 hover:text-white'
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* ExercisePicker                                                       */
+/* ------------------------------------------------------------------ */
+
+interface Props {
+  onSelect: (exercise: ExerciseWithSets) => void;
   workoutType: string;
 }
 
-export default function ExercisePicker({ onSelect, workoutType }: IProps) {
-  const [exercises, setExercises] = useState<any[]>([]);
-  const [selectedExercise, setSelectedExercise] = useState<any>(null);
-
-  const [params, setParams] = useState<any>({
-    sets: 3,
-    reps: 10,
-    weight: 0,
-    rounds: 5,
-    time: 10,
-  });
+export default function ExercisePicker({ onSelect, workoutType }: Props) {
+  const [open, setOpen] = useState(false);
+  const [view, setView] = useState<'list' | 'detail'>('list');
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<ExerciseCategory | null>(null);
+  const [zoneFilter, setZoneFilter] = useState<MuscleZone | null>(null);
+  const [selected, setSelected] = useState<Exercise | null>(null);
+  const [selectedFull, setSelectedFull] = useState<ExerciseFull | null>(null);
+  const [loadingFull, setLoadingFull] = useState(false);
 
   useEffect(() => {
     exercisesApi.list().then((res) => setExercises(res ?? []));
   }, []);
 
-  const handleAdd = () => {
-    const count = Math.max(1, params.sets || 1);
-    const initialSets = Array.from({ length: count }, () => ({
-      id: crypto.randomUUID(),
-      reps: params.reps || 10,
-      weight: params.weight || 0,
-    }));
+  /* Available categories (only those present in data) */
+  const availableCategories = useMemo<ExerciseCategory[]>(() => {
+    const set = new Set(exercises.map((e) => e.category));
+    return (['strength', 'functional', 'olympic', 'cardio', 'gymnastics'] as ExerciseCategory[]).filter(
+      (c) => set.has(c)
+    );
+  }, [exercises]);
 
-    onSelect({
-      exerciseId: selectedExercise.value,
-      title: selectedExercise.label,
-      sets: initialSets,
-      params: { ...params },
+  /* Available zones */
+  const availableZones = useMemo<MuscleZone[]>(() => {
+    const set = new Set(exercises.flatMap((e) => e.zones));
+    return (Object.keys(ZONE_LABELS) as MuscleZone[]).filter((z) => set.has(z));
+  }, [exercises]);
+
+  /* Filtered exercises */
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    return exercises.filter((ex) => {
+      if (categoryFilter && ex.category !== categoryFilter) return false;
+      if (zoneFilter && !ex.zones.includes(zoneFilter)) return false;
+      if (q) return ex.title.toLowerCase().includes(q);
+      return true;
     });
+  }, [exercises, search, categoryFilter, zoneFilter]);
 
-    setSelectedExercise(null);
+  const visibleExercises = filtered.slice(0, 60);
+
+  /* Open detail view */
+  const openDetail = (ex: Exercise) => {
+    setSelected(ex);
+    setSelectedFull(null);
+    setView('detail');
+    setLoadingFull(true);
+    exercisesApi
+      .get(ex.id)
+      .then(setSelectedFull)
+      .catch(() => setSelectedFull(null))
+      .finally(() => setLoadingFull(false));
   };
 
-  return (
-    <div className="mt-6 space-y-4">
-      <div>
-        <label className="block mb-1 text-sm text-white/70">Упражнение</label>
-        <UiCombobox
-          value={selectedExercise}
-          onChange={setSelectedExercise}
-          options={exercises.map((ex) => ({
-            value: ex.id,
-            label: ex.title,
-          }))}
-          placeholder="Начните вводить упражнение"
-        />
+  const goBack = () => {
+    setView('list');
+    setSelected(null);
+    setSelectedFull(null);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setView('list');
+    setSearch('');
+    setCategoryFilter(null);
+    setZoneFilter(null);
+    setSelected(null);
+    setSelectedFull(null);
+  };
+
+  const handleAdd = (exercise: ExerciseWithSets) => {
+    onSelect(exercise);
+    handleClose();
+  };
+
+  /* Header content changes based on view */
+  const headerContent =
+    view === 'detail' && selected ? (
+      <div className="flex items-center gap-2 min-w-0">
+        <button
+          onClick={goBack}
+          className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+        >
+          <ChevronLeftIcon className="w-4 h-4 text-white" />
+        </button>
+        <span className="text-base font-bold text-white truncate">{selected.title}</span>
       </div>
+    ) : (
+      <div className="flex items-center gap-2">
+        <span className="text-xl">💪</span>
+        <span className="text-lg font-bold text-white">Упражнения</span>
+      </div>
+    );
 
-      {selectedExercise && (
-        <div className="mt-4 p-4 rounded-xl bg-white/5 border border-white/10">
-          {workoutType === 'bodybuilding' && (
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <UiTextInput
-                  type="number"
-                  label="Подходы"
-                  value={params.sets}
-                  onChange={(e) => setParams({ ...params, sets: +e.target.value })}
+  return (
+    <>
+      <button
+        onClick={() => setOpen(true)}
+        className="mt-6 w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-colors"
+      >
+        <PlusIcon className="w-4 h-4" />
+        <span className="text-sm">Добавить упражнение</span>
+      </button>
+
+      <BottomSheet open={open} onClose={handleClose} header={headerContent}>
+        <AnimatePresence mode="wait" initial={false}>
+          {view === 'list' ? (
+            <motion.div
+              key="list"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.18 }}
+            >
+              {/* Search */}
+              <div className="relative mb-3">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Поиск упражнения..."
+                  className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl pl-9 pr-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-white/30"
                 />
               </div>
 
-              <div>
-                <UiTextInput
-                  type="number"
-                  label="Повторы"
-                  value={params.reps}
-                  onChange={(e) => setParams({ ...params, reps: +e.target.value })}
-                />
+              {/* Category filters */}
+              <div className="flex gap-2 overflow-x-auto pb-1 mb-2 no-scrollbar">
+                <FilterChip label="Все" active={!categoryFilter} onClick={() => setCategoryFilter(null)} />
+                {availableCategories.map((cat) => (
+                  <FilterChip
+                    key={cat}
+                    label={CATEGORY_LABELS[cat]}
+                    active={categoryFilter === cat}
+                    onClick={() => setCategoryFilter(categoryFilter === cat ? null : cat)}
+                  />
+                ))}
               </div>
 
-              <div>
-                <UiTextInput
-                  type="number"
-                  label="Вес (кг)"
-                  value={params.weight}
-                  onChange={(e) => setParams({ ...params, weight: +e.target.value })}
-                />
+              {/* Zone filters */}
+              <div className="flex gap-2 overflow-x-auto pb-2 mb-3 no-scrollbar">
+                <FilterChip label="Все зоны" active={!zoneFilter} onClick={() => setZoneFilter(null)} />
+                {availableZones.map((zone) => (
+                  <FilterChip
+                    key={zone}
+                    label={ZONE_LABELS[zone]}
+                    active={zoneFilter === zone}
+                    onClick={() => setZoneFilter(zoneFilter === zone ? null : zone)}
+                  />
+                ))}
               </div>
-            </div>
+
+              {/* Count */}
+              <p className="text-xs text-(--color_text_muted) mb-3">
+                {filtered.length > 60
+                  ? `Показано 60 из ${filtered.length} — уточните поиск`
+                  : `${filtered.length} упражнений`}
+              </p>
+
+              {/* Grid */}
+              {visibleExercises.length === 0 ? (
+                <div className="py-10 text-center text-(--color_text_muted) text-sm">
+                  Ничего не найдено
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {visibleExercises.map((ex) => (
+                    <ExerciseCard key={ex.id} exercise={ex} onClick={() => openDetail(ex)} />
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="detail"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.18 }}
+            >
+              {selected && (
+                <ExerciseDetailContent
+                  exercise={selected}
+                  full={selectedFull}
+                  loading={loadingFull}
+                  workoutType={workoutType}
+                  onAdd={handleAdd}
+                />
+              )}
+            </motion.div>
           )}
-
-          {workoutType === 'crossfit' && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <UiTextInput
-                  type="number"
-                  label="Раунды"
-                  value={params.rounds}
-                  onChange={(e) => setParams({ ...params, rounds: +e.target.value })}
-                />
-              </div>
-
-              <div>
-                <UiTextInput
-                  type="number"
-                  label="Время (мин)"
-                  value={params.time}
-                  onChange={(e) => setParams({ ...params, time: +e.target.value })}
-                />
-              </div>
-            </div>
-          )}
-
-          <button
-            onClick={handleAdd}
-            className="
-    mt-4 w-full py-2 rounded-lg
-    bg-white/10 text-white font-medium
-    border border-white/20
-    shadow-sm
-    hover:bg-white/20
-    active:scale-95 transition
-  "
-          >
-            Добавить упражнение
-          </button>
-        </div>
-      )}
-    </div>
+        </AnimatePresence>
+      </BottomSheet>
+    </>
   );
 }

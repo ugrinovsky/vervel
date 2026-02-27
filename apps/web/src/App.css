@@ -15,6 +15,14 @@ html::-webkit-scrollbar {
   display: none;
 }
 
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 body,
 .background {
   background: radial-gradient(circle at 50% 50%, var(--color_primary) 0%, var(--color_primary_dark) 60%);

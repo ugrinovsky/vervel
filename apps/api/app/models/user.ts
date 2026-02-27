@@ -36,6 +36,18 @@ export default class User extends compose(BaseModel, AuthFinder) {
   @column()
   declare role: 'athlete' | 'trainer' | 'both';
 
+  @column()
+  declare bio: string | null;
+
+  @column()
+  declare specializations: string[] | null;
+
+  @column()
+  declare education: string | null;
+
+  @column()
+  declare photoUrl: string | null;
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime;
 

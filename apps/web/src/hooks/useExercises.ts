@@ -10,6 +10,7 @@ export function useExercises() {
   useEffect(() => {
     exercisesApi
       .list()
+      .then(setData)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);

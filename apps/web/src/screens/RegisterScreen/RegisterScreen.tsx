@@ -16,6 +16,7 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
+  const inviteToken = new URLSearchParams(window.location.search).get('invite');
 
   const toggleRole = (role: 'athlete' | 'trainer') => {
     setSelectedRoles((prev) => {
@@ -59,7 +60,7 @@ export default function RegisterScreen() {
       const tokenValue = typeof token === 'string' ? token : token?.token || '';
       login(user, tokenValue);
       toast.success(`Добро пожаловать, ${user.fullName}!`);
-      navigate('/');
+      navigate(inviteToken ? `/invite/${inviteToken}` : '/');
     } catch {
       toast.error('Ошибка при регистрации');
     } finally {

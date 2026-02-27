@@ -1,7 +1,8 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import vine from '@vinejs/vine'
 import { YandexAiService, type AiExercise, type AiWorkoutResult } from '#services/YandexAiService'
-import Exercise from '#models/exercise'
+import { ExerciseCatalog } from '#services/ExerciseCatalog'
+import { token_set_ratio } from 'fuzzball'
 
 const recognizeValidator = vine.compile(
   vine.object({
@@ -72,17 +73,27 @@ export default class AiController {
 }
 
 /**
+ * Порог fuzz.token_set_ratio [0..100].
+ * 72 ≈ "barbell bench press" vs "bench press" (~80% overlap).
+ * AI возвращает английские имена, каталог — тоже английский.
+ */
+const FUZZY_THRESHOLD = 72
+
+/**
  * Матчит упражнения из AI-ответа к реальным ID каталога.
- * Порядок поиска:
+ * AI возвращает английские имена (см. промпт), каталог — тоже английский.
+ *
+ * Порядок поиска (от точного к нечёткому):
  *   1. Точное совпадение title (без учёта регистра)
  *   2. title содержит имя из AI (или наоборот)
- *   3. Любое keyword совпадает с именем из AI
+ *   3. Любое keyword содержит имя из AI (или наоборот)
+ *   4. fuzz.token_set_ratio по title + keywords
  *
  * Если совпадение найдено — заполняет exerciseId, иначе оставляет undefined
  * (тренировка запишется, но зоны будут пустыми).
  */
 async function matchExercisesToCatalog(result: AiWorkoutResult): Promise<AiWorkoutResult> {
-  const catalog = await Exercise.all()
+  const catalog = ExerciseCatalog.all()
 
   const matched: AiExercise[] = result.exercises.map((aiEx) => {
     const nameLower = aiEx.name.toLowerCase()
@@ -106,6 +117,31 @@ async function matchExercisesToCatalog(result: AiWorkoutResult): Promise<AiWorko
           (kw) => kw.toLowerCase().includes(nameLower) || nameLower.includes(kw.toLowerCase())
         )
       )
+    }
+
+    // 4. Нечёткий поиск: token_set_ratio по title + keywords.
+    // token_set_ratio сортирует токены перед сравнением — устойчив к порядку слов.
+    if (!found) {
+      let bestScore = 0
+      let bestMatch: (typeof catalog)[number] | undefined
+
+      for (const ex of catalog) {
+        let score = token_set_ratio(nameLower, ex.title.toLowerCase())
+
+        for (const kw of ex.keywords ?? []) {
+          const kwScore = token_set_ratio(nameLower, kw.toLowerCase())
+          if (kwScore > score) score = kwScore
+        }
+
+        if (score > bestScore) {
+          bestScore = score
+          bestMatch = ex
+        }
+      }
+
+      if (bestScore >= FUZZY_THRESHOLD) {
+        found = bestMatch
+      }
     }
 
     return found ? { ...aiEx, exerciseId: found.id } : aiEx

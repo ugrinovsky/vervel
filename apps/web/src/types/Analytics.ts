@@ -4,6 +4,7 @@ export interface WorkoutTimelineEntry {
   volume?: number; // Общий тоннаж
   intensity?: number; // 0-1
   zones?: Record<string, number>; // Доля нагрузки по мышечным зонам, 0-1
+  scheduledWorkoutId?: number | null; // Если назначено тренером
 }
 
 export interface WorkoutStats {

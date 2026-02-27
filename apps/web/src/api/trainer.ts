@@ -104,6 +104,20 @@ export interface TodayOverview {
   };
 }
 
+export interface PeriodizationPoint {
+  date: string;
+  atl: number;
+  ctl: number;
+  tsb: number;
+}
+
+export interface PeriodizationData {
+  current: { atl: number; ctl: number; tsb: number };
+  phase: { name: string; emoji: string; advice: string };
+  series: PeriodizationPoint[];
+  weeklyLoad: Array<{ week: string; load: number; workouts: number }>;
+}
+
 export const trainerApi = {
   // Today overview
   getTodayOverview: () =>
@@ -133,6 +147,8 @@ export const trainerApi = {
     privateApi.get(`/trainer/athletes/${athleteId}/stats`, { params: { from, to } }),
   getAthleteAvatar: (athleteId: number, params?: Record<string, string>) =>
     privateApi.get(`/trainer/athletes/${athleteId}/avatar`, { params }),
+  getAthletePeriodization: (athleteId: number) =>
+    privateApi.get<{ success: boolean; data: PeriodizationData }>(`/trainer/athletes/${athleteId}/periodization`),
 
   // Groups
   listGroups: () =>

@@ -9,6 +9,9 @@ import OAuthCallbackScreen from '@/screens/OAuthCallbackScreen/OAuthCallbackScre
 import SelectRoleScreen from '@/screens/SelectRoleScreen/SelectRoleScreen';
 import TrainerAthleteDetailScreen from '@/screens/TrainerAthleteDetailScreen/TrainerAthleteDetailScreen';
 import TrainerGroupDetailScreen from '@/screens/TrainerGroupDetailScreen/TrainerGroupDetailScreen';
+import TrainerPersonalScreen from '@/screens/TrainerPersonalScreen/TrainerPersonalScreen';
+import TrainerPublicProfileScreen from '@/screens/TrainerPublicProfileScreen/TrainerPublicProfileScreen';
+import InviteScreen from '@/screens/InviteScreen/InviteScreen';
 import AvatarScreen from '@/screens/AvatarScreen';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 
@@ -42,7 +45,8 @@ function AppContent(): JSX.Element {
     location.pathname === '/login' ||
     location.pathname === '/register' ||
     location.pathname === '/auth/callback' ||
-    location.pathname === '/select-role';
+    location.pathname === '/select-role' ||
+    location.pathname.startsWith('/invite/');
 
   // Deduplicate routes (profile appears in both athlete and trainer routes)
   const uniqueRoutes = routes.filter(
@@ -66,6 +70,8 @@ function AppContent(): JSX.Element {
         <Route path="/register" element={<RegisterScreen />} />
         <Route path="/auth/callback" element={<OAuthCallbackScreen />} />
         <Route path="/select-role" element={<SelectRoleScreen />} />
+        {/* Public invite route — handles auth state internally */}
+        <Route path="/invite/:token" element={<InviteScreen />} />
         <Route
           path="/"
           element={<ProtectedRoute><HomeScreen /></ProtectedRoute>}
@@ -91,6 +97,22 @@ function AppContent(): JSX.Element {
           element={
             <ProtectedRoute>
               <TrainerGroupDetailScreen />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/trainer/personal"
+          element={
+            <ProtectedRoute>
+              <TrainerPersonalScreen />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/trainer/profile/:trainerId"
+          element={
+            <ProtectedRoute>
+              <TrainerPublicProfileScreen />
             </ProtectedRoute>
           }
         />

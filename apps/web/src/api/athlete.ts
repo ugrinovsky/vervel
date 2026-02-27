@@ -1,4 +1,6 @@
 import { privateApi } from './http/privateApi';
+import { publicApi } from './http/publicApi';
+import type { PeriodizationData } from './trainer';
 
 export interface AthleteGroup {
   id: number;
@@ -17,6 +19,9 @@ export interface AthleteTrainer {
   fullName: string | null;
   email: string;
   chatId: number | null;
+  bio: string | null;
+  specializations: string[] | null;
+  photoUrl: string | null;
 }
 
 export const athleteApi = {
@@ -38,4 +43,28 @@ export const athleteApi = {
 
   getUnreadCounts: () =>
     privateApi.get<{ success: boolean; data: { total: number; chats: { chatId: number; unread: number }[] } }>('/athlete/unread-counts'),
+
+  getUpcomingWorkouts: () =>
+    privateApi.get<{
+      success: boolean;
+      data: Array<{
+        id: number;
+        date: string;
+        workoutType: string;
+        exerciseCount: number;
+        notes: string | null;
+      }>;
+    }>('/athlete/upcoming-workouts'),
+
+  getInviteInfo: (token: string) =>
+    publicApi.get<{
+      success: boolean;
+      data: { trainerName: string; trainerPhotoUrl: string | null; trainerSpecializations: string[] | null };
+    }>(`/invite/info/${token}`),
+
+  acceptInvite: (token: string) =>
+    privateApi.post<{ success: boolean; message: string }>('/invite/accept', { token }),
+
+  getMyPeriodization: () =>
+    privateApi.get<{ success: boolean; data: PeriodizationData }>('/athlete/periodization'),
 };

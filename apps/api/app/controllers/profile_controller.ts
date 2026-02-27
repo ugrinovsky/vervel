@@ -1,7 +1,11 @@
+import { join } from 'node:path'
+import { mkdir } from 'node:fs/promises'
+import { cuid } from '@adonisjs/core/helpers'
 import Workout from '#models/workout';
 import hash from '@adonisjs/core/services/hash';
 import { HttpContext } from '@adonisjs/core/http';
 import { StreakService } from '#services/StreakService';
+import User from '#models/user';
 
 export default class ProfileController {
   async getProfile({ auth, response }: HttpContext) {
@@ -25,6 +29,10 @@ export default class ProfileController {
             fullName: user.fullName,
             email: user.email,
             role: user.role,
+            bio: user.bio,
+            specializations: user.specializations,
+            education: user.education,
+            photoUrl: user.photoUrl,
             createdAt: user.createdAt,
           },
           stats: {
@@ -47,10 +55,15 @@ export default class ProfileController {
   async updateProfile({ auth, request, response }: HttpContext) {
     try {
       const user = auth.user!;
-      const { fullName, email } = request.only(['fullName', 'email']);
+      const { fullName, email, bio, specializations, education } = request.only([
+        'fullName', 'email', 'bio', 'specializations', 'education',
+      ]);
 
       if (fullName !== undefined) user.fullName = fullName;
       if (email !== undefined) user.email = email;
+      if (bio !== undefined) user.bio = bio || null;
+      if (specializations !== undefined) user.specializations = Array.isArray(specializations) ? specializations : null;
+      if (education !== undefined) user.education = education || null;
 
       await user.save();
 
@@ -62,6 +75,10 @@ export default class ProfileController {
             fullName: user.fullName,
             email: user.email,
             role: user.role,
+            bio: user.bio,
+            specializations: user.specializations,
+            education: user.education,
+            photoUrl: user.photoUrl,
             createdAt: user.createdAt,
           },
         },
@@ -73,6 +90,61 @@ export default class ProfileController {
         message: 'Ошибка при обновлении профиля',
       });
     }
+  }
+
+  /**
+   * POST /profile/photo
+   * Загрузка фото профиля. Сохраняет в public/uploads/avatars/, возвращает URL.
+   */
+  async uploadPhoto({ auth, request, response }: HttpContext) {
+    const user = auth.user!
+
+    const photo = request.file('photo', {
+      size: '5mb',
+      extnames: ['jpg', 'jpeg', 'png', 'webp', 'heic'],
+    })
+
+    if (!photo || !photo.isValid) {
+      return response.badRequest({
+        message: photo?.errors?.[0]?.message ?? 'Неверный файл',
+      })
+    }
+
+    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'avatars')
+    await mkdir(uploadsDir, { recursive: true })
+
+    const fileName = `${cuid()}.${photo.extname}`
+    await photo.move(uploadsDir, { name: fileName, overwrite: true })
+
+    const photoUrl = `/uploads/avatars/${fileName}`
+    user.photoUrl = photoUrl
+    await user.save()
+
+    return response.ok({ success: true, data: { photoUrl } })
+  }
+
+  /**
+   * GET /athlete/trainers/:trainerId/profile
+   * Публичный профиль тренера для атлета.
+   */
+  async getTrainerPublicProfile({ params, response }: HttpContext) {
+    const trainer = await User.find(params.trainerId)
+
+    if (!trainer || !trainer.isTrainer) {
+      return response.notFound({ message: 'Тренер не найден' })
+    }
+
+    return response.ok({
+      success: true,
+      data: {
+        id: trainer.id,
+        fullName: trainer.fullName,
+        bio: trainer.bio,
+        specializations: trainer.specializations ?? [],
+        education: trainer.education,
+        photoUrl: trainer.photoUrl,
+      },
+    })
   }
 
   async becomeAthlete({ auth, response }: HttpContext) {

@@ -9,21 +9,21 @@ import WorkoutRadar from '@/components/analytics/WorkoutRadar';
 import StatsOverview from '@/components/analytics/StatsOverview';
 import TopMuscles from '@/components/analytics/TopMuscles';
 import MuscleBalance from '@/components/analytics/MuscleBalance';
+import PeriodizationChart from '@/components/analytics/PeriodizationChart';
 import CollapsibleBlock from '@/components/ui/CollapsibleBlock';
 import Avatar from '@/components/Avatar/Avatar';
 import MiniAvatar from '@/components/MiniAvatar/MiniAvatar';
 import { useAthleteStats, type StatsPeriod } from '@/hooks/useAthleteStats';
 import { useAthleteAvatar } from '@/hooks/useAthleteAvatar';
-import { trainerApi } from '@/api/trainer';
+import { trainerApi, type PeriodizationData } from '@/api/trainer';
 import {
-  ArrowLeftIcon,
   ChatBubbleLeftIcon,
-  ChartBarIcon,
-  UserIcon,
   PlusIcon,
+  ArrowTrendingUpIcon,
 } from '@heroicons/react/24/outline';
+import BackButton from '@/components/BackButton/BackButton';
 
-type Tab = 'chat' | 'analytics' | 'avatar' | 'create';
+type Tab = 'chat' | 'analytics' | 'avatar' | 'periodization' | 'create';
 
 const TAB_ACTIVE = 'bg-(--color_primary_light) text-white shadow-lg';
 const TAB_IDLE = 'bg-(--color_bg_card) text-(--color_text_secondary) hover:text-white';
@@ -37,6 +37,8 @@ export default function TrainerAthleteDetailScreen() {
   const [timeRange, setTimeRange] = useState<StatsPeriod>('week');
   const [chatId, setChatId] = useState<number | null>(null);
   const [athleteName, setAthleteName] = useState('Атлет');
+  const [periodization, setPeriodization] = useState<PeriodizationData | null>(null);
+  const [periodizationLoading, setPeriodizationLoading] = useState(false);
 
   const { data: stats } = useAthleteStats(id, timeRange);
   const { data: avatarData, loading: avatarLoading } = useAthleteAvatar(id);
@@ -58,6 +60,22 @@ export default function TrainerAthleteDetailScreen() {
     loadData();
   }, [id]);
 
+  useEffect(() => {
+    if (tab !== 'periodization' || periodization) return;
+    const load = async () => {
+      setPeriodizationLoading(true);
+      try {
+        const res = await trainerApi.getAthletePeriodization(id);
+        setPeriodization(res.data.data);
+      } catch {
+        toast.error('Ошибка загрузки периодизации');
+      } finally {
+        setPeriodizationLoading(false);
+      }
+    };
+    load();
+  }, [tab, id, periodization]);
+
   const zoneIntensities = useMemo(() => {
     if (!avatarData?.zones) return {};
     const result: Record<string, number> = {};
@@ -77,14 +95,7 @@ export default function TrainerAthleteDetailScreen() {
       />
 
       <div className="p-4 w-full max-w-2xl mx-auto">
-        {/* Back */}
-        <button
-          onClick={() => navigate('/trainer/athletes')}
-          className="flex items-center gap-2 text-(--color_text_muted) hover:text-white transition-colors mb-4"
-        >
-          <ArrowLeftIcon className="w-5 h-5" />
-          <span className="text-sm">Назад</span>
-        </button>
+        <BackButton onClick={() => navigate('/trainer/athletes')} />
 
         {/* Header: мини-аватар + имя атлета */}
         <div className="flex items-center gap-4 mb-6">
@@ -101,33 +112,47 @@ export default function TrainerAthleteDetailScreen() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-4 gap-2 mb-6"
+          className="flex flex-col gap-1.5 mb-6"
         >
-          <button
-            onClick={() => setTab('chat')}
-            className={`flex items-center justify-center gap-1 py-3 rounded-xl text-sm font-medium transition-all ${tab === 'chat' ? TAB_ACTIVE : TAB_IDLE}`}
-          >
-            <ChatBubbleLeftIcon className="w-4 h-4" />
-            Чат
-          </button>
-          <button
-            onClick={() => setTab('analytics')}
-            className={`flex items-center justify-center gap-1 py-3 rounded-xl text-sm font-medium transition-all ${tab === 'analytics' ? TAB_ACTIVE : TAB_IDLE}`}
-          >
-            Аналитика
-          </button>
-          <button
-            onClick={() => setTab('avatar')}
-            className={`flex items-center justify-center gap-1 py-3 rounded-xl text-sm font-medium transition-all ${tab === 'avatar' ? TAB_ACTIVE : TAB_IDLE}`}
-          >
-            Нагрузка
-          </button>
-          <button
-            onClick={() => setTab('create')}
-            className={`flex items-center justify-center gap-1 py-3 rounded-xl text-sm font-medium transition-all ${tab === 'create' ? TAB_ACTIVE : TAB_IDLE}`}
-          >
-            <PlusIcon className="w-4 h-4" />
-          </button>
+          {/* Строка 1: Чат / Статистика / Зоны */}
+          <div className="grid grid-cols-3 gap-1.5">
+            <button
+              onClick={() => setTab('chat')}
+              className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium transition-all ${tab === 'chat' ? TAB_ACTIVE : TAB_IDLE}`}
+            >
+              <ChatBubbleLeftIcon className="w-3.5 h-3.5" />
+              Чат
+            </button>
+            <button
+              onClick={() => setTab('analytics')}
+              className={`flex items-center justify-center py-2.5 rounded-xl text-xs font-medium transition-all ${tab === 'analytics' ? TAB_ACTIVE : TAB_IDLE}`}
+            >
+              Статистика
+            </button>
+            <button
+              onClick={() => setTab('avatar')}
+              className={`flex items-center justify-center py-2.5 rounded-xl text-xs font-medium transition-all ${tab === 'avatar' ? TAB_ACTIVE : TAB_IDLE}`}
+            >
+              Зоны мышц
+            </button>
+          </div>
+          {/* Строка 2: Периодизация / Создать */}
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              onClick={() => setTab('periodization')}
+              className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium transition-all ${tab === 'periodization' ? TAB_ACTIVE : TAB_IDLE}`}
+            >
+              <ArrowTrendingUpIcon className="w-3.5 h-3.5" />
+              Периодизация
+            </button>
+            <button
+              onClick={() => setTab('create')}
+              className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium transition-all ${tab === 'create' ? TAB_ACTIVE : TAB_IDLE}`}
+            >
+              <PlusIcon className="w-4 h-4" />
+              Создать тренировку
+            </button>
+          </div>
         </motion.div>
 
         {/* Analytics tab */}
@@ -228,6 +253,25 @@ export default function TrainerAthleteDetailScreen() {
 
             {!avatarLoading && !avatarData && (
               <div className="text-center text-(--color_text_muted) py-12">Нет данных</div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Periodization tab */}
+        {tab === 'periodization' && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            {periodizationLoading && (
+              <div className="flex items-center justify-center py-16">
+                <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              </div>
+            )}
+            {!periodizationLoading && periodization && (
+              <PeriodizationChart data={periodization} />
+            )}
+            {!periodizationLoading && !periodization && (
+              <div className="text-center text-(--color_text_muted) py-12 text-sm">
+                Нет данных о тренировках для расчёта
+              </div>
             )}
           </motion.div>
         )}

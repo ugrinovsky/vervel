@@ -9,6 +9,7 @@ export interface DayData {
   load: LoadType;
   workoutType?: 'strength' | 'cardio' | 'crossfit' | 'rest';
   intensity?: number;
+  fromTrainer?: boolean;
 }
 
 interface ActivityCalendarProps {
@@ -152,21 +153,28 @@ export default function ActivityCalendar({
               {isCurrentDay && (
                 <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full" />
               )}
+              {day.fromTrainer && (
+                <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-violet-400 rounded-full border border-gray-900" title="Назначено тренером" />
+              )}
             </button>
           );
         })}
       </div>
 
       <div className="mt-6 pt-4 border-t border-(--color_border)">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-wrap justify-between items-center gap-2">
           <span className="text-sm text-(--color_text_muted)">Нагрузка:</span>
-          <div className="flex gap-4">
+          <div className="flex gap-4 flex-wrap">
             {legendItems.map(({ load, label }) => (
               <div key={load} className="flex items-center gap-2">
                 <div className={`w-3 h-3 rounded ${loadColors[load]}`} />
                 <span className="text-xs text-(--color_text_secondary)">{label}</span>
               </div>
             ))}
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-violet-400" />
+              <span className="text-xs text-(--color_text_secondary)">От тренера</span>
+            </div>
           </div>
         </div>
       </div>

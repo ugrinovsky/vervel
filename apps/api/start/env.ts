@@ -51,4 +51,5 @@ export default await Env.create(new URL('../', import.meta.url), {
   YANDEX_CLOUD_API_KEY: Env.schema.string.optional(),
   YANDEX_FOLDER_ID: Env.schema.string.optional(),
   YANDEX_OCR_MODEL: Env.schema.string.optional(),
+  YANDEX_GPT_MODEL: Env.schema.string.optional(),
 });
