@@ -63,7 +63,7 @@ export default function WorkoutForm() {
       notes: ex.notes,
       sets: Array.from({ length: ex.sets }, () => ({
         id: crypto.randomUUID(),
-        reps: ex.reps ?? 0,
+        reps: ex.reps ?? 1,
         weight: ex.weight ?? 0,
       })),
     }));

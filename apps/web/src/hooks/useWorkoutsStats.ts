@@ -15,7 +15,7 @@ const getDateRange = (period: StatsPeriod) => {
 
   return {
     from: from.toISOString().slice(0, 10),
-    to: now.toISOString().slice(0, 10),
+    to: now.toISOString().slice(0, 10) + 'T23:59:59',
   };
 };
 

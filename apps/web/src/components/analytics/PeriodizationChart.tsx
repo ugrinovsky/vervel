@@ -64,12 +64,12 @@ function MetricCard({
   return (
     <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col gap-1">
       <div className="flex items-center gap-1.5">
-        <span className="text-[10px] font-mono font-bold" style={{ color }}>{abbr}</span>
-        <span className="text-[10px] text-(--color_text_muted) uppercase tracking-wide">{label}</span>
+        <span className="text-xs font-mono font-bold" style={{ color }}>{abbr}</span>
+        <span className="text-xs text-(--color_text_muted) uppercase tracking-wide">{label}</span>
       </div>
       <div className={`text-2xl font-bold ${statusColor}`}>{value.toFixed(1)}</div>
-      <div className="text-[10px] text-(--color_text_muted) leading-relaxed">{description}</div>
-      <p className="text-[10px] text-(--color_text_muted)/70 leading-relaxed mt-0.5">{fullDesc}</p>
+      <div className="text-xs text-(--color_text_muted) leading-relaxed">{description}</div>
+      <p className="text-xs text-(--color_text_muted)/70 leading-relaxed mt-0.5">{fullDesc}</p>
       <div className="w-full h-1 rounded-full mt-1" style={{ backgroundColor: color + '30' }}>
         <div
           className="h-1 rounded-full transition-all"
@@ -130,7 +130,7 @@ export default function PeriodizationChart({ data }: Props) {
           abbr="CTL"
           label="Форма (тренированность)"
           value={current.ctl}
-          color="#34d399"
+          color="var(--color_primary_light)"
           description="Chronic Training Load — средняя нагрузка за 42 дня"
           fullDesc="Отражает накопленную тренированность за 6 недель. Высокое CTL = вы системно тренируетесь и ваш организм адаптировался к нагрузкам. Растёт медленно — нельзя «накачать» за один день."
         />
@@ -159,28 +159,28 @@ export default function PeriodizationChart({ data }: Props) {
         <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wide mb-1">
           Динамика за 90 дней
         </p>
-        <p className="text-[10px] text-(--color_text_muted) mb-3">
+        <p className="text-xs text-(--color_text_muted) mb-3">
           Ось X — даты. Наведите на точку чтобы увидеть значения.
         </p>
         <ResponsiveContainer width="100%" height={180}>
           <LineChart data={chartSeries} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 9, fill: 'var(--color_text_muted)' }}
+              tick={{ fontSize: 11, fill: 'var(--color_text_muted)' }}
               tickFormatter={formatAxisDate}
               interval={xTickInterval}
             />
-            <YAxis tick={{ fontSize: 9, fill: 'var(--color_text_muted)' }} />
+            <YAxis tick={{ fontSize: 11, fill: 'var(--color_text_muted)' }} />
             <Tooltip content={<CustomTooltip />} />
             <ReferenceLine y={0} stroke="rgba(255,255,255,0.15)" strokeDasharray="3 3" />
-            <Line type="monotone" dataKey="ctl" name="CTL (форма)" stroke="#34d399" strokeWidth={2} dot={false} />
+            <Line type="monotone" dataKey="ctl" name="CTL (форма)" stroke="var(--color_primary_light)" strokeWidth={2} dot={false} />
             <Line type="monotone" dataKey="atl" name="ATL (усталость)" stroke="#f87171" strokeWidth={2} dot={false} />
             <Line type="monotone" dataKey="tsb" name="TSB (свежесть)" stroke="#60a5fa" strokeWidth={1.5} strokeDasharray="4 2" dot={false} />
           </LineChart>
         </ResponsiveContainer>
         <div className="flex items-center gap-4 mt-3 flex-wrap">
           {[
-            { color: '#34d399', label: 'CTL — форма', dashed: false },
+            { color: 'var(--color_primary_light)', label: 'CTL — форма', dashed: false },
             { color: '#f87171', label: 'ATL — усталость', dashed: false },
             { color: '#60a5fa', label: 'TSB — свежесть', dashed: true },
           ].map(({ color, label, dashed }) => (
@@ -194,7 +194,7 @@ export default function PeriodizationChart({ data }: Props) {
                     : 'none',
                 }}
               />
-              <span className="text-[10px] text-(--color_text_muted)">{label}</span>
+              <span className="text-xs text-(--color_text_muted)">{label}</span>
             </div>
           ))}
         </div>
@@ -206,12 +206,12 @@ export default function PeriodizationChart({ data }: Props) {
           <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wide mb-1">
             Нагрузка по неделям
           </p>
-          <p className="text-[10px] text-(--color_text_muted) mb-3">
+          <p className="text-xs text-(--color_text_muted) mb-3">
             Суммарный тренировочный стресс за каждую неделю (последние 12 недель)
           </p>
           <ResponsiveContainer width="100%" height={100}>
             <BarChart data={weeklyLoad} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-              <XAxis dataKey="week" tick={{ fontSize: 9, fill: 'var(--color_text_muted)' }} />
+              <XAxis dataKey="week" tick={{ fontSize: 11, fill: 'var(--color_text_muted)' }} />
               <YAxis hide />
               <Tooltip
                 content={({ active, payload }) => {
@@ -229,19 +229,19 @@ export default function PeriodizationChart({ data }: Props) {
               <Bar dataKey="load" radius={[3, 3, 0, 0]}>
                 {weeklyLoad.map((entry, i) => {
                   const ratio = entry.load / maxWeekLoad;
-                  const color = ratio > 0.8 ? '#f87171' : ratio > 0.5 ? '#fbbf24' : '#34d399';
+                  const color = ratio > 0.8 ? '#f87171' : ratio > 0.5 ? '#fbbf24' : 'var(--color_primary_light)';
                   return <Cell key={i} fill={color} fillOpacity={0.8} />;
                 })}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
-          <p className="text-[10px] text-(--color_text_muted) mt-1">🟢 низкая · 🟡 средняя · 🔴 высокая нагрузка</p>
+          <p className="text-xs text-(--color_text_muted) mt-1">🟢 низкая · 🟡 средняя · 🔴 высокая нагрузка</p>
         </div>
       )}
 
       {/* Расшифровка TSB */}
       <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border)">
-        <p className="text-[10px] font-semibold text-(--color_text_muted) uppercase tracking-wide mb-3">
+        <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wide mb-3">
           Как читать TSB (свежесть)
         </p>
         <div className="space-y-2">
@@ -252,10 +252,10 @@ export default function PeriodizationChart({ data }: Props) {
             { range: '< −20', label: 'Перетренированность', detail: 'Усталость критическая. Риск травмы и падения иммунитета. Нужна разгрузочная неделя или полный отдых.', color: 'text-red-400' },
           ].map(({ range, label, detail, color }) => (
             <div key={range} className="flex gap-3">
-              <span className={`text-[10px] font-mono font-bold w-16 shrink-0 mt-0.5 ${color}`}>{range}</span>
+              <span className={`text-xs font-mono font-bold w-16 shrink-0 mt-0.5 ${color}`}>{range}</span>
               <div>
-                <p className={`text-[10px] font-semibold ${color}`}>{label}</p>
-                <p className="text-[10px] text-(--color_text_muted) leading-relaxed">{detail}</p>
+                <p className={`text-xs font-semibold ${color}`}>{label}</p>
+                <p className="text-xs text-(--color_text_muted) leading-relaxed">{detail}</p>
               </div>
             </div>
           ))}

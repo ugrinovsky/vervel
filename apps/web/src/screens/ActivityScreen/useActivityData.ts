@@ -12,11 +12,15 @@ const VOLUME_THRESHOLDS = {
   MEDIUM: 10000,
 } as const;
 
-function getLoadLevel(volume?: number): DayData['load'] {
-  if (!volume || volume <= 0) return 'none';
-  if (volume > VOLUME_THRESHOLDS.HIGH) return 'high';
-  if (volume > VOLUME_THRESHOLDS.MEDIUM) return 'medium';
-  return 'low';
+function getLoadLevel(volume?: number, intensity?: number): DayData['load'] {
+  if (volume && volume > 0) {
+    if (volume > VOLUME_THRESHOLDS.HIGH) return 'high';
+    if (volume > VOLUME_THRESHOLDS.MEDIUM) return 'medium';
+    return 'low';
+  }
+  // Кардио/кросс-фит: volume = 0, но тренировка реальная — используем intensity
+  if (intensity && intensity > 0) return 'low';
+  return 'none';
 }
 
 function findWorkoutByDate(timeline: WorkoutTimelineEntry[], dateStr: string) {
@@ -77,7 +81,7 @@ export function useActivityData() {
       return {
         date,
         workoutsCount: workout ? 1 : 0,
-        load: getLoadLevel(workout?.volume),
+        load: getLoadLevel(workout?.volume, workout?.intensity),
         workoutType: workout?.type,
         intensity: workout?.intensity,
         fromTrainer: workout?.scheduledWorkoutId != null,
@@ -136,6 +140,11 @@ export function useActivityData() {
     };
   }, [stats]);
 
+  const dayWorkouts = useMemo(() => {
+    if (!selectedDate || !stats?.timeline) return [];
+    return filterWorkoutsByDate(stats.timeline, format(selectedDate, 'yyyy-MM-dd'));
+  }, [selectedDate, stats]);
+
   return {
     selectedDate,
     setSelectedDate,
@@ -145,6 +154,7 @@ export function useActivityData() {
     loading,
     days,
     dayStats,
+    dayWorkouts,
     monthlyStats,
   };
 }

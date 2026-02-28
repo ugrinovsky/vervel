@@ -1,4 +1,5 @@
 export interface WorkoutTimelineEntry {
+  id?: number; // ID тренировки в БД
   date: string; // ISO строка даты
   type?: string; // Тип тренировки, например "mixed", "crossfit"
   volume?: number; // Общий тоннаж

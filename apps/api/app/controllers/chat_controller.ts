@@ -5,7 +5,6 @@ import Chat from '#models/chat'
 import Message from '#models/message'
 import ChatRead from '#models/chat_read'
 import TrainerGroup from '#models/trainer_group'
-import User from '#models/user'
 import TrainerAthlete from '#models/trainer_athlete'
 
 export default class ChatController {

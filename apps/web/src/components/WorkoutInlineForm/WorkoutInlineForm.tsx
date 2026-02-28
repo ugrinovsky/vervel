@@ -150,7 +150,7 @@ export default function WorkoutInlineForm({
     setWorkoutType(result.workoutType);
     const converted: ExerciseData[] = result.exercises.map((ex, i) => ({
       exerciseId: ex.exerciseId ?? `ai-${i}`,
-      name: ex.name,
+      name: ex.displayName ?? ex.name,
       sets: ex.sets,
       reps: ex.reps,
       weight: ex.weight,

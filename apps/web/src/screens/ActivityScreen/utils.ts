@@ -14,14 +14,11 @@ export const formatVolumeCompact = (volume: number): string => {
 
 const WORKOUT_TYPE_LABELS: Record<string, string> = {
   crossfit: '🔥 Кроссфит',
+  cardio: '🏃 Кардио',
+  bodybuilding: '🏋️ Бодибилдинг',
   mixed: '💪 Смешанная',
+  unknown: '🏋️ Тренировка',
 };
 
 export const getWorkoutTypeLabel = (type: string): string =>
-  WORKOUT_TYPE_LABELS[type] ?? '🏋️ Бодибилдинг';
-
-export const getWorkoutEffortLabel = (volume: number): string => {
-  if (volume > 10000) return '⚡ Сегодня была тяжелая тренировка!';
-  if (volume > 5000) return '💪 Хорошая нагрузка';
-  return '🏋️ Поддерживающая тренировка';
-};
+  WORKOUT_TYPE_LABELS[type] ?? '🏋️ Тренировка';

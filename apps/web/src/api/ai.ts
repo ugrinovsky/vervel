@@ -2,6 +2,8 @@ import { privateApi } from './http/privateApi'
 
 export interface AiExercise {
   name: string
+  /** Название на русском для отображения */
+  displayName?: string
   sets: number
   reps?: number
   weight?: number

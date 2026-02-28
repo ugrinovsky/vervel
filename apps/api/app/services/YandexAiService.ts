@@ -1,7 +1,8 @@
 import env from '#start/env'
 
 export interface AiExercise {
-  name: string
+  name: string        // English name for catalog matching
+  displayName: string // Russian name for display in UI
   sets: number
   reps?: number
   weight?: number
@@ -22,26 +23,28 @@ const PARSE_SYSTEM_PROMPT = `You are a fitness assistant. You are given text rec
 
 Requirements:
 1. Return only JSON, no surrounding text
-2. Format: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"Exercise Name","sets":3,"reps":10,"weight":80,"duration":null,"notes":null}],"notes":"general notes"}
+2. Format: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"Barbell Bench Press","displayName":"Жим штанги лёжа","sets":3,"reps":10,"weight":80,"duration":null,"notes":null}],"notes":"general notes"}
 3. weight — in kilograms, duration — in seconds
 4. If a parameter is not specified — use null
 5. Determine workout type from context (CrossFit = WOD/AMRAP/For Time, bodybuilding = isolation exercises, cardio = running/cycling/swimming)
-6. IMPORTANT: Output exercise names in standard English gym terminology (e.g. "Barbell Bench Press", "Back Squat", "Pull-Up", "Deadlift", "Push-Up"). Translate Russian/other language names to English.
-7. Interpret abbreviations: "5х10" = 5 sets of 10 reps, "x" or "×" = sets×reps
-8. notes field — write in Russian for user readability`
+6. "name" — standard English gym terminology for catalog matching (e.g. "Barbell Bench Press", "Back Squat", "Pull-Up", "Deadlift")
+7. "displayName" — Russian name shown to the user (e.g. "Жим штанги лёжа", "Приседания со штангой", "Подтягивания", "Становая тяга"). For non-standard CrossFit exercises write the Russian transliteration or translation.
+8. Interpret abbreviations: "5х10" = 5 sets of 10 reps, "x" or "×" = sets×reps
+9. notes field — write in Russian for user readability`
 
 // Системный промпт для генерации тренировки по текстовому описанию
 const GENERATE_SYSTEM_PROMPT = `You are a professional fitness trainer. Generate a complete workout based on the description and return it in strict JSON format.
 
 Requirements:
 1. Return only JSON, no surrounding text
-2. Format: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"Exercise Name","sets":3,"reps":10,"weight":null,"duration":null,"notes":"technique tip in Russian"}],"notes":"general recommendations in Russian"}
+2. Format: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"Barbell Bench Press","displayName":"Жим штанги лёжа","sets":3,"reps":10,"weight":null,"duration":null,"notes":"техника в 1-2 предложения"}],"notes":"общие рекомендации"}
 3. weight — in kilograms (null if not applicable), duration — in seconds (null if not applicable)
 4. Generate a realistic workout with correct volume and intensity
 5. Take into account fitness level if specified: beginner, intermediate, advanced
-6. IMPORTANT: Output exercise names in standard English gym terminology (e.g. "Barbell Bench Press", "Back Squat", "Pull-Up", "Deadlift", "Dumbbell Curl"). This is required for catalog matching.
-7. 4-8 exercises for a standard workout
-8. notes and technique tips — write in Russian for user readability`
+6. "name" — standard English gym terminology for catalog matching (e.g. "Barbell Bench Press", "Back Squat", "Pull-Up", "Deadlift", "Dumbbell Curl")
+7. "displayName" — Russian exercise name shown in the app UI (e.g. "Жим штанги лёжа", "Приседания со штангой")
+8. 4-8 exercises for a standard workout
+9. notes and technique tips — write in Russian for user readability`
 
 // Yandex Vision OCR — специализированный OCR для текста (включая рукописный)
 const VISION_OCR_URL = 'https://ocr.api.cloud.yandex.net/ocr/v1/recognizeText'
@@ -64,8 +67,8 @@ export class YandexAiService {
    * Шаг 2: YandexGPT (текстовый, дешевле) → парсит текст в JSON тренировки
    */
   static async recognizeFromImage(imageBase64: string, mimeType: string): Promise<AiWorkoutResult> {
-    const apiKey = env.get('YANDEX_CLOUD_API_KEY')
-    const folderId = env.get('YANDEX_FOLDER_ID')
+    const apiKey = env.get('YANDEX_CLOUD_API_KEY')!
+    const folderId = env.get('YANDEX_FOLDER_ID')!
 
     // Шаг 1: OCR — извлечь текст с изображения
     const extractedText = await this.extractTextWithOcr(imageBase64, mimeType, apiKey, folderId)
@@ -91,8 +94,8 @@ export class YandexAiService {
    * Использует YandexGPT — один запрос, без OCR.
    */
   static async generateFromText(prompt: string): Promise<AiWorkoutResult> {
-    const apiKey = env.get('YANDEX_CLOUD_API_KEY')
-    const folderId = env.get('YANDEX_FOLDER_ID')
+    const apiKey = env.get('YANDEX_CLOUD_API_KEY')!
+    const folderId = env.get('YANDEX_FOLDER_ID')!
 
     const result = await this.callGpt(
       folderId,
@@ -244,7 +247,8 @@ export class YandexAiService {
 
     const exercises: AiExercise[] = (Array.isArray(parsed.exercises) ? parsed.exercises : []).map(
       (ex: any) => ({
-        name: String(ex.name || 'Упражнение'),
+        name: String(ex.name || 'Exercise'),
+        displayName: String(ex.displayName || ex.name || 'Упражнение'),
         sets: Math.max(1, Number(ex.sets) || 1),
         reps: ex.reps != null ? Number(ex.reps) : undefined,
         weight: ex.weight != null ? Number(ex.weight) : undefined,

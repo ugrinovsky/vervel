@@ -44,17 +44,17 @@ function AiLoadingView() {
         <motion.div
           animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.1, 0.3] }}
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute w-20 h-20 rounded-full bg-violet-500/30"
+          className="absolute w-20 h-20 rounded-full bg-emerald-500/30"
         />
         <motion.div
           animate={{ scale: [1, 1.15, 1], opacity: [0.4, 0.15, 0.4] }}
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: 0.3 }}
-          className="absolute w-14 h-14 rounded-full bg-violet-400/30"
+          className="absolute w-14 h-14 rounded-full bg-emerald-400/30"
         />
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-          className="relative z-10 w-10 h-10 flex items-center justify-center rounded-full bg-linear-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-500/40"
+          className="relative z-10 w-10 h-10 flex items-center justify-center rounded-full bg-linear-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/40"
         >
           <SparklesIcon className="w-5 h-5 text-white" />
         </motion.div>
@@ -67,7 +67,7 @@ function AiLoadingView() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.3 }}
-          className="text-sm text-violet-300 font-medium"
+          className="text-sm text-emerald-300 font-medium"
         >
           {LOADING_STEPS[stepIndex]}
         </motion.p>
@@ -79,7 +79,7 @@ function AiLoadingView() {
             key={i}
             animate={{ opacity: i === stepIndex ? 1 : 0.25 }}
             transition={{ duration: 0.3 }}
-            className="w-1.5 h-1.5 rounded-full bg-violet-400"
+            className="w-1.5 h-1.5 rounded-full bg-emerald-400"
           />
         ))}
       </div>
@@ -118,8 +118,8 @@ export default function AiWorkoutGenerator({ onResult }: Props) {
 
   const sheetHeader = (
     <div className="flex items-center gap-2">
-      <div className="w-8 h-8 flex items-center justify-center rounded-full bg-violet-500/20">
-        <SparklesIcon className="w-4 h-4 text-violet-400" />
+      <div className="w-8 h-8 flex items-center justify-center rounded-full bg-emerald-500/20">
+        <SparklesIcon className="w-4 h-4 text-emerald-400" />
       </div>
       <span className="text-lg font-bold text-white">AI-генерация</span>
     </div>
@@ -130,7 +130,7 @@ export default function AiWorkoutGenerator({ onResult }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 text-xs text-violet-400 hover:text-violet-300 transition-colors"
+        className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
       >
         <SparklesIcon className="w-4 h-4" />
         Сгенерировать AI
@@ -158,10 +158,7 @@ export default function AiWorkoutGenerator({ onResult }: Props) {
                 placeholder="Например: грудь и трицепсы, 45 мин, средний уровень…"
                 rows={4}
                 autoFocus
-                className="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-white text-sm resize-none outline-none focus:border-violet-400/60 transition-colors placeholder:text-white/30"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleGenerate();
-                }}
+                className="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-white text-sm resize-none outline-none focus:border-emerald-400/60 transition-colors placeholder:text-white/30"
               />
 
               {/* Примеры */}
@@ -193,15 +190,11 @@ export default function AiWorkoutGenerator({ onResult }: Props) {
                 type="button"
                 onClick={handleGenerate}
                 disabled={!prompt.trim()}
-                className="w-full py-3 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <SparklesIcon className="w-4 h-4" />
                 Сгенерировать тренировку
               </button>
-
-              <p className="text-center text-[10px] text-(--color_text_muted)">
-                Ctrl+Enter для быстрой отправки
-              </p>
             </motion.div>
           )}
         </AnimatePresence>

@@ -17,7 +17,7 @@ const WORKOUT_TYPE_LABELS: Record<string, string> = {
 
 const WORKOUT_TYPE_COLORS: Record<string, string> = {
   crossfit: 'bg-white/10 ring-1 ring-inset ring-white/20',
-  bodybuilding: 'bg-violet-500/15 ring-1 ring-inset ring-violet-500/30',
+  bodybuilding: 'bg-emerald-500/15 ring-1 ring-inset ring-emerald-500/30',
   cardio: 'bg-amber-500/15 ring-1 ring-inset ring-amber-500/30',
 };
 
@@ -61,8 +61,9 @@ export default function TrainerCalendarScreen() {
     try {
       setLoading(true);
       const from = new Date(month.getFullYear(), month.getMonth(), 1);
-      const to = new Date(month.getFullYear(), month.getMonth() + 1, 0);
-      const res = await trainerApi.getScheduledWorkouts(toDateKey(from), toDateKey(to));
+      const lastDay = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+      const to = toDateKey(lastDay) + 'T23:59:59';
+      const res = await trainerApi.getScheduledWorkouts(toDateKey(from), to);
       setWorkouts(res.data.data);
     } catch {
       toast.error('Ошибка загрузки тренировок');

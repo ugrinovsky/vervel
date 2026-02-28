@@ -15,7 +15,7 @@ export default function ActivityScreen() {
     stats,
     loading,
     days,
-    dayStats,
+    dayWorkouts,
     monthlyStats,
   } = useActivityData();
 
@@ -71,7 +71,7 @@ export default function ActivityScreen() {
         </motion.div>
 
         <AnimatePresence>
-          {selectedDate && dayStats && (
+          {selectedDate && (
             <motion.div
               key={selectedDate.toISOString()}
               initial={{ opacity: 0, y: 20 }}
@@ -79,7 +79,7 @@ export default function ActivityScreen() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
             >
-              <DayDetails date={selectedDate} stats={dayStats} />
+              <DayDetails date={selectedDate} workouts={dayWorkouts} />
             </motion.div>
           )}
         </AnimatePresence>

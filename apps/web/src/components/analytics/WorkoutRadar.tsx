@@ -139,7 +139,7 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <div className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full whitespace-nowrap">
+          <div className="px-3 py-1 bg-emerald-400/15 text-emerald-400 rounded-full whitespace-nowrap">
             Среднее: {averageValue}%
           </div>
         </div>
@@ -187,7 +187,7 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
                         y={finalY - rectHeight / 2 + offsetY}
                         width={rectWidth}
                         height={rectHeight}
-                        fill="rgba(16, 185, 129, 0.15)"
+                        fill="rgb(var(--color_primary_light_ch) / 0.15)"
                         stroke="var(--color_primary_light)"
                         strokeWidth={1.5}
                         rx={8}
@@ -249,8 +249,8 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
           </div>
 
           {/* Общий балл */}
-          <div className="p-4 bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 rounded-lg border border-emerald-500/30">
-            <div className="text-xs text-emerald-300/80 mb-2 font-medium">
+          <div className="p-4 rounded-lg border" style={{ backgroundColor: 'rgb(var(--color_primary_light_ch) / 0.12)', borderColor: 'rgb(var(--color_primary_light_ch) / 0.3)' }}>
+            <div className="text-xs text-(--color_primary_icon)/80 mb-2 font-medium">
               ⭐ Общий балл
             </div>
             <div className="text-3xl font-bold text-emerald-400">{averageValue}%</div>

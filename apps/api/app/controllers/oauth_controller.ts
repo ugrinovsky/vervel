@@ -4,7 +4,6 @@ import OAuthProvider from '#models/oauth_provider'
 import type { ProviderName } from '#models/oauth_provider'
 import { DateTime } from 'luxon'
 import env from '#start/env'
-import crypto from 'node:crypto'
 
 export default class OAuthController {
   private getProviderConfig(provider: ProviderName) {
@@ -35,7 +34,7 @@ export default class OAuthController {
    * Redirect to OAuth provider
    * GET /oauth/:provider/redirect
    */
-  public async redirect({ params, response, session }: HttpContext) {
+  public async redirect({ params, response }: HttpContext) {
     const provider = params.provider as ProviderName
 
     if (!['vk', 'yandex'].includes(provider)) {
@@ -44,17 +43,12 @@ export default class OAuthController {
 
     const config = this.getProviderConfig(provider)
 
-    // Generate state for CSRF protection
-    const state = crypto.randomBytes(16).toString('hex')
-    session.put('oauth_state', state)
-
     // Build authorization URL
     const params_obj = new URLSearchParams({
-      client_id: config.clientId,
-      redirect_uri: config.redirectUri,
+      client_id: config.clientId ?? '',
+      redirect_uri: config.redirectUri ?? '',
       response_type: 'code',
       scope: config.scope,
-      state,
     })
 
     return response.redirect(`${config.authorizeUrl}?${params_obj.toString()}`)
@@ -64,7 +58,7 @@ export default class OAuthController {
    * Handle OAuth callback
    * GET /oauth/:provider/callback
    */
-  public async callback({ params, response, request, session }: HttpContext) {
+  public async callback({ params, response, request }: HttpContext) {
     const provider = params.provider as ProviderName
 
     if (!['vk', 'yandex'].includes(provider)) {
@@ -80,11 +74,8 @@ export default class OAuthController {
     }
 
     const code = request.input('code')
-    const state = request.input('state')
-    const sessionState = session.get('oauth_state')
 
-    // Verify state (CSRF protection)
-    if (!state || state !== sessionState) {
+    if (!code) {
       return response
         .redirect()
         .status(302)
@@ -101,10 +92,10 @@ export default class OAuthController {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          client_id: config.clientId,
-          client_secret: config.clientSecret,
+          client_id: config.clientId ?? '',
+          client_secret: config.clientSecret ?? '',
           code,
-          redirect_uri: config.redirectUri,
+          redirect_uri: config.redirectUri ?? '',
           grant_type: 'authorization_code',
         }).toString(),
       })
@@ -215,9 +206,6 @@ export default class OAuthController {
 
       // Generate our access token
       const token = await User.accessTokens.create(user)
-
-      // Clear OAuth state
-      session.forget('oauth_state')
 
       // If user doesn't have role, redirect to role selection
       if (!user.role) {

@@ -279,6 +279,7 @@ export class WorkoutCalculator {
       intensity: number;
       volume: number;
       type: string;
+      scheduledWorkoutId: number | null;
     }>;
     period: string;
   } {
@@ -328,6 +329,7 @@ export class WorkoutCalculator {
     }
 
     const timeline = workouts.map((w) => ({
+      id: w.id,
       date: w.date.toString(),
       intensity:
         typeof w.totalIntensity === 'string' ? parseFloat(w.totalIntensity) : w.totalIntensity || 0,

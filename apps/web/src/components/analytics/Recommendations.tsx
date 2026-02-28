@@ -29,7 +29,7 @@ export default function Recommendations({ stats }: RecommendationsProps) {
       case 'achievement':
         return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
       case 'warning':
-        return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+        return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
     }
   };
 
@@ -51,7 +51,7 @@ export default function Recommendations({ stats }: RecommendationsProps) {
       case 'high':
         return 'bg-orange-500';
       case 'medium':
-        return 'bg-yellow-500';
+        return 'bg-amber-500';
       case 'low':
         return 'bg-emerald-500';
     }
@@ -63,7 +63,7 @@ export default function Recommendations({ stats }: RecommendationsProps) {
     <>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <LightBulbIcon className="w-5 h-5 text-yellow-400 shrink-0" />
+          <LightBulbIcon className="w-5 h-5 text-amber-400 shrink-0" />
           <div>
             <p className="text-sm text-[var(--color_text_muted)]">Персональные советы</p>
           </div>
@@ -145,7 +145,7 @@ export default function Recommendations({ stats }: RecommendationsProps) {
             <div className="text-xs text-[var(--color_text_muted)]">Всего</div>
           </div>
           <div>
-            <div className="text-xl font-bold text-yellow-400">{highPriorityCount}</div>
+            <div className="text-xl font-bold text-amber-400">{highPriorityCount}</div>
             <div className="text-xs text-[var(--color_text_muted)]">Важные</div>
           </div>
         </div>
