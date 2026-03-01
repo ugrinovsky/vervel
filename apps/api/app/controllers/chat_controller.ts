@@ -6,6 +6,7 @@ import Message from '#models/message'
 import ChatRead from '#models/chat_read'
 import TrainerGroup from '#models/trainer_group'
 import TrainerAthlete from '#models/trainer_athlete'
+import AchievementService from '#services/AchievementService'
 
 export default class ChatController {
   /**
@@ -380,6 +381,11 @@ export default class ChatController {
     })
 
     await message.load('sender', (q) => q.select('id', 'fullName', 'email'))
+
+    // Проверяем ачивки на сообщения тренеру (не блокирует ответ)
+    if (chat.type === 'personal' && user.id !== chat.trainerId) {
+      AchievementService.checkAndUnlockAchievements(user.id).catch(() => {})
+    }
 
     return response.created({
       success: true,

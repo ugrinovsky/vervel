@@ -1,5 +1,6 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import TrainerAthlete from '#models/trainer_athlete'
+import AchievementService from '#services/AchievementService'
 
 export default class InviteController {
   async acceptInvite({ auth, request, response }: HttpContext) {
@@ -40,6 +41,7 @@ export default class InviteController {
       // Reactivate removed binding
       existing.status = 'active'
       await existing.save()
+      AchievementService.checkAndUnlockAchievements(user.id).catch(() => {})
       return response.ok({ success: true, message: 'Вы привязаны к тренеру' })
     }
 
@@ -49,6 +51,7 @@ export default class InviteController {
     invite.inviteToken = null
     await invite.save()
 
+    AchievementService.checkAndUnlockAchievements(user.id).catch(() => {})
     return response.ok({ success: true, message: 'Вы привязаны к тренеру' })
   }
 

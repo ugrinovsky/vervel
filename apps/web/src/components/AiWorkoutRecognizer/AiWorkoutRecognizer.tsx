@@ -150,6 +150,8 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
       >
         <SparklesIcon className="w-4 h-4" />
         Распознать по фото
+        <span className="text-white/30">·</span>
+        <span className="text-white/40">{COST_RECOGNIZE}₽</span>
       </button>
 
       <AnimatePresence>
@@ -225,6 +227,10 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
                       if (file) handleFile(file);
                     }}
                   />
+
+                  <p className="text-[11px] text-white/30 text-center">
+                    Стоимость распознавания: <span className="text-white/50">{COST_RECOGNIZE}₽</span> — списывается после отправки
+                  </p>
 
                   {!hasEnoughBalance && (
                     <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">

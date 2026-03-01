@@ -3,6 +3,7 @@ import vine from '@vinejs/vine'
 import { YandexAiService, type AiExercise, type AiWorkoutResult } from '#services/YandexAiService'
 import { AiBalanceService, InsufficientBalanceError } from '#services/AiBalanceService'
 import { ExerciseCatalog } from '#services/ExerciseCatalog'
+import AchievementService from '#services/AchievementService'
 import { token_set_ratio } from 'fuzzball'
 
 const recognizeValidator = vine.compile(
@@ -193,6 +194,9 @@ export default class AiController {
           throw chargeErr
         }
       }
+
+      // Проверяем достижения (огрехи не должны ломать ответ)
+      AchievementService.checkAndUnlockAchievements(userId).catch(() => {})
 
       return response.ok({ reply, balance: newBalance, cost })
     } catch (err: any) {

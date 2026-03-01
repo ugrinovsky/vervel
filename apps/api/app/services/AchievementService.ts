@@ -2,15 +2,18 @@ import { DateTime } from 'luxon'
 import Achievement from '#models/achievement'
 import UserAchievement from '#models/user_achievement'
 import Workout from '#models/workout'
+import TrainerAthlete from '#models/trainer_athlete'
+import db from '@adonisjs/lucid/services/db'
 import type UserStreak from '#models/user_streak'
 
 export default class AchievementService {
   /**
-   * Проверить и разблокировать новые достижения
+   * Проверить и разблокировать новые достижения.
+   * userStreak необязателен — нужен только для streak-типов.
    */
   static async checkAndUnlockAchievements(
     userId: number,
-    userStreak: UserStreak
+    userStreak?: UserStreak | null
   ): Promise<Achievement[]> {
     const allAchievements = await Achievement.query().where('isActive', true)
 
@@ -20,16 +23,47 @@ export default class AchievementService {
 
     const existingIds = new Set(existingUserAchievements.map((ua) => ua.achievementId))
 
-    // Считаем общее количество тренировок (лениво — только если нужно)
-    let workoutCount: number | null = null
-    const needsWorkoutCount = allAchievements.some(
-      (a) => !existingIds.has(a.id) && a.requirementType === 'total_workouts'
+    const unearnedTypes = new Set(
+      allAchievements
+        .filter((a) => !existingIds.has(a.id))
+        .map((a) => a.requirementType)
     )
-    if (needsWorkoutCount) {
-      const result = await Workout.query()
-        .where('userId', userId)
-        .count('* as total')
+
+    // Ленивая загрузка счётчиков — только нужных типов
+    let workoutCount = 0
+    if (unearnedTypes.has('total_workouts')) {
+      const result = await Workout.query().where('userId', userId).count('* as total')
       workoutCount = Number((result[0] as any).$extras.total ?? 0)
+    }
+
+    let aiChatCount = 0
+    if (unearnedTypes.has('ai_chat_messages')) {
+      const result = await db
+        .from('balance_transactions')
+        .where('user_id', userId)
+        .where('description', 'like', 'AI-чат%')
+        .count('* as total')
+      aiChatCount = Number((result[0] as any).total ?? 0)
+    }
+
+    let groupsJoined = 0
+    if (unearnedTypes.has('groups_joined')) {
+      const result = await TrainerAthlete.query()
+        .where('athleteId', userId)
+        .where('status', 'active')
+        .count('* as total')
+      groupsJoined = Number((result[0] as any).$extras.total ?? 0)
+    }
+
+    let trainerMessages = 0
+    if (unearnedTypes.has('trainer_messages')) {
+      const result = await db
+        .from('messages')
+        .join('chats', 'chats.id', 'messages.chat_id')
+        .where('messages.sender_id', userId)
+        .where('chats.type', 'personal')
+        .count('messages.id as total')
+      trainerMessages = Number((result[0] as any).total ?? 0)
     }
 
     const newlyUnlocked: Achievement[] = []
@@ -37,7 +71,13 @@ export default class AchievementService {
     for (const achievement of allAchievements) {
       if (existingIds.has(achievement.id)) continue
 
-      const shouldUnlock = this.checkAchievementCondition(achievement, userStreak, workoutCount ?? 0)
+      const shouldUnlock = this.checkAchievementCondition(achievement, {
+        userStreak: userStreak ?? null,
+        workoutCount,
+        aiChatCount,
+        groupsJoined,
+        trainerMessages,
+      })
 
       if (shouldUnlock) {
         await UserAchievement.create({
@@ -105,15 +145,30 @@ export default class AchievementService {
    */
   private static checkAchievementCondition(
     achievement: Achievement,
-    userStreak: UserStreak,
-    workoutCount: number
+    ctx: {
+      userStreak: UserStreak | null
+      workoutCount: number
+      aiChatCount: number
+      groupsJoined: number
+      trainerMessages: number
+    }
   ): boolean {
+    const val = achievement.requirementValue || 0
     switch (achievement.requirementType) {
       case 'streak_days':
-        return userStreak.currentStreak >= (achievement.requirementValue || 0)
+        return ctx.userStreak ? ctx.userStreak.currentStreak >= val : false
 
       case 'total_workouts':
-        return workoutCount >= (achievement.requirementValue || 0)
+        return ctx.workoutCount >= val
+
+      case 'ai_chat_messages':
+        return ctx.aiChatCount >= val
+
+      case 'groups_joined':
+        return ctx.groupsJoined >= val
+
+      case 'trainer_messages':
+        return ctx.trainerMessages >= val
 
       default:
         return false

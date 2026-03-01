@@ -9,6 +9,8 @@ type AchievementItem = AchievementsData['unlocked'][number] | (AchievementsData[
 const CATEGORY_META: Record<string, { label: string; emoji: string }> = {
   streak: { label: 'Серии тренировок', emoji: '🔥' },
   workout: { label: 'Всего тренировок', emoji: '💪' },
+  usage: { label: 'Использование функций', emoji: '🤖' },
+  social: { label: 'Общение и команда', emoji: '👥' },
 };
 
 export default function AchievementsList() {
