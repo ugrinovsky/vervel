@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SparklesIcon, PaperAirplaneIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+import ReactMarkdown from 'react-markdown';
 import { aiApi } from '@/api/ai';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -276,13 +277,17 @@ export default function AiChat({ open, onClose }: Props) {
                   )}
                   <div className="max-w-[80%] flex flex-col gap-1">
                     <div
-                      className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+                      className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
                         msg.role === 'user'
-                          ? 'bg-(--color_primary_light) text-white rounded-br-sm'
-                          : 'bg-(--color_bg_card) text-white border border-(--color_border) rounded-bl-sm'
+                          ? 'bg-(--color_primary_light) text-white rounded-br-sm whitespace-pre-wrap'
+                          : 'bg-(--color_bg_card) text-white border border-(--color_border) rounded-bl-sm ai-markdown'
                       }`}
                     >
-                      {msg.content}
+                      {msg.role === 'user' ? (
+                        msg.content
+                      ) : (
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      )}
                     </div>
                     {msg.role === 'assistant' && msg.cost !== undefined && (
                       <p className="text-[10px] text-(--color_text_muted) pl-1">

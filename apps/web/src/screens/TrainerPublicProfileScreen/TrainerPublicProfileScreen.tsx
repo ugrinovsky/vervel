@@ -6,7 +6,7 @@ import Screen from '@/components/Screen/Screen';
 import FullScreenChat from '@/components/FullScreenChat/FullScreenChat';
 import { profileApi, type TrainerPublicProfile } from '@/api/profile';
 import { athleteApi } from '@/api/athlete';
-import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
+import { ChatBubbleLeftIcon, ClipboardDocumentIcon, CheckIcon } from '@heroicons/react/24/outline';
 import BackButton from '@/components/BackButton/BackButton';
 
 const DONATION_AMOUNTS = [100, 300, 500, 1000];
@@ -23,6 +23,7 @@ export default function TrainerPublicProfileScreen() {
   const [openingChat, setOpeningChat] = useState(false);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState('');
+  const [copiedField, setCopiedField] = useState<'phone' | 'card' | null>(null);
 
   useEffect(() => {
     profileApi
@@ -50,6 +51,16 @@ export default function TrainerPublicProfileScreen() {
       setOpeningChat(false);
     }
   };
+
+  const copyToClipboard = (text: string, field: 'phone' | 'card') => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    });
+  };
+
+  const donationAmount = customAmount ? Number(customAmount) : selectedAmount;
+  const hasDonateDetails = profile?.donatePhone || profile?.donateCard || profile?.donateYookassaLink;
 
   const initials = profile?.fullName
     ? profile.fullName
@@ -157,54 +168,94 @@ export default function TrainerPublicProfileScreen() {
           className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
         >
           <h2 className="text-sm font-semibold text-white mb-1">Поддержать тренера</h2>
-          <p className="text-xs text-(--color_text_muted) mb-4">
-            Оплата тренерских услуг скоро появится
-          </p>
 
-          {/* Fixed amounts */}
-          <div className="grid grid-cols-4 gap-2 mb-3">
-            {DONATION_AMOUNTS.map((amount) => (
-              <button
-                key={amount}
-                onClick={() => {
-                  setSelectedAmount(amount);
-                  setCustomAmount('');
-                }}
-                className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  selectedAmount === amount && !customAmount
-                    ? 'bg-(--color_primary_light) text-white'
-                    : 'bg-(--color_bg_card_hover) text-(--color_text_secondary) hover:text-white'
-                }`}
-              >
-                {amount}₽
-              </button>
-            ))}
-          </div>
+          {!hasDonateDetails ? (
+            <p className="text-xs text-(--color_text_muted) mt-2">
+              Тренер пока не указал реквизиты для поддержки
+            </p>
+          ) : (
+            <>
+              {/* Amount selector */}
+              <p className="text-xs text-(--color_text_muted) mb-3">Выберите сумму или введите свою</p>
+              <div className="grid grid-cols-4 gap-2 mb-3">
+                {DONATION_AMOUNTS.map((amount) => (
+                  <button
+                    key={amount}
+                    onClick={() => { setSelectedAmount(amount); setCustomAmount(''); }}
+                    className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      selectedAmount === amount && !customAmount
+                        ? 'bg-(--color_primary_light) text-white'
+                        : 'bg-(--color_bg_card_hover) text-(--color_text_secondary) hover:text-white'
+                    }`}
+                  >
+                    {amount}₽
+                  </button>
+                ))}
+              </div>
+              <input
+                type="number"
+                value={customAmount}
+                onChange={(e) => { setCustomAmount(e.target.value); setSelectedAmount(null); }}
+                placeholder="Другая сумма, ₽"
+                className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-(--color_text_muted) mb-4"
+              />
 
-          {/* Custom amount */}
-          <input
-            type="number"
-            value={customAmount}
-            onChange={(e) => {
-              setCustomAmount(e.target.value);
-              setSelectedAmount(null);
-            }}
-            placeholder="Другая сумма, ₽"
-            className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-(--color_text_muted) mb-3"
-          />
+              <div className="space-y-2">
+                {/* SBP */}
+                {profile.donatePhone && (
+                  <button
+                    onClick={() => copyToClipboard(profile.donatePhone!, 'phone')}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) hover:border-(--color_primary_light)/40 transition-colors group"
+                  >
+                    <div className="text-left">
+                      <p className="text-xs text-(--color_text_muted)">Перевод по СБП</p>
+                      <p className="text-sm text-white font-medium">{profile.donatePhone}</p>
+                    </div>
+                    {copiedField === 'phone' ? (
+                      <CheckIcon className="w-4 h-4 text-emerald-400 shrink-0" />
+                    ) : (
+                      <ClipboardDocumentIcon className="w-4 h-4 text-(--color_text_muted) group-hover:text-white shrink-0 transition-colors" />
+                    )}
+                  </button>
+                )}
 
-          {/* Donate button — disabled, tooltip "Скоро" */}
-          <div className="relative group">
-            <button
-              disabled
-              className="w-full py-3 rounded-xl bg-(--color_primary_light)/40 text-white/40 text-sm font-medium cursor-not-allowed"
-            >
-              Поддержать
-            </button>
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg bg-black/80 text-white text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              Скоро
-            </div>
-          </div>
+                {/* Card */}
+                {profile.donateCard && (
+                  <button
+                    onClick={() => copyToClipboard(profile.donateCard!, 'card')}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) hover:border-(--color_primary_light)/40 transition-colors group"
+                  >
+                    <div className="text-left">
+                      <p className="text-xs text-(--color_text_muted)">Номер карты</p>
+                      <p className="text-sm text-white font-medium">{profile.donateCard}</p>
+                    </div>
+                    {copiedField === 'card' ? (
+                      <CheckIcon className="w-4 h-4 text-emerald-400 shrink-0" />
+                    ) : (
+                      <ClipboardDocumentIcon className="w-4 h-4 text-(--color_text_muted) group-hover:text-white shrink-0 transition-colors" />
+                    )}
+                  </button>
+                )}
+
+                {/* YooKassa link */}
+                {profile.donateYookassaLink && (
+                  <a
+                    href={donationAmount ? `${profile.donateYookassaLink}?sum=${donationAmount}` : profile.donateYookassaLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity"
+                  >
+                    Оплатить картой через ЮКасса
+                    {donationAmount ? ` · ${donationAmount}₽` : ''}
+                  </a>
+                )}
+              </div>
+
+              <p className="text-xs text-(--color_text_muted) mt-3 text-center">
+                ЮКасса берёт ~3% комиссии · мы не берём ничего
+              </p>
+            </>
+          )}
         </motion.div>
       </div>
     </Screen>

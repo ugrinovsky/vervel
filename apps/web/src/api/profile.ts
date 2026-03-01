@@ -13,6 +13,9 @@ export interface ProfileUser {
   photoUrl: string | null;
   balance: number;
   themeHue: number | null;
+  donatePhone: string | null;
+  donateCard: string | null;
+  donateYookassaLink: string | null;
 }
 
 export interface ProfileData {
@@ -33,6 +36,9 @@ export interface TrainerPublicProfile {
   specializations: string[] | null;
   education: string | null;
   photoUrl: string | null;
+  donatePhone: string | null;
+  donateCard: string | null;
+  donateYookassaLink: string | null;
 }
 
 export const profileApi = {
@@ -47,6 +53,9 @@ export const profileApi = {
     specializations?: string[];
     education?: string;
     themeHue?: number | null;
+    donatePhone?: string | null;
+    donateCard?: string | null;
+    donateYookassaLink?: string | null;
   }) =>
     privateApi.put<{ success: boolean; data: { user: ProfileUser } }>('/profile', data),
 

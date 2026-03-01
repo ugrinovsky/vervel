@@ -37,6 +37,9 @@ export default class ProfileController {
             createdAt: user.createdAt,
             balance: user.balance,
             themeHue: user.themeHue,
+            donatePhone: user.donatePhone,
+            donateCard: user.donateCard,
+            donateYookassaLink: user.donateYookassaLink,
           },
           stats: {
             totalWorkouts: workouts.length,
@@ -58,8 +61,9 @@ export default class ProfileController {
   async updateProfile({ auth, request, response }: HttpContext) {
     try {
       const user = auth.user!;
-      const { fullName, email, bio, specializations, education, gender, themeHue } = request.only([
+      const { fullName, email, bio, specializations, education, gender, themeHue, donatePhone, donateCard, donateYookassaLink } = request.only([
         'fullName', 'email', 'bio', 'specializations', 'education', 'gender', 'themeHue',
+        'donatePhone', 'donateCard', 'donateYookassaLink',
       ]);
 
       if (fullName !== undefined) user.fullName = fullName;
@@ -69,6 +73,9 @@ export default class ProfileController {
       if (education !== undefined) user.education = education || null;
       if (gender !== undefined) user.gender = gender === 'male' || gender === 'female' ? gender : null;
       if (themeHue !== undefined) user.themeHue = Number.isInteger(Number(themeHue)) ? Number(themeHue) : null;
+      if (donatePhone !== undefined) user.donatePhone = donatePhone || null;
+      if (donateCard !== undefined) user.donateCard = donateCard || null;
+      if (donateYookassaLink !== undefined) user.donateYookassaLink = donateYookassaLink || null;
 
       await user.save();
 
@@ -149,6 +156,9 @@ export default class ProfileController {
         specializations: trainer.specializations ?? [],
         education: trainer.education,
         photoUrl: trainer.photoUrl,
+        donatePhone: trainer.donatePhone,
+        donateCard: trainer.donateCard,
+        donateYookassaLink: trainer.donateYookassaLink,
       },
     })
   }

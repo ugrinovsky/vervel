@@ -1,5 +1,48 @@
 @import 'tailwindcss';
 
+/* ─── AI chat markdown ───────────────────────────────────────────────────── */
+.ai-markdown p { margin-bottom: 0.5em; }
+.ai-markdown p:last-child { margin-bottom: 0; }
+.ai-markdown strong { font-weight: 600; color: #fff; }
+.ai-markdown em { font-style: italic; opacity: 0.85; }
+.ai-markdown ul { list-style: disc; padding-left: 1.25em; margin: 0.4em 0; }
+.ai-markdown ol { list-style: decimal; padding-left: 1.25em; margin: 0.4em 0; }
+.ai-markdown li { margin-bottom: 0.2em; }
+.ai-markdown h1, .ai-markdown h2, .ai-markdown h3 {
+  font-weight: 600;
+  color: #fff;
+  margin: 0.6em 0 0.3em;
+  line-height: 1.3;
+}
+.ai-markdown h1 { font-size: 1.1em; }
+.ai-markdown h2 { font-size: 1.05em; }
+.ai-markdown h3 { font-size: 1em; }
+.ai-markdown code {
+  font-family: monospace;
+  font-size: 0.85em;
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+.ai-markdown pre {
+  background: rgba(0,0,0,0.3);
+  border-radius: 8px;
+  padding: 0.75em 1em;
+  overflow-x: auto;
+  margin: 0.5em 0;
+}
+.ai-markdown pre code {
+  background: none;
+  padding: 0;
+}
+.ai-markdown blockquote {
+  border-left: 3px solid rgba(255,255,255,0.2);
+  padding-left: 0.75em;
+  margin: 0.4em 0;
+  opacity: 0.75;
+}
+.ai-markdown hr { border-color: rgba(255,255,255,0.1); margin: 0.75em 0; }
+
 html,
 body,
 #root {

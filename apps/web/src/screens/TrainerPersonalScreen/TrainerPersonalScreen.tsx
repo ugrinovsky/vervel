@@ -17,6 +17,10 @@ export default function TrainerPersonalScreen() {
   const [education, setEducation] = useState('');
   const [specializations, setSpecializations] = useState<string[]>([]);
   const [specInput, setSpecInput] = useState('');
+  const [donatePhone, setDonatePhone] = useState('');
+  const [donateCard, setDonateCard] = useState('');
+  const [donateYookassaLink, setDonateYookassaLink] = useState('');
+  const [donateErrors, setDonateErrors] = useState<{ phone?: string; card?: string; link?: string }>({});
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -32,6 +36,9 @@ export default function TrainerPersonalScreen() {
           setEducation(u.education || '');
           setSpecializations(u.specializations || []);
           setPhotoPreview(u.photoUrl || null);
+          setDonatePhone(u.donatePhone || '');
+          setDonateCard(u.donateCard || '');
+          setDonateYookassaLink(u.donateYookassaLink || '');
         }
       })
       .catch(() => toast.error('Ошибка загрузки профиля'));
@@ -66,10 +73,44 @@ export default function TrainerPersonalScreen() {
     setSpecializations(specializations.filter((x) => x !== s));
   };
 
+  const validateDonate = (): boolean => {
+    const errors: { phone?: string; card?: string; link?: string } = {};
+
+    if (donatePhone) {
+      const digits = donatePhone.replace(/[\s\-()]/g, '');
+      if (!/^(\+7|7|8)\d{10}$/.test(digits)) {
+        errors.phone = 'Введите номер в формате +7 900 123-45-67';
+      }
+    }
+
+    if (donateCard) {
+      const digits = donateCard.replace(/\s/g, '');
+      if (!/^\d{13,19}$/.test(digits)) {
+        errors.card = 'Номер карты должен содержать от 13 до 19 цифр';
+      }
+    }
+
+    if (donateYookassaLink) {
+      try {
+        const url = new URL(donateYookassaLink);
+        const allowed = ['yookassa.ru', 'yoomoney.ru', 'money.yandex.ru', 'yandex.ru'];
+        if (!allowed.some((d) => url.hostname === d || url.hostname.endsWith('.' + d))) {
+          errors.link = 'Ссылка должна быть с сайта yookassa.ru или yoomoney.ru';
+        }
+      } catch {
+        errors.link = 'Введите корректный URL (https://...)';
+      }
+    }
+
+    setDonateErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSave = async () => {
+    if (!validateDonate()) return;
     setSaving(true);
     try {
-      await profileApi.updateProfile({ bio, education, specializations });
+      await profileApi.updateProfile({ bio, education, specializations, donatePhone: donatePhone || null, donateCard: donateCard || null, donateYookassaLink: donateYookassaLink || null });
       toast.success('Профиль сохранён');
     } catch {
       toast.error('Ошибка сохранения');
@@ -219,11 +260,95 @@ export default function TrainerPersonalScreen() {
           </div>
         </motion.div>
 
+        {/* Donation requisites */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) mb-6"
+        >
+          <label className="text-sm font-medium text-white mb-1 block">Реквизиты для поддержки</label>
+          <p className="text-xs text-(--color_text_muted) mb-4">
+            Атлеты смогут поддержать вас финансово на вашей странице профиля
+          </p>
+
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-(--color_text_muted) mb-1 block">Телефон для СБП</label>
+              <input
+                type="tel"
+                value={donatePhone}
+                onChange={(e) => {
+                  setDonateErrors((prev) => ({ ...prev, phone: undefined }));
+                  const raw = e.target.value.replace(/[^\d+]/g, '');
+                  // Normalize prefix
+                  let digits = raw.startsWith('+') ? '+' + raw.slice(1).replace(/\D/g, '') : raw.replace(/\D/g, '');
+                  if (digits.startsWith('8')) digits = '+7' + digits.slice(1);
+                  else if (digits.startsWith('7') && !digits.startsWith('+7')) digits = '+7' + digits.slice(1);
+                  else if (!digits.startsWith('+')) digits = '+7' + digits;
+                  // Keep only +7 + 10 digits
+                  const num = digits.replace(/^\+7/, '').replace(/\D/g, '').slice(0, 10);
+                  // Format: +7 XXX XXX-XX-XX
+                  let formatted = '+7';
+                  if (num.length > 0) formatted += ' ' + num.slice(0, 3);
+                  if (num.length > 3) formatted += ' ' + num.slice(3, 6);
+                  if (num.length > 6) formatted += '-' + num.slice(6, 8);
+                  if (num.length > 8) formatted += '-' + num.slice(8, 10);
+                  setDonatePhone(formatted);
+                }}
+                placeholder="+7 900 123-45-67"
+                className={`w-full bg-(--color_bg_input) border rounded-xl px-4 py-3 text-white text-sm outline-none transition-colors placeholder:text-(--color_text_muted) ${donateErrors.phone ? 'border-red-500/60 focus:border-red-400' : 'border-(--color_border) focus:border-(--color_primary_light)'}`}
+              />
+              {donateErrors.phone && <p className="text-xs text-red-400 mt-1">{donateErrors.phone}</p>}
+            </div>
+
+            <div>
+              <label className="text-xs text-(--color_text_muted) mb-1 block">Номер карты</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={donateCard}
+                onChange={(e) => {
+                  setDonateErrors((prev) => ({ ...prev, card: undefined }));
+                  const digits = e.target.value.replace(/\D/g, '').slice(0, 16);
+                  const formatted = digits.replace(/(.{4})/g, '$1 ').trim();
+                  setDonateCard(formatted);
+                }}
+                placeholder="0000 0000 0000 0000"
+                maxLength={19}
+                className={`w-full bg-(--color_bg_input) border rounded-xl px-4 py-3 text-white text-sm outline-none transition-colors placeholder:text-(--color_text_muted) ${donateErrors.card ? 'border-red-500/60 focus:border-red-400' : 'border-(--color_border) focus:border-(--color_primary_light)'}`}
+              />
+              {donateErrors.card && <p className="text-xs text-red-400 mt-1">{donateErrors.card}</p>}
+            </div>
+
+            <div>
+              <label className="text-xs text-(--color_text_muted) mb-1 block">
+                Ссылка ЮКасса{' '}
+                <span className="text-(--color_text_muted) font-normal">(необязательно)</span>
+              </label>
+              <input
+                type="url"
+                value={donateYookassaLink}
+                onChange={(e) => {
+                  setDonateErrors((prev) => ({ ...prev, link: undefined }));
+                  setDonateYookassaLink(e.target.value);
+                }}
+                placeholder="https://yoomoney.ru/to/..."
+                className={`w-full bg-(--color_bg_input) border rounded-xl px-4 py-3 text-white text-sm outline-none transition-colors placeholder:text-(--color_text_muted) ${donateErrors.link ? 'border-red-500/60 focus:border-red-400' : 'border-(--color_border) focus:border-(--color_primary_light)'}`}
+              />
+              {donateErrors.link && <p className="text-xs text-red-400 mt-1">{donateErrors.link}</p>}
+              <p className="text-xs text-(--color_text_muted) mt-1">
+                Создайте ссылку в личном кабинете ЮКасса → Приём платежей → Форма оплаты
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Save */}
         <motion.button
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
+          transition={{ delay: 0.3 }}
           onClick={handleSave}
           disabled={saving}
           className="w-full py-3.5 rounded-2xl text-sm font-semibold bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50"

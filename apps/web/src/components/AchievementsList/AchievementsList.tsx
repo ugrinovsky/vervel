@@ -13,9 +13,12 @@ const CATEGORY_META: Record<string, { label: string; emoji: string }> = {
   social: { label: 'Общение и команда', emoji: '👥' },
 };
 
+type Filter = 'all' | 'unlocked' | 'locked';
+
 export default function AchievementsList() {
   const [data, setData] = useState<AchievementsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<Filter>('all');
 
   useEffect(() => {
     loadAchievements();
@@ -51,11 +54,13 @@ export default function AchievementsList() {
     );
   }
 
-  // Группируем все достижения по категории
-  const allItems: AchievementItem[] = [
-    ...data.unlocked,
-    ...data.locked,
-  ];
+  // Фильтрация
+  const allItems: AchievementItem[] =
+    filter === 'unlocked'
+      ? data.unlocked
+      : filter === 'locked'
+        ? data.locked
+        : [...data.unlocked, ...data.locked];
 
   const byCategory = allItems.reduce<Record<string, AchievementItem[]>>((acc, item) => {
     const cat = item.category ?? 'other';
@@ -88,7 +93,7 @@ export default function AchievementsList() {
   return (
     <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-lg font-semibold text-white">Достижения</h2>
           <p className="text-xs text-[var(--color_text_muted)] mt-1">
@@ -113,6 +118,41 @@ export default function AchievementsList() {
           </div>
         </div>
       </div>
+
+      {/* Filters */}
+      <div className="flex gap-2 mb-6">
+        {([
+          { key: 'all', label: 'Все' },
+          { key: 'unlocked', label: 'Получено' },
+          { key: 'locked', label: 'Не получено' },
+        ] as { key: Filter; label: string }[]).map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setFilter(key)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              filter === key
+                ? 'bg-(--color_primary) text-white'
+                : 'bg-(--color_bg_input) text-(--color_text_muted) hover:text-white'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Empty state */}
+      {categories.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+          <div className="text-4xl">
+            {filter === 'unlocked' ? '🏅' : '🔒'}
+          </div>
+          <p className="text-sm text-[var(--color_text_muted)]">
+            {filter === 'unlocked'
+              ? 'Пока нет полученных достижений. Тренируйтесь, чтобы разблокировать первое!'
+              : 'Все достижения уже получены!'}
+          </p>
+        </div>
+      )}
 
       {/* Categories */}
       <div className="space-y-6">
