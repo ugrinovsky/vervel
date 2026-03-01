@@ -16,6 +16,7 @@ import {
 } from '@/api/trainer';
 import { XMarkIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
 import AiWorkoutGenerator from '@/components/AiWorkoutGenerator/AiWorkoutGenerator';
+import AiWorkoutRecognizer from '@/components/AiWorkoutRecognizer/AiWorkoutRecognizer';
 import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
 import type { AiWorkoutResult } from '@/api/ai';
 import type { ExerciseWithSets } from '@/types/Exercise';
@@ -560,8 +561,11 @@ export default function WorkoutInlineForm({
             </SectionLabel>
           </div>
 
-          {/* AI Generator */}
-          <AiWorkoutGenerator onResult={handleAiResult} />
+          {/* AI tools */}
+          <div className="flex flex-wrap gap-3 mb-1">
+            <AiWorkoutGenerator onResult={handleAiResult} />
+            <AiWorkoutRecognizer onResult={handleAiResult} />
+          </div>
 
           {/* Exercise list */}
           {exercises.length > 0 && (

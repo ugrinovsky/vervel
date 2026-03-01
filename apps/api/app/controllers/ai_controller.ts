@@ -1,6 +1,7 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import vine from '@vinejs/vine'
 import { YandexAiService, type AiExercise, type AiWorkoutResult } from '#services/YandexAiService'
+import { AiBalanceService, InsufficientBalanceError } from '#services/AiBalanceService'
 import { ExerciseCatalog } from '#services/ExerciseCatalog'
 import { token_set_ratio } from 'fuzzball'
 
@@ -17,23 +18,54 @@ const generateValidator = vine.compile(
   })
 )
 
+const chatValidator = vine.compile(
+  vine.object({
+    messages: vine
+      .array(
+        vine.object({
+          role: vine.enum(['user', 'assistant'] as const),
+          content: vine.string().trim().minLength(1).maxLength(2000),
+        })
+      )
+      .minLength(1)
+      .maxLength(20),
+  })
+)
+
 export default class AiController {
   /**
    * POST /ai/recognize-workout
-   * Атлет: загружает фото → AI распознаёт → матчинг к каталогу → результат
+   * Атлет: загружает фото → проверка баланса → AI распознаёт → матчинг к каталогу
    */
-  async recognizeWorkout({ request, response }: HttpContext) {
+  async recognizeWorkout({ auth, request, response }: HttpContext) {
     if (!YandexAiService.isEnabled()) {
       return response.forbidden({ message: 'AI-функция временно недоступна' })
     }
 
     const data = await request.validateUsing(recognizeValidator)
+    const userId = auth.user!.id
+    const cost = AiBalanceService.COST_RECOGNIZE
+
+    try {
+      await AiBalanceService.charge(userId, cost, 'Распознавание тренировки по фото')
+    } catch (err) {
+      if (err instanceof InsufficientBalanceError) {
+        return response.paymentRequired({
+          message: `Недостаточно средств. Баланс: ${err.balance}₽, требуется: ${err.required}₽`,
+          balance: err.balance,
+          required: err.required,
+        })
+      }
+      throw err
+    }
 
     try {
       const result = await YandexAiService.recognizeFromImage(data.imageBase64, data.mimeType)
       const matched = await matchExercisesToCatalog(result)
       return response.ok({ data: matched })
     } catch (err: any) {
+      // Возвращаем средства при ошибке AI
+      // (упрощённая логика — без refund для Phase 1)
       return response.internalServerError({
         message: 'Не удалось распознать тренировку',
         detail: err?.message,
@@ -43,14 +75,29 @@ export default class AiController {
 
   /**
    * POST /ai/generate-workout
-   * Тренер: текстовый запрос → AI генерирует → матчинг к каталогу → результат
+   * Тренер: текстовый запрос → проверка баланса → AI генерирует → матчинг к каталогу
    */
-  async generateWorkout({ request, response }: HttpContext) {
+  async generateWorkout({ auth, request, response }: HttpContext) {
     if (!YandexAiService.isEnabled()) {
       return response.forbidden({ message: 'AI-функция временно недоступна' })
     }
 
     const data = await request.validateUsing(generateValidator)
+    const userId = auth.user!.id
+    const cost = AiBalanceService.COST_GENERATE
+
+    try {
+      await AiBalanceService.charge(userId, cost, 'Генерация тренировки AI')
+    } catch (err) {
+      if (err instanceof InsufficientBalanceError) {
+        return response.paymentRequired({
+          message: `Недостаточно средств. Баланс: ${err.balance}₽, требуется: ${err.required}₽`,
+          balance: err.balance,
+          required: err.required,
+        })
+      }
+      throw err
+    }
 
     try {
       const result = await YandexAiService.generateFromText(data.prompt)
@@ -69,6 +116,67 @@ export default class AiController {
    */
   async status({ response }: HttpContext) {
     return response.ok({ enabled: YandexAiService.isEnabled() })
+  }
+
+  /**
+   * GET /ai/balance
+   * Текущий баланс и последние транзакции пользователя.
+   */
+  async balance({ auth, response }: HttpContext) {
+    const userId = auth.user!.id
+    const [balance, transactions] = await Promise.all([
+      AiBalanceService.getBalance(userId),
+      AiBalanceService.getTransactions(userId, 10),
+    ])
+    return response.ok({
+      balance,
+      costs: {
+        generate: AiBalanceService.COST_GENERATE,
+        recognize: AiBalanceService.COST_RECOGNIZE,
+        chat: AiBalanceService.COST_CHAT,
+      },
+      transactions,
+    })
+  }
+
+  /**
+   * POST /ai/chat
+   * Универсальный AI-чат для атлетов и тренеров.
+   * Принимает историю диалога, списывает COST_CHAT и возвращает ответ ассистента.
+   */
+  async chat({ auth, request, response }: HttpContext) {
+    if (!YandexAiService.isEnabled()) {
+      return response.forbidden({ message: 'AI-функция временно недоступна' })
+    }
+
+    const data = await request.validateUsing(chatValidator)
+    const userId = auth.user!.id
+    const cost = AiBalanceService.COST_CHAT
+
+    try {
+      await AiBalanceService.charge(userId, cost, 'AI-чат сообщение')
+    } catch (err) {
+      if (err instanceof InsufficientBalanceError) {
+        return response.paymentRequired({
+          message: `Недостаточно средств. Баланс: ${err.balance}₽, требуется: ${err.required}₽`,
+          balance: err.balance,
+          required: err.required,
+        })
+      }
+      throw err
+    }
+
+    try {
+      const reply = await YandexAiService.chat(data.messages)
+      // Refresh balance in response
+      const newBalance = await AiBalanceService.getBalance(userId)
+      return response.ok({ reply, balance: newBalance })
+    } catch (err: any) {
+      return response.internalServerError({
+        message: 'Не удалось получить ответ от AI',
+        detail: err?.message,
+      })
+    }
   }
 }
 

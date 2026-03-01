@@ -1,19 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import AthleteQrCode from '@/components/AthleteQrCode/AthleteQrCode';
+import AiChat from '@/components/AiChat/AiChat';
 import { profileApi, type ProfileData } from '@/api/profile';
 import { trainerApi, type TrainerProfileStats } from '@/api/trainer';
-import { ZONE_LABELS } from '@/constants/AnalyticsConstants';
+import { aiApi } from '@/api/ai';
+import { paymentsApi } from '@/api/payments';
 import { THEME_PRESETS, getStoredHue, saveHue } from '@/util/theme';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSearchParams } from 'react-router';
+import { SparklesIcon } from '@heroicons/react/24/outline';
+
+const TOP_UP_AMOUNTS = [100, 250, 500, 1000];
 
 export default function ProfileScreen() {
   const navigate = useNavigate();
-  const { logout, isAthlete, isTrainer, activeMode, switchMode, login, user, token } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { logout, isAthlete, isTrainer, activeMode, switchMode, login, user, token, balance, setBalance } = useAuth();
   const isBoth = isTrainer && isAthlete;
   const inTrainerMode = isTrainer && (!isAthlete || activeMode === 'trainer');
   const inAthleteMode = isAthlete && (!isTrainer || activeMode === 'athlete');
@@ -34,11 +41,31 @@ export default function ProfileScreen() {
 
   // Theme
   const [activeHue, setActiveHue] = useState(getStoredHue);
+  const themeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Trainer stats
   const [trainerStats, setTrainerStats] = useState<TrainerProfileStats | null>(null);
 
   const [becomingAthlete, setBecomingAthlete] = useState(false);
+
+  // Wallet top-up
+  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
+  const [topping, setTopping] = useState(false);
+
+  // AI Chat
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+
+  // Guard against React 18 StrictMode double-firing
+  const topupHandled = useRef(false);
+
+  const handleThemeChange = (hue: number) => {
+    setActiveHue(hue);
+    saveHue(hue);
+    if (themeDebounceRef.current) clearTimeout(themeDebounceRef.current);
+    themeDebounceRef.current = setTimeout(() => {
+      profileApi.updateProfile({ themeHue: hue }).catch(() => {});
+    }, 500);
+  };
 
   useEffect(() => {
     loadProfile();
@@ -47,7 +74,18 @@ export default function ProfileScreen() {
         if (res.data.success) setTrainerStats(res.data.data);
       }).catch(() => {});
     }
+    aiApi.getBalance().then((res) => setBalance(res.data.balance)).catch(() => {});
   }, [isTrainer, inTrainerMode]);
+
+  // Handle redirect back from YooKassa after successful payment
+  useEffect(() => {
+    if (searchParams.get('topup') === 'success' && !topupHandled.current) {
+      topupHandled.current = true;
+      toast.success('Баланс пополнен!');
+      aiApi.getBalance().then((res) => setBalance(res.data.balance)).catch(() => {});
+      setSearchParams({}, { replace: true });
+    }
+  }, []);
 
   useEffect(() => {
     if (data) {
@@ -62,7 +100,15 @@ export default function ProfileScreen() {
       setLoading(true);
       const response = await profileApi.getProfile();
       if (response.data.success) {
-        setData(response.data.data);
+        const profileData = response.data.data;
+        setData(profileData);
+        if (profileData.user.balance !== undefined) {
+          setBalance(profileData.user.balance);
+        }
+        if (profileData.user.themeHue !== null && profileData.user.themeHue !== undefined) {
+          setActiveHue(profileData.user.themeHue);
+          saveHue(profileData.user.themeHue);
+        }
       }
     } catch {
       toast.error('Не удалось загрузить профиль');
@@ -132,6 +178,24 @@ export default function ProfileScreen() {
     navigate('/login');
   };
 
+  const handleTopup = async () => {
+    if (!selectedAmount) return;
+    setTopping(true);
+    try {
+      const res = await paymentsApi.topup(selectedAmount);
+      window.location.href = res.data.confirmationUrl;
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 503) {
+        toast.error('Пополнение пока недоступно — сайт не подключён к платёжной системе.');
+      } else {
+        toast.error('Ошибка создания платежа. Попробуйте позже.');
+      }
+    } finally {
+      setTopping(false);
+    }
+  };
+
   const handleBecomeAthlete = async () => {
     try {
       setBecomingAthlete(true);
@@ -180,13 +244,9 @@ export default function ProfileScreen() {
 
   if (!data) return null;
 
-  const topZoneLabel =
-    data.stats.topZones[0]
-      ? ZONE_LABELS[data.stats.topZones[0].zone] || data.stats.topZones[0].zone
-      : '—';
-
   return (
     <Screen>
+      <AiChat open={aiChatOpen} onClose={() => setAiChatOpen(false)} />
       <div className="p-4 w-full max-w-2xl mx-auto">
         <ScreenHeader
           icon="👤"
@@ -276,16 +336,107 @@ export default function ProfileScreen() {
                 )}
               </div>
               <div className="bg-[var(--color_bg_card)] rounded-xl p-4 border border-[var(--color_border)] text-center">
-                <div className="text-xl font-bold text-white">
-                  {topZoneLabel}
+                <div className="text-2xl font-bold text-white">
+                  {data.stats.longestStreak}
                 </div>
                 <div className="text-xs text-[var(--color_text_muted)] mt-1">
-                  Топ зона
+                  Рекорд дней
                 </div>
               </div>
             </>
           )}
         </motion.div>
+
+        {/* Wallet balance */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-[var(--color_bg_card)] rounded-2xl p-6 border border-[var(--color_border)] mb-6"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-white">Кошелёк</h2>
+              <p className="text-xs text-[var(--color_text_muted)] mt-0.5">
+                AI-функции, донаты тренерам
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-white">
+                {balance !== null ? `${balance}₽` : '—'}
+              </div>
+              <div className="text-xs text-[var(--color_text_muted)]">баланс</div>
+            </div>
+          </div>
+
+          {/* AI costs hint — role-specific */}
+          <div className="flex gap-2 mb-4 flex-wrap">
+            {(inTrainerMode
+              ? [
+                  { label: 'Генерация', cost: 10 },
+                  { label: 'Распознавание', cost: 9 },
+                  { label: 'AI-чат', cost: 6 },
+                ]
+              : [
+                  { label: 'Распознавание', cost: 9 },
+                  { label: 'AI-чат', cost: 6 },
+                ]
+            ).map(({ label, cost }) => (
+              <div
+                key={label}
+                className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-xs text-[var(--color_text_muted)]"
+              >
+                {label} — <span className="text-white/70">{cost}₽</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Top-up amounts */}
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            {TOP_UP_AMOUNTS.map((amount) => (
+              <button
+                key={amount}
+                onClick={() => setSelectedAmount(amount)}
+                className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  selectedAmount === amount
+                    ? 'bg-(--color_primary_light) text-white'
+                    : 'bg-(--color_bg_card_hover) text-(--color_text_muted) hover:text-white'
+                }`}
+              >
+                {amount}₽
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={handleTopup}
+            disabled={!selectedAmount || topping}
+            className="w-full py-3 rounded-xl bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {topping ? 'Переход к оплате…' : selectedAmount ? `Пополнить на ${selectedAmount}₽` : 'Выберите сумму'}
+          </button>
+        </motion.div>
+
+        {/* AI Chat — available to all roles */}
+        <motion.button
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.18 }}
+          onClick={() => setAiChatOpen(true)}
+          className="w-full flex items-center gap-3 p-4 bg-[var(--color_bg_card)] rounded-2xl border border-[var(--color_border)] mb-6 hover:bg-[var(--color_bg_card_hover)] transition-colors text-left"
+        >
+          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-emerald-500/20 shrink-0">
+            <SparklesIcon className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-white">AI-помощник</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 font-medium">AI</span>
+            </div>
+            <p className="text-xs text-[var(--color_text_muted)] mt-0.5">Тренировки, питание, восстановление — 6₽/сообщение</p>
+          </div>
+          <span className="text-[var(--color_text_muted)] text-sm">→</span>
+        </motion.button>
 
         {/* Achievements (athletes only, in athlete mode) */}
         {inAthleteMode && (
@@ -394,10 +545,7 @@ export default function ProfileScreen() {
             {THEME_PRESETS.map((preset) => (
               <button
                 key={preset.hue}
-                onClick={() => {
-                  setActiveHue(preset.hue);
-                  saveHue(preset.hue);
-                }}
+                onClick={() => handleThemeChange(preset.hue)}
                 title={preset.label}
                 className="relative w-10 h-10 rounded-full border-2 transition-all"
                 style={{
@@ -420,11 +568,7 @@ export default function ProfileScreen() {
               min={0}
               max={359}
               value={activeHue}
-              onChange={(e) => {
-                const hue = Number(e.target.value);
-                setActiveHue(hue);
-                saveHue(hue);
-              }}
+              onChange={(e) => handleThemeChange(Number(e.target.value))}
               className="flex-1 h-2 rounded-full appearance-none cursor-pointer"
               style={{
                 background: `linear-gradient(to right, ${Array.from({ length: 12 }, (_, i) => `hsl(${i * 30}, 74%, 30%)`).join(', ')})`,

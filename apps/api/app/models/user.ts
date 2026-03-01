@@ -51,6 +51,14 @@ export default class User extends compose(BaseModel, AuthFinder) {
   @column()
   declare gender: 'male' | 'female' | null;
 
+  /** Wallet balance in rubles — used for AI features, donations to trainers, etc. */
+  @column()
+  declare balance: number;
+
+  /** Theme hue (0–359) — persisted per account so theme follows the user across devices. */
+  @column()
+  declare themeHue: number | null;
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime;
 

@@ -32,6 +32,9 @@ Requirements:
 8. Interpret abbreviations: "5х10" = 5 sets of 10 reps, "x" or "×" = sets×reps
 9. notes field — write in Russian for user readability`
 
+// Системный промпт для AI-чата (фитнес-советник)
+const CHAT_SYSTEM_PROMPT = `Ты — AI-помощник фитнес-приложения Vervel. Ты разбираешься в тренировках, питании, восстановлении и спортивной науке. Отвечай на русском языке. Давай конкретные, полезные советы. Если вопрос не связан с фитнесом или спортом — вежливо перенаправь разговор к теме тренировок. Будь дружелюбным и мотивирующим.`
+
 // Системный промпт для генерации тренировки по текстовому описанию
 const GENERATE_SYSTEM_PROMPT = `You are a professional fitness trainer. Generate a complete workout based on the description and return it in strict JSON format.
 
@@ -106,6 +109,46 @@ export class YandexAiService {
     )
 
     return this.parseWorkoutJson(result)
+  }
+
+  /**
+   * AI-чат — фитнес-советник для атлетов и тренеров.
+   * messages — история диалога: [{ role: 'user'|'assistant', content: string }]
+   * Возвращает текст ответа ассистента.
+   */
+  static async chat(messages: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<string> {
+    const apiKey = env.get('YANDEX_CLOUD_API_KEY')!
+    const folderId = env.get('YANDEX_FOLDER_ID')!
+
+    const response = await fetch(YANDEX_GPT_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Api-Key ${apiKey}`,
+        'x-folder-id': folderId,
+      },
+      body: JSON.stringify({
+        model: `gpt://${folderId}/${env.get('YANDEX_GPT_MODEL', 'yandexgpt-lite')}/latest`,
+        messages: [
+          { role: 'system', content: CHAT_SYSTEM_PROMPT },
+          ...messages,
+        ],
+        temperature: 0.7,
+        max_tokens: 1000,
+      }),
+    })
+
+    if (!response.ok) {
+      const errBody = await response.text()
+      throw new Error(`YandexGPT error ${response.status}: ${errBody}`)
+    }
+
+    const data = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string } }>
+    }
+    const text = data?.choices?.[0]?.message?.content
+    if (!text) throw new Error(`Пустой ответ от YandexGPT: ${JSON.stringify(data)}`)
+    return text
   }
 
   /**

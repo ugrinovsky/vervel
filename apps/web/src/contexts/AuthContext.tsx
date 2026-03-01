@@ -7,6 +7,7 @@ interface AuthUser {
   fullName: string;
   role: UserRole;
   gender?: 'male' | 'female' | null;
+  balance?: number;
 }
 
 interface AuthContextValue {
@@ -16,6 +17,9 @@ interface AuthContextValue {
   isAthlete: boolean;
   /** Current active cabinet when role === 'both'. Otherwise matches the single role. */
   activeMode: 'trainer' | 'athlete';
+  /** Wallet balance in rubles — for AI features, donations. null = not yet loaded. */
+  balance: number | null;
+  setBalance: (balance: number) => void;
   switchMode: () => void;
   login: (user: AuthUser, token: string) => void;
   logout: () => void;
@@ -42,15 +46,18 @@ function getStoredMode(user: AuthUser | null): 'trainer' | 'athlete' {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(getStoredUser);
+  const storedUser = getStoredUser();
+  const [user, setUser] = useState<AuthUser | null>(storedUser);
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
-  const [activeMode, setActiveMode] = useState<'trainer' | 'athlete'>(() => getStoredMode(getStoredUser()));
+  const [activeMode, setActiveMode] = useState<'trainer' | 'athlete'>(() => getStoredMode(storedUser));
+  const [balance, setBalance] = useState<number | null>(storedUser?.balance ?? null);
 
   const login = useCallback((u: AuthUser, t: string) => {
     localStorage.setItem('user', JSON.stringify(u));
     localStorage.setItem('token', t);
     setUser(u);
     setToken(t);
+    if (u.balance !== undefined) setBalance(u.balance);
     // Reset mode to match role on login
     const mode = u.role === 'athlete' ? 'athlete' : 'trainer';
     localStorage.setItem('activeMode', mode);
@@ -63,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('activeMode');
     setUser(null);
     setToken(null);
+    setBalance(null);
     setActiveMode('trainer');
   }, []);
 
@@ -81,11 +89,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isTrainer: user?.role === 'trainer' || user?.role === 'both',
       isAthlete: user?.role === 'athlete' || user?.role === 'both',
       activeMode,
+      balance,
+      setBalance,
       switchMode,
       login,
       logout,
     }),
-    [user, token, activeMode, switchMode, login, logout]
+    [user, token, activeMode, balance, switchMode, login, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

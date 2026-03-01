@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import FullScreenChat from '@/components/FullScreenChat/FullScreenChat';
+import AiChat from '@/components/AiChat/AiChat';
 import { athleteApi, type AthleteGroup, type AthleteTrainer } from '@/api/athlete';
 import {
   ChatBubbleLeftIcon,
@@ -12,6 +13,7 @@ import {
   UsersIcon,
   UserCircleIcon,
   CalendarDaysIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 
 type ActiveChat = { chatId: number; title: string } | null;
@@ -56,6 +58,7 @@ export default function AthleteMyTeamScreen() {
   const [upcomingWorkouts, setUpcomingWorkouts] = useState<UpcomingWorkout[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeChat, setActiveChat] = useState<ActiveChat>(null);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
   const [openingChatFor, setOpeningChatFor] = useState<number | null>(null);
   const [unreadMap, setUnreadMap] = useState<Map<number, number>>(new Map());
 
@@ -157,9 +160,30 @@ export default function AthleteMyTeamScreen() {
         title={activeChat?.title ?? ''}
         onClose={() => setActiveChat(null)}
       />
+      <AiChat open={aiChatOpen} onClose={() => setAiChatOpen(false)} />
 
       <div className="p-4 w-full max-w-2xl mx-auto">
         <ScreenHeader icon="🤝" title="Моя команда" description="Тренеры и группы" />
+
+        {/* AI Assistant card */}
+        <motion.button
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          onClick={() => setAiChatOpen(true)}
+          className="w-full flex items-center gap-3 p-4 bg-(--color_bg_card) rounded-2xl border border-(--color_border) mb-4 hover:bg-(--color_bg_card_hover) transition-colors text-left"
+        >
+          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-emerald-500/20 shrink-0">
+            <SparklesIcon className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-white">AI-помощник</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 font-medium">AI</span>
+            </div>
+            <p className="text-xs text-(--color_text_muted) mt-0.5">Вопросы про тренировки, питание, восстановление</p>
+          </div>
+          <span className="text-xs text-(--color_text_muted) shrink-0">6₽/сообщение</span>
+        </motion.button>
 
         {isEmpty ? (
           <motion.div

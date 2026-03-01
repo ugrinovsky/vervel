@@ -35,6 +35,8 @@ export default class ProfileController {
             education: user.education,
             photoUrl: user.photoUrl,
             createdAt: user.createdAt,
+            balance: user.balance,
+            themeHue: user.themeHue,
           },
           stats: {
             totalWorkouts: workouts.length,
@@ -56,8 +58,8 @@ export default class ProfileController {
   async updateProfile({ auth, request, response }: HttpContext) {
     try {
       const user = auth.user!;
-      const { fullName, email, bio, specializations, education, gender } = request.only([
-        'fullName', 'email', 'bio', 'specializations', 'education', 'gender',
+      const { fullName, email, bio, specializations, education, gender, themeHue } = request.only([
+        'fullName', 'email', 'bio', 'specializations', 'education', 'gender', 'themeHue',
       ]);
 
       if (fullName !== undefined) user.fullName = fullName;
@@ -66,6 +68,7 @@ export default class ProfileController {
       if (specializations !== undefined) user.specializations = Array.isArray(specializations) ? specializations : null;
       if (education !== undefined) user.education = education || null;
       if (gender !== undefined) user.gender = gender === 'male' || gender === 'female' ? gender : null;
+      if (themeHue !== undefined) user.themeHue = Number.isInteger(Number(themeHue)) ? Number(themeHue) : null;
 
       await user.save();
 

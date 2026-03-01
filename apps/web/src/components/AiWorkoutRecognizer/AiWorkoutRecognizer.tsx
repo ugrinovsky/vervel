@@ -2,6 +2,9 @@ import { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CameraIcon, SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { aiApi, type AiWorkoutResult } from '@/api/ai';
+import { useAuth } from '@/contexts/AuthContext';
+
+const COST_RECOGNIZE = 9;
 
 interface Props {
   onResult: (result: AiWorkoutResult) => void;
@@ -84,6 +87,9 @@ function AiLoadingView() {
  * и распознать упражнения через AI.
  */
 export default function AiWorkoutRecognizer({ onResult }: Props) {
+  const { balance, setBalance } = useAuth();
+  const hasEnoughBalance = balance === null || balance >= COST_RECOGNIZE;
+
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
@@ -115,10 +121,14 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
 
       const res = await aiApi.recognizeWorkout(base64, safeMime);
       onResult(res.data.data);
+      // Refresh balance after successful charge
+      aiApi.getBalance().then((r) => setBalance(r.data.balance)).catch(() => {});
       setOpen(false);
       setPreview(null);
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Не удалось распознать тренировку');
+      const data = err?.response?.data;
+      if (data?.balance !== undefined) setBalance(data.balance);
+      setError(data?.message ?? 'Не удалось распознать тренировку');
     } finally {
       setLoading(false);
     }
@@ -154,6 +164,11 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
               <span className="text-sm font-medium text-white flex items-center gap-1.5">
                 <SparklesIcon className="w-4 h-4 text-emerald-400" />
                 AI-распознавание
+                {balance !== null && (
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${hasEnoughBalance ? 'bg-white/10 text-white/50' : 'bg-red-500/20 text-red-400'}`}>
+                    баланс: {balance}₽
+                  </span>
+                )}
               </span>
               {!loading && (
                 <button onClick={handleClose} className="text-white/40 hover:text-white transition-colors">
@@ -211,15 +226,22 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
                     }}
                   />
 
+                  {!hasEnoughBalance && (
+                    <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
+                      Недостаточно средств. Нужно {COST_RECOGNIZE}₽, баланс {balance}₽.
+                    </p>
+                  )}
+
                   {error && <p className="text-xs text-red-400">{error}</p>}
 
                   {preview && (
                     <button
                       type="button"
                       onClick={handleRecognize}
-                      className="w-full py-2 rounded-xl bg-emerald-500 text-black text-sm font-medium hover:bg-emerald-400 transition-colors"
+                      disabled={!hasEnoughBalance}
+                      className="w-full py-2 rounded-xl bg-emerald-500 text-black text-sm font-medium hover:bg-emerald-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      Распознать тренировку
+                      Распознать {COST_RECOGNIZE}₽
                     </button>
                   )}
                 </motion.div>

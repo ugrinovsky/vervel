@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SparklesIcon } from '@heroicons/react/24/outline';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { aiApi, type AiWorkoutResult } from '@/api/ai';
+import { useAuth } from '@/contexts/AuthContext';
+
+const COST_GENERATE = 10;
 
 interface Props {
   onResult: (result: AiWorkoutResult) => void;
@@ -88,6 +91,9 @@ function AiLoadingView() {
 }
 
 export default function AiWorkoutGenerator({ onResult }: Props) {
+  const { balance, setBalance } = useAuth();
+  const hasEnoughBalance = balance === null || balance >= COST_GENERATE;
+
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
@@ -101,9 +107,13 @@ export default function AiWorkoutGenerator({ onResult }: Props) {
     try {
       const res = await aiApi.generateWorkout(prompt.trim());
       onResult(res.data.data);
+      // Refresh balance after successful charge
+      aiApi.getBalance().then((r) => setBalance(r.data.balance)).catch(() => {});
       handleClose();
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Не удалось сгенерировать тренировку');
+      const data = err?.response?.data;
+      if (data?.balance !== undefined) setBalance(data.balance);
+      setError(data?.message ?? 'Не удалось сгенерировать тренировку');
     } finally {
       setLoading(false);
     }
@@ -122,6 +132,11 @@ export default function AiWorkoutGenerator({ onResult }: Props) {
         <SparklesIcon className="w-4 h-4 text-emerald-400" />
       </div>
       <span className="text-lg font-bold text-white">AI-генерация</span>
+      {balance !== null && (
+        <span className={`ml-1 text-xs px-2 py-0.5 rounded-full ${hasEnoughBalance ? 'bg-white/10 text-white/50' : 'bg-red-500/20 text-red-400'}`}>
+          баланс: {balance}₽
+        </span>
+      )}
     </div>
   );
 
@@ -180,6 +195,12 @@ export default function AiWorkoutGenerator({ onResult }: Props) {
                 </div>
               </div>
 
+              {!hasEnoughBalance && (
+                <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
+                  Недостаточно средств. Нужно {COST_GENERATE}₽, баланс {balance}₽ — пополните в Профиле.
+                </p>
+              )}
+
               {error && (
                 <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
                   {error}
@@ -189,11 +210,11 @@ export default function AiWorkoutGenerator({ onResult }: Props) {
               <button
                 type="button"
                 onClick={handleGenerate}
-                disabled={!prompt.trim()}
+                disabled={!prompt.trim() || !hasEnoughBalance}
                 className="w-full py-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <SparklesIcon className="w-4 h-4" />
-                Сгенерировать тренировку
+                Сгенерировать {COST_GENERATE}₽
               </button>
             </motion.div>
           )}

@@ -11,6 +11,8 @@ export interface ProfileUser {
   specializations: string[] | null;
   education: string | null;
   photoUrl: string | null;
+  balance: number;
+  themeHue: number | null;
 }
 
 export interface ProfileData {
@@ -44,6 +46,7 @@ export const profileApi = {
     bio?: string;
     specializations?: string[];
     education?: string;
+    themeHue?: number | null;
   }) =>
     privateApi.put<{ success: boolean; data: { user: ProfileUser } }>('/profile', data),
 

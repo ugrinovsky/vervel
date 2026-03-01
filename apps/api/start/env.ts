@@ -52,4 +52,26 @@ export default await Env.create(new URL('../', import.meta.url), {
   YANDEX_FOLDER_ID: Env.schema.string.optional(),
   YANDEX_OCR_MODEL: Env.schema.string.optional(),
   YANDEX_GPT_MODEL: Env.schema.string.optional(),
+
+  /*
+  |----------------------------------------------------------
+  | AI pricing (rubles per operation)
+  |----------------------------------------------------------
+  */
+  AI_COST_GENERATE: Env.schema.string.optional(),  // default 10
+  AI_COST_RECOGNIZE: Env.schema.string.optional(), // default 9
+  AI_COST_CHAT: Env.schema.string.optional(),      // default 6
+  AI_WELCOME_BONUS: Env.schema.string.optional(),  // default 50
+
+  /*
+  |----------------------------------------------------------
+  | YooKassa payments (https://yookassa.ru)
+  |----------------------------------------------------------
+  */
+  YOOKASSA_SHOP_ID: Env.schema.string.optional(),
+  YOOKASSA_SECRET_KEY: Env.schema.string.optional(),
+  // Set to "true" to skip IP whitelist check in local development
+  YOOKASSA_SKIP_IP_CHECK: Env.schema.string.optional(),
+  // Base URL of the app — used as return_url after payment
+  APP_URL: Env.schema.string.optional(),
 });

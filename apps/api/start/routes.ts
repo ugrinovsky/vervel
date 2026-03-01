@@ -20,6 +20,9 @@ router.post('/register', [AuthController, 'register']);
 // Public invite info (no auth)
 router.get('/invite/info/:token', '#controllers/invite_controller.getInviteInfo');
 
+// YooKassa webhook — public, called by YooKassa servers
+router.post('/payments/webhook', '#controllers/payments_controller.webhook');
+
 // OAuth routes
 router.get('/oauth/:provider/redirect', [OAuthController, 'redirect']);
 router.get('/oauth/:provider/callback', [OAuthController, 'callback']);
@@ -78,12 +81,22 @@ router
   })
   .use(middleware.auth());
 
+// Payments — create top-up (protected)
+router
+  .group(() => {
+    router.post('topup', '#controllers/payments_controller.topup')
+  })
+  .prefix('payments')
+  .use(middleware.auth())
+
 // AI routes (athlete: recognize workout from image; trainer: generate from text)
 router
   .group(() => {
     router.get('status', '#controllers/ai_controller.status')
+    router.get('balance', '#controllers/ai_controller.balance')
     router.post('recognize-workout', '#controllers/ai_controller.recognizeWorkout')
     router.post('generate-workout', '#controllers/ai_controller.generateWorkout')
+    router.post('chat', '#controllers/ai_controller.chat')
   })
   .prefix('ai')
   .use(middleware.auth());

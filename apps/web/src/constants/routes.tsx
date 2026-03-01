@@ -17,12 +17,12 @@ import {
   CalendarIcon,
   UserIcon,
   Cog6ToothIcon,
-  SparklesIcon,
   UserGroupIcon,
   ClockIcon,
   UsersIcon,
   RectangleStackIcon,
   BookOpenIcon,
+  TrophyIcon,
 } from '@heroicons/react/24/outline';
 
 export interface RouteItem {
@@ -69,7 +69,7 @@ export const athleteRoutes: RouteItem[] = [
   {
     path: '/streak',
     label: 'Ачивки',
-    icon: SparklesIcon,
+    icon: TrophyIcon,
     element: <StreakScreen />,
     toolbarPosition: 'right',
   },
