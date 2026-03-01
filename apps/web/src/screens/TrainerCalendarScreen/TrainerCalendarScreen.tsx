@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getDaysInMonth, startOfMonth } from 'date-fns';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
+import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
 import TrainerCalendar, { type TrainerDayData } from '@/components/TrainerCalendar/TrainerCalendar';
 import { trainerApi, type ScheduledWorkout } from '@/api/trainer';
@@ -159,9 +160,8 @@ export default function TrainerCalendarScreen() {
     <Screen>
       <div className="flex flex-col h-full">
         {/* ── Page header ── */}
-        <div className="px-4 pt-3 pb-1 shrink-0 flex items-center gap-2">
-          <CalendarDaysIcon className="w-5 h-5 text-(--color_primary_light) shrink-0" />
-          <h1 className="text-lg font-bold text-white">Календарь</h1>
+        <div className="px-4 pt-3 pb-1 shrink-0">
+          <ScreenHeader icon="📅" title="Календарь" description="Планируйте тренировки для атлетов и групп по датам" />
         </div>
 
         {/* ── Calendar (top) ── */}

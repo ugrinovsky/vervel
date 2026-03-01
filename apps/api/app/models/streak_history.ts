@@ -10,6 +10,8 @@ export type StreakEventType =
   | 'new_record'
 
 export default class StreakHistory extends BaseModel {
+  static table = 'streak_history'
+
   @column({ isPrimary: true })
   declare id: number
 

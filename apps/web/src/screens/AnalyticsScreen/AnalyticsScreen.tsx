@@ -71,7 +71,7 @@ export default function AnalyticsScreen() {
         <ScreenHeader
           icon="📊"
           title="Аналитика"
-          description="Детальная статистика ваших тренировок"
+          description="Статистика нагрузок, топ мышц и баланс тела — выберите период, чтобы увидеть динамику"
         />
 
         {/* Period filter */}

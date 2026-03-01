@@ -66,7 +66,7 @@ export default function TrainerGroupsListScreen() {
   return (
     <Screen loading={loading}>
       <div className="p-4 w-full max-w-2xl mx-auto">
-        <ScreenHeader icon="👥" title="Группы" description="Управление тренировочными группами" />
+        <ScreenHeader icon="👥" title="Группы" description="Ваши тренировочные группы — создавайте группы, добавляйте атлетов, назначайте тренировки и ведите чат" />
 
         {/* Stats */}
         <motion.div

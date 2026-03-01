@@ -12,6 +12,7 @@ import TrainerGroupDetailScreen from '@/screens/TrainerGroupDetailScreen/Trainer
 import TrainerPersonalScreen from '@/screens/TrainerPersonalScreen/TrainerPersonalScreen';
 import TrainerPublicProfileScreen from '@/screens/TrainerPublicProfileScreen/TrainerPublicProfileScreen';
 import InviteScreen from '@/screens/InviteScreen/InviteScreen';
+import DocsScreen from '@/screens/DocsScreen/DocsScreen';
 import AvatarScreen from '@/screens/AvatarScreen';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 
@@ -46,7 +47,8 @@ function AppContent(): JSX.Element {
     location.pathname === '/register' ||
     location.pathname === '/auth/callback' ||
     location.pathname === '/select-role' ||
-    location.pathname.startsWith('/invite/');
+    location.pathname.startsWith('/invite/') ||
+    location.pathname.startsWith('/docs/');
 
   // Deduplicate routes (profile appears in both athlete and trainer routes)
   const uniqueRoutes = routes.filter(
@@ -72,6 +74,10 @@ function AppContent(): JSX.Element {
         <Route path="/select-role" element={<SelectRoleScreen />} />
         {/* Public invite route — handles auth state internally */}
         <Route path="/invite/:token" element={<InviteScreen />} />
+        {/* Public legal docs */}
+        <Route path="/docs/privacy" element={<DocsScreen />} />
+        <Route path="/docs/offer" element={<DocsScreen />} />
+        <Route path="/docs/seller" element={<DocsScreen />} />
         <Route
           path="/"
           element={<ProtectedRoute><HomeScreen /></ProtectedRoute>}

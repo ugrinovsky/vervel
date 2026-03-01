@@ -66,4 +66,7 @@ export const profileApi = {
     privateApi.get<{ success: boolean; data: TrainerPublicProfile }>(
       `/athlete/trainers/${trainerId}/profile`
     ),
+
+  sendFeedback: (data: { type: 'general' | 'bug' | 'feature' | 'other'; message: string; contact?: string }) =>
+    privateApi.post<{ success: boolean; message: string }>('/feedback', data),
 };

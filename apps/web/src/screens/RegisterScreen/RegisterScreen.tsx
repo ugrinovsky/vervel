@@ -102,6 +102,15 @@ export default function RegisterScreen() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 relative z-10">
+            {/* Honeypot — invisible to humans, traps bots */}
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0 }}
+              aria-hidden="true"
+            />
             <div>
               <label className="block text-sm font-medium mb-2 text-emerald-100">Имя</label>
               <input

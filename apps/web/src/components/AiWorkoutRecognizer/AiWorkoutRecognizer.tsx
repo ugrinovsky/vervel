@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CameraIcon, SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { aiApi, type AiWorkoutResult } from '@/api/ai';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -33,7 +34,7 @@ function AiLoadingView() {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className="flex flex-col items-center justify-center gap-5 py-8"
+      className="flex flex-col items-center justify-center gap-5 py-12"
     >
       <div className="relative flex items-center justify-center">
         <motion.div
@@ -83,8 +84,8 @@ function AiLoadingView() {
 }
 
 /**
- * Кнопка для атлета: сфотографировать/загрузить фото тренировки
- * и распознать упражнения через AI.
+ * Кнопка для атлета/тренера: сфотографировать/загрузить фото тренировки
+ * и распознать упражнения через AI. Форма открывается в BottomSheet.
  */
 export default function AiWorkoutRecognizer({ onResult }: Props) {
   const { balance, setBalance } = useAuth();
@@ -121,10 +122,8 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
 
       const res = await aiApi.recognizeWorkout(base64, safeMime);
       onResult(res.data.data);
-      // Refresh balance after successful charge
       aiApi.getBalance().then((r) => setBalance(r.data.balance)).catch(() => {});
-      setOpen(false);
-      setPreview(null);
+      handleClose();
     } catch (err: any) {
       const data = err?.response?.data;
       if (data?.balance !== undefined) setBalance(data.balance);
@@ -141,8 +140,22 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
     setError(null);
   };
 
+  const sheetHeader = (
+    <div className="flex items-center gap-2">
+      <div className="w-8 h-8 flex items-center justify-center rounded-full bg-emerald-500/20">
+        <CameraIcon className="w-4 h-4 text-emerald-400" />
+      </div>
+      <span className="text-lg font-bold text-white">AI-распознавание</span>
+      {balance !== null && (
+        <span className={`ml-1 text-xs px-2 py-0.5 rounded-full ${hasEnoughBalance ? 'bg-white/10 text-white/50' : 'bg-red-500/20 text-red-400'}`}>
+          баланс: {balance}₽
+        </span>
+      )}
+    </div>
+  );
+
   return (
-    <div>
+    <>
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -154,108 +167,90 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
         <span className="text-white/40">{COST_RECOGNIZE}₽</span>
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            className="mt-3 rounded-2xl bg-white/5 border border-white/10 p-4 space-y-3 overflow-hidden"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-white flex items-center gap-1.5">
-                <SparklesIcon className="w-4 h-4 text-emerald-400" />
-                AI-распознавание
-                {balance !== null && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${hasEnoughBalance ? 'bg-white/10 text-white/50' : 'bg-red-500/20 text-red-400'}`}>
-                    баланс: {balance}₽
-                  </span>
-                )}
-              </span>
-              {!loading && (
-                <button onClick={handleClose} className="text-white/40 hover:text-white transition-colors">
-                  <XMarkIcon className="w-4 h-4" />
-                </button>
-              )}
-            </div>
+      <BottomSheet open={open} onClose={handleClose} header={sheetHeader}>
+        <AnimatePresence mode="wait">
+          {loading ? (
+            <AiLoadingView key="loading" />
+          ) : (
+            <motion.div
+              key="form"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-4"
+            >
+              <p className="text-sm text-(--color_text_muted)">
+                Сфотографируйте доску, листок или экран с тренировкой — AI распознает упражнения автоматически.
+              </p>
 
-            <AnimatePresence mode="wait">
-              {loading ? (
-                <AiLoadingView key="loading" />
-              ) : (
-                <motion.div
-                  key="form"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="space-y-3"
+              {!preview ? (
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  className="w-full h-36 rounded-xl border-2 border-dashed border-white/20 hover:border-emerald-400/60 flex flex-col items-center justify-center gap-3 text-white/50 hover:text-emerald-400 transition-colors"
                 >
-                  {!preview ? (
-                    <button
-                      type="button"
-                      onClick={() => inputRef.current?.click()}
-                      className="w-full h-28 rounded-xl border-2 border-dashed border-white/20 hover:border-emerald-400/60 flex flex-col items-center justify-center gap-2 text-white/50 hover:text-emerald-400 transition-colors"
-                    >
-                      <CameraIcon className="w-8 h-8" />
-                      <span className="text-xs">Фото доски или листка с тренировкой</span>
-                    </button>
-                  ) : (
-                    <div className="relative">
-                      <img
-                        src={preview}
-                        alt="preview"
-                        className="w-full h-40 object-cover rounded-xl"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setPreview(null)}
-                        className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors"
-                      >
-                        <XMarkIcon className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
-
-                  <input
-                    ref={inputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFile(file);
-                    }}
+                  <CameraIcon className="w-10 h-10" />
+                  <span className="text-sm">Нажмите, чтобы выбрать фото</span>
+                  <span className="text-xs text-white/30">JPG, PNG, WEBP</span>
+                </button>
+              ) : (
+                <div className="relative">
+                  <img
+                    src={preview}
+                    alt="preview"
+                    className="w-full h-48 object-cover rounded-xl"
                   />
-
-                  <p className="text-[11px] text-white/30 text-center">
-                    Стоимость распознавания: <span className="text-white/50">{COST_RECOGNIZE}₽</span> — списывается после отправки
-                  </p>
-
-                  {!hasEnoughBalance && (
-                    <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
-                      Недостаточно средств. Нужно {COST_RECOGNIZE}₽, баланс {balance}₽.
-                    </p>
-                  )}
-
-                  {error && <p className="text-xs text-red-400">{error}</p>}
-
-                  {preview && (
-                    <button
-                      type="button"
-                      onClick={handleRecognize}
-                      disabled={!hasEnoughBalance}
-                      className="w-full py-2 rounded-xl bg-emerald-500 text-black text-sm font-medium hover:bg-emerald-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      Распознать {COST_RECOGNIZE}₽
-                    </button>
-                  )}
-                </motion.div>
+                  <button
+                    type="button"
+                    onClick={() => setPreview(null)}
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors"
+                  >
+                    <XMarkIcon className="w-4 h-4" />
+                  </button>
+                </div>
               )}
-            </AnimatePresence>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+
+              <input
+                ref={inputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFile(file);
+                }}
+              />
+
+              <p className="text-[11px] text-white/30 text-center">
+                Стоимость: <span className="text-white/50">{COST_RECOGNIZE}₽</span> — списывается после отправки
+              </p>
+
+              {!hasEnoughBalance && (
+                <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
+                  Недостаточно средств. Нужно {COST_RECOGNIZE}₽, баланс {balance}₽ — пополните в Профиле.
+                </p>
+              )}
+
+              {error && (
+                <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
+                  {error}
+                </p>
+              )}
+
+              <button
+                type="button"
+                onClick={handleRecognize}
+                disabled={!preview || !hasEnoughBalance}
+                className="w-full py-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <SparklesIcon className="w-4 h-4" />
+                Распознать {COST_RECOGNIZE}₽
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </BottomSheet>
+    </>
   );
 }

@@ -180,6 +180,7 @@ export default function TrainerExerciseLibraryScreen() {
       <ScreenHeader
         icon={<BookOpenIcon className="w-6 h-6 text-(--color_primary_light)" />}
         title="Библиотека упражнений"
+        description="Готовые упражнения по категориям — добавляйте в тренировки и шаблоны"
       />
 
       {/* Sticky filter area */}

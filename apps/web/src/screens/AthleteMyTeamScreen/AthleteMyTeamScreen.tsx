@@ -153,7 +153,7 @@ export default function AthleteMyTeamScreen() {
       <AiChat open={aiChatOpen} onClose={() => setAiChatOpen(false)} />
 
       <div className="p-4 w-full max-w-2xl mx-auto">
-        <ScreenHeader icon="🤝" title="Моя команда" description="Тренеры и группы" />
+        <ScreenHeader icon="🤝" title="Моя команда" description="Тренеры и группы, с которыми вы работаете — покажите QR-код тренеру или введите код приглашения, чтобы присоединиться" />
 
         {/* AI Assistant card */}
         <motion.button

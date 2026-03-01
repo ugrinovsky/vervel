@@ -43,7 +43,7 @@ export default function TrainerTodayScreen() {
   return (
     <Screen loading={loading}>
       <div className="p-4 w-full max-w-2xl mx-auto">
-        <ScreenHeader icon="☀️" title="Сегодня" description="Обзор дня" />
+        <ScreenHeader icon="☀️" title="Сегодня" description="Что происходит сегодня — запланированные тренировки, непрочитанные сообщения и активность атлетов" />
 
         {/* Unread messages banners */}
         {unreadCounts && (

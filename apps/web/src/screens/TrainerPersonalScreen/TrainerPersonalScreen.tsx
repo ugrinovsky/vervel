@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
+import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import { profileApi, type ProfileUser } from '@/api/profile';
 import { CameraIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import BackButton from '@/components/BackButton/BackButton';
@@ -91,7 +92,7 @@ export default function TrainerPersonalScreen() {
       <div className="p-4 w-full max-w-2xl mx-auto">
         <BackButton onClick={() => navigate(-1)} />
 
-        <h1 className="text-xl font-bold text-white mb-6">Профессиональный профиль</h1>
+        <ScreenHeader icon="🪪" title="Профессиональный профиль" description="Фото, специализации и образование — видно вашим атлетам" />
 
         {/* Photo */}
         <motion.div

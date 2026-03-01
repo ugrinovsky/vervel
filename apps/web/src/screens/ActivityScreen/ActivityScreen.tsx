@@ -46,7 +46,7 @@ export default function ActivityScreen() {
         <ScreenHeader
           icon="📅"
           title="Активность"
-          description="Отслеживайте ваши тренировки и прогресс"
+          description="Календарь тренировок — нажмите на день, чтобы посмотреть детали, добавить или изменить запись"
         />
 
         {monthlyStats && (

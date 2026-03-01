@@ -115,7 +115,7 @@ export default function WorkoutForm() {
         <ScreenHeader
           icon="💪"
           title="Новая тренировка"
-          description="Создайте запись о вашей тренировке"
+          description="Добавьте упражнения, подходы и веса вручную — или воспользуйтесь AI-распознаванием по фото или описанию"
         />
 
         <motion.div

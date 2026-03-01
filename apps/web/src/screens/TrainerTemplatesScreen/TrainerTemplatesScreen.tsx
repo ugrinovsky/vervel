@@ -133,7 +133,7 @@ export default function TrainerTemplatesScreen() {
   return (
     <Screen>
       <div className="p-4 w-full max-w-2xl mx-auto">
-        <ScreenHeader icon="📋" title="Шаблоны" description="Шаблоны тренировок" />
+        <ScreenHeader icon="📋" title="Шаблоны" description="Заготовки тренировок для быстрого назначения атлетам и группам" />
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}

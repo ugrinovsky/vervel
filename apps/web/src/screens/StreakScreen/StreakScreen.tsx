@@ -39,7 +39,7 @@ export default function StreakScreen() {
         <ScreenHeader
           icon="🔥"
           title="Ударный режим"
-          description="Тренируйтесь каждый день и зарабатывайте достижения"
+          description="Ваша серия тренировочных дней и коллекция достижений — не пропускайте занятия, чтобы разблокировать новые"
         />
 
         {/* Streak Card */}

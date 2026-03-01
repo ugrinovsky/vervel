@@ -81,6 +81,9 @@ router
   })
   .use(middleware.auth());
 
+// Feedback (auth — saves user_id)
+router.post('/feedback', '#controllers/feedback_controller.create').use(middleware.auth());
+
 // Payments — create top-up (protected)
 router
   .group(() => {
