@@ -6,6 +6,7 @@ interface AuthUser {
   email: string;
   fullName: string;
   role: UserRole;
+  gender?: 'male' | 'female' | null;
 }
 
 interface AuthContextValue {

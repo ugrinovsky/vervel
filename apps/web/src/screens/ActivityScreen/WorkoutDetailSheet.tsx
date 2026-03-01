@@ -247,7 +247,7 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
           <div className="space-y-2">
             <div className="flex items-center gap-2 flex-wrap">
               {workout?.scheduledWorkoutId != null && (
-                <span className="text-xs px-2 py-0.5 bg-violet-500/20 text-violet-300 rounded-full border border-violet-500/30">
+                <span className="text-xs px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30">
                   📋 От тренера
                 </span>
               )}

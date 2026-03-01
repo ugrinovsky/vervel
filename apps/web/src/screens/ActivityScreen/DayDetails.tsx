@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { useNavigate } from 'react-router';
+import { PlusIcon } from '@heroicons/react/24/outline';
 import { getWorkoutTypeLabel } from './utils';
 import WorkoutDetailSheet from './WorkoutDetailSheet';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
@@ -40,7 +42,7 @@ function WorkoutTile({
         </span>
         <div className="flex items-center gap-1.5">
           {workout.scheduledWorkoutId != null && (
-            <span className="text-xs px-1.5 py-0.5 bg-violet-500/20 text-violet-300 rounded-full border border-violet-500/30">
+            <span className="text-xs px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30">
               📋
             </span>
           )}
@@ -77,21 +79,35 @@ function WorkoutTile({
 
 export default function DayDetails({ date, workouts }: DayDetailsProps) {
   const [activeWorkout, setActiveWorkout] = useState<WorkoutTimelineEntry | null>(null);
+  const navigate = useNavigate();
   const hasWorkouts = workouts.length > 0;
+
+  const handleAddWorkout = () => {
+    navigate('/workouts/new', { state: { date: format(date, 'yyyy-MM-dd') } });
+  };
 
   return (
     <>
       <div className="animate-fade-in">
         <div className="glass p-5 rounded-xl">
-          <div className="mb-4">
-            <h2 className="text-xl font-bold text-white">
-              {format(date, 'd MMMM yyyy', { locale: ru })}
-            </h2>
-            {hasWorkouts && (
-              <p className="text-sm text-(--color_text_muted) mt-0.5">
-                {pluralWorkouts(workouts.length)}
-              </p>
-            )}
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-bold text-white">
+                {format(date, 'd MMMM yyyy', { locale: ru })}
+              </h2>
+              {hasWorkouts && (
+                <p className="text-sm text-(--color_text_muted) mt-0.5">
+                  {pluralWorkouts(workouts.length)}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={handleAddWorkout}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity shrink-0"
+            >
+              <PlusIcon className="w-4 h-4" />
+              Добавить
+            </button>
           </div>
 
           {hasWorkouts ? (

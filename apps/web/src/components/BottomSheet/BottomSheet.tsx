@@ -1,5 +1,6 @@
 import { type PropsWithChildren, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import CloseButton from '@/components/ui/CloseButton';
 
 interface Props extends PropsWithChildren {
   open: boolean;
@@ -46,12 +47,7 @@ export default function BottomSheet({ open, onClose, title, emoji, header, child
             {/* Header */}
             <div className="flex items-start justify-between pt-2 mb-4">
               {headerContent}
-              <button
-                onClick={onClose}
-                className="text-white/40 hover:text-white transition-colors p-1 text-lg leading-none shrink-0 ml-2"
-              >
-                ✕
-              </button>
+              <CloseButton onClick={onClose} className="ml-2" />
             </div>
 
             {children}

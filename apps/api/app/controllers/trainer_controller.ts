@@ -245,12 +245,14 @@ export default class TrainerController {
     const mode = request.input('mode', 'recovery')
 
     if (mode === 'recovery') {
+      const now = new Date()
       const startDate = new Date()
       startDate.setDate(startDate.getDate() - 14)
 
       const workouts = await Workout.query()
         .where('userId', athleteId)
         .where('date', '>=', startDate)
+        .where('date', '<=', now)
         .orderBy('date', 'asc')
 
       const stats = WorkoutCalculator.calculateRecoveryState(workouts)

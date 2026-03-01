@@ -1,95 +1,145 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import muscleZones from './manZones';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  maleBody,
+  femaleBody,
+  type BodySide,
+  type BodyGender,
+  type BodyPartDef,
+} from './bodyZones';
 
-interface BodySVGProps {
-  zoneIntensities?: Record<string, number>;
-  selectedZone?: string | null;
-  onZoneClick?: (zoneName: string) => void;
+// ── Cylinder helpers ──────────────────────────────────────────────────────────
+function cylinderFromViewBox(vb: string) {
+  const [minX, minY, w, h] = vb.split(' ').map(Number);
+  return {
+    cx:   minX + w / 2,
+    topY: minY + h * 0.935,
+    botY: minY + h * 0.975,
+    rx:   w * 0.44,
+    ry:   w * 0.025,
+  };
 }
 
-// SVG coordinate space
-// Original figure: viewBox 218.465 354.786 281.446 720.395
-// Avatar is scaled 0.85 and translated so feet land on cylinder top.
-// Transform: translate(53.9, 176.3) scale(0.85) — keeps center at x=359,
-//   moves feet (orig y≈1075) to CYL_TOP_Y=1090.
-// ViewBox trimmed to remove dead space above scaled figure.
-const VIEWBOX = '218.465 445 281.446 740';
-const AVATAR_TRANSFORM = 'translate(53.9 169.3) scale(0.85)';
+// Crop horizontal dead space: trim cropPct from each side
+function cropViewBox(vb: string, cropPct = 0.08): string {
+  const [minX, minY, w, h] = vb.split(' ').map(Number);
+  const trim = w * cropPct;
+  return `${minX + trim} ${minY} ${w - trim * 2} ${h}`;
+}
 
-const CYL_CX = 359; // horizontal center (218.465 + 281.446/2)
-const CYL_TOP_Y = 1090;
-const CYL_BOT_Y = 1168;
-const CYL_RX = 132; // near full width of viewBox (281.446/2 ≈ 140)
-const CYL_RY = 16;
-
-/** Returns fill color based on intensity [0..1] with a green → amber → red gradient */
+// ── Color helpers ──────────────────────────────────────────────────────────────
 function zoneColor(intensity: number, alpha: number): string {
-  // 0 → hue 140 (vivid green), 0.5 → hue 48 (amber), 1 → hue 0/360 (red)
   const hue =
     intensity <= 0.5
-      ? 140 - intensity * 2 * 92 // 140 → 48 (amber)
-      : 48 - (intensity - 0.5) * 2 * 53; // 48 → -5 (~355, red)
+      ? 140 - intensity * 2 * 92
+      : 48 - (intensity - 0.5) * 2 * 53;
   return `hsla(${hue}, 88%, 58%, ${alpha})`;
 }
 
-/** Lighter, more opaque variant for zone border stroke */
 function zoneStrokeColor(intensity: number): string {
   const hue =
     intensity <= 0.5
       ? 140 - intensity * 2 * 92
       : 48 - (intensity - 0.5) * 2 * 53;
-  const alpha = 0.45 + intensity * 0.40; // 0.45 → 0.85
-  return `hsla(${hue}, 92%, 72%, ${alpha})`; // L=72% — заметно светлее fill
+  return `hsla(${hue}, 92%, 72%, ${0.45 + intensity * 0.4})`;
+}
+
+function getPaths(part: BodyPartDef): string[] {
+  return [
+    ...(part.path.common ?? []),
+    ...(part.path.left   ?? []),
+    ...(part.path.right  ?? []),
+  ];
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+interface BodySVGProps {
+  zoneIntensities?: Record<string, number>;
+  selectedZone?: string | null;
+  onZoneClick?: (zoneName: string) => void;
+  gender?: BodyGender;
 }
 
 const BodySVG: React.FC<BodySVGProps> = ({
   zoneIntensities = {},
-  selectedZone = null,
+  selectedZone    = null,
   onZoneClick,
+  gender = 'male',
 }) => {
+  const [side, setSide]         = useState<BodySide>('front');
   const [showFill, setShowFill] = useState(false);
-  const [drawDone, setDrawDone] = useState(false);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setShowFill(true), 900);
-    const t2 = setTimeout(() => setDrawDone(true), 1400);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
-  }, []);
+    setShowFill(false);
+    const t = setTimeout(() => setShowFill(true), 700);
+    return () => clearTimeout(t);
+  }, [side, gender]);
 
-  const getFill = (zoneName: string) => {
-    const intensity = zoneIntensities[zoneName] || 0;
+  const bodyData = gender === 'female' ? femaleBody : maleBody;
+  const viewDef  = bodyData[side];
+  const { viewBox: rawViewBox, outline, parts } = viewDef;
+  const viewBox = cropViewBox(rawViewBox, 0.08);
+  const cyl = cylinderFromViewBox(viewBox);
+
+  const exerciseParts  = parts.filter((p) => p.appZone !== null);
+  const structuralParts = parts.filter((p) => p.appZone === null);
+
+  const getFill = (zoneId: string) => {
+    const intensity = zoneIntensities[zoneId] || 0;
     if (intensity <= 0) return 'transparent';
-    const isSelected = zoneName === selectedZone;
-    // slightly transparent: max alpha ≈ 0.58 (was 0.84)
-    return zoneColor(intensity, isSelected ? 0.62 : 0.18 + intensity * 0.4);
+    return zoneColor(intensity, zoneId === selectedZone ? 0.62 : 0.22 + intensity * 0.38);
   };
 
-  const getGlowFill = (zoneName: string) => {
-    const intensity = zoneIntensities[zoneName] || 0;
-    if (intensity <= 0) return 'transparent';
-    return zoneColor(intensity, 0.42);
-  };
+  const getGlowFill = (zoneId: string) =>
+    zoneColor(zoneIntensities[zoneId] || 0, 0.42);
 
-  const getOutlineStroke = (zoneName: string) => {
-    if (zoneName === selectedZone) return 'rgba(255,255,255,0.75)';
-    const intensity = zoneIntensities[zoneName] || 0;
-    if (intensity > 0) {
-      // filled zones — outlines rendered on fill layer, these just duplicate subtly
-      return zoneColor(intensity, 0.15 + intensity * 0.25);
-    }
-    return 'rgba(255,255,255,0.14)'; // empty zones more visible
+  const getOutlineStroke = (zoneId: string) => {
+    if (zoneId === selectedZone) return 'rgba(255,255,255,0.75)';
+    const intensity = zoneIntensities[zoneId] || 0;
+    if (intensity > 0) return zoneColor(intensity, 0.15 + intensity * 0.25);
+    return 'rgba(255,255,255,0.10)';
   };
-
-  const bodyZone = muscleZones.find((z) => z.name === 'body');
-  const muscleZonesWithoutBody = muscleZones.filter((z) => z.name !== 'body');
 
   return (
     <div className="avatar-wrapper glass relative" style={{ paddingBottom: 0 }}>
-      {/* Ambient radial glow behind figure */}
+      {/* ── Front / Back toggle ─────────────────────────────────────────── */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 8,
+          right: 8,
+          zIndex: 10,
+          display: 'flex',
+          gap: 2,
+          background: 'var(--color_bg_card)',
+          borderRadius: 8,
+          padding: '3px',
+          border: '1px solid var(--color_border)',
+        }}
+      >
+        {(['front', 'back'] as BodySide[]).map((s) => (
+          <button
+            key={s}
+            onClick={() => setSide(s)}
+            style={{
+              padding: '2px 8px',
+              borderRadius: 5,
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: 11,
+              fontWeight: 600,
+              background: side === s ? 'var(--color_primary)' : 'transparent',
+              color: side === s ? 'white' : 'var(--color_text_muted)',
+              transition: 'all 0.18s',
+              lineHeight: 1.4,
+            }}
+          >
+            {s === 'front' ? 'Перед' : 'Зад'}
+          </button>
+        ))}
+      </div>
+
+      {/* Ambient radial glow */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -99,323 +149,235 @@ const BodySVG: React.FC<BodySVGProps> = ({
         }}
       />
 
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox={VIEWBOX}
-        className="w-full"
-        style={{ pointerEvents: 'all', display: 'block' }}
-      >
-        <defs>
-          {/* Soft glow for high-intensity zone fills */}
-          <filter id="av-zone-glow" x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
-            <feColorMatrix in="blur" type="saturate" values="1.8" result="sat" />
-            <feMerge>
-              <feMergeNode in="sat" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
+      <AnimatePresence mode="wait">
+        <motion.svg
+          key={`${gender}-${side}`}
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox={viewBox}
+          className="w-full"
+          style={{ pointerEvents: 'all', display: 'block' }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.22 }}
+        >
+          <defs>
+            <filter id="av-zone-glow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+              <feColorMatrix in="blur" type="saturate" values="1.8" result="sat" />
+              <feMerge>
+                <feMergeNode in="sat" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
 
-          {/* Subtle glow for body outline */}
-          <filter id="av-outline-glow" x="-12%" y="-8%" width="124%" height="116%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
+            <linearGradient id="av-cyl-body" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   style={{ stopColor: 'var(--color_primary_dark)', stopOpacity: 0.65 }} />
+              <stop offset="18%"  style={{ stopColor: 'var(--color_primary_light)', stopOpacity: 0.18 }} />
+              <stop offset="40%"  style={{ stopColor: 'var(--color_primary_light)', stopOpacity: 0.06 }} />
+              <stop offset="68%"  style={{ stopColor: 'var(--color_primary_light)', stopOpacity: 0.14 }} />
+              <stop offset="100%" style={{ stopColor: 'var(--color_primary_dark)', stopOpacity: 0.6 }} />
+            </linearGradient>
+            <linearGradient id="av-cyl-top" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%"   style={{ stopColor: 'var(--color_primary_light)', stopOpacity: 0.55 }} />
+              <stop offset="45%"  style={{ stopColor: 'var(--color_primary_light)', stopOpacity: 0.22 }} />
+              <stop offset="100%" style={{ stopColor: 'var(--color_primary_dark)', stopOpacity: 0.4 }} />
+            </linearGradient>
+            <radialGradient id="av-cyl-spec" cx="38%" cy="38%" r="50%">
+              <stop offset="0%"   style={{ stopColor: 'white', stopOpacity: 0.3 }} />
+              <stop offset="100%" style={{ stopColor: 'white', stopOpacity: 0 }} />
+            </radialGradient>
+            <linearGradient id="av-cyl-bot" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%"   style={{ stopColor: 'var(--color_primary_dark)', stopOpacity: 0.28 }} />
+              <stop offset="100%" style={{ stopColor: 'var(--color_primary_dark)', stopOpacity: 0.06 }} />
+            </linearGradient>
+            <radialGradient id="av-cyl-shadow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%"   style={{ stopColor: 'black', stopOpacity: 0.35 }} />
+              <stop offset="100%" style={{ stopColor: 'black', stopOpacity: 0 }} />
+            </radialGradient>
+          </defs>
 
-          {/* ── Cylinder gradients ── */}
-          {/* Body: dark on sides, light in the middle (lighting from slightly left-center) */}
-          <linearGradient id="av-cyl-body" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop
-              offset="0%"
-              style={{ stopColor: 'var(--color_primary_dark)', stopOpacity: 0.65 }}
-            />
-            <stop
-              offset="18%"
-              style={{ stopColor: 'var(--color_primary_light)', stopOpacity: 0.18 }}
-            />
-            <stop
-              offset="40%"
-              style={{ stopColor: 'var(--color_primary_light)', stopOpacity: 0.06 }}
-            />
-            <stop
-              offset="68%"
-              style={{ stopColor: 'var(--color_primary_light)', stopOpacity: 0.14 }}
-            />
-            <stop
-              offset="100%"
-              style={{ stopColor: 'var(--color_primary_dark)', stopOpacity: 0.6 }}
-            />
-          </linearGradient>
+          {/* ── Body outline ─────────────────────────────────────────────── */}
+          <motion.path
+            d={outline}
+            fill="none"
+            stroke="rgba(176,200,210,0.45)"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+          />
 
-          {/* Top face: lit from top-left */}
-          <linearGradient id="av-cyl-top" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop
-              offset="0%"
-              style={{ stopColor: 'var(--color_primary_light)', stopOpacity: 0.55 }}
-            />
-            <stop
-              offset="45%"
-              style={{ stopColor: 'var(--color_primary_light)', stopOpacity: 0.22 }}
-            />
-            <stop
-              offset="100%"
-              style={{ stopColor: 'var(--color_primary_dark)', stopOpacity: 0.4 }}
-            />
-          </linearGradient>
-
-          {/* Specular highlight on top face */}
-          <radialGradient id="av-cyl-spec" cx="38%" cy="38%" r="50%">
-            <stop offset="0%" style={{ stopColor: 'white', stopOpacity: 0.3 }} />
-            <stop offset="100%" style={{ stopColor: 'white', stopOpacity: 0 }} />
-          </radialGradient>
-
-          {/* Bottom ellipse fade */}
-          <linearGradient id="av-cyl-bot" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop
-              offset="0%"
-              style={{ stopColor: 'var(--color_primary_dark)', stopOpacity: 0.28 }}
-            />
-            <stop
-              offset="100%"
-              style={{ stopColor: 'var(--color_primary_dark)', stopOpacity: 0.06 }}
-            />
-          </linearGradient>
-
-          {/* Ground shadow */}
-          <radialGradient id="av-cyl-shadow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" style={{ stopColor: 'black', stopOpacity: 0.35 }} />
-            <stop offset="100%" style={{ stopColor: 'black', stopOpacity: 0 }} />
-          </radialGradient>
-        </defs>
-
-        {/* ── Avatar figure (scaled + repositioned onto cylinder) ── */}
-        <g transform={AVATAR_TRANSFORM}>
-          {/* Invisible click hitboxes */}
-          {muscleZonesWithoutBody.map((zone) => (
-            <g key={`hb-${zone.name}`}>
-              {zone.paths.map((path, i) => (
+          {/* ── Structural parts (head, neck, hands, feet, etc.) ─────────── */}
+          <g style={{ pointerEvents: 'none' }}>
+            {structuralParts.map((p) =>
+              getPaths(p).map((d, i) => (
                 <path
-                  key={i}
-                  d={path}
+                  key={`s-${p.slug}-${i}`}
+                  d={d}
+                  fill="rgba(176,200,210,0.06)"
+                  stroke="rgba(176,200,210,0.13)"
+                  strokeWidth={0.5}
+                />
+              ))
+            )}
+          </g>
+
+          {/* ── Zone overlay ─────────────────────────────────────────────── */}
+          <g>
+            {/* Invisible click hitboxes */}
+            {exerciseParts.map((p) =>
+              getPaths(p).map((d, i) => (
+                <path
+                  key={`hb-${p.slug}-${i}`}
+                  d={d}
                   fill="transparent"
                   stroke="transparent"
-                  strokeWidth="20"
+                  strokeWidth={22}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  onClick={() => onZoneClick?.(zone.name)}
+                  onClick={() => onZoneClick?.(p.appZone!)}
                   style={{ cursor: 'pointer', pointerEvents: 'all' }}
                 />
-              ))}
-            </g>
-          ))}
+              ))
+            )}
 
-          {/* Body outline (drawn with animation) */}
-          {bodyZone?.paths.map((path, i) => (
-            <motion.path
-              key={`body-${i}`}
-              d={path}
-              fill="none"
-              stroke="rgba(176,255,245,0.55)"
-              strokeWidth={2.8}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              filter="url(#av-outline-glow)"
-              initial={{ pathLength: 0, opacity: 0 }}
-              animate={{ pathLength: 1, opacity: 1 }}
-              transition={{ duration: 2.2, ease: 'easeInOut' }}
-            />
-          ))}
-
-          {/* Zone outline strokes (draw animation) */}
-          {muscleZonesWithoutBody.map((zone, zi) => (
-            <g key={`zo-${zone.name}`}>
-              {zone.paths.map((path, pi) => (
+            {/* Zone outline strokes */}
+            {exerciseParts.map((p, zi) =>
+              getPaths(p).map((d, i) => (
                 <motion.path
-                  key={pi}
-                  d={path}
+                  key={`zo-${p.slug}-${i}`}
+                  d={d}
                   fill="none"
-                  stroke={drawDone ? getOutlineStroke(zone.name) : 'rgba(255,255,255,0.07)'}
-                  strokeWidth={zone.name === selectedZone ? 1.6 : 0.9}
+                  stroke={getOutlineStroke(p.appZone!)}
+                  strokeWidth={p.appZone === selectedZone ? 1.8 : 1.0}
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   initial={{ pathLength: 0 }}
                   animate={{ pathLength: 1 }}
                   transition={{
-                    pathLength: { duration: 0.7, delay: zi * 0.018, ease: 'easeInOut' },
+                    pathLength: { duration: 0.8, delay: zi * 0.018, ease: 'easeInOut' },
                   }}
                   style={{ pointerEvents: 'none' }}
                 />
-              ))}
-            </g>
-          ))}
+              ))
+            )}
 
-          {/* Zone fills with glow */}
-          {showFill &&
-            muscleZonesWithoutBody.map((zone) => {
-              const intensity = zoneIntensities[zone.name] || 0;
-              const fill = getFill(zone.name);
-              if (fill === 'transparent') return null;
+            {/* Zone fills + glow */}
+            {showFill &&
+              exerciseParts.map((p) => {
+                const zoneId    = p.appZone!;
+                const intensity = zoneIntensities[zoneId] || 0;
+                const fill      = getFill(zoneId);
+                if (fill === 'transparent') return null;
 
-              const isHigh = intensity > 0.65;
-              const isMedium = intensity > 0.35;
-              const glowFill = getGlowFill(zone.name);
+                const isHigh   = intensity > 0.65;
+                const isMedium = intensity > 0.35;
+                const paths    = getPaths(p);
 
-              return (
-                <g key={`zf-${zone.name}`} style={{ pointerEvents: 'none' }}>
-                  {/* Blurred glow layer */}
-                  {(isHigh || isMedium) &&
-                    zone.paths.map((path, i) => (
+                return (
+                  <g key={`zf-${p.slug}`} style={{ pointerEvents: 'none' }}>
+                    {(isHigh || isMedium) &&
+                      paths.map((d, i) => (
+                        <motion.path
+                          key={`zg-${p.slug}-${i}`}
+                          d={d}
+                          fill={getGlowFill(zoneId)}
+                          stroke="none"
+                          filter="url(#av-zone-glow)"
+                          initial={{ opacity: 0 }}
+                          animate={isHigh ? { opacity: [0, 0.65, 0.32, 0.65, 0] } : { opacity: 0.38 }}
+                          transition={
+                            isHigh
+                              ? { opacity: { duration: 2.6, repeat: Infinity, ease: 'easeInOut', delay: 0.4 } }
+                              : { duration: 0.65, delay: 0.1 }
+                          }
+                        />
+                      ))}
+
+                    {paths.map((d, i) => (
                       <motion.path
-                        key={`zg-${zone.name}-${i}`}
-                        d={path}
-                        fill={glowFill}
-                        stroke="none"
-                        filter="url(#av-zone-glow)"
-                        initial={{ opacity: 0 }}
-                        animate={isHigh ? { opacity: [0, 0.65, 0.32, 0.65, 0] } : { opacity: 0.38 }}
-                        transition={
-                          isHigh
-                            ? {
-                                opacity: {
-                                  duration: 2.6,
-                                  repeat: Infinity,
-                                  ease: 'easeInOut',
-                                  delay: 0.4,
-                                },
-                              }
-                            : { duration: 0.65, delay: 0.1 }
-                        }
-                      />
-                    ))}
-
-                  {/* Crisp fill + stroke */}
-                  {zone.paths.map((path, i) => (
-                    <motion.path
-                      key={`zc-${zone.name}-${i}`}
-                      d={path}
-                      fill={fill}
-                      stroke={zoneStrokeColor(intensity)}
-                      strokeWidth={1.1}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.55, delay: 0.12 }}
-                    />
-                  ))}
-
-                  {/* Selected zone — pulsing white stroke */}
-                  {zone.name === selectedZone &&
-                    zone.paths.map((path, i) => (
-                      <motion.path
-                        key={`zs-${zone.name}-${i}`}
-                        d={path}
-                        fill="none"
-                        stroke="rgba(255,255,255,0.65)"
-                        strokeWidth={1.8}
+                        key={`zc-${p.slug}-${i}`}
+                        d={d}
+                        fill={fill}
+                        stroke={zoneStrokeColor(intensity)}
+                        strokeWidth={1.2}
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         initial={{ opacity: 0 }}
-                        animate={{ opacity: [0.5, 1, 0.5] }}
-                        transition={{
-                          opacity: { duration: 2, repeat: Infinity, ease: 'easeInOut' },
-                        }}
-                        style={{ pointerEvents: 'none' }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.55, delay: 0.12 }}
                       />
                     ))}
-                </g>
-              );
-            })}
-        </g>
-        {/* end avatar transform group */}
 
-        {/* ── Cylinder pedestal ── */}
-        <g>
-          {/* Ground shadow pool */}
-          <ellipse
-            cx={CYL_CX}
-            cy={CYL_BOT_Y + 10}
-            rx={CYL_RX + 16}
-            ry={CYL_RY + 2}
-            fill="url(#av-cyl-shadow)"
-            opacity={0.55}
-          />
+                    {zoneId === selectedZone &&
+                      paths.map((d, i) => (
+                        <motion.path
+                          key={`zs-${p.slug}-${i}`}
+                          d={d}
+                          fill="none"
+                          stroke="rgba(255,255,255,0.65)"
+                          strokeWidth={2.0}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: [0.5, 1, 0.5] }}
+                          transition={{
+                            opacity: { duration: 2, repeat: Infinity, ease: 'easeInOut' },
+                          }}
+                        />
+                      ))}
+                  </g>
+                );
+              })}
+          </g>
 
-          {/* Cylinder body (visible front face) */}
-          <path
-            d={`
-              M ${CYL_CX - CYL_RX} ${CYL_TOP_Y}
-              L ${CYL_CX - CYL_RX} ${CYL_BOT_Y}
-              A ${CYL_RX} ${CYL_RY} 0 0 1 ${CYL_CX + CYL_RX} ${CYL_BOT_Y}
-              L ${CYL_CX + CYL_RX} ${CYL_TOP_Y}
-            `}
-            fill="url(#av-cyl-body)"
-            style={{ stroke: 'var(--color_primary_light)', strokeOpacity: 0.12, strokeWidth: 0.5 }}
-          />
-
-          {/* Left vertical edge highlight */}
-          <line
-            x1={CYL_CX - CYL_RX}
-            y1={CYL_TOP_Y}
-            x2={CYL_CX - CYL_RX}
-            y2={CYL_BOT_Y}
-            style={{ stroke: 'var(--color_primary_light)', strokeOpacity: 0.55, strokeWidth: 1.8 }}
-          />
-
-          {/* Right vertical edge highlight */}
-          <line
-            x1={CYL_CX + CYL_RX}
-            y1={CYL_TOP_Y}
-            x2={CYL_CX + CYL_RX}
-            y2={CYL_BOT_Y}
-            style={{ stroke: 'var(--color_primary_light)', strokeOpacity: 0.55, strokeWidth: 1.8 }}
-          />
-
-          {/* Bottom ellipse (partially visible rim) */}
-          <ellipse
-            cx={CYL_CX}
-            cy={CYL_BOT_Y}
-            rx={CYL_RX}
-            ry={CYL_RY}
-            fill="url(#av-cyl-bot)"
-            style={{ stroke: 'var(--color_primary_light)', strokeOpacity: 0.18, strokeWidth: 0.8 }}
-          />
-
-          {/* Top ellipse — main visible face */}
-          <ellipse
-            cx={CYL_CX}
-            cy={CYL_TOP_Y}
-            rx={CYL_RX}
-            ry={CYL_RY}
-            fill="url(#av-cyl-top)"
-            style={{ stroke: 'var(--color_primary_light)', strokeOpacity: 0.62, strokeWidth: 1.6 }}
-          />
-
-          {/* Specular reflection on top face */}
-          <ellipse
-            cx={CYL_CX - 14}
-            cy={CYL_TOP_Y - 3}
-            rx={CYL_RX * 0.48}
-            ry={CYL_RY * 0.48}
-            fill="url(#av-cyl-spec)"
-          />
-
-          {/* Subtle rim shine line */}
-          <ellipse
-            cx={CYL_CX}
-            cy={CYL_TOP_Y}
-            rx={CYL_RX}
-            ry={CYL_RY}
-            fill="none"
-            stroke="white"
-            strokeOpacity={0.13}
-            strokeWidth={0.6}
-          />
-        </g>
-      </svg>
+          {/* ── Cylinder pedestal ────────────────────────────────────────── */}
+          <g>
+            <ellipse
+              cx={cyl.cx} cy={cyl.botY + 10}
+              rx={cyl.rx + 16} ry={cyl.ry + 2}
+              fill="url(#av-cyl-shadow)" opacity={0.55}
+            />
+            <path
+              d={`M ${cyl.cx - cyl.rx} ${cyl.topY} L ${cyl.cx - cyl.rx} ${cyl.botY} A ${cyl.rx} ${cyl.ry} 0 0 1 ${cyl.cx + cyl.rx} ${cyl.botY} L ${cyl.cx + cyl.rx} ${cyl.topY}`}
+              fill="url(#av-cyl-body)"
+              style={{ stroke: 'var(--color_primary_light)', strokeOpacity: 0.12, strokeWidth: 0.5 }}
+            />
+            <line
+              x1={cyl.cx - cyl.rx} y1={cyl.topY}
+              x2={cyl.cx - cyl.rx} y2={cyl.botY}
+              style={{ stroke: 'var(--color_primary_light)', strokeOpacity: 0.55, strokeWidth: 1.8 }}
+            />
+            <line
+              x1={cyl.cx + cyl.rx} y1={cyl.topY}
+              x2={cyl.cx + cyl.rx} y2={cyl.botY}
+              style={{ stroke: 'var(--color_primary_light)', strokeOpacity: 0.55, strokeWidth: 1.8 }}
+            />
+            <ellipse
+              cx={cyl.cx} cy={cyl.botY} rx={cyl.rx} ry={cyl.ry}
+              fill="url(#av-cyl-bot)"
+              style={{ stroke: 'var(--color_primary_light)', strokeOpacity: 0.18, strokeWidth: 0.8 }}
+            />
+            <ellipse
+              cx={cyl.cx} cy={cyl.topY} rx={cyl.rx} ry={cyl.ry}
+              fill="url(#av-cyl-top)"
+              style={{ stroke: 'var(--color_primary_light)', strokeOpacity: 0.62, strokeWidth: 1.6 }}
+            />
+            <ellipse
+              cx={cyl.cx - 14} cy={cyl.topY - 3}
+              rx={cyl.rx * 0.48} ry={cyl.ry * 0.48}
+              fill="url(#av-cyl-spec)"
+            />
+            <ellipse
+              cx={cyl.cx} cy={cyl.topY} rx={cyl.rx} ry={cyl.ry}
+              fill="none" stroke="white" strokeOpacity={0.13} strokeWidth={0.6}
+            />
+          </g>
+        </motion.svg>
+      </AnimatePresence>
     </div>
   );
 };

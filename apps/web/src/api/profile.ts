@@ -5,6 +5,7 @@ export interface ProfileUser {
   fullName: string | null;
   email: string;
   role: string;
+  gender: 'male' | 'female' | null;
   createdAt: string;
   bio: string | null;
   specializations: string[] | null;
@@ -39,6 +40,7 @@ export const profileApi = {
   updateProfile: (data: {
     fullName?: string;
     email?: string;
+    gender?: 'male' | 'female' | null;
     bio?: string;
     specializations?: string[];
     education?: string;

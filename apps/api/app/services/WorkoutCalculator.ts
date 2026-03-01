@@ -227,6 +227,8 @@ export class WorkoutCalculator {
         ? workout.date.toJSDate()
         : new Date(workout.date.toString());
       const daysAgo = (now.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24);
+      // Skip future workouts — they haven't happened yet
+      if (daysAgo < 0) continue;
       const decayFactor = Math.exp(-DECAY_LAMBDA * daysAgo);
 
       if (daysAgo < minDaysAgo) minDaysAgo = daysAgo;

@@ -33,6 +33,7 @@ export default class AuthController {
         email: user.email,
         fullName: user.fullName,
         role: user.role,
+        gender: user.gender,
       },
       token,
     });
@@ -51,6 +52,7 @@ export default class AuthController {
       email: data.email,
       password: data.password,
       role: data.role,
+      gender: data.gender ?? null,
     });
 
     const token = await User.accessTokens.create(user);
@@ -61,6 +63,7 @@ export default class AuthController {
         email: user.email,
         fullName: user.fullName,
         role: user.role,
+        gender: user.gender,
       },
       token,
     });

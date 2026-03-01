@@ -1,6 +1,6 @@
 import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
-import { XMarkIcon } from '@heroicons/react/24/outline';
 import { PropsWithChildren } from 'react';
+import CloseButton from '@/components/ui/CloseButton';
 
 interface DrawerProps extends PropsWithChildren {
   open: boolean;
@@ -15,13 +15,7 @@ export default function Drawer({ open, onClose, header, children }: DrawerProps)
 
       <div className="fixed inset-0 flex justify-end bg-(--color_bg_screen)">
         <DialogPanel className="relative w-screen max-w-md [background:var(--color_bg_screen)] h-full flex flex-col shadow-xl">
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute top-4 right-4 text-[var(--color_text_muted)] hover:text-white"
-          >
-            <XMarkIcon className="w-6 h-6" />
-          </button>
+          <CloseButton onClick={onClose} className="absolute top-3 right-3" />
 
           <div className="px-4 py-6 border-b border-white/10">
             <DialogTitle>{header}</DialogTitle>

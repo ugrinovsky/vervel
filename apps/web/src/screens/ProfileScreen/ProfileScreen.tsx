@@ -23,6 +23,7 @@ export default function ProfileScreen() {
   // Settings form
   const [nameField, setNameField] = useState('');
   const [emailField, setEmailField] = useState('');
+  const [genderField, setGenderField] = useState<'male' | 'female' | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Password form
@@ -52,6 +53,7 @@ export default function ProfileScreen() {
     if (data) {
       setNameField(data.user.fullName || '');
       setEmailField(data.user.email);
+      setGenderField(data.user.gender ?? null);
     }
   }, [data]);
 
@@ -75,15 +77,18 @@ export default function ProfileScreen() {
       const response = await profileApi.updateProfile({
         fullName: nameField,
         email: emailField,
+        gender: genderField,
       });
       if (response.data.success) {
+        const updatedUser = response.data.data.user;
         const stored = JSON.parse(localStorage.getItem('user') || '{}');
         localStorage.setItem(
           'user',
-          JSON.stringify({ ...stored, ...response.data.data.user })
+          JSON.stringify({ ...stored, ...updatedUser })
         );
+        if (user && token) login({ ...user, ...updatedUser }, token);
         setData((prev) =>
-          prev ? { ...prev, user: response.data.data.user } : prev
+          prev ? { ...prev, user: updatedUser } : prev
         );
         toast.success('Профиль обновлён');
       }
@@ -465,6 +470,26 @@ export default function ProfileScreen() {
                 className="w-full bg-[var(--color_bg_input)] border border-[var(--color_border)] rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-[var(--color_primary_light)] transition-colors"
                 placeholder="email@example.com"
               />
+            </div>
+            <div>
+              <label className="text-xs text-[var(--color_text_muted)] mb-2 block">Пол</label>
+              <div className="grid grid-cols-2 gap-2">
+                {([['male', '♂', 'Мужской'], ['female', '♀', 'Женский']] as const).map(([val, icon, label]) => (
+                  <button
+                    key={val}
+                    type="button"
+                    onClick={() => setGenderField(genderField === val ? null : val)}
+                    className="py-2.5 rounded-xl border text-sm font-medium transition-all"
+                    style={{
+                      borderColor: genderField === val ? 'var(--color_primary_light)' : 'var(--color_border)',
+                      background: genderField === val ? 'rgb(var(--color_primary_light_ch) / 0.15)' : 'var(--color_bg_input)',
+                      color: genderField === val ? 'white' : 'var(--color_text_muted)',
+                    }}
+                  >
+                    {icon} {label}
+                  </button>
+                ))}
+              </div>
             </div>
             <button
               onClick={handleSaveProfile}

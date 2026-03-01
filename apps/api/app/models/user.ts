@@ -48,6 +48,9 @@ export default class User extends compose(BaseModel, AuthFinder) {
   @column()
   declare photoUrl: string | null;
 
+  @column()
+  declare gender: 'male' | 'female' | null;
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime;
 

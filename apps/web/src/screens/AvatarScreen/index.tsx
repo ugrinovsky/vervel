@@ -6,6 +6,7 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import { avatarApi, ZoneState } from '@/api/avatar';
 import { athleteApi } from '@/api/athlete';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
 
 const WORKOUT_LABELS: Record<string, string> = {
   crossfit: 'CrossFit',
@@ -133,6 +134,7 @@ interface TodayWorkout {
 
 export default function AvatarScreen() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [zones, setZones] = useState<Record<string, ZoneState>>({});
   const [totalWorkouts, setTotalWorkouts] = useState(0);
   const [lastWorkoutDaysAgo, setLastWorkoutDaysAgo] = useState<number | null>(null);
@@ -233,6 +235,7 @@ export default function AvatarScreen() {
               zoneIntensities={zoneIntensities}
               selectedZone={selectedZone}
               onZoneClick={handleZoneClick}
+              gender={user?.gender ?? 'male'}
             />
 
             {/* Легенда */}

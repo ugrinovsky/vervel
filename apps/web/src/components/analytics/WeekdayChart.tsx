@@ -90,7 +90,7 @@ export default function WeekdayChart({ data }: Props) {
           Тренировки по дням недели
         </p>
         <ResponsiveContainer width="100%" height={130}>
-          <BarChart data={weekdayData} margin={{ top: 4, right: 4, left: -32, bottom: 0 }}>
+          <BarChart data={weekdayData} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
             <XAxis dataKey="label" tick={{ fontSize: 12, fill: 'var(--color_text_muted)' }} />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
             <Bar dataKey="workouts" radius={[4, 4, 0, 0]} maxBarSize={36}>

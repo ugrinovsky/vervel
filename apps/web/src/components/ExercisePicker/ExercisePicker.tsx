@@ -37,19 +37,18 @@ const CATEGORY_LABELS: Record<ExerciseCategory, string> = {
 function ExerciseCard({
   exercise,
   onClick,
+  onQuickAdd,
 }: {
   exercise: Exercise;
   onClick: () => void;
+  onQuickAdd: () => void;
 }) {
   const [imgError, setImgError] = useState(false);
 
   return (
-    <button
-      onClick={onClick}
-      className="flex flex-col rounded-xl overflow-hidden border border-white/10 bg-white/5 hover:bg-white/10 active:scale-95 transition-all text-left"
-    >
-      {/* Image */}
-      <div className="w-full aspect-video bg-black/30 overflow-hidden">
+    <div className="flex flex-col rounded-xl overflow-hidden border border-white/10 bg-white/5 hover:bg-white/10 transition-all text-left relative">
+      {/* Image — click to open detail */}
+      <button onClick={onClick} className="w-full aspect-video bg-black/30 overflow-hidden focus:outline-none">
         {exercise.imageUrl && !imgError ? (
           <img
             src={exercise.imageUrl}
@@ -63,25 +62,35 @@ function ExerciseCard({
             <span className="text-2xl font-bold text-white/20">{exercise.title[0]}</span>
           </div>
         )}
-      </div>
+      </button>
 
-      {/* Info */}
-      <div className="p-2 flex-1">
-        <p className="text-xs font-medium text-white leading-snug line-clamp-2 mb-1.5">
-          {exercise.title}
-        </p>
-        <div className="flex flex-wrap gap-1">
-          {exercise.zones.slice(0, 2).map((zone) => (
-            <span
-              key={zone}
-              className="text-[10px] px-1.5 py-0.5 rounded-full bg-(--color_primary_light)/15 text-(--color_primary_light)"
-            >
-              {ZONE_LABELS[zone as MuscleZone] ?? zone}
-            </span>
-          ))}
+      {/* Info + quick-add */}
+      <div className="p-2 flex-1 flex items-start gap-1.5">
+        <div className="flex-1 min-w-0" onClick={onClick}>
+          <p className="text-xs font-medium text-white leading-snug line-clamp-2 mb-1.5 cursor-pointer">
+            {exercise.title}
+          </p>
+          <div className="flex flex-wrap gap-1">
+            {exercise.zones.slice(0, 2).map((zone) => (
+              <span
+                key={zone}
+                className="text-[10px] px-1.5 py-0.5 rounded-full bg-(--color_primary_light)/15 text-(--color_primary_light)"
+              >
+                {ZONE_LABELS[zone as MuscleZone] ?? zone}
+              </span>
+            ))}
+          </div>
         </div>
+        {/* Quick-add button */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onQuickAdd(); }}
+          className="shrink-0 w-6 h-6 flex items-center justify-center rounded-lg bg-(--color_primary_light) hover:opacity-80 active:scale-90 transition-all"
+          title="Добавить"
+        >
+          <PlusIcon className="w-3.5 h-3.5 text-white" />
+        </button>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -197,6 +206,24 @@ export default function ExercisePicker({ onSelect, workoutType }: Props) {
     handleClose();
   };
 
+  const handleQuickAdd = (ex: Exercise) => {
+    const isCardio = workoutType === 'cardio';
+    const quick: ExerciseWithSets = {
+      exerciseId: ex.id,
+      title: ex.title,
+      sets: isCardio
+        ? [{ id: crypto.randomUUID(), reps: 1, weight: 0 }]
+        : [
+            { id: crypto.randomUUID(), reps: 10, weight: 0 },
+            { id: crypto.randomUUID(), reps: 10, weight: 0 },
+            { id: crypto.randomUUID(), reps: 10, weight: 0 },
+          ],
+      duration: isCardio ? 20 : undefined,
+    };
+    onSelect(quick);
+    handleClose();
+  };
+
   /* Header content changes based on view */
   const headerContent =
     view === 'detail' && selected ? (
@@ -289,7 +316,7 @@ export default function ExercisePicker({ onSelect, workoutType }: Props) {
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   {visibleExercises.map((ex) => (
-                    <ExerciseCard key={ex.id} exercise={ex} onClick={() => openDetail(ex)} />
+                    <ExerciseCard key={ex.id} exercise={ex} onClick={() => openDetail(ex)} onQuickAdd={() => handleQuickAdd(ex)} />
                   ))}
                 </div>
               )}

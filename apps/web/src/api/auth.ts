@@ -12,6 +12,7 @@ export interface RegisterDTO {
   email: string;
   password: string;
   role: UserRole;
+  gender?: 'male' | 'female';
 }
 
 export interface AuthResponse {

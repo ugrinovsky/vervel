@@ -1,6 +1,6 @@
 // WorkoutForm.tsx
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
@@ -25,9 +25,17 @@ registerLocale('ru', ru);
 
 export default function WorkoutForm() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const prefillDate = (location.state as { date?: string } | null)?.date;
 
   const [workoutType, setWorkoutType] = useState<WorkoutTypeOption>(workoutTypes[0]);
-  const [date, setDate] = useState(new Date());
+  const [date, setDate] = useState(() => {
+    if (prefillDate) {
+      const [y, m, d] = prefillDate.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+    return new Date();
+  });
   const [time, setTime] = useState<Date>(() => {
     const d = new Date();
     d.setHours(9, 0, 0, 0);
@@ -132,6 +140,7 @@ export default function WorkoutForm() {
                 wrapperClassName="w-full"
                 className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50"
                 calendarClassName="dark-datepicker"
+                popperPlacement="bottom-start"
               />
             </div>
             <div>

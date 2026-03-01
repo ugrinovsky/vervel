@@ -17,12 +17,14 @@ export default class AvatarsController {
 
       if (mode === 'recovery') {
         // Режим «текущее состояние» — берём тренировки за 14 дней, применяем decay
+        const now = new Date();
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - 14);
 
         const workouts = await Workout.query()
           .where('userId', user.id)
           .where('date', '>=', startDate)
+          .where('date', '<=', now)
           .orderBy('date', 'asc');
 
         const stats = WorkoutCalculator.calculateRecoveryState(workouts);

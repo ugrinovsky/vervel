@@ -13,6 +13,7 @@ export default function RegisterScreen() {
   const [selectedRoles, setSelectedRoles] = useState<Set<'athlete' | 'trainer'>>(
     new Set(['athlete'])
   );
+  const [gender, setGender] = useState<'male' | 'female' | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -55,6 +56,7 @@ export default function RegisterScreen() {
         email,
         password,
         role: getRole(),
+        ...(gender ? { gender } : {}),
       });
       const { user, token } = response.data;
       const tokenValue = typeof token === 'string' ? token : token?.token || '';
@@ -148,6 +150,37 @@ export default function RegisterScreen() {
                 placeholder="Повторите пароль"
                 required
               />
+            </div>
+
+            {/* Gender selection */}
+            <div>
+              <label className="block text-sm font-medium mb-3 text-emerald-100">Пол</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setGender(gender === 'male' ? null : 'male')}
+                  className={`p-3 rounded-xl border text-center transition-all ${
+                    gender === 'male'
+                      ? 'border-emerald-400 bg-emerald-500/20 text-white'
+                      : 'border-white/20 bg-white/5 text-white/60'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">♂</div>
+                  <div className="text-sm font-medium">Мужской</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGender(gender === 'female' ? null : 'female')}
+                  className={`p-3 rounded-xl border text-center transition-all ${
+                    gender === 'female'
+                      ? 'border-emerald-400 bg-emerald-500/20 text-white'
+                      : 'border-white/20 bg-white/5 text-white/60'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">♀</div>
+                  <div className="text-sm font-medium">Женский</div>
+                </button>
+              </div>
             </div>
 
             {/* Role selection */}

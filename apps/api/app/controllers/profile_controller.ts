@@ -29,6 +29,7 @@ export default class ProfileController {
             fullName: user.fullName,
             email: user.email,
             role: user.role,
+            gender: user.gender,
             bio: user.bio,
             specializations: user.specializations,
             education: user.education,
@@ -55,8 +56,8 @@ export default class ProfileController {
   async updateProfile({ auth, request, response }: HttpContext) {
     try {
       const user = auth.user!;
-      const { fullName, email, bio, specializations, education } = request.only([
-        'fullName', 'email', 'bio', 'specializations', 'education',
+      const { fullName, email, bio, specializations, education, gender } = request.only([
+        'fullName', 'email', 'bio', 'specializations', 'education', 'gender',
       ]);
 
       if (fullName !== undefined) user.fullName = fullName;
@@ -64,6 +65,7 @@ export default class ProfileController {
       if (bio !== undefined) user.bio = bio || null;
       if (specializations !== undefined) user.specializations = Array.isArray(specializations) ? specializations : null;
       if (education !== undefined) user.education = education || null;
+      if (gender !== undefined) user.gender = gender === 'male' || gender === 'female' ? gender : null;
 
       await user.save();
 
@@ -75,6 +77,7 @@ export default class ProfileController {
             fullName: user.fullName,
             email: user.email,
             role: user.role,
+            gender: user.gender,
             bio: user.bio,
             specializations: user.specializations,
             education: user.education,
