@@ -21,7 +21,7 @@ export interface AiWorkoutResult {
 
 export interface AiBalance {
   balance: number
-  costs: { generate: number; recognize: number; chat: number }
+  costs: { generate: number; recognize: number; chatMinCharge: number }
   transactions: Array<{
     id: number
     amount: number
@@ -38,6 +38,12 @@ export const aiApi = {
 
   /** Текущий баланс кошелька и последние транзакции */
   getBalance: () => privateApi.get<AiBalance>('/ai/balance'),
+
+  /** Постраничная история транзакций */
+  getTransactions: (offset: number, limit: number) =>
+    privateApi.get<{ success: boolean; data: AiBalance['transactions'] }>('/ai/transactions', {
+      params: { offset, limit },
+    }),
 
   /**
    * Распознать тренировку с фото (атлет).
@@ -61,5 +67,5 @@ export const aiApi = {
    * Принимает историю диалога и возвращает ответ ассистента.
    */
   chat: (messages: Array<{ role: 'user' | 'assistant'; content: string }>) =>
-    privateApi.post<{ reply: string; balance: number }>('/ai/chat', { messages }),
+    privateApi.post<{ reply: string; balance: number; cost: number }>('/ai/chat', { messages }),
 }

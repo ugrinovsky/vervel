@@ -403,7 +403,7 @@ export default function TrainerTemplatesScreen() {
 
           {/* List */}
           {loading ? (
-            <div className="text-center py-6 text-(--color_text_muted) text-sm">Загрузка...</div>
+            <div className="flex justify-center py-6"><div className="w-6 h-6 border-2 border-white/20 border-t-(--color_primary_light) rounded-full animate-spin" /></div>
           ) : templates.length === 0 ? (
             <div className="text-center py-8">
               <div className="text-4xl mb-2">📋</div>

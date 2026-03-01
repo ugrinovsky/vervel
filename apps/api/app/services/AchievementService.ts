@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon'
 import Achievement from '#models/achievement'
 import UserAchievement from '#models/user_achievement'
+import Workout from '#models/workout'
 import type UserStreak from '#models/user_streak'
 
 export default class AchievementService {
@@ -19,13 +20,24 @@ export default class AchievementService {
 
     const existingIds = new Set(existingUserAchievements.map((ua) => ua.achievementId))
 
+    // Считаем общее количество тренировок (лениво — только если нужно)
+    let workoutCount: number | null = null
+    const needsWorkoutCount = allAchievements.some(
+      (a) => !existingIds.has(a.id) && a.requirementType === 'total_workouts'
+    )
+    if (needsWorkoutCount) {
+      const result = await Workout.query()
+        .where('userId', userId)
+        .count('* as total')
+      workoutCount = Number((result[0] as any).$extras.total ?? 0)
+    }
+
     const newlyUnlocked: Achievement[] = []
 
     for (const achievement of allAchievements) {
-      // Пропустить уже полученные
       if (existingIds.has(achievement.id)) continue
 
-      const shouldUnlock = this.checkAchievementCondition(achievement, userStreak)
+      const shouldUnlock = this.checkAchievementCondition(achievement, userStreak, workoutCount ?? 0)
 
       if (shouldUnlock) {
         await UserAchievement.create({
@@ -93,11 +105,15 @@ export default class AchievementService {
    */
   private static checkAchievementCondition(
     achievement: Achievement,
-    userStreak: UserStreak
+    userStreak: UserStreak,
+    workoutCount: number
   ): boolean {
     switch (achievement.requirementType) {
       case 'streak_days':
         return userStreak.currentStreak >= (achievement.requirementValue || 0)
+
+      case 'total_workouts':
+        return workoutCount >= (achievement.requirementValue || 0)
 
       default:
         return false

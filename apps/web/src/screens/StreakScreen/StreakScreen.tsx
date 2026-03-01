@@ -31,17 +31,7 @@ export default function StreakScreen() {
     }
   };
 
-  if (loading) {
-    return (
-      <Screen>
-        <div className="p-4 flex items-center justify-center min-h-[60vh]">
-          <div className="text-[var(--color_text_muted)]">Загрузка...</div>
-        </div>
-      </Screen>
-    );
-  }
-
-  if (!profileData) return null;
+  if (!profileData) return <Screen loading={loading} />;
 
   return (
     <Screen>

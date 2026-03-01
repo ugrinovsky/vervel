@@ -4,10 +4,16 @@ import { LockClosedIcon, CheckBadgeIcon } from '@heroicons/react/24/outline';
 import { streakApi, type AchievementsData } from '@/api/streak';
 import toast from 'react-hot-toast';
 
+type AchievementItem = AchievementsData['unlocked'][number] | (AchievementsData['locked'][number] & { locked: true });
+
+const CATEGORY_META: Record<string, { label: string; emoji: string }> = {
+  streak: { label: 'Серии тренировок', emoji: '🔥' },
+  workout: { label: 'Всего тренировок', emoji: '💪' },
+};
+
 export default function AchievementsList() {
   const [data, setData] = useState<AchievementsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'unlocked' | 'locked'>('all');
 
   useEffect(() => {
     loadAchievements();
@@ -20,7 +26,6 @@ export default function AchievementsList() {
       if (response.data.success) {
         setData(response.data.data);
 
-        // Отметить новые достижения как просмотренные
         const unseenIds = response.data.data.unlocked
           .filter((a) => !a.isSeen)
           .map((a) => a.id);
@@ -38,18 +43,26 @@ export default function AchievementsList() {
 
   if (loading || !data) {
     return (
-      <div className="bg-[var(--color_bg_card)] rounded-2xl p-6 border border-[var(--color_border)]">
-        <div className="text-[var(--color_text_muted)] text-center">Загрузка...</div>
+      <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border) flex justify-center">
+        <div className="w-6 h-6 border-2 border-white/20 border-t-(--color_primary_light) rounded-full animate-spin" />
       </div>
     );
   }
 
-  const achievements =
-    filter === 'all'
-      ? [...data.unlocked, ...data.locked]
-      : filter === 'unlocked'
-        ? data.unlocked
-        : data.locked;
+  // Группируем все достижения по категории
+  const allItems: AchievementItem[] = [
+    ...data.unlocked,
+    ...data.locked,
+  ];
+
+  const byCategory = allItems.reduce<Record<string, AchievementItem[]>>((acc, item) => {
+    const cat = item.category ?? 'other';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(item);
+    return acc;
+  }, {});
+
+  const categories = Object.keys(byCategory).sort();
 
   const getColorClass = (color: string, locked: boolean) => {
     if (locked) return 'bg-gray-500/20 border-gray-500/30';
@@ -71,9 +84,9 @@ export default function AchievementsList() {
   };
 
   return (
-    <div className="bg-[var(--color_bg_card)] rounded-2xl p-6 border border-[var(--color_border)]">
+    <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-semibold text-white">Достижения</h2>
           <p className="text-xs text-[var(--color_text_muted)] mt-1">
@@ -99,97 +112,77 @@ export default function AchievementsList() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2 mb-4">
-        <button
-          onClick={() => setFilter('all')}
-          className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            filter === 'all'
-              ? 'bg-[var(--color_primary_light)] text-white'
-              : 'bg-[var(--color_bg_input)] text-[var(--color_text_muted)] hover:bg-[var(--color_bg_card_hover)]'
-          }`}
-        >
-          Все
-          <span className="absolute -top-1 -right-1 bg-(--color_primary) text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-            {data.totalAchievements}
-          </span>
-        </button>
-        <button
-          onClick={() => setFilter('unlocked')}
-          className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            filter === 'unlocked'
-              ? 'bg-[var(--color_primary_light)] text-white'
-              : 'bg-[var(--color_bg_input)] text-[var(--color_text_muted)] hover:bg-[var(--color_bg_card_hover)]'
-          }`}
-        >
-          Получено
-          <span className="absolute -top-1 -right-1 bg-[var(--color_primary)] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-            {data.totalUnlocked}
-          </span>
-        </button>
-        <button
-          onClick={() => setFilter('locked')}
-          className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            filter === 'locked'
-              ? 'bg-[var(--color_primary_light)] text-white'
-              : 'bg-[var(--color_bg_input)] text-[var(--color_text_muted)] hover:bg-[var(--color_bg_card_hover)]'
-          }`}
-        >
-          Заблокировано
-          <span className="absolute -top-1 -right-1 bg-[var(--color_primary)] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-            {data.totalAchievements - data.totalUnlocked}
-          </span>
-        </button>
-      </div>
-
-      {/* Achievements grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <AnimatePresence mode="popLayout">
-          {achievements.map((achievement) => {
-            const isLocked = achievement.locked || false;
+      {/* Categories */}
+      <div className="space-y-6">
+        <AnimatePresence>
+          {categories.map((cat, catIdx) => {
+            const items = byCategory[cat];
+            const meta = CATEGORY_META[cat] ?? { label: cat, emoji: '🏅' };
+            const unlockedCount = items.filter((i) => !('locked' in i && i.locked)).length;
 
             return (
               <motion.div
-                key={achievement.id}
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className={`rounded-xl p-4 border ${getColorClass(achievement.color, isLocked)} ${
-                  isLocked ? 'opacity-50' : ''
-                }`}
+                key={cat}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: catIdx * 0.05 }}
               >
-                <div className="flex items-start gap-3">
-                  {/* Icon */}
-                  <div className="text-3xl shrink-0 relative">
-                    {achievement.icon}
-                    {isLocked && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
-                        <LockClosedIcon className="w-5 h-5 text-white" />
-                      </div>
-                    )}
-                  </div>
+                {/* Category header */}
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-base">{meta.emoji}</span>
+                  <span className="text-sm font-semibold text-white">{meta.label}</span>
+                  <span className="text-xs text-[var(--color_text_muted)] ml-auto">
+                    {unlockedCount}/{items.length}
+                  </span>
+                </div>
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-semibold text-white text-sm">
-                        {achievement.title}
-                      </h3>
-                      {!isLocked && (
-                        <CheckBadgeIcon className="w-5 h-5 text-green-400 shrink-0" />
-                      )}
-                    </div>
-                    <p className="text-xs text-[var(--color_text_muted)] mt-1">
-                      {achievement.description}
-                    </p>
-                    {achievement.unlockedAt && (
-                      <p className="text-xs text-[var(--color_text_muted)] mt-2">
-                        Получено:{' '}
-                        {new Date(achievement.unlockedAt).toLocaleDateString('ru-RU')}
-                      </p>
-                    )}
-                  </div>
+                {/* Achievement cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {items.map((achievement) => {
+                    const isLocked = 'locked' in achievement && !!achievement.locked;
+
+                    return (
+                      <div
+                        key={achievement.id}
+                        className={`rounded-xl p-4 border ${getColorClass(achievement.color, isLocked)} ${
+                          isLocked ? 'opacity-50' : ''
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          {/* Icon */}
+                          <div className="text-3xl shrink-0 relative">
+                            {achievement.icon}
+                            {isLocked && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg">
+                                <LockClosedIcon className="w-5 h-5 text-white" />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <h3 className="font-semibold text-white text-sm">
+                                {achievement.title}
+                              </h3>
+                              {!isLocked && (
+                                <CheckBadgeIcon className="w-5 h-5 text-green-400 shrink-0" />
+                              )}
+                            </div>
+                            <p className="text-xs text-[var(--color_text_muted)] mt-1">
+                              {achievement.description}
+                            </p>
+                            {'unlockedAt' in achievement && achievement.unlockedAt && (
+                              <p className="text-xs text-[var(--color_text_muted)] mt-2">
+                                Получено:{' '}
+                                {new Date(achievement.unlockedAt).toLocaleDateString('ru-RU')}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </motion.div>
             );

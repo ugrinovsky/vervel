@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
@@ -8,6 +8,8 @@ import { chatApi } from '@/api/chat';
 import type { ChatMessage, ExerciseData } from '@/api/trainer';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
+
+const PAGE_SIZE = 20;
 
 interface WorkoutPreviewData {
   __type: 'workout_preview';
@@ -44,7 +46,6 @@ function WorkoutPreviewCard({ data, onClick }: { data: WorkoutPreviewData; onCli
       onClick={onClick}
       className={`rounded-2xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-sm w-full ${onClick ? 'cursor-pointer hover:bg-white/10 transition-colors active:scale-[0.99]' : ''}`}
     >
-      {/* Header */}
       <div className="px-4 py-3 bg-white/5 border-b border-white/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -58,7 +59,6 @@ function WorkoutPreviewCard({ data, onClick }: { data: WorkoutPreviewData; onCli
         </div>
       </div>
 
-      {/* Exercises */}
       {data.exercises.length > 0 && (
         <div className="px-4 py-3 space-y-1.5">
           {data.exercises.map((ex, i) => (
@@ -79,7 +79,6 @@ function WorkoutPreviewCard({ data, onClick }: { data: WorkoutPreviewData; onCli
         </div>
       )}
 
-      {/* Notes */}
       {data.notes && (
         <div className="px-4 py-2.5 border-t border-white/10 text-xs text-white/50 italic">
           📝 {data.notes}
@@ -95,13 +94,20 @@ function WorkoutPreviewCard({ data, onClick }: { data: WorkoutPreviewData; onCli
   );
 }
 
-function WorkoutDetailSheet({ data, open, onClose }: { data: WorkoutPreviewData | null; open: boolean; onClose: () => void }) {
+function WorkoutDetailSheet({
+  data,
+  open,
+  onClose,
+}: {
+  data: WorkoutPreviewData | null;
+  open: boolean;
+  onClose: () => void;
+}) {
   if (!data) return null;
   const [y, m, d] = data.date.split('-').map(Number);
   const dateStr = format(new Date(y, m - 1, d), 'd MMMM yyyy', { locale: ru });
   const cfg = TYPE_CONFIG[data.workoutType];
 
-  // Group consecutive exercises with same blockId into supersets
   type ExBlock = { superset: boolean; blockId?: string; items: typeof data.exercises };
   const blocks: ExBlock[] = [];
   for (const ex of data.exercises) {
@@ -128,7 +134,6 @@ function WorkoutDetailSheet({ data, open, onClose }: { data: WorkoutPreviewData 
       }
     >
       <div className="space-y-4">
-        {/* Date & time */}
         <div
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-white/10"
           style={{ backgroundColor: 'var(--color_bg_card_hover)' }}
@@ -140,7 +145,6 @@ function WorkoutDetailSheet({ data, open, onClose }: { data: WorkoutPreviewData 
           </div>
         </div>
 
-        {/* Exercises */}
         {data.exercises.length > 0 && (
           <div>
             <div className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">
@@ -149,7 +153,6 @@ function WorkoutDetailSheet({ data, open, onClose }: { data: WorkoutPreviewData 
             <div className="space-y-2">
               {blocks.map((block, bi) =>
                 block.superset ? (
-                  /* Superset block */
                   <div key={bi} className="rounded-xl border border-amber-500/30 overflow-hidden">
                     <div
                       className="px-3 py-1 text-[10px] font-semibold text-amber-400 uppercase tracking-wider"
@@ -183,7 +186,6 @@ function WorkoutDetailSheet({ data, open, onClose }: { data: WorkoutPreviewData 
                     ))}
                   </div>
                 ) : (
-                  /* Single exercise */
                   block.items.map((ex, i) => (
                     <div
                       key={i}
@@ -216,7 +218,6 @@ function WorkoutDetailSheet({ data, open, onClose }: { data: WorkoutPreviewData 
           </div>
         )}
 
-        {/* General notes */}
         {data.notes && (
           <div>
             <div className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">
@@ -244,65 +245,146 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [hasOlder, setHasOlder] = useState(false);
   const [sending, setSending] = useState(false);
   const [openPreview, setOpenPreview] = useState<WorkoutPreviewData | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const topSentinelRef = useRef<HTMLDivElement>(null);
+  const oldestIdRef = useRef<number | null>(null);
+  const newestIdRef = useRef<number | null>(null);
+  const prevScrollHeightRef = useRef(0);
+  const restoringScrollRef = useRef(false);
+  const loadingOlderRef = useRef(false);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
-  const fetchMessages = async (markRead = false) => {
-    try {
-      const res = await chatApi.getMessages(chatId);
-      setMessages(res.data.data);
-      if (loading) {
-        setTimeout(scrollToBottom, 100);
-      }
-      if (markRead) {
-        chatApi.markAsRead(chatId).catch(() => {});
-      }
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-      if (loading) {
-        toast.error('Ошибка загрузки сообщений');
-      }
-    } finally {
-      setLoading(false);
+  // Restore scroll position after prepending older messages
+  useLayoutEffect(() => {
+    if (restoringScrollRef.current && scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      container.scrollTop = container.scrollHeight - prevScrollHeightRef.current;
+      restoringScrollRef.current = false;
     }
-  };
+  }, [messages]);
 
+  // Initial load
   useEffect(() => {
-    fetchMessages(true); // mark as read on open
-
-    // Polling every 10 seconds
-    const interval = setInterval(() => {
-      fetchMessages(true);
-    }, 10000);
-
-    return () => clearInterval(interval);
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await chatApi.getMessages(chatId, { limit: PAGE_SIZE });
+        if (cancelled) return;
+        const data = res.data.data;
+        setMessages(data);
+        setHasOlder(data.length >= PAGE_SIZE);
+        if (data.length > 0) {
+          oldestIdRef.current = data[0].id;
+          newestIdRef.current = data[data.length - 1].id;
+        }
+        chatApi.markAsRead(chatId).catch(() => {});
+        setTimeout(() => scrollToBottom('instant'), 50);
+      } catch {
+        if (!cancelled) toast.error('Ошибка загрузки сообщений');
+      } finally {
+        if (!cancelled) setInitialLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
   }, [chatId]);
 
+  // Load older messages on scroll-up (cursor-based)
+  const loadOlderMessages = useCallback(async () => {
+    if (loadingOlderRef.current || !hasOlder || oldestIdRef.current === null) return;
+    loadingOlderRef.current = true;
+    setLoadingOlder(true);
+
+    // Save scroll height before prepend
+    prevScrollHeightRef.current = scrollContainerRef.current?.scrollHeight ?? 0;
+    restoringScrollRef.current = true;
+
+    try {
+      const res = await chatApi.getMessages(chatId, {
+        limit: PAGE_SIZE,
+        before_id: oldestIdRef.current,
+      });
+      const data = res.data.data;
+      if (data.length === 0) {
+        setHasOlder(false);
+        restoringScrollRef.current = false;
+      } else {
+        oldestIdRef.current = data[0].id;
+        setHasOlder(data.length >= PAGE_SIZE);
+        setMessages((prev) => [...data, ...prev]);
+      }
+    } catch {
+      restoringScrollRef.current = false;
+      toast.error('Ошибка загрузки сообщений');
+    } finally {
+      setLoadingOlder(false);
+      loadingOlderRef.current = false;
+    }
+  }, [chatId, hasOlder]);
+
+  // IntersectionObserver on top sentinel to auto-load older messages
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    const sentinel = topSentinelRef.current;
+    if (!sentinel || initialLoading) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadOlderMessages(); },
+      { threshold: 0.1 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [initialLoading, loadOlderMessages]);
+
+  // Poll for new messages every 10s
+  useEffect(() => {
+    if (initialLoading) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await chatApi.getMessages(chatId, { limit: PAGE_SIZE });
+        const data = res.data.data;
+        if (data.length === 0) return;
+        const latestId = data[data.length - 1].id;
+        if (newestIdRef.current !== null && latestId <= newestIdRef.current) return;
+
+        setMessages((prev) => {
+          const existingIds = new Set(prev.map((m) => m.id));
+          const newOnes = data.filter((m) => !existingIds.has(m.id));
+          if (newOnes.length === 0) return prev;
+          newestIdRef.current = newOnes[newOnes.length - 1].id;
+          return [...prev, ...newOnes];
+        });
+        chatApi.markAsRead(chatId).catch(() => {});
+        scrollToBottom('smooth');
+      } catch {
+        // silent
+      }
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [chatId, initialLoading]);
 
   const handleSend = async () => {
     if (!newMessage.trim() || sending) return;
-
-    const messageContent = newMessage.trim();
+    const content = newMessage.trim();
     setNewMessage('');
     setSending(true);
-
     try {
-      const res = await chatApi.sendMessage(chatId, messageContent);
-      setMessages((prev) => [...prev, res.data.data]);
-      scrollToBottom();
+      const res = await chatApi.sendMessage(chatId, content);
+      const msg = res.data.data;
+      setMessages((prev) => [...prev, msg]);
+      newestIdRef.current = msg.id;
+      scrollToBottom('smooth');
     } catch {
       toast.error('Ошибка отправки сообщения');
-      setNewMessage(messageContent); // Restore message on error
+      setNewMessage(content);
     } finally {
       setSending(false);
     }
@@ -320,10 +402,10 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
     return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   };
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className={`flex items-center justify-center p-8 ${className}`}>
-        <div className="text-[var(--color_text_muted)]">Загрузка чата...</div>
+        <div className="w-6 h-6 border-2 border-white/20 border-t-(--color_primary_light) rounded-full animate-spin" />
       </div>
     );
   }
@@ -332,15 +414,25 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
     <div className={`flex flex-col h-full ${className}`}>
       {/* Messages */}
       <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
+        {/* Top sentinel — triggers loading older messages */}
+        <div ref={topSentinelRef} className="h-px" />
+
+        {/* Loading older indicator */}
+        {loadingOlder && (
+          <div className="flex justify-center py-2">
+            <div className="w-5 h-5 border-2 border-white/20 border-t-(--color_primary_light) rounded-full animate-spin" />
+          </div>
+        )}
+
         {messages.length === 0 ? (
           <div className="text-center py-8">
             <div className="text-4xl mb-2">💬</div>
-            <p className="text-sm text-[var(--color_text_muted)]">
+            <p className="text-sm text-(--color_text_muted)">
               Пока нет сообщений. Начните беседу!
             </p>
           </div>
         ) : (
-          <AnimatePresence>
+          <AnimatePresence initial={false}>
             {messages.map((message, index) => {
               const isCurrentUser = message.senderId === user?.id;
               const showSender = index === 0 || messages[index - 1].senderId !== message.senderId;
@@ -352,12 +444,11 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
                     key={message.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.2 }}
                     className="w-full"
                   >
                     {showSender && (
-                      <div className="text-xs text-[var(--color_text_muted)] mb-1.5 px-1">
+                      <div className="text-xs text-(--color_text_muted) mb-1.5 px-1">
                         {message.sender.fullName || 'Тренер'}
                       </div>
                     )}
@@ -374,26 +465,25 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
                   key={message.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
                   className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
                     className={`max-w-[75%] ${
                       isCurrentUser
-                        ? 'bg-[var(--color_primary_light)] text-white'
-                        : 'bg-[var(--color_bg_card_hover)] text-white'
+                        ? 'bg-(--color_primary_light) text-white'
+                        : 'bg-(--color_bg_card_hover) text-white'
                     } rounded-2xl px-4 py-2`}
                   >
                     {showSender && !isCurrentUser && (
-                      <div className="text-xs text-[var(--color_text_muted)] mb-1">
+                      <div className="text-xs text-(--color_text_muted) mb-1">
                         {message.sender.fullName || 'Без имени'}
                       </div>
                     )}
                     <div className="text-sm break-words">{message.content}</div>
                     <div
                       className={`text-xs mt-1 ${
-                        isCurrentUser ? 'text-white/70' : 'text-[var(--color_text_muted)]'
+                        isCurrentUser ? 'text-white/70' : 'text-(--color_text_muted)'
                       }`}
                     >
                       {formatTime(message.createdAt)}
@@ -408,7 +498,7 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-[var(--color_border)] mb-4">
+      <div className="p-4 border-t border-(--color_border) mb-4">
         <div className="flex gap-2">
           <input
             type="text"
@@ -417,19 +507,18 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
             onKeyDown={handleKeyDown}
             placeholder="Написать сообщение..."
             disabled={sending}
-            className="flex-1 bg-[var(--color_bg_input)] border border-[var(--color_border)] rounded-xl px-4 py-2 text-white text-sm outline-none focus:border-[var(--color_primary_light)] transition-colors disabled:opacity-50"
+            className="flex-1 bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-2 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors disabled:opacity-50"
           />
           <button
             onClick={handleSend}
             disabled={!newMessage.trim() || sending}
-            className="px-4 py-2 rounded-xl bg-[var(--color_primary_light)] text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 rounded-xl bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <PaperAirplaneIcon className="w-5 h-5" />
           </button>
         </div>
       </div>
 
-      {/* Workout detail sheet */}
       <WorkoutDetailSheet
         data={openPreview}
         open={!!openPreview}

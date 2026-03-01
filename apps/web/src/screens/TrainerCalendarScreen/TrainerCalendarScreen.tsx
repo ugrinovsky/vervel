@@ -200,7 +200,7 @@ export default function TrainerCalendarScreen() {
               </div>
               <div className="text-xs text-(--color_text_muted)">
                 {loading
-                  ? 'Загрузка...'
+                  ? '…'
                   : selectedWorkouts.length === 0
                     ? 'Нет тренировок — нажмите на слот ниже'
                     : `${selectedWorkouts.length} тренировок`}

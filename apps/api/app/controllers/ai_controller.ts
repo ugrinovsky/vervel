@@ -126,23 +126,36 @@ export default class AiController {
     const userId = auth.user!.id
     const [balance, transactions] = await Promise.all([
       AiBalanceService.getBalance(userId),
-      AiBalanceService.getTransactions(userId, 10),
+      AiBalanceService.getTransactions(userId, 20),
     ])
     return response.ok({
       balance,
       costs: {
         generate: AiBalanceService.COST_GENERATE,
         recognize: AiBalanceService.COST_RECOGNIZE,
-        chat: AiBalanceService.COST_CHAT,
+        chatMinCharge: AiBalanceService.CHAT_MIN_CHARGE,
       },
       transactions,
     })
   }
 
   /**
+   * GET /ai/transactions
+   * Постраничная история транзакций пользователя.
+   */
+  async transactions({ auth, request, response }: HttpContext) {
+    const userId = auth.user!.id
+    const limit = Math.min(Number(request.input('limit', 20)), 100)
+    const offset = Number(request.input('offset', 0))
+    const data = await AiBalanceService.getTransactions(userId, limit, offset)
+    return response.ok({ success: true, data })
+  }
+
+  /**
    * POST /ai/chat
    * Универсальный AI-чат для атлетов и тренеров.
-   * Принимает историю диалога, списывает COST_CHAT и возвращает ответ ассистента.
+   * Стоимость рассчитывается по фактическим токенам × markup.
+   * Возвращает reply, balance, cost (фактически списано).
    */
   async chat({ auth, request, response }: HttpContext) {
     if (!YandexAiService.isEnabled()) {
@@ -151,26 +164,37 @@ export default class AiController {
 
     const data = await request.validateUsing(chatValidator)
     const userId = auth.user!.id
-    const cost = AiBalanceService.COST_CHAT
 
-    try {
-      await AiBalanceService.charge(userId, cost, 'AI-чат сообщение')
-    } catch (err) {
-      if (err instanceof InsufficientBalanceError) {
-        return response.paymentRequired({
-          message: `Недостаточно средств. Баланс: ${err.balance}₽, требуется: ${err.required}₽`,
-          balance: err.balance,
-          required: err.required,
-        })
-      }
-      throw err
+    // Pre-check: нужно хотя бы CHAT_MIN_CHARGE на балансе
+    const currentBalance = await AiBalanceService.getBalance(userId)
+    if (currentBalance < AiBalanceService.CHAT_MIN_CHARGE) {
+      return response.paymentRequired({
+        message: `Недостаточно средств. Баланс: ${currentBalance}₽, минимум: ${AiBalanceService.CHAT_MIN_CHARGE}₽`,
+        balance: currentBalance,
+        required: AiBalanceService.CHAT_MIN_CHARGE,
+      })
     }
 
     try {
-      const reply = await YandexAiService.chat(data.messages)
-      // Refresh balance in response
-      const newBalance = await AiBalanceService.getBalance(userId)
-      return response.ok({ reply, balance: newBalance })
+      const { reply, inputTokens, outputTokens } = await YandexAiService.chat(data.messages)
+      const cost = AiBalanceService.calculateChatCost(inputTokens, outputTokens)
+
+      let newBalance: number
+      try {
+        newBalance = await AiBalanceService.charge(
+          userId,
+          cost,
+          `AI-чат (${inputTokens}+${outputTokens} токенов)`
+        )
+      } catch (chargeErr) {
+        if (chargeErr instanceof InsufficientBalanceError) {
+          newBalance = chargeErr.balance
+        } else {
+          throw chargeErr
+        }
+      }
+
+      return response.ok({ reply, balance: newBalance, cost })
     } catch (err: any) {
       return response.internalServerError({
         message: 'Не удалось получить ответ от AI',

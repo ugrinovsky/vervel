@@ -60,17 +60,7 @@ export default function TrainerPublicProfileScreen() {
         .slice(0, 2)
     : profile?.email?.[0]?.toUpperCase() || '?';
 
-  if (loading) {
-    return (
-      <Screen>
-        <div className="p-4 flex items-center justify-center min-h-[60vh]">
-          <div className="text-(--color_text_muted)">Загрузка...</div>
-        </div>
-      </Screen>
-    );
-  }
-
-  if (!profile) return null;
+  if (!profile) return <Screen loading={loading} />;
 
   return (
     <Screen>

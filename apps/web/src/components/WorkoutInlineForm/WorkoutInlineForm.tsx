@@ -449,7 +449,7 @@ export default function WorkoutInlineForm({
             )}
 
             {loadingAssignees ? (
-              <div className="text-xs text-(--color_text_muted) py-2">Загрузка...</div>
+              <div className="flex justify-center py-2"><div className="w-4 h-4 border border-white/20 border-t-(--color_primary_light) rounded-full animate-spin" /></div>
             ) : (
               <div className="max-h-44 overflow-y-auto rounded-xl bg-(--color_bg_card_hover) divide-y divide-(--color_border) border border-(--color_border)">
                 {assigneeMode === 'group' && groups.length === 0 && (

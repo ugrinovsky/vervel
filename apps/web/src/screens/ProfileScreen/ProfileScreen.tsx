@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -9,7 +9,9 @@ import AiChat from '@/components/AiChat/AiChat';
 import { profileApi, type ProfileData } from '@/api/profile';
 import { trainerApi, type TrainerProfileStats } from '@/api/trainer';
 import { aiApi } from '@/api/ai';
+import type { AiBalance } from '@/api/ai';
 import { paymentsApi } from '@/api/payments';
+import { useScrollPagination } from '@/hooks/useScrollPagination';
 import { THEME_PRESETS, getStoredHue, saveHue } from '@/util/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSearchParams } from 'react-router';
@@ -20,7 +22,18 @@ const TOP_UP_AMOUNTS = [100, 250, 500, 1000];
 export default function ProfileScreen() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { logout, isAthlete, isTrainer, activeMode, switchMode, login, user, token, balance, setBalance } = useAuth();
+  const {
+    logout,
+    isAthlete,
+    isTrainer,
+    activeMode,
+    switchMode,
+    login,
+    user,
+    token,
+    balance,
+    setBalance,
+  } = useAuth();
   const isBoth = isTrainer && isAthlete;
   const inTrainerMode = isTrainer && (!isAthlete || activeMode === 'trainer');
   const inAthleteMode = isAthlete && (!isTrainer || activeMode === 'athlete');
@@ -52,6 +65,20 @@ export default function ProfileScreen() {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [topping, setTopping] = useState(false);
 
+  // Wallet transactions (paginated)
+  const txFetcher = useCallback(
+    (offset: number, limit: number) =>
+      aiApi.getTransactions(offset, limit).then((r) => r.data.data),
+    []
+  );
+  const {
+    items: transactions,
+    loading: txLoading,
+    hasMore: txHasMore,
+    initialize: txInit,
+    loadMore: txLoadMore,
+  } = useScrollPagination<AiBalance['transactions'][number]>(txFetcher, { limit: 20 });
+
   // AI Chat
   const [aiChatOpen, setAiChatOpen] = useState(false);
 
@@ -70,11 +97,18 @@ export default function ProfileScreen() {
   useEffect(() => {
     loadProfile();
     if (isTrainer) {
-      trainerApi.getProfileStats().then((res) => {
-        if (res.data.success) setTrainerStats(res.data.data);
-      }).catch(() => {});
+      trainerApi
+        .getProfileStats()
+        .then((res) => {
+          if (res.data.success) setTrainerStats(res.data.data);
+        })
+        .catch(() => {});
     }
-    aiApi.getBalance().then((res) => setBalance(res.data.balance)).catch(() => {});
+    aiApi
+      .getBalance()
+      .then((res) => setBalance(res.data.balance))
+      .catch(() => {});
+    txInit();
   }, [isTrainer, inTrainerMode]);
 
   // Handle redirect back from YooKassa after successful payment
@@ -82,7 +116,11 @@ export default function ProfileScreen() {
     if (searchParams.get('topup') === 'success' && !topupHandled.current) {
       topupHandled.current = true;
       toast.success('Баланс пополнен!');
-      aiApi.getBalance().then((res) => setBalance(res.data.balance)).catch(() => {});
+      aiApi
+        .getBalance()
+        .then((res) => setBalance(res.data.balance))
+        .catch(() => {});
+      txInit();
       setSearchParams({}, { replace: true });
     }
   }, []);
@@ -128,14 +166,9 @@ export default function ProfileScreen() {
       if (response.data.success) {
         const updatedUser = response.data.data.user;
         const stored = JSON.parse(localStorage.getItem('user') || '{}');
-        localStorage.setItem(
-          'user',
-          JSON.stringify({ ...stored, ...updatedUser })
-        );
+        localStorage.setItem('user', JSON.stringify({ ...stored, ...updatedUser }));
         if (user && token) login({ ...user, ...updatedUser }, token);
-        setData((prev) =>
-          prev ? { ...prev, user: updatedUser } : prev
-        );
+        setData((prev) => (prev ? { ...prev, user: updatedUser } : prev));
         toast.success('Профиль обновлён');
       }
     } catch {
@@ -232,27 +265,13 @@ export default function ProfileScreen() {
     });
   };
 
-  if (loading) {
-    return (
-      <Screen>
-        <div className="p-4 flex items-center justify-center min-h-[60vh]">
-          <div className="text-[var(--color_text_muted)]">Загрузка...</div>
-        </div>
-      </Screen>
-    );
-  }
-
-  if (!data) return null;
+  if (!data) return <Screen loading={loading} />;
 
   return (
     <Screen>
       <AiChat open={aiChatOpen} onClose={() => setAiChatOpen(false)} />
       <div className="p-4 w-full max-w-2xl mx-auto">
-        <ScreenHeader
-          icon="👤"
-          title="Профиль"
-          description="Управление аккаунтом и настройки"
-        />
+        <ScreenHeader icon="👤" title="Профиль" description="Управление аккаунтом и настройки" />
 
         {/* User Info */}
         <motion.div
@@ -291,44 +310,30 @@ export default function ProfileScreen() {
                 <div className="text-2xl font-bold text-white">
                   {trainerStats?.athleteCount ?? '—'}
                 </div>
-                <div className="text-xs text-[var(--color_text_muted)] mt-1">
-                  Атлетов
-                </div>
+                <div className="text-xs text-[var(--color_text_muted)] mt-1">Атлетов</div>
               </div>
               <div className="bg-[var(--color_bg_card)] rounded-xl p-4 border border-[var(--color_border)] text-center">
                 <div className="text-2xl font-bold text-white">
                   {trainerStats?.groupCount ?? '—'}
                 </div>
-                <div className="text-xs text-[var(--color_text_muted)] mt-1">
-                  Групп
-                </div>
+                <div className="text-xs text-[var(--color_text_muted)] mt-1">Групп</div>
               </div>
               <div className="bg-[var(--color_bg_card)] rounded-xl p-4 border border-[var(--color_border)] text-center">
                 <div className="text-2xl font-bold text-white">
                   {trainerStats?.totalScheduledWorkouts ?? '—'}
                 </div>
-                <div className="text-xs text-[var(--color_text_muted)] mt-1">
-                  Тренировок
-                </div>
+                <div className="text-xs text-[var(--color_text_muted)] mt-1">Тренировок</div>
               </div>
             </>
           ) : (
             <>
               <div className="bg-[var(--color_bg_card)] rounded-xl p-4 border border-[var(--color_border)] text-center">
-                <div className="text-2xl font-bold text-white">
-                  {data.stats.totalWorkouts}
-                </div>
-                <div className="text-xs text-[var(--color_text_muted)] mt-1">
-                  Тренировок
-                </div>
+                <div className="text-2xl font-bold text-white">{data.stats.totalWorkouts}</div>
+                <div className="text-xs text-[var(--color_text_muted)] mt-1">Тренировок</div>
               </div>
               <div className="bg-[var(--color_bg_card)] rounded-xl p-4 border border-[var(--color_border)] text-center">
-                <div className="text-2xl font-bold text-white">
-                  {data.stats.streak}
-                </div>
-                <div className="text-xs text-[var(--color_text_muted)] mt-1">
-                  Дней подряд
-                </div>
+                <div className="text-2xl font-bold text-white">{data.stats.streak}</div>
+                <div className="text-xs text-[var(--color_text_muted)] mt-1">Дней подряд</div>
                 {data.stats.longestStreak > 0 && (
                   <div className="text-xs text-[var(--color_text_muted)] mt-2">
                     Рекорд: {data.stats.longestStreak}
@@ -336,12 +341,8 @@ export default function ProfileScreen() {
                 )}
               </div>
               <div className="bg-[var(--color_bg_card)] rounded-xl p-4 border border-[var(--color_border)] text-center">
-                <div className="text-2xl font-bold text-white">
-                  {data.stats.longestStreak}
-                </div>
-                <div className="text-xs text-[var(--color_text_muted)] mt-1">
-                  Рекорд дней
-                </div>
+                <div className="text-2xl font-bold text-white">{data.stats.longestStreak}</div>
+                <div className="text-xs text-[var(--color_text_muted)] mt-1">Рекорд дней</div>
               </div>
             </>
           )}
@@ -373,20 +374,20 @@ export default function ProfileScreen() {
           <div className="flex gap-2 mb-4 flex-wrap">
             {(inTrainerMode
               ? [
-                  { label: 'Генерация', cost: 10 },
-                  { label: 'Распознавание', cost: 9 },
-                  { label: 'AI-чат', cost: 6 },
+                  { label: 'Генерация', cost: '10₽' },
+                  { label: 'Распознавание', cost: '9₽' },
+                  { label: 'AI-чат', cost: 'от 0.5₽' },
                 ]
               : [
-                  { label: 'Распознавание', cost: 9 },
-                  { label: 'AI-чат', cost: 6 },
+                  { label: 'Распознавание', cost: '9₽' },
+                  { label: 'AI-чат', cost: 'от 0.5₽' },
                 ]
             ).map(({ label, cost }) => (
               <div
                 key={label}
                 className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-xs text-[var(--color_text_muted)]"
               >
-                {label} — <span className="text-white/70">{cost}₽</span>
+                {label} — <span className="text-white/70">{cost}</span>
               </div>
             ))}
           </div>
@@ -413,8 +414,66 @@ export default function ProfileScreen() {
             disabled={!selectedAmount || topping}
             className="w-full py-3 rounded-xl bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {topping ? 'Переход к оплате…' : selectedAmount ? `Пополнить на ${selectedAmount}₽` : 'Выберите сумму'}
+            {topping
+              ? 'Переход к оплате…'
+              : selectedAmount
+                ? `Пополнить на ${selectedAmount}₽`
+                : 'Выберите сумму'}
           </button>
+
+          {/* Transaction history */}
+          {(transactions.length > 0 || txLoading) && (
+            <div className="mt-4 pt-4 border-t border-(--color_border)">
+              <p className="text-xs text-(--color_text_muted) mb-3">История операций</p>
+              {txLoading && transactions.length === 0 ? (
+                <div className="flex justify-center py-2">
+                  <div className="w-4 h-4 border-2 border-white/20 border-t-(--color_primary_light) rounded-full animate-spin" />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {transactions.map((tx) => {
+                    const isIncome = tx.amount > 0;
+                    const typeMap: Record<string, string> = {
+                      topup: '💳',
+                      chat: '🤖',
+                      generate: '✨',
+                      recognize: '📷',
+                    };
+                    const emoji = typeMap[tx.type] ?? '💰';
+                    return (
+                      <div key={tx.id} className="flex items-center gap-2">
+                        <span className="text-base shrink-0">{emoji}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs text-white truncate">{tx.description}</div>
+                          <div className="text-xs text-(--color_text_muted)">
+                            {new Date(tx.createdAt).toLocaleDateString('ru-RU', {
+                              day: 'numeric',
+                              month: 'short',
+                            })}
+                          </div>
+                        </div>
+                        <div
+                          className={`text-sm font-semibold shrink-0 ${isIncome ? 'text-emerald-400' : 'text-(--color_text_muted)'}`}
+                        >
+                          {isIncome ? '+' : ''}{tx.amount}₽
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {txHasMore && (
+                    <button
+                      onClick={() => txLoadMore()}
+                      disabled={txLoading}
+                      className="w-full text-xs text-(--color_text_muted) hover:text-white py-1 transition-colors disabled:opacity-50"
+                    >
+                      {txLoading ? 'Загрузка…' : 'Загрузить ещё'}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </motion.div>
 
         {/* AI Chat — available to all roles */}
@@ -431,9 +490,10 @@ export default function ProfileScreen() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-white">AI-помощник</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 font-medium">AI</span>
             </div>
-            <p className="text-xs text-[var(--color_text_muted)] mt-0.5">Тренировки, питание, восстановление — 6₽/сообщение</p>
+            <p className="text-xs text-[var(--color_text_muted)] mt-0.5">
+              Тренировки, питание, восстановление — 6₽/сообщение
+            </p>
           </div>
           <span className="text-[var(--color_text_muted)] text-sm">→</span>
         </motion.button>
@@ -494,7 +554,9 @@ export default function ProfileScreen() {
             <div className="text-3xl">{activeMode === 'trainer' ? '🏃' : '🏋️'}</div>
             <div className="flex-1">
               <div className="text-sm font-medium text-white">
-                {activeMode === 'trainer' ? 'Перейти в кабинет атлета' : 'Перейти в кабинет тренера'}
+                {activeMode === 'trainer'
+                  ? 'Перейти в кабинет атлета'
+                  : 'Перейти в кабинет тренера'}
               </div>
               <div className="text-xs text-(--color_text_muted) mt-0.5">
                 {activeMode === 'trainer'
@@ -550,19 +612,14 @@ export default function ProfileScreen() {
                 className="relative w-10 h-10 rounded-full border-2 transition-all"
                 style={{
                   background: `hsl(${preset.hue}, 74%, 30%)`,
-                  borderColor:
-                    activeHue === preset.hue
-                      ? 'white'
-                      : 'rgba(255,255,255,0.15)',
+                  borderColor: activeHue === preset.hue ? 'white' : 'rgba(255,255,255,0.15)',
                   transform: activeHue === preset.hue ? 'scale(1.15)' : 'scale(1)',
                 }}
               />
             ))}
           </div>
           <div className="mt-4 flex items-center gap-3">
-            <label className="text-xs text-[var(--color_text_muted)]">
-              Свой цвет
-            </label>
+            <label className="text-xs text-[var(--color_text_muted)]">Свой цвет</label>
             <input
               type="range"
               min={0}
@@ -592,9 +649,7 @@ export default function ProfileScreen() {
 
           <div className="space-y-4">
             <div>
-              <label className="text-xs text-[var(--color_text_muted)] mb-1 block">
-                Имя
-              </label>
+              <label className="text-xs text-[var(--color_text_muted)] mb-1 block">Имя</label>
               <input
                 type="text"
                 value={nameField}
@@ -604,9 +659,7 @@ export default function ProfileScreen() {
               />
             </div>
             <div>
-              <label className="text-xs text-[var(--color_text_muted)] mb-1 block">
-                Email
-              </label>
+              <label className="text-xs text-[var(--color_text_muted)] mb-1 block">Email</label>
               <input
                 type="email"
                 value={emailField}
@@ -618,15 +671,24 @@ export default function ProfileScreen() {
             <div>
               <label className="text-xs text-[var(--color_text_muted)] mb-2 block">Пол</label>
               <div className="grid grid-cols-2 gap-2">
-                {([['male', '♂', 'Мужской'], ['female', '♀', 'Женский']] as const).map(([val, icon, label]) => (
+                {(
+                  [
+                    ['male', '♂', 'Мужской'],
+                    ['female', '♀', 'Женский'],
+                  ] as const
+                ).map(([val, icon, label]) => (
                   <button
                     key={val}
                     type="button"
                     onClick={() => setGenderField(genderField === val ? null : val)}
                     className="py-2.5 rounded-xl border text-sm font-medium transition-all"
                     style={{
-                      borderColor: genderField === val ? 'var(--color_primary_light)' : 'var(--color_border)',
-                      background: genderField === val ? 'rgb(var(--color_primary_light_ch) / 0.15)' : 'var(--color_bg_input)',
+                      borderColor:
+                        genderField === val ? 'var(--color_primary_light)' : 'var(--color_border)',
+                      background:
+                        genderField === val
+                          ? 'rgb(var(--color_primary_light_ch) / 0.15)'
+                          : 'var(--color_bg_input)',
                       color: genderField === val ? 'white' : 'var(--color_text_muted)',
                     }}
                   >
@@ -646,9 +708,7 @@ export default function ProfileScreen() {
 
           {/* Password change */}
           <div className="mt-6 pt-6 border-t border-[var(--color_border)]">
-            <h3 className="text-sm font-semibold text-white mb-3">
-              Сменить пароль
-            </h3>
+            <h3 className="text-sm font-semibold text-white mb-3">Сменить пароль</h3>
             <div className="space-y-3">
               <input
                 type="password"

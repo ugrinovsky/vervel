@@ -33,25 +33,7 @@ export default function TrainerTodayScreen() {
     loadData();
   }, []);
 
-  if (loading) {
-    return (
-      <Screen>
-        <div className="p-4 flex items-center justify-center min-h-[60vh]">
-          <div className="text-[var(--color_text_muted)]">Загрузка...</div>
-        </div>
-      </Screen>
-    );
-  }
-
-  if (!overview) {
-    return (
-      <Screen>
-        <div className="p-4 flex items-center justify-center min-h-[60vh]">
-          <div className="text-[var(--color_text_muted)]">Нет данных</div>
-        </div>
-      </Screen>
-    );
-  }
+  if (!overview) return <Screen loading={loading} />;
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -59,7 +41,7 @@ export default function TrainerTodayScreen() {
   };
 
   return (
-    <Screen>
+    <Screen loading={loading}>
       <div className="p-4 w-full max-w-2xl mx-auto">
         <ScreenHeader icon="☀️" title="Сегодня" description="Обзор дня" />
 

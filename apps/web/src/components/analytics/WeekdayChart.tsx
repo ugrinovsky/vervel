@@ -7,7 +7,15 @@ interface Props {
 }
 
 const DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-const DAYS_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
+const DAYS_FULL = [
+  'Понедельник',
+  'Вторник',
+  'Среда',
+  'Четверг',
+  'Пятница',
+  'Суббота',
+  'Воскресенье',
+];
 
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
@@ -15,9 +23,13 @@ function CustomTooltip({ active, payload, label }: any) {
   return (
     <div className="bg-gray-900/95 border border-white/10 rounded-xl px-3 py-2.5 text-xs shadow-2xl">
       <p className="text-white font-semibold mb-0.5">{d?.fullName}</p>
-      <p className="text-white/50">Тренировок: <span className="text-white/80">{d?.workouts}</span></p>
+      <p className="text-white/50">
+        Тренировок: <span className="text-white/80">{d?.workouts}</span>
+      </p>
       {d?.avgIntensity > 0 && (
-        <p className="text-white/50">Ср. интенсивность: <span className="text-white/80">{d.avgIntensity}%</span></p>
+        <p className="text-white/50">
+          Ср. интенсивность: <span className="text-white/80">{d.avgIntensity}%</span>
+        </p>
       )}
     </div>
   );
@@ -44,16 +56,17 @@ export default function WeekdayChart({ data }: Props) {
       label,
       fullName: DAYS_FULL[i],
       workouts: counts[i],
-      avgIntensity:
-        intensities[i].length
-          ? Math.round(intensities[i].reduce((a, b) => a + b, 0) / intensities[i].length)
-          : 0,
+      avgIntensity: intensities[i].length
+        ? Math.round(intensities[i].reduce((a, b) => a + b, 0) / intensities[i].length)
+        : 0,
       ratio: counts[i] / maxCount,
     }));
   }, [timeline]);
 
   const totalWorkouts = weekdayData.reduce((s, d) => s + d.workouts, 0);
-  const favIdx = weekdayData.indexOf(weekdayData.reduce((m, d) => (d.workouts > m.workouts ? d : m)));
+  const favIdx = weekdayData.indexOf(
+    weekdayData.reduce((m, d) => (d.workouts > m.workouts ? d : m))
+  );
   const weekendLoad = weekdayData.slice(5).reduce((s, d) => s + d.workouts, 0);
   const weekdayLoad = weekdayData.slice(0, 5).reduce((s, d) => s + d.workouts, 0);
   const weekendPct = totalWorkouts > 0 ? Math.round((weekendLoad / totalWorkouts) * 100) : 0;
@@ -128,8 +141,7 @@ export default function WeekdayChart({ data }: Props) {
                       style={{
                         width: `${pct}%`,
                         backgroundColor: 'var(--color_primary_light)',
-                      opacity: d.i === favIdx ? 1 : 0.6,
-                        opacity: 0.75,
+                        opacity: d.i === favIdx ? 1 : 0.6,
                       }}
                     />
                   </div>

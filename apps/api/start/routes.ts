@@ -94,6 +94,7 @@ router
   .group(() => {
     router.get('status', '#controllers/ai_controller.status')
     router.get('balance', '#controllers/ai_controller.balance')
+    router.get('transactions', '#controllers/ai_controller.transactions')
     router.post('recognize-workout', '#controllers/ai_controller.recognizeWorkout')
     router.post('generate-workout', '#controllers/ai_controller.generateWorkout')
     router.post('chat', '#controllers/ai_controller.chat')

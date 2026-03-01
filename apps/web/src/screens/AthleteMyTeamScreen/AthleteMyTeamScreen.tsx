@@ -140,20 +140,10 @@ export default function AthleteMyTeamScreen() {
     }
   };
 
-  if (loading) {
-    return (
-      <Screen>
-        <div className="p-4 flex items-center justify-center min-h-[60vh]">
-          <div className="text-(--color_text_muted)">Загрузка...</div>
-        </div>
-      </Screen>
-    );
-  }
-
   const isEmpty = groups.length === 0 && trainers.length === 0;
 
   return (
-    <Screen>
+    <Screen loading={loading}>
       <FullScreenChat
         open={!!activeChat}
         chatId={activeChat?.chatId ?? null}
@@ -178,9 +168,10 @@ export default function AthleteMyTeamScreen() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-white">AI-помощник</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 font-medium">AI</span>
             </div>
-            <p className="text-xs text-(--color_text_muted) mt-0.5">Вопросы про тренировки, питание, восстановление</p>
+            <p className="text-xs text-(--color_text_muted) mt-0.5">
+              Вопросы про тренировки, питание, восстановление
+            </p>
           </div>
           <span className="text-xs text-(--color_text_muted) shrink-0">6₽/сообщение</span>
         </motion.button>
@@ -223,7 +214,11 @@ export default function AthleteMyTeamScreen() {
                         <div className="flex items-start gap-3 mb-3">
                           <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-(--color_primary_light) to-(--color_primary) flex items-center justify-center text-base font-bold text-white shrink-0">
                             {trainer.photoUrl ? (
-                              <img src={trainer.photoUrl} alt={trainer.fullName || 'trainer'} className="w-full h-full object-cover" />
+                              <img
+                                src={trainer.photoUrl}
+                                alt={trainer.fullName || 'trainer'}
+                                className="w-full h-full object-cover"
+                              />
                             ) : (
                               initials
                             )}
@@ -352,7 +347,9 @@ export default function AthleteMyTeamScreen() {
                 <div className="flex items-center gap-2 mb-4">
                   <CalendarDaysIcon className="w-5 h-5 text-(--color_primary_icon)" />
                   <h2 className="text-lg font-semibold text-white">Расписание</h2>
-                  <span className="ml-auto text-xs text-(--color_text_muted)">Следующие 14 дней</span>
+                  <span className="ml-auto text-xs text-(--color_text_muted)">
+                    Следующие 14 дней
+                  </span>
                 </div>
                 <div className="space-y-2">
                   {upcomingWorkouts.map((w) => {
@@ -366,7 +363,9 @@ export default function AthleteMyTeamScreen() {
                         onClick={() => navigate('/calendar')}
                         className="flex items-center gap-3 p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors cursor-pointer"
                       >
-                        <div className={`w-2 h-2 rounded-full shrink-0 ${isToday ? 'bg-(--color_primary_light)' : 'bg-white/20'}`} />
+                        <div
+                          className={`w-2 h-2 rounded-full shrink-0 ${isToday ? 'bg-(--color_primary_light)' : 'bg-white/20'}`}
+                        />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className={`text-xs font-semibold ${color}`}>{label}</span>
@@ -381,7 +380,9 @@ export default function AthleteMyTeamScreen() {
                             {w.notes ? ` · ${w.notes}` : ''}
                           </div>
                         </div>
-                        <div className={`text-xs font-medium shrink-0 ${isToday ? 'text-white' : 'text-(--color_text_muted)'}`}>
+                        <div
+                          className={`text-xs font-medium shrink-0 ${isToday ? 'text-white' : 'text-(--color_text_muted)'}`}
+                        >
                           {dateStr}
                         </div>
                       </div>

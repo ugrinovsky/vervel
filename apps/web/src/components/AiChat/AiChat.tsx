@@ -1,14 +1,18 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SparklesIcon, PaperAirplaneIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { aiApi } from '@/api/ai';
 import { useAuth } from '@/contexts/AuthContext';
 
-const COST_CHAT = 6;
+/** Минимальный баланс для отправки сообщения (равен AI_CHAT_MIN_CHARGE на backend) */
+const MIN_BALANCE = 0.5;
+const DISPLAY_STEP = 20;
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  /** Фактически списано ₽ (только у assistant) */
+  cost?: number;
 }
 
 const ATHLETE_SUGGESTIONS = [
@@ -31,31 +35,107 @@ interface Props {
 }
 
 export default function AiChat({ open, onClose }: Props) {
-  const { balance, setBalance, isTrainer, isAthlete, activeMode } = useAuth();
+  const { balance, setBalance, isTrainer, isAthlete, activeMode, user } = useAuth();
   const inTrainerMode = isTrainer && (!isAthlete || activeMode === 'trainer');
   const suggestions = inTrainerMode ? TRAINER_SUGGESTIONS : ATHLETE_SUGGESTIONS;
-  const hasEnoughBalance = balance === null || balance >= COST_CHAT;
+  const hasEnoughBalance = balance === null || balance >= MIN_BALANCE;
+
+  const storageKey = user?.id ? `aiChat_${user.id}` : null;
 
   const [messages, setMessages] = useState<Message[]>([]);
+  const [displayCount, setDisplayCount] = useState(DISPLAY_STEP);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const topSentinelRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const sessionStartIdx = useRef(0);
+  const prevScrollHeightRef = useRef(0);
+  const restoringScrollRef = useRef(false);
 
-  useEffect(() => {
-    if (open && messages.length === 0) {
-      setMessages([
-        {
-          role: 'assistant',
-          content: 'Привет! Я AI-помощник Vervel. Задавай вопросы про тренировки, питание или восстановление — помогу разобраться 💪',
-        },
-      ]);
+  // Displayed slice — last `displayCount` messages
+  const displayedMessages = messages.slice(-displayCount);
+  const hasMoreHistory = displayCount < messages.length;
+
+  // Restore scroll position after expanding history upward
+  useLayoutEffect(() => {
+    if (restoringScrollRef.current && scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      container.scrollTop = container.scrollHeight - prevScrollHeightRef.current;
+      restoringScrollRef.current = false;
     }
-  }, [open]);
+  }, [displayedMessages.length]);
 
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  };
+
+  // Expand history when scrolled to top
+  const loadMoreHistory = useCallback(() => {
+    if (!hasMoreHistory) return;
+    const container = scrollContainerRef.current;
+    prevScrollHeightRef.current = container?.scrollHeight ?? 0;
+    restoringScrollRef.current = true;
+    setDisplayCount((prev) => Math.min(prev + DISPLAY_STEP, messages.length));
+  }, [hasMoreHistory, messages.length]);
+
+  // IntersectionObserver on top sentinel
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading]);
+    const sentinel = topSentinelRef.current;
+    if (!sentinel || messages.length === 0) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadMoreHistory(); },
+      { threshold: 0.1 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMoreHistory, messages.length]);
+
+  // Load history from localStorage on first open
+  useEffect(() => {
+    if (!open || !storageKey) return;
+    if (messages.length > 0) return;
+
+    const stored = localStorage.getItem(storageKey);
+    const history: Message[] = stored ? JSON.parse(stored) : [];
+
+    const greeting: Message = {
+      role: 'assistant',
+      content:
+        'Привет! Я AI-помощник Vervel. Задавай вопросы про тренировки, питание или восстановление — помогу разобраться 💪',
+    };
+
+    if (history.length > 0) {
+      setMessages(history);
+      setDisplayCount(DISPLAY_STEP); // always start showing last 20
+      sessionStartIdx.current = history.length;
+    } else {
+      setMessages([greeting]);
+      setDisplayCount(DISPLAY_STEP);
+      sessionStartIdx.current = 1;
+    }
+
+    // Scroll to bottom after loading history
+    setTimeout(() => scrollToBottom('instant'), 50);
+  }, [open, storageKey]);
+
+  // Persist history on messages change
+  useEffect(() => {
+    if (!storageKey || messages.length === 0) return;
+    localStorage.setItem(storageKey, JSON.stringify(messages.slice(-50)));
+  }, [messages, storageKey]);
+
+  // Scroll to bottom on new message/loading
+  const prevLengthRef = useRef(0);
+  useEffect(() => {
+    if (messages.length > prevLengthRef.current || loading) {
+      scrollToBottom('smooth');
+    }
+    prevLengthRef.current = messages.length;
+  }, [messages.length, loading]);
 
   const handleSend = async () => {
     const text = input.trim();
@@ -64,18 +144,25 @@ export default function AiChat({ open, onClose }: Props) {
     const userMessage: Message = { role: 'user', content: text };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
+    // Reveal the new message immediately
+    setDisplayCount((prev) => Math.max(prev, newMessages.length - (messages.length - displayCount) + 1));
     setInput('');
     setLoading(true);
     setError(null);
 
-    const apiMessages = newMessages.slice(-10).map((m) => ({
-      role: m.role,
-      content: m.content,
-    }));
+    const contextMessages = newMessages
+      .slice(1)
+      .slice(-10)
+      .map((m) => ({ role: m.role, content: m.content }));
 
     try {
-      const res = await aiApi.chat(apiMessages);
-      setMessages((prev) => [...prev, { role: 'assistant', content: res.data.reply }]);
+      const res = await aiApi.chat(contextMessages);
+      const assistantMsg: Message = {
+        role: 'assistant',
+        content: res.data.reply,
+        cost: res.data.cost,
+      };
+      setMessages((prev) => [...prev, assistantMsg]);
       setBalance(res.data.balance);
     } catch (err: any) {
       const data = err?.response?.data;
@@ -85,6 +172,7 @@ export default function AiChat({ open, onClose }: Props) {
       setInput(text);
     } finally {
       setLoading(false);
+      setTimeout(() => inputRef.current?.focus(), 50);
     }
   };
 
@@ -93,6 +181,19 @@ export default function AiChat({ open, onClose }: Props) {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const handleClearHistory = () => {
+    if (!storageKey) return;
+    localStorage.removeItem(storageKey);
+    const greeting: Message = {
+      role: 'assistant',
+      content:
+        'Привет! Я AI-помощник Vervel. Задавай вопросы про тренировки, питание или восстановление — помогу разобраться 💪',
+    };
+    setMessages([greeting]);
+    setDisplayCount(DISPLAY_STEP);
+    sessionStartIdx.current = 1;
   };
 
   return (
@@ -114,7 +215,7 @@ export default function AiChat({ open, onClose }: Props) {
             onClick={(e) => e.stopPropagation()}
             className="absolute inset-x-0 top-0 bottom-16 bg-(--color_bg) flex flex-col"
           >
-            {/* Header — matches FullScreenChat style */}
+            {/* Header */}
             <div className="flex items-center gap-3 px-4 py-3 border-b border-(--color_border) shrink-0">
               <button
                 onClick={onClose}
@@ -128,23 +229,40 @@ export default function AiChat({ open, onClose }: Props) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-base font-semibold text-white truncate">AI-помощник</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 font-medium shrink-0">
-                    AI
-                  </span>
                 </div>
                 {balance !== null && (
-                  <p className={`text-xs mt-0 ${hasEnoughBalance ? 'text-(--color_text_muted)' : 'text-red-400'}`}>
+                  <p
+                    className={`text-xs mt-0 ${hasEnoughBalance ? 'text-(--color_text_muted)' : 'text-red-400'}`}
+                  >
                     {hasEnoughBalance
-                      ? `баланс: ${balance}₽ · ${COST_CHAT}₽/сообщение`
-                      : `Недостаточно средств (нужно ${COST_CHAT}₽)`}
+                      ? `баланс: ${balance}₽ · ~от ${MIN_BALANCE}₽/сообщение`
+                      : `Недостаточно средств (нужно от ${MIN_BALANCE}₽)`}
                   </p>
                 )}
               </div>
+              {messages.length > 1 && (
+                <button
+                  onClick={handleClearHistory}
+                  className="text-[10px] text-(--color_text_muted) hover:text-white transition-colors shrink-0"
+                >
+                  Очистить
+                </button>
+              )}
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-              {messages.map((msg, i) => (
+            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+              {/* Top sentinel — triggers loading older messages */}
+              <div ref={topSentinelRef} className="h-px" />
+
+              {/* Loading older indicator */}
+              {hasMoreHistory && (
+                <div className="flex justify-center py-1">
+                  <div className="w-4 h-4 border-2 border-white/20 border-t-emerald-400 rounded-full animate-spin" />
+                </div>
+              )}
+
+              {displayedMessages.map((msg, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 8 }}
@@ -156,14 +274,21 @@ export default function AiChat({ open, onClose }: Props) {
                       <SparklesIcon className="w-3.5 h-3.5 text-emerald-400" />
                     </div>
                   )}
-                  <div
-                    className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
-                      msg.role === 'user'
-                        ? 'bg-(--color_primary_light) text-white rounded-br-sm'
-                        : 'bg-(--color_bg_card) text-white border border-(--color_border) rounded-bl-sm'
-                    }`}
-                  >
-                    {msg.content}
+                  <div className="max-w-[80%] flex flex-col gap-1">
+                    <div
+                      className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+                        msg.role === 'user'
+                          ? 'bg-(--color_primary_light) text-white rounded-br-sm'
+                          : 'bg-(--color_bg_card) text-white border border-(--color_border) rounded-bl-sm'
+                      }`}
+                    >
+                      {msg.content}
+                    </div>
+                    {msg.role === 'assistant' && msg.cost !== undefined && (
+                      <p className="text-[10px] text-(--color_text_muted) pl-1">
+                        списано {msg.cost}₽
+                      </p>
+                    )}
                   </div>
                 </motion.div>
               ))}
@@ -189,8 +314,8 @@ export default function AiChat({ open, onClose }: Props) {
                 </div>
               )}
 
-              {/* Suggestions — only before user sends first message */}
-              {messages.length === 1 && !loading && (
+              {/* Suggestions — only at the start of session */}
+              {messages.length === sessionStartIdx.current && !loading && (
                 <div className="pt-2">
                   <p className="text-[10px] text-(--color_text_muted) uppercase tracking-wider mb-2 pl-9">
                     Попробуйте спросить
@@ -222,10 +347,13 @@ export default function AiChat({ open, onClose }: Props) {
             <div className="shrink-0 px-4 pb-4 pt-3 border-t border-(--color_border)">
               <div className="flex items-end gap-2">
                 <textarea
+                  ref={inputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder={hasEnoughBalance ? 'Спроси про тренировки…' : 'Пополните баланс в Профиле'}
+                  placeholder={
+                    hasEnoughBalance ? 'Спроси про тренировки…' : 'Пополните баланс в Профиле'
+                  }
                   disabled={!hasEnoughBalance || loading}
                   rows={1}
                   className="flex-1 bg-(--color_bg_card) border border-(--color_border) rounded-2xl px-4 py-3 text-white text-sm resize-none outline-none focus:border-emerald-500/50 transition-colors placeholder:text-white/30 disabled:opacity-50 disabled:cursor-not-allowed"

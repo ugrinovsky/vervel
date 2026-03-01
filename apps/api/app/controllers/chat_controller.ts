@@ -248,15 +248,20 @@ export default class ChatController {
       return response.notFound({ message: 'Чат не найден или нет доступа' })
     }
 
-    const limit = request.input('limit', 50)
-    const offset = request.input('offset', 0)
+    const limit = Number(request.input('limit', 20))
+    const beforeId = request.input('before_id', null)
 
-    const messages = await Message.query()
+    let query = Message.query()
       .where('chatId', params.chatId)
       .preload('sender', (q) => q.select('id', 'fullName', 'email'))
       .orderBy('createdAt', 'desc')
       .limit(limit)
-      .offset(offset)
+
+    if (beforeId) {
+      query = query.where('id', '<', Number(beforeId))
+    }
+
+    const messages = await query
 
     return response.ok({
       success: true,

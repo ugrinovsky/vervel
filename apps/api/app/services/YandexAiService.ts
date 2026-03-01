@@ -116,7 +116,9 @@ export class YandexAiService {
    * messages — история диалога: [{ role: 'user'|'assistant', content: string }]
    * Возвращает текст ответа ассистента.
    */
-  static async chat(messages: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<string> {
+  static async chat(
+    messages: Array<{ role: 'user' | 'assistant'; content: string }>
+  ): Promise<{ reply: string; inputTokens: number; outputTokens: number }> {
     const apiKey = env.get('YANDEX_CLOUD_API_KEY')!
     const folderId = env.get('YANDEX_FOLDER_ID')!
 
@@ -145,10 +147,16 @@ export class YandexAiService {
 
     const data = (await response.json()) as {
       choices?: Array<{ message?: { content?: string } }>
+      usage?: { prompt_tokens?: number; completion_tokens?: number }
     }
     const text = data?.choices?.[0]?.message?.content
     if (!text) throw new Error(`Пустой ответ от YandexGPT: ${JSON.stringify(data)}`)
-    return text
+
+    return {
+      reply: text,
+      inputTokens: data.usage?.prompt_tokens ?? 0,
+      outputTokens: data.usage?.completion_tokens ?? 0,
+    }
   }
 
   /**

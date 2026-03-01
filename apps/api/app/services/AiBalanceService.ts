@@ -24,8 +24,32 @@ export class AiBalanceService {
     return Number(env.get('AI_COST_RECOGNIZE', '9'))
   }
 
-  static get COST_CHAT(): number {
-    return Number(env.get('AI_COST_CHAT', '6'))
+  /** YandexGPT Lite: ₽ per 1000 input tokens */
+  static get CHAT_INPUT_RATE(): number {
+    return Number(env.get('AI_CHAT_INPUT_RATE', '0.20'))
+  }
+
+  /** YandexGPT Lite: ₽ per 1000 output tokens */
+  static get CHAT_OUTPUT_RATE(): number {
+    return Number(env.get('AI_CHAT_OUTPUT_RATE', '0.40'))
+  }
+
+  /** Markup multiplier applied on top of actual token cost */
+  static get CHAT_MARKUP(): number {
+    return Number(env.get('AI_CHAT_MARKUP', '5'))
+  }
+
+  /** Minimum charge per chat message regardless of token count */
+  static get CHAT_MIN_CHARGE(): number {
+    return Number(env.get('AI_CHAT_MIN_CHARGE', '0.50'))
+  }
+
+  /** Calculate actual chat cost from token usage, apply markup, enforce minimum */
+  static calculateChatCost(inputTokens: number, outputTokens: number): number {
+    const raw =
+      (inputTokens / 1000) * this.CHAT_INPUT_RATE * this.CHAT_MARKUP +
+      (outputTokens / 1000) * this.CHAT_OUTPUT_RATE * this.CHAT_MARKUP
+    return Math.max(Math.round(raw * 100) / 100, this.CHAT_MIN_CHARGE)
   }
 
   static get WELCOME_BONUS(): number {
@@ -80,7 +104,8 @@ export class AiBalanceService {
    */
   static async getTransactions(
     userId: number,
-    limit = 20
+    limit = 20,
+    offset = 0
   ): Promise<
     Array<{
       id: number
@@ -96,6 +121,7 @@ export class AiBalanceService {
       .where('user_id', userId)
       .orderBy('created_at', 'desc')
       .limit(limit)
+      .offset(offset)
 
     return rows.map((r) => ({
       id: r.id,

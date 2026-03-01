@@ -63,18 +63,8 @@ export default function TrainerGroupsListScreen() {
   const getGroupUnread = (groupId: number) =>
     unreadCounts?.groups.find((g) => g.groupId === groupId)?.unread ?? 0;
 
-  if (loading) {
-    return (
-      <Screen>
-        <div className="p-4 flex items-center justify-center min-h-[60vh]">
-          <div className="text-[var(--color_text_muted)]">Загрузка...</div>
-        </div>
-      </Screen>
-    );
-  }
-
   return (
-    <Screen>
+    <Screen loading={loading}>
       <div className="p-4 w-full max-w-2xl mx-auto">
         <ScreenHeader icon="👥" title="Группы" description="Управление тренировочными группами" />
 

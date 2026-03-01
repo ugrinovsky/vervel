@@ -58,10 +58,14 @@ export default await Env.create(new URL('../', import.meta.url), {
   | AI pricing (rubles per operation)
   |----------------------------------------------------------
   */
-  AI_COST_GENERATE: Env.schema.string.optional(),  // default 10
-  AI_COST_RECOGNIZE: Env.schema.string.optional(), // default 9
-  AI_COST_CHAT: Env.schema.string.optional(),      // default 6
-  AI_WELCOME_BONUS: Env.schema.string.optional(),  // default 50
+  AI_COST_GENERATE: Env.schema.string.optional(),      // default 10
+  AI_COST_RECOGNIZE: Env.schema.string.optional(),     // default 9
+  AI_WELCOME_BONUS: Env.schema.string.optional(),      // default 50
+  // Token-based chat billing
+  AI_CHAT_INPUT_RATE: Env.schema.string.optional(),    // ₽ per 1000 input tokens, default 0.20
+  AI_CHAT_OUTPUT_RATE: Env.schema.string.optional(),   // ₽ per 1000 output tokens, default 0.40
+  AI_CHAT_MARKUP: Env.schema.string.optional(),        // markup multiplier, default 5
+  AI_CHAT_MIN_CHARGE: Env.schema.string.optional(),    // minimum charge per message, default 0.50
 
   /*
   |----------------------------------------------------------

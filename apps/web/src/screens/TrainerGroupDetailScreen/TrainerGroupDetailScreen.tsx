@@ -78,18 +78,8 @@ export default function TrainerGroupDetailScreen() {
   const athleteIdsInGroup = new Set(athletes.map((a) => a.id));
   const availableAthletes = allAthletes.filter((a) => !athleteIdsInGroup.has(a.id));
 
-  if (loading) {
-    return (
-      <Screen>
-        <div className="p-4 flex items-center justify-center min-h-[60vh]">
-          <div className="text-[var(--color_text_muted)]">Загрузка...</div>
-        </div>
-      </Screen>
-    );
-  }
-
   return (
-    <Screen>
+    <Screen loading={loading}>
       <FullScreenChat
         open={activeTab === 'chat'}
         chatId={chatId}

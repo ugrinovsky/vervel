@@ -227,7 +227,7 @@ export default function TrainerExerciseLibraryScreen() {
       <div className="px-4 mb-3">
         <p className="text-xs text-(--color_text_muted)">
           {loading
-            ? 'Загрузка...'
+            ? '…'
             : filtered.length > 80
             ? `Показано 80 из ${filtered.length} — уточните поиск`
             : `${filtered.length} упражнений`}
