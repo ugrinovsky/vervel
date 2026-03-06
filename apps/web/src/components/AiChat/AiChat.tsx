@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { SparklesIcon, PaperAirplaneIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { motion } from 'framer-motion';
+import { SparklesIcon, PaperAirplaneIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import ModalOverlay from '@/components/ModalOverlay/ModalOverlay';
 import ReactMarkdown from 'react-markdown';
 import { aiApi } from '@/api/ai';
 import { useAuth } from '@/contexts/AuthContext';
@@ -203,57 +204,41 @@ export default function AiChat({ open, onClose }: Props) {
   };
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="background fixed inset-0 z-50"
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            onClick={(e) => e.stopPropagation()}
-            className="absolute inset-x-0 top-0 bottom-16 bg-(--color_bg) flex flex-col"
-          >
+    <ModalOverlay open={open} variant="fullscreen" onClose={onClose}>
+      <>
             {/* Header */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-(--color_border) shrink-0">
-              <button
-                onClick={onClose}
-                className="p-1 text-(--color_text_muted) hover:text-white transition-colors"
-              >
-                <ArrowLeftIcon className="w-5 h-5" />
-              </button>
-              <div className="w-7 h-7 flex items-center justify-center rounded-full bg-emerald-500/20 shrink-0">
-                <SparklesIcon className="w-4 h-4 text-emerald-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-base font-semibold text-white truncate">AI-помощник</span>
+            <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-(--color_border) shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-7 h-7 flex items-center justify-center rounded-full bg-emerald-500/20 shrink-0">
+                  <SparklesIcon className="w-4 h-4 text-emerald-400" />
                 </div>
-                {balance !== null && (
-                  <p
-                    className={`text-xs mt-0 ${hasEnoughBalance ? 'text-(--color_text_muted)' : 'text-red-400'}`}
-                  >
-                    {hasEnoughBalance
-                      ? `баланс: ${balance}₽ · ~от ${MIN_BALANCE}₽/сообщение`
-                      : `Недостаточно средств (нужно от ${MIN_BALANCE}₽)`}
-                  </p>
-                )}
+                <div className="min-w-0">
+                  <span className="text-base font-semibold text-white truncate block">AI-помощник</span>
+                  {balance !== null && (
+                    <p className={`text-xs ${hasEnoughBalance ? 'text-(--color_text_muted)' : 'text-red-400'}`}>
+                      {hasEnoughBalance
+                        ? `баланс: ${balance}₽ · ~от ${MIN_BALANCE}₽/сообщение`
+                        : `Недостаточно средств (нужно от ${MIN_BALANCE}₽)`}
+                    </p>
+                  )}
+                </div>
               </div>
-              {messages.length > 1 && (
+              <div className="flex items-center gap-2 shrink-0">
+                {messages.length > 1 && (
+                  <button
+                    onClick={handleClearHistory}
+                    className="text-[10px] text-(--color_text_muted) hover:text-white transition-colors"
+                  >
+                    Очистить
+                  </button>
+                )}
                 <button
-                  onClick={handleClearHistory}
-                  className="text-[10px] text-(--color_text_muted) hover:text-white transition-colors shrink-0"
+                  onClick={onClose}
+                  className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
                 >
-                  Очистить
+                  <XMarkIcon className="w-4 h-4 text-white" />
                 </button>
-              )}
+              </div>
             </div>
 
             {/* Messages */}
@@ -392,9 +377,7 @@ export default function AiChat({ open, onClose }: Props) {
                 </button>
               </div>
             </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+      </>
+    </ModalOverlay>
   );
 }

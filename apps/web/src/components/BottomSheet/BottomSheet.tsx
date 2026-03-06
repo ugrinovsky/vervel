@@ -1,4 +1,5 @@
 import { type PropsWithChildren, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import CloseButton from '@/components/ui/CloseButton';
 
@@ -20,14 +21,14 @@ export default function BottomSheet({ open, onClose, title, emoji, header, child
     </div>
   );
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-end"
+          className="fixed inset-0 z-[60] flex items-end"
           onClick={onClose}
         >
           <div className="absolute inset-0 bg-black/60" />
@@ -38,7 +39,7 @@ export default function BottomSheet({ open, onClose, title, emoji, header, child
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
-            className="background relative w-full rounded-t-3xl p-6 pb-24 max-h-[90vh] overflow-y-auto"
+            className="background relative w-full rounded-t-3xl p-6 pb-6 max-h-[90vh] overflow-y-auto"
             style={{ backgroundColor: 'var(--color_bg_card)' }}
           >
             {/* Handle */}
@@ -54,6 +55,7 @@ export default function BottomSheet({ open, onClose, title, emoji, header, child
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

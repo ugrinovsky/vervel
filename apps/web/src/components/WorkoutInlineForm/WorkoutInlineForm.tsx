@@ -326,10 +326,19 @@ export default function WorkoutInlineForm({
       style={{ backgroundColor: 'var(--color_bg_card)' }}
     >
       {/* Form header */}
-      <div className="px-4 pt-4 pb-3 border-b border-(--color_border)">
+      <div className="px-4 pt-4 pb-3 border-b border-(--color_border) flex items-center justify-between">
         <h3 className="text-base font-semibold text-white">
           {editWorkout ? 'Редактировать тренировку' : 'Создать тренировку'}
         </h3>
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+          >
+            <XMarkIcon className="w-4 h-4 text-white" />
+          </button>
+        )}
       </div>
 
       <div className="px-4 py-4 space-y-5">

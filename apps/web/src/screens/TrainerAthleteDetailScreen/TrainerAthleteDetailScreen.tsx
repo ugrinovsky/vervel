@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import FullScreenChat from '@/components/FullScreenChat/FullScreenChat';
 import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
+import ModalOverlay from '@/components/ModalOverlay/ModalOverlay';
 import AnalyticsCards from '@/components/analytics/AnalyticsCards';
 import AvatarView from '@/components/AvatarView/AvatarView';
 import MiniAvatar from '@/components/MiniAvatar/MiniAvatar';
@@ -18,7 +19,6 @@ import { trainerApi, type PeriodizationData } from '@/api/trainer';
 import {
   ChatBubbleLeftIcon,
   PlusIcon,
-  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import BackButton from '@/components/BackButton/BackButton';
 import type { MonthlyStatsData } from '@/screens/ActivityScreen/useActivityData';
@@ -145,35 +145,13 @@ export default function TrainerAthleteDetailScreen() {
       />
 
       {/* ── Create workout overlay ────────────────────────────────────────── */}
-      <AnimatePresence>
-        {showCreate && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm overflow-y-auto"
-          >
-            <div className="min-h-full p-4 flex flex-col">
-              <div className="w-full max-w-2xl mx-auto mt-safe">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold text-white">Создать тренировку</h2>
-                  <button
-                    onClick={() => setShowCreate(false)}
-                    className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
-                  >
-                    <XMarkIcon className="w-4 h-4 text-white" />
-                  </button>
-                </div>
-                <WorkoutInlineForm
-                  preselectedAssignee={{ type: 'athlete', id, name: athleteName }}
-                  onSuccess={() => setShowCreate(false)}
-                  onCancel={() => setShowCreate(false)}
-                />
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ModalOverlay open={showCreate}>
+        <WorkoutInlineForm
+          preselectedAssignee={{ type: 'athlete', id, name: athleteName }}
+          onSuccess={() => setShowCreate(false)}
+          onCancel={() => setShowCreate(false)}
+        />
+      </ModalOverlay>
 
       <div className="p-4 w-full max-w-2xl mx-auto">
         <BackButton onClick={() => navigate('/trainer/athletes')} />
