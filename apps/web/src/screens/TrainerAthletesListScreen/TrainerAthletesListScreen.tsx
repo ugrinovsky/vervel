@@ -56,7 +56,7 @@ export default function TrainerAthletesListScreen() {
   };
 
   return (
-    <Screen loading={loading}>
+    <Screen loading={loading} className="trainer-athletes-list-screen">
       <div className="p-4 w-full max-w-2xl mx-auto">
         <ScreenHeader icon="🏃" title="Атлеты" description="Атлеты на индивидуальном ведении — смотрите аналитику, переписывайтесь и назначайте персональные тренировки" />
 

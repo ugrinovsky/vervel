@@ -23,12 +23,12 @@ export default function ActivityScreen() {
   const handleMonthChange = (newMonth: Date) => setCurrentMonth(newMonth);
 
   if (loading) {
-    return <Screen />;
+    return <Screen className="activity-screen" />;
   }
 
   if (!stats) {
     return (
-      <Screen>
+      <Screen className="activity-screen">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -41,7 +41,7 @@ export default function ActivityScreen() {
   }
 
   return (
-    <Screen>
+    <Screen className="activity-screen">
       <div className="relative p-4">
         <ScreenHeader
           icon="📅"

@@ -157,15 +157,15 @@ export default function TrainerCalendarScreen() {
   };
 
   return (
-    <Screen>
-      <div className="flex flex-col h-full">
+    <Screen className="trainer-calendar-screen">
+      <div className="flex flex-col h-full px-4">
         {/* ── Page header ── */}
-        <div className="px-4 pt-3 pb-1 shrink-0">
+        <div className="pt-4 pb-1 shrink-0">
           <ScreenHeader icon="📅" title="Календарь" description="Планируйте тренировки для атлетов и групп по датам" />
         </div>
 
         {/* ── Calendar (top) ── */}
-        <div className="px-2 pt-1 pb-1 shrink-0">
+        <div className="pt-1 pb-1 shrink-0">
           <TrainerCalendar
             days={calendarDays}
             selectedDate={selectedDate}
@@ -183,12 +183,12 @@ export default function TrainerCalendarScreen() {
         </div>
 
         {/* ── Divider ── */}
-        <div className="border-t border-(--color_border) mx-2 shrink-0" />
+        <div className="border-t border-(--color_border) shrink-0" />
 
         {/* ── Selected day timeline (bottom) ── */}
         <div className="flex-1 overflow-y-auto">
           {/* Day header */}
-          <div className="flex items-center justify-between px-3 pt-3 pb-2 shrink-0">
+          <div className="flex items-center justify-between pt-3 pb-2 shrink-0">
             <div>
               <div className="text-sm font-semibold text-white capitalize flex items-center gap-1.5">
                 <CalendarDaysIcon className="w-4 h-4 text-(--color_text_muted) shrink-0" />
@@ -218,7 +218,7 @@ export default function TrainerCalendarScreen() {
           </div>
 
           {/* Timeline */}
-          <div className="px-3 pb-4">
+          <div className="pb-4">
             {TIMELINE_HOURS.map((hour) => {
               const hourWorkouts = workoutsByHour[hour] ?? [];
               const hasWorkouts = hourWorkouts.length > 0;

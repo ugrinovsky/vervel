@@ -66,7 +66,7 @@ export default function AvatarScreen() {
   }, []);
 
   return (
-    <Screen>
+    <Screen className="avatar-screen">
       <div className="p-4 w-full">
         <ScreenHeader
           icon="🏋️"

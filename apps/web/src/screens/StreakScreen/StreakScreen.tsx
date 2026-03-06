@@ -31,10 +31,10 @@ export default function StreakScreen() {
     }
   };
 
-  if (!profileData) return <Screen loading={loading} />;
+  if (!profileData) return <Screen loading={loading} className="streak-screen" />;
 
   return (
-    <Screen>
+    <Screen className="streak-screen">
       <div className="p-4 w-full max-w-4xl mx-auto space-y-6">
         <ScreenHeader
           icon="🔥"

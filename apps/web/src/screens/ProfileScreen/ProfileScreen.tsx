@@ -302,7 +302,7 @@ export default function ProfileScreen() {
     });
   };
 
-  if (!data) return <Screen loading={loading} />;
+  if (!data) return <Screen loading={loading} className="profile-screen" />;
 
   const TABS: { id: Tab; label: string; emoji: string }[] = [
     { id: 'profile', label: 'Профиль', emoji: '👤' },
@@ -311,7 +311,7 @@ export default function ProfileScreen() {
   ];
 
   return (
-    <Screen>
+    <Screen className="profile-screen">
       <AiChat open={aiChatOpen} onClose={() => setAiChatOpen(false)} />
 
       {/* QR BottomSheet */}

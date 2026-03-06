@@ -135,7 +135,7 @@ export default function TrainerAthleteDetailScreen() {
   }, [monthStats]);
 
   return (
-    <Screen>
+    <Screen className="trainer-athlete-detail-screen">
       {/* ── Chat overlay ─────────────────────────────────────────────────── */}
       <FullScreenChat
         open={showChat}

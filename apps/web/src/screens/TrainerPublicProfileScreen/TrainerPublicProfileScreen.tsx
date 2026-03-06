@@ -71,10 +71,10 @@ export default function TrainerPublicProfileScreen() {
         .slice(0, 2)
     : profile?.email?.[0]?.toUpperCase() || '?';
 
-  if (!profile) return <Screen loading={loading} />;
+  if (!profile) return <Screen loading={loading} className="trainer-public-profile-screen" />;
 
   return (
-    <Screen>
+    <Screen className="trainer-public-profile-screen">
       <FullScreenChat
         open={chatOpen}
         chatId={chatId}

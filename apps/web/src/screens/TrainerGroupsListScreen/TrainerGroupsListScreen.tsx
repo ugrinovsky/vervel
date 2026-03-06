@@ -64,7 +64,7 @@ export default function TrainerGroupsListScreen() {
     unreadCounts?.groups.find((g) => g.groupId === groupId)?.unread ?? 0;
 
   return (
-    <Screen loading={loading}>
+    <Screen loading={loading} className="trainer-groups-list-screen">
       <div className="p-4 w-full max-w-2xl mx-auto">
         <ScreenHeader icon="👥" title="Группы" description="Ваши тренировочные группы — создавайте группы, добавляйте атлетов, назначайте тренировки и ведите чат" />
 

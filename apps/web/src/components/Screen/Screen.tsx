@@ -4,6 +4,7 @@ import './styles.css';
 interface ScreenProps {
   /** Показать спиннер вместо дочерних элементов */
   loading?: boolean;
+  className?: string;
 }
 
 function PageLoader() {
@@ -14,9 +15,9 @@ function PageLoader() {
   );
 }
 
-export default function Screen({ children, loading }: PropsWithChildren<ScreenProps>) {
+export default function Screen({ children, loading, className = '' }: PropsWithChildren<ScreenProps>) {
   return (
-    <div className="screen flex flex-col md:flex-row items-stretch h-full">
+    <div className={`screen flex flex-col md:flex-row items-stretch h-full ${className}`.trim()}>
       {loading ? <PageLoader /> : children}
     </div>
   );

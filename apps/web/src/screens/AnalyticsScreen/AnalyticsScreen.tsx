@@ -24,7 +24,7 @@ export default function AnalyticsScreen() {
   if (!stats) return null;
 
   return (
-    <Screen>
+    <Screen className="analytics-screen">
       <div className="p-4">
         <ScreenHeader
           icon="📊"

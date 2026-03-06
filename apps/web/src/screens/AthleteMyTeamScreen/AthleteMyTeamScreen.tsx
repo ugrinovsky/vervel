@@ -143,7 +143,7 @@ export default function AthleteMyTeamScreen() {
   const isEmpty = groups.length === 0 && trainers.length === 0;
 
   return (
-    <Screen loading={loading}>
+    <Screen loading={loading} className="athlete-my-team-screen">
       <FullScreenChat
         open={!!activeChat}
         chatId={activeChat?.chatId ?? null}

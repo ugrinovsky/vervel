@@ -131,7 +131,7 @@ export default function TrainerTemplatesScreen() {
   };
 
   return (
-    <Screen>
+    <Screen className="trainer-templates-screen">
       <div className="p-4 w-full max-w-2xl mx-auto">
         <ScreenHeader icon="📋" title="Шаблоны" description="Заготовки тренировок для быстрого назначения атлетам и группам" />
 

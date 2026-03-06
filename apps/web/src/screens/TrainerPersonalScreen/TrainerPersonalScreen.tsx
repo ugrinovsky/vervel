@@ -140,7 +140,7 @@ export default function TrainerPersonalScreen() {
     : user?.email?.[0]?.toUpperCase() || '?';
 
   return (
-    <Screen>
+    <Screen className="trainer-personal-screen">
       <div className="p-4 w-full max-w-2xl mx-auto">
         <BackButton onClick={() => navigate(-1)} />
 

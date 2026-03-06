@@ -79,7 +79,7 @@ export default function TrainerGroupDetailScreen() {
   const availableAthletes = allAthletes.filter((a) => !athleteIdsInGroup.has(a.id));
 
   return (
-    <Screen loading={loading}>
+    <Screen loading={loading} className="trainer-group-detail-screen">
       <FullScreenChat
         open={activeTab === 'chat'}
         chatId={chatId}

@@ -21,7 +21,7 @@ export default function ScreenHeader({
   className = '',
 }: ScreenHeaderProps) {
   return (
-    <div className={`mb-6 ${className}`}>
+    <div className={`screen-header mb-6 ${className}`}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">

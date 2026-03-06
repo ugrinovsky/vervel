@@ -176,8 +176,9 @@ export default function TrainerExerciseLibraryScreen() {
   const visible = filtered.slice(0, 80);
 
   return (
-    <Screen>
+    <Screen className="trainer-exercise-library-screen">
       <ScreenHeader
+        className="px-4 pt-4"
         icon={<BookOpenIcon className="w-6 h-6 text-(--color_primary_light)" />}
         title="Библиотека упражнений"
         description="Готовые упражнения по категориям — добавляйте в тренировки и шаблоны"

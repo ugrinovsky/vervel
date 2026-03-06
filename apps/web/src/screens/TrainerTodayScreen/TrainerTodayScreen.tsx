@@ -33,7 +33,7 @@ export default function TrainerTodayScreen() {
     loadData();
   }, []);
 
-  if (!overview) return <Screen loading={loading} />;
+  if (!overview) return <Screen loading={loading} className="trainer-today-screen" />;
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -41,7 +41,7 @@ export default function TrainerTodayScreen() {
   };
 
   return (
-    <Screen loading={loading}>
+    <Screen loading={loading} className="trainer-today-screen">
       <div className="p-4 w-full max-w-2xl mx-auto">
         <ScreenHeader icon="☀️" title="Сегодня" description="Что происходит сегодня — запланированные тренировки, непрочитанные сообщения и активность атлетов" />
 
