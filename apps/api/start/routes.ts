@@ -124,6 +124,7 @@ router
     router.get('athletes/:athleteId/stats', '#controllers/trainer_controller.getAthleteStats');
     router.get('athletes/:athleteId/avatar', '#controllers/trainer_controller.getAthleteAvatar');
     router.get('athletes/:athleteId/periodization', '#controllers/trainer_controller.getAthletePeriodization');
+    router.get('athletes/:athleteId/workouts', '#controllers/trainer_controller.getAthleteWorkouts');
 
     // Groups
     router.get('groups', '#controllers/trainer_controller.listGroups');

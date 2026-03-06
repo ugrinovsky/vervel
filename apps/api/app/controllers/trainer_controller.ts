@@ -234,6 +234,42 @@ export default class TrainerController {
     return response.ok(stats)
   }
 
+  async getAthleteWorkouts({ auth, params, request, response }: HttpContext) {
+    const trainer = auth.user!
+    const athleteId = Number(params.athleteId)
+
+    if (!(await this.verifyAthleteAccess(trainer.id, athleteId))) {
+      return response.forbidden({ message: 'Нет доступа к этому атлету' })
+    }
+
+    const from = request.input('from')
+    const to = request.input('to')
+
+    if (!from || !to) {
+      return response.badRequest({ message: 'Параметры "from" и "to" обязательны' })
+    }
+
+    const workouts = await Workout.query()
+      .where('userId', athleteId)
+      .whereBetween('date', [from, to])
+      .orderBy('date', 'desc')
+
+    return response.ok({
+      success: true,
+      data: workouts.map((w) => ({
+        id: w.id,
+        date: w.date,
+        workoutType: w.workoutType,
+        exercises: w.exercises,
+        zonesLoad: w.zonesLoad,
+        totalIntensity: w.totalIntensity,
+        totalVolume: w.totalVolume,
+        notes: w.notes,
+        scheduledWorkoutId: w.scheduledWorkoutId,
+      })),
+    })
+  }
+
   async getAthleteAvatar({ auth, params, request, response }: HttpContext) {
     const trainer = auth.user!
     const athleteId = Number(params.athleteId)

@@ -1,0 +1,347 @@
+import { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Avatar from '@/components/Avatar/Avatar';
+import type { ZoneState } from '@/api/avatar';
+import type { BodyGender } from '@/components/Avatar/bodyZones';
+
+const ZONE_LABELS: Record<string, string> = {
+  chests: 'Грудь',
+  shoulders: 'Плечи',
+  trapezoids: 'Трапеции',
+  abdominalPress: 'Пресс',
+  obliquePress: 'Косые мышцы',
+  backMuscles: 'Спина',
+  legMuscles: 'Ноги',
+  biceps: 'Бицепс',
+  triceps: 'Трицепс',
+  forearms: 'Предплечья',
+  calfMuscles: 'Икры',
+  back: 'Спина',
+  legs: 'Ноги',
+  core: 'Пресс',
+  glutes: 'Ягодицы',
+};
+
+type Phase = 'destroyed' | 'recovering' | 'almost_ready' | 'recovered' | 'untrained';
+
+function getPhase(zone: ZoneState): Phase {
+  if (zone.intensity === 0 && zone.peakLoad === 0) return 'untrained';
+  if (zone.lastTrainedDaysAgo <= 1 && zone.peakLoad >= 0.3) return 'destroyed';
+  if (zone.intensity >= 0.4) return 'recovering';
+  if (zone.intensity >= 0.1) return 'almost_ready';
+  return 'recovered';
+}
+
+const PHASE_CONFIG: Record<Phase, { label: string; color: string; barColor: string; tip: string }> = {
+  destroyed: {
+    label: 'Убита',
+    color: 'text-red-400',
+    barColor: 'from-red-600 to-red-400',
+    tip: 'Мышца получила серьёзную нагрузку. Не тренируйте её минимум 48 часов.',
+  },
+  recovering: {
+    label: 'Восстанавливается',
+    color: 'text-orange-400',
+    barColor: 'from-orange-500 to-yellow-400',
+    tip: 'Мышца ещё восстанавливается. Лучше поработать с другими группами.',
+  },
+  almost_ready: {
+    label: 'Почти готова',
+    color: 'text-yellow-300',
+    barColor: 'from-yellow-500 to-green-400',
+    tip: 'Почти восстановилась. Лёгкая нагрузка допустима.',
+  },
+  recovered: {
+    label: 'Отдохнула',
+    color: 'text-green-400',
+    barColor: 'from-green-500 to-green-400',
+    tip: 'Мышца полностью восстановилась. Можно нагружать.',
+  },
+  untrained: {
+    label: 'Не тренировалась',
+    color: 'text-(--color_text_muted)',
+    barColor: 'from-gray-600 to-gray-500',
+    tip: 'Эта группа мышц не получала нагрузки. Обратите на неё внимание.',
+  },
+};
+
+function getDaysAgoText(days: number | null): string {
+  if (days === null) return 'Нет тренировок';
+  if (days === 0) return 'Сегодня';
+  if (days === 1) return 'Вчера';
+  if (days <= 4) return `${days} дня назад`;
+  return `${days} дней назад`;
+}
+
+function getBarColorByIntensity(intensity: number): string {
+  if (intensity >= 0.6) return 'from-red-500 to-red-400';
+  if (intensity >= 0.3) return 'from-orange-500 to-yellow-400';
+  if (intensity > 0) return 'from-green-500 to-green-400';
+  return 'from-gray-600 to-gray-500';
+}
+
+function ZoneDetail({ zone }: { zone: ZoneState }) {
+  const phase = getPhase(zone);
+  const cfg = PHASE_CONFIG[phase];
+  const pct = Math.round(zone.intensity * 100);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <span className={`text-lg font-bold ${cfg.color}`}>{cfg.label}</span>
+        {zone.lastTrainedDaysAgo !== undefined && (
+          <span className="text-xs text-(--color_text_muted)">
+            {getDaysAgoText(zone.lastTrainedDaysAgo)}
+          </span>
+        )}
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm text-(--color_text_muted)">Усталость</span>
+          <span className={`text-sm font-semibold ${cfg.color}`}>{pct}%</span>
+        </div>
+        <div className="h-2 bg-(--color_border) rounded-full overflow-hidden">
+          <motion.div
+            className={`h-full rounded-full bg-gradient-to-r ${cfg.barColor}`}
+            initial={{ width: 0 }}
+            animate={{ width: `${pct}%` }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          />
+        </div>
+      </div>
+
+      {zone.peakLoad > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-(--color_text_muted)">Пиковая нагрузка</span>
+            <span className="text-sm font-semibold text-white">
+              {Math.round(zone.peakLoad * 100)}%
+            </span>
+          </div>
+          <div className="h-2 bg-(--color_border) rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-white/30 to-white/20"
+              style={{ width: `${Math.round(zone.peakLoad * 100)}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      <p className="text-sm text-(--color_text_muted)">{cfg.tip}</p>
+    </div>
+  );
+}
+
+interface AvatarViewProps {
+  zones: Record<string, ZoneState>;
+  totalWorkouts: number;
+  lastWorkoutDaysAgo: number | null;
+  loading?: boolean;
+  gender?: BodyGender;
+}
+
+export default function AvatarView({
+  zones,
+  totalWorkouts,
+  lastWorkoutDaysAgo,
+  loading = false,
+  gender = 'male',
+}: AvatarViewProps) {
+  const [selectedZone, setSelectedZone] = useState<string | null>(null);
+
+  const zoneIntensities = useMemo(() => {
+    const result: Record<string, number> = {};
+    for (const [name, state] of Object.entries(zones)) {
+      result[name] = state.intensity;
+    }
+    return result;
+  }, [zones]);
+
+  const summary = useMemo(() => {
+    const entries = Object.entries(zones);
+    const loaded = entries.filter(([, z]) => z.intensity > 0);
+    const total = entries.length;
+    if (loaded.length === 0) {
+      return { loadedCount: 0, totalCount: total, avgIntensity: 0, max: null, min: null };
+    }
+    const avg = loaded.reduce((sum, [, z]) => sum + z.intensity, 0) / loaded.length;
+    const sorted = [...loaded].sort((a, b) => b[1].intensity - a[1].intensity);
+    return {
+      loadedCount: loaded.length,
+      totalCount: total,
+      avgIntensity: avg,
+      max: sorted[0] ? { name: sorted[0][0], zone: sorted[0][1] } : null,
+      min: sorted[sorted.length - 1]
+        ? { name: sorted[sorted.length - 1][0], zone: sorted[sorted.length - 1][1] }
+        : null,
+    };
+  }, [zones]);
+
+  const handleZoneClick = (zoneName: string) => {
+    setSelectedZone((prev) => (prev === zoneName ? null : zoneName));
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex flex-col lg:flex-row gap-6"
+    >
+      {/* Avatar */}
+      <div className="flex-shrink-0 lg:w-[360px] relative">
+        {loading && (
+          <div className="absolute inset-0 bg-black/30 rounded-2xl z-10 flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          </div>
+        )}
+        <Avatar
+          zoneIntensities={zoneIntensities}
+          selectedZone={selectedZone}
+          onZoneClick={handleZoneClick}
+          gender={gender}
+        />
+
+        <div className="flex items-center justify-center gap-3 mt-3 text-xs text-(--color_text_muted) flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-sm bg-red-500/70" />
+            <span>Убита</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-sm bg-orange-500/70" />
+            <span>Восстан.</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-sm bg-yellow-400/70" />
+            <span>Почти</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-sm bg-green-500/70" />
+            <span>Отдохнула</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Right column */}
+      <div className="flex-1 space-y-4">
+        {/* Summary */}
+        <div className="glass rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-(--color_text_secondary) uppercase tracking-wider">
+              Состояние сейчас
+            </h3>
+            <span className="text-xs text-(--color_text_muted)">
+              Последняя: {getDaysAgoText(lastWorkoutDaysAgo)}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-(--color_bg_card) rounded-xl p-3">
+              <div className="text-2xl font-bold text-white">{totalWorkouts}</div>
+              <div className="text-xs text-(--color_text_muted)">За 14 дней</div>
+            </div>
+            <div className="bg-(--color_bg_card) rounded-xl p-3">
+              <div className="text-2xl font-bold text-white">
+                {summary.loadedCount}/{summary.totalCount}
+              </div>
+              <div className="text-xs text-(--color_text_muted)">Зон нагружено</div>
+            </div>
+            <div className="bg-(--color_bg_card) rounded-xl p-3">
+              <div className="text-2xl font-bold text-white">
+                {Math.round(summary.avgIntensity * 100)}%
+              </div>
+              <div className="text-xs text-(--color_text_muted)">Ср. усталость</div>
+            </div>
+          </div>
+
+          {summary.max && (
+            <div className="mt-4 flex flex-col gap-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-(--color_text_muted)">Самая уставшая</span>
+                <span className={`font-medium ${PHASE_CONFIG[getPhase(summary.max.zone)].color}`}>
+                  {ZONE_LABELS[summary.max.name] || summary.max.name} —{' '}
+                  {PHASE_CONFIG[getPhase(summary.max.zone)].label}
+                </span>
+              </div>
+              {summary.min && summary.min.name !== summary.max.name && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-(--color_text_muted)">Самая отдохнувшая</span>
+                  <span className={`font-medium ${PHASE_CONFIG[getPhase(summary.min.zone)].color}`}>
+                    {ZONE_LABELS[summary.min.name] || summary.min.name} —{' '}
+                    {PHASE_CONFIG[getPhase(summary.min.zone)].label}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Selected zone detail */}
+        <AnimatePresence mode="wait">
+          {selectedZone && zones[selectedZone] && (
+            <motion.div
+              key={selectedZone}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="glass rounded-2xl p-5"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-white">
+                  {ZONE_LABELS[selectedZone] || selectedZone}
+                </h3>
+                <button
+                  onClick={() => setSelectedZone(null)}
+                  className="text-(--color_text_muted) hover:text-white transition-colors text-sm"
+                >
+                  Закрыть
+                </button>
+              </div>
+              <ZoneDetail zone={zones[selectedZone]} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* All zones */}
+        <div className="glass rounded-2xl p-5">
+          <h3 className="text-sm font-semibold text-(--color_text_secondary) uppercase tracking-wider mb-4">
+            Все зоны
+          </h3>
+          <div className="space-y-2">
+            {Object.entries(zones)
+              .sort((a, b) => b[1].intensity - a[1].intensity)
+              .map(([name, zoneState]) => {
+                const phase = getPhase(zoneState);
+                const cfg = PHASE_CONFIG[phase];
+                return (
+                  <button
+                    key={name}
+                    onClick={() => handleZoneClick(name)}
+                    className={`w-full flex items-center gap-3 p-2.5 rounded-lg transition-all text-left ${
+                      selectedZone === name
+                        ? 'bg-(--color_primary_light)/15 ring-1 ring-(--color_primary_light)/30'
+                        : 'hover:bg-(--color_bg_card_hover)'
+                    }`}
+                  >
+                    <span className="text-sm text-white flex-1">
+                      {ZONE_LABELS[name] || name}
+                    </span>
+                    <div className="w-24 h-1.5 bg-(--color_border) rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full bg-gradient-to-r ${getBarColorByIntensity(zoneState.intensity)}`}
+                        style={{ width: `${Math.max(Math.round(zoneState.intensity * 100), 2)}%` }}
+                      />
+                    </div>
+                    <span className={`text-xs w-28 text-right font-medium ${cfg.color}`}>
+                      {cfg.label}
+                    </span>
+                  </button>
+                );
+              })}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}

@@ -104,6 +104,18 @@ export interface TodayOverview {
   };
 }
 
+export interface AthleteWorkoutEntry {
+  id: number;
+  date: string;
+  workoutType: 'crossfit' | 'bodybuilding' | 'cardio';
+  exercises: any[];
+  zonesLoad: Record<string, number>;
+  totalIntensity: number;
+  totalVolume: number;
+  notes: string | null;
+  scheduledWorkoutId: number | null;
+}
+
 export interface PeriodizationPoint {
   date: string;
   atl: number;
@@ -149,6 +161,10 @@ export const trainerApi = {
     privateApi.get(`/trainer/athletes/${athleteId}/avatar`, { params }),
   getAthletePeriodization: (athleteId: number) =>
     privateApi.get<{ success: boolean; data: PeriodizationData }>(`/trainer/athletes/${athleteId}/periodization`),
+  getAthleteWorkouts: (athleteId: number, from: string, to: string) =>
+    privateApi.get<{ success: boolean; data: AthleteWorkoutEntry[] }>(`/trainer/athletes/${athleteId}/workouts`, {
+      params: { from, to },
+    }),
 
   // Groups
   listGroups: () =>
