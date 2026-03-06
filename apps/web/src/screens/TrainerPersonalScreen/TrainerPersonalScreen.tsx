@@ -20,7 +20,11 @@ export default function TrainerPersonalScreen() {
   const [donatePhone, setDonatePhone] = useState('');
   const [donateCard, setDonateCard] = useState('');
   const [donateYookassaLink, setDonateYookassaLink] = useState('');
-  const [donateErrors, setDonateErrors] = useState<{ phone?: string; card?: string; link?: string }>({});
+  const [donateErrors, setDonateErrors] = useState<{
+    phone?: string;
+    card?: string;
+    link?: string;
+  }>({});
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -110,7 +114,14 @@ export default function TrainerPersonalScreen() {
     if (!validateDonate()) return;
     setSaving(true);
     try {
-      await profileApi.updateProfile({ bio, education, specializations, donatePhone: donatePhone || null, donateCard: donateCard || null, donateYookassaLink: donateYookassaLink || null });
+      await profileApi.updateProfile({
+        bio,
+        education,
+        specializations,
+        donatePhone: donatePhone || null,
+        donateCard: donateCard || null,
+        donateYookassaLink: donateYookassaLink || null,
+      });
       toast.success('Профиль сохранён');
     } catch {
       toast.error('Ошибка сохранения');
@@ -133,7 +144,11 @@ export default function TrainerPersonalScreen() {
       <div className="p-4 w-full max-w-2xl mx-auto">
         <BackButton onClick={() => navigate(-1)} />
 
-        <ScreenHeader icon="🪪" title="Профессиональный профиль" description="Фото, специализации и образование — видно вашим атлетам" />
+        <ScreenHeader
+          icon="🪪"
+          title="Профессиональный профиль"
+          description="Фото, специализации и образование — видно вашим атлетам"
+        />
 
         {/* Photo */}
         <motion.div
@@ -248,7 +263,7 @@ export default function TrainerPersonalScreen() {
                   addSpec();
                 }
               }}
-              placeholder="Кроссфит, Силовые, HIIT… (Enter)"
+              placeholder="Кроссфит, Силовые, HIIT…"
               className="flex-1 bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-(--color_text_muted)"
             />
             <button
@@ -267,14 +282,18 @@ export default function TrainerPersonalScreen() {
           transition={{ delay: 0.25 }}
           className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) mb-6"
         >
-          <label className="text-sm font-medium text-white mb-1 block">Реквизиты для поддержки</label>
+          <label className="text-sm font-medium text-white mb-1 block">
+            Реквизиты для поддержки
+          </label>
           <p className="text-xs text-(--color_text_muted) mb-4">
             Атлеты смогут поддержать вас финансово на вашей странице профиля
           </p>
 
           <div className="space-y-3">
             <div>
-              <label className="text-xs text-(--color_text_muted) mb-1 block">Телефон для СБП</label>
+              <label className="text-xs text-(--color_text_muted) mb-1 block">
+                Телефон для СБП
+              </label>
               <input
                 type="tel"
                 value={donatePhone}
@@ -282,9 +301,12 @@ export default function TrainerPersonalScreen() {
                   setDonateErrors((prev) => ({ ...prev, phone: undefined }));
                   const raw = e.target.value.replace(/[^\d+]/g, '');
                   // Normalize prefix
-                  let digits = raw.startsWith('+') ? '+' + raw.slice(1).replace(/\D/g, '') : raw.replace(/\D/g, '');
+                  let digits = raw.startsWith('+')
+                    ? '+' + raw.slice(1).replace(/\D/g, '')
+                    : raw.replace(/\D/g, '');
                   if (digits.startsWith('8')) digits = '+7' + digits.slice(1);
-                  else if (digits.startsWith('7') && !digits.startsWith('+7')) digits = '+7' + digits.slice(1);
+                  else if (digits.startsWith('7') && !digits.startsWith('+7'))
+                    digits = '+7' + digits.slice(1);
                   else if (!digits.startsWith('+')) digits = '+7' + digits;
                   // Keep only +7 + 10 digits
                   const num = digits.replace(/^\+7/, '').replace(/\D/g, '').slice(0, 10);
@@ -299,7 +321,9 @@ export default function TrainerPersonalScreen() {
                 placeholder="+7 900 123-45-67"
                 className={`w-full bg-(--color_bg_input) border rounded-xl px-4 py-3 text-white text-sm outline-none transition-colors placeholder:text-(--color_text_muted) ${donateErrors.phone ? 'border-red-500/60 focus:border-red-400' : 'border-(--color_border) focus:border-(--color_primary_light)'}`}
               />
-              {donateErrors.phone && <p className="text-xs text-red-400 mt-1">{donateErrors.phone}</p>}
+              {donateErrors.phone && (
+                <p className="text-xs text-red-400 mt-1">{donateErrors.phone}</p>
+              )}
             </div>
 
             <div>
@@ -318,7 +342,9 @@ export default function TrainerPersonalScreen() {
                 maxLength={19}
                 className={`w-full bg-(--color_bg_input) border rounded-xl px-4 py-3 text-white text-sm outline-none transition-colors placeholder:text-(--color_text_muted) ${donateErrors.card ? 'border-red-500/60 focus:border-red-400' : 'border-(--color_border) focus:border-(--color_primary_light)'}`}
               />
-              {donateErrors.card && <p className="text-xs text-red-400 mt-1">{donateErrors.card}</p>}
+              {donateErrors.card && (
+                <p className="text-xs text-red-400 mt-1">{donateErrors.card}</p>
+              )}
             </div>
 
             <div>
@@ -336,7 +362,9 @@ export default function TrainerPersonalScreen() {
                 placeholder="https://yoomoney.ru/to/..."
                 className={`w-full bg-(--color_bg_input) border rounded-xl px-4 py-3 text-white text-sm outline-none transition-colors placeholder:text-(--color_text_muted) ${donateErrors.link ? 'border-red-500/60 focus:border-red-400' : 'border-(--color_border) focus:border-(--color_primary_light)'}`}
               />
-              {donateErrors.link && <p className="text-xs text-red-400 mt-1">{donateErrors.link}</p>}
+              {donateErrors.link && (
+                <p className="text-xs text-red-400 mt-1">{donateErrors.link}</p>
+              )}
               <p className="text-xs text-(--color_text_muted) mt-1">
                 Создайте ссылку в личном кабинете ЮКасса → Приём платежей → Форма оплаты
               </p>

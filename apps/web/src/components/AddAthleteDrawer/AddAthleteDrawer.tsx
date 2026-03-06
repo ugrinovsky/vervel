@@ -143,91 +143,94 @@ export default function AddAthleteDrawer({ open, onClose, onAdded }: Props) {
     <BottomSheet open={open} onClose={onClose} title="Добавить атлета" emoji="➕">
       <div className="space-y-4">
         {/* Tabs */}
-            <div className="flex gap-2">
-              {tabs.map((t) => (
-                <button
-                  key={t.key}
-                  onClick={() => setTab(t.key)}
-                  className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
-                    tab === t.key
-                      ? 'bg-(--color_primary_light) text-white'
-                      : 'bg-(--color_bg_card_hover) text-(--color_text_muted) hover:text-white'
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
+        <div className="flex gap-2">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
+                tab === t.key
+                  ? 'bg-(--color_primary_light) text-white'
+                  : 'bg-(--color_bg_card_hover) text-(--color_text_muted) hover:text-white'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
 
-            {/* Email tab */}
-            {tab === 'email' && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-3"
+        {/* Email tab */}
+        {tab === 'email' && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-3"
+          >
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="email@example.com"
+              className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors"
+              onKeyDown={(e) => e.key === 'Enter' && handleAddByEmail()}
+            />
+            <button
+              onClick={handleAddByEmail}
+              disabled={loading || !email.trim()}
+              className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {loading ? 'Добавляем...' : 'Добавить'}
+            </button>
+          </motion.div>
+        )}
+
+        {/* Invite link tab */}
+        {tab === 'invite' && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-3"
+          >
+            {!inviteLink ? (
+              <button
+                onClick={handleGenerateInvite}
+                disabled={loading}
+                className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50"
               >
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="email@example.com"
-                  className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors"
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddByEmail()}
-                />
+                {loading ? 'Генерируем...' : 'Сгенерировать ссылку'}
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <div className="bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-sm text-white break-all">
+                  {inviteLink}
+                </div>
                 <button
-                  onClick={handleAddByEmail}
-                  disabled={loading || !email.trim()}
-                  className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+                  onClick={handleCopyLink}
+                  className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_bg_card_hover) text-white hover:opacity-90 transition-opacity"
                 >
-                  {loading ? 'Добавляем...' : 'Добавить'}
+                  Скопировать
                 </button>
-              </motion.div>
+                <button
+                  onClick={() => setInviteLink(null)}
+                  className="w-full py-2 text-sm text-(--color_text_muted) hover:text-white transition-colors"
+                >
+                  Создать новую
+                </button>
+              </div>
             )}
+          </motion.div>
+        )}
 
-            {/* Invite link tab */}
-            {tab === 'invite' && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-3"
-              >
-                {!inviteLink ? (
-                  <button
-                    onClick={handleGenerateInvite}
-                    disabled={loading}
-                    className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50"
-                  >
-                    {loading ? 'Генерируем...' : 'Сгенерировать ссылку'}
-                  </button>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-sm text-white break-all">
-                      {inviteLink}
-                    </div>
-                    <button
-                      onClick={handleCopyLink}
-                      className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_bg_card_hover) text-white hover:opacity-90 transition-opacity"
-                    >
-                      Скопировать
-                    </button>
-                    <button
-                      onClick={() => setInviteLink(null)}
-                      className="w-full py-2 text-sm text-(--color_text_muted) hover:text-white transition-colors"
-                    >
-                      Создать новую
-                    </button>
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {/* QR tab */}
-            {tab === 'qr' && (
-              <QrScanTab
-                active={tab === 'qr' && open}
-                onAdded={() => { onAdded(); onClose(); }}
-              />
-            )}
+        {/* QR tab */}
+        {tab === 'qr' && (
+          <QrScanTab
+            active={tab === 'qr' && open}
+            onAdded={() => {
+              onAdded();
+              onClose();
+            }}
+          />
+        )}
       </div>
     </BottomSheet>
   );

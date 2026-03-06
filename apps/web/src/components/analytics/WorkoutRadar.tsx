@@ -170,9 +170,9 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
                   let additionalOffsetY = 0;
 
                   if (text === 'Баланс') {
-                    additionalOffsetX = -10;
+                    additionalOffsetX = -8;
                   } else if (text === 'Сила') {
-                    additionalOffsetY = -35;
+                    additionalOffsetY = -34;
                   } else if (text === 'Объем') {
                     additionalOffsetX = 10;
                   }
@@ -249,7 +249,13 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
           </div>
 
           {/* Общий балл */}
-          <div className="p-4 rounded-lg border" style={{ backgroundColor: 'rgb(var(--color_primary_light_ch) / 0.12)', borderColor: 'rgb(var(--color_primary_light_ch) / 0.3)' }}>
+          <div
+            className="p-4 rounded-lg border"
+            style={{
+              backgroundColor: 'rgb(var(--color_primary_light_ch) / 0.12)',
+              borderColor: 'rgb(var(--color_primary_light_ch) / 0.3)',
+            }}
+          >
             <div className="text-xs text-(--color_primary_icon)/80 mb-2 font-medium">
               ⭐ Общий балл
             </div>

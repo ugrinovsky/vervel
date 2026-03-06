@@ -50,6 +50,64 @@ function part(slug: string, path: BodyPartDef['path']): BodyPartDef {
   return { slug, appZone: ZONE_MAP[slug] ?? null, path };
 }
 
+// ── Shared rendering utilities ────────────────────────────────────────────────
+
+/** Crop horizontal dead space: trim cropPct from each side of the viewBox */
+export function cropViewBox(vb: string, cropPct = 0.08): string {
+  const [minX, minY, w, h] = vb.split(' ').map(Number);
+  const trim = w * cropPct;
+  return `${minX + trim} ${minY} ${w - trim * 2} ${h}`;
+}
+
+/** Collect all SVG paths for a body part */
+export function getPaths(part: BodyPartDef): string[] {
+  return [
+    ...(part.path.common ?? []),
+    ...(part.path.left   ?? []),
+    ...(part.path.right  ?? []),
+  ];
+}
+
+/** HSL fill color for a zone intensity value. Alpha is caller-controlled. */
+export function zoneColor(intensity: number, alpha: number): string {
+  const hue =
+    intensity <= 0.5
+      ? 140 - intensity * 2 * 92
+      : 48 - (intensity - 0.5) * 2 * 53;
+  return `hsla(${hue}, 88%, 58%, ${alpha})`;
+}
+
+// ── Zone name mappings ────────────────────────────────────────────────────────
+
+/** API zone name (backend) → SVG appZone name */
+export const API_TO_BODY_ZONE: Record<string, string> = {
+  chests:    'chests',
+  biceps:    'biceps',
+  triceps:   'triceps',
+  shoulders: 'shoulders',
+  forearms:  'forearms',
+  core:      'abdominalPress',
+  back:      'backMuscles',
+  legs:      'legMuscles',
+  glutes:    'glutealMuscles',
+};
+
+/** SVG appZone name → API zone name (backend) */
+export const BODY_ZONE_TO_API: Record<string, string> = {
+  chests:          'chests',
+  biceps:          'biceps',
+  triceps:         'triceps',
+  shoulders:       'shoulders',
+  forearms:        'forearms',
+  trapezoids:      'back',
+  abdominalPress:  'core',
+  obliquePress:    'core',
+  backMuscles:     'back',
+  legMuscles:      'legs',
+  calfMuscles:     'legs',
+  glutealMuscles:  'glutes',
+};
+
 export const maleBody: BodyViewDef = {
   front: {
     viewBox: '0 0 724 1448',

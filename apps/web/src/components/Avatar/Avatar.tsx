@@ -5,7 +5,10 @@ import {
   femaleBody,
   type BodySide,
   type BodyGender,
-  type BodyPartDef,
+  cropViewBox,
+  getPaths,
+  zoneColor,
+  BODY_ZONE_TO_API,
 } from './bodyZones';
 
 // ── Cylinder helpers ──────────────────────────────────────────────────────────
@@ -20,22 +23,7 @@ function cylinderFromViewBox(vb: string) {
   };
 }
 
-// Crop horizontal dead space: trim cropPct from each side
-function cropViewBox(vb: string, cropPct = 0.08): string {
-  const [minX, minY, w, h] = vb.split(' ').map(Number);
-  const trim = w * cropPct;
-  return `${minX + trim} ${minY} ${w - trim * 2} ${h}`;
-}
-
 // ── Color helpers ──────────────────────────────────────────────────────────────
-function zoneColor(intensity: number, alpha: number): string {
-  const hue =
-    intensity <= 0.5
-      ? 140 - intensity * 2 * 92
-      : 48 - (intensity - 0.5) * 2 * 53;
-  return `hsla(${hue}, 88%, 58%, ${alpha})`;
-}
-
 function zoneStrokeColor(intensity: number): string {
   const hue =
     intensity <= 0.5
@@ -44,19 +32,11 @@ function zoneStrokeColor(intensity: number): string {
   return `hsla(${hue}, 92%, 72%, ${0.45 + intensity * 0.4})`;
 }
 
-function getPaths(part: BodyPartDef): string[] {
-  return [
-    ...(part.path.common ?? []),
-    ...(part.path.left   ?? []),
-    ...(part.path.right  ?? []),
-  ];
-}
-
 // ── Component ─────────────────────────────────────────────────────────────────
 interface BodySVGProps {
-  zoneIntensities?: Record<string, number>;
-  selectedZone?: string | null;
-  onZoneClick?: (zoneName: string) => void;
+  zoneIntensities?: Record<string, number>; // API zone keys (e.g. 'back', 'legs', 'core')
+  selectedZone?: string | null;             // API zone key
+  onZoneClick?: (zoneName: string) => void; // emits API zone key
   gender?: BodyGender;
 }
 
@@ -81,21 +61,36 @@ const BodySVG: React.FC<BodySVGProps> = ({
   const viewBox = cropViewBox(rawViewBox, 0.08);
   const cyl = cylinderFromViewBox(viewBox);
 
-  const exerciseParts  = parts.filter((p) => p.appZone !== null);
+  const exerciseParts   = parts.filter((p) => p.appZone !== null);
   const structuralParts = parts.filter((p) => p.appZone === null);
 
-  const getFill = (zoneId: string) => {
-    const intensity = zoneIntensities[zoneId] || 0;
-    if (intensity <= 0) return 'transparent';
-    return zoneColor(intensity, zoneId === selectedZone ? 0.62 : 0.22 + intensity * 0.38);
+  // Supports both appZone keys ('backMuscles') and API keys ('back') in zoneIntensities
+  const getZoneIntensity = (appZone: string): number => {
+    if (zoneIntensities[appZone] !== undefined) return zoneIntensities[appZone];
+    const apiZone = BODY_ZONE_TO_API[appZone];
+    return apiZone ? (zoneIntensities[apiZone] ?? 0) : 0;
   };
 
-  const getGlowFill = (zoneId: string) =>
-    zoneColor(zoneIntensities[zoneId] || 0, 0.42);
+  // Works whether selectedZone is an appZone key or an API key
+  const isSelected = (appZone: string): boolean => {
+    if (!selectedZone) return false;
+    if (appZone === selectedZone) return true;
+    const apiZone = BODY_ZONE_TO_API[appZone];
+    return !!apiZone && apiZone === selectedZone;
+  };
 
-  const getOutlineStroke = (zoneId: string) => {
-    if (zoneId === selectedZone) return 'rgba(255,255,255,0.75)';
-    const intensity = zoneIntensities[zoneId] || 0;
+  const getFill = (appZone: string) => {
+    const intensity = getZoneIntensity(appZone);
+    if (intensity <= 0) return 'transparent';
+    return zoneColor(intensity, isSelected(appZone) ? 0.62 : 0.22 + intensity * 0.38);
+  };
+
+  const getGlowFill = (appZone: string) =>
+    zoneColor(getZoneIntensity(appZone), 0.42);
+
+  const getOutlineStroke = (appZone: string) => {
+    if (isSelected(appZone)) return 'rgba(255,255,255,0.75)';
+    const intensity = getZoneIntensity(appZone);
     if (intensity > 0) return zoneColor(intensity, 0.15 + intensity * 0.25);
     return 'rgba(255,255,255,0.10)';
   };
@@ -238,7 +233,10 @@ const BodySVG: React.FC<BodySVGProps> = ({
                   strokeWidth={22}
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  onClick={() => onZoneClick?.(p.appZone!)}
+                  onClick={() => {
+                    const apiZone = BODY_ZONE_TO_API[p.appZone!];
+                    onZoneClick?.(apiZone ?? p.appZone!);
+                  }}
                   style={{ cursor: 'pointer', pointerEvents: 'all' }}
                 />
               ))
@@ -252,7 +250,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
                   d={d}
                   fill="none"
                   stroke={getOutlineStroke(p.appZone!)}
-                  strokeWidth={p.appZone === selectedZone ? 1.8 : 1.0}
+                  strokeWidth={isSelected(p.appZone!) ? 1.8 : 1.0}
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   initial={{ pathLength: 0 }}
@@ -268,9 +266,9 @@ const BodySVG: React.FC<BodySVGProps> = ({
             {/* Zone fills + glow */}
             {showFill &&
               exerciseParts.map((p) => {
-                const zoneId    = p.appZone!;
-                const intensity = zoneIntensities[zoneId] || 0;
-                const fill      = getFill(zoneId);
+                const appZone   = p.appZone!;
+                const intensity = getZoneIntensity(appZone);
+                const fill      = getFill(appZone);
                 if (fill === 'transparent') return null;
 
                 const isHigh   = intensity > 0.65;
@@ -284,7 +282,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
                         <motion.path
                           key={`zg-${p.slug}-${i}`}
                           d={d}
-                          fill={getGlowFill(zoneId)}
+                          fill={getGlowFill(appZone)}
                           stroke="none"
                           filter="url(#av-zone-glow)"
                           initial={{ opacity: 0 }}
@@ -312,7 +310,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
                       />
                     ))}
 
-                    {zoneId === selectedZone &&
+                    {isSelected(appZone) &&
                       paths.map((d, i) => (
                         <motion.path
                           key={`zs-${p.slug}-${i}`}

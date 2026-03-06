@@ -1,33 +1,12 @@
-import { maleBody, femaleBody, type BodyGender, type BodyPartDef } from '@/components/Avatar/bodyZones';
-
-// Maps API zone names (returned by backend) to bodyZones appZone values
-const API_TO_BODY_ZONE: Record<string, string> = {
-  chests: 'chests',
-  biceps: 'biceps',
-  triceps: 'triceps',
-  shoulders: 'shoulders',
-  forearms: 'forearms',
-  core: 'abdominalPress',
-  back: 'backMuscles',
-  legs: 'legMuscles',
-  glutes: 'glutealMuscles',
-};
-
-// Reverse: bodyZones appZone → API zone name
-const BODY_ZONE_TO_API: Record<string, string> = {
-  chests: 'chests',
-  biceps: 'biceps',
-  triceps: 'triceps',
-  shoulders: 'shoulders',
-  forearms: 'forearms',
-  trapezoids: 'back',
-  abdominalPress: 'core',
-  obliquePress: 'core',
-  backMuscles: 'back',
-  legMuscles: 'legs',
-  calfMuscles: 'legs',
-  glutealMuscles: 'glutes',
-};
+import {
+  maleBody,
+  femaleBody,
+  type BodyGender,
+  cropViewBox,
+  getPaths,
+  zoneColor,
+  BODY_ZONE_TO_API,
+} from '@/components/Avatar/bodyZones';
 
 // sm: встраивается в строку списка (20×52px)
 // md: в блоке сравнения группы (40×104px)
@@ -35,7 +14,7 @@ const BODY_ZONE_TO_API: Record<string, string> = {
 type Size = 'sm' | 'md' | 'lg';
 
 interface MiniAvatarProps {
-  zoneIntensities: Record<string, number>;
+  zoneIntensities: Record<string, number>; // API zone keys (e.g. 'back', 'legs', 'core')
   /** Отображается под силуэтом (только для md). Передайте пустую строку чтобы скрыть */
   name?: string;
   size?: Size;
@@ -43,31 +22,11 @@ interface MiniAvatarProps {
   onClick?: () => void;
 }
 
-function cropViewBox(vb: string, cropPct = 0.08): string {
-  const [minX, minY, w, h] = vb.split(' ').map(Number);
-  const trim = w * cropPct;
-  return `${minX + trim} ${minY} ${w - trim * 2} ${h}`;
-}
-
-function getPaths(part: BodyPartDef): string[] {
-  return [
-    ...(part.path.common ?? []),
-    ...(part.path.left   ?? []),
-    ...(part.path.right  ?? []),
-  ];
-}
-
+// Supports both appZone keys ('backMuscles') and API keys ('back') in zoneIntensities
 function getIntensity(appZone: string, zoneIntensities: Record<string, number>): number {
+  if (zoneIntensities[appZone] !== undefined) return zoneIntensities[appZone];
   const apiZone = BODY_ZONE_TO_API[appZone];
   return apiZone ? (zoneIntensities[apiZone] ?? 0) : 0;
-}
-
-function getFillColor(intensity: number): string {
-  if (intensity <= 0) return 'transparent';
-  const hue = intensity <= 0.5
-    ? 140 - intensity * 2 * 92
-    : 48 - (intensity - 0.5) * 2 * 53;
-  return `hsla(${hue}, 88%, 58%, ${0.35 + intensity * 0.5})`;
 }
 
 const SIZE_CLASSES: Record<Size, { wrapper: string; label: string }> = {
@@ -108,7 +67,7 @@ export default function MiniAvatar({
           <path
             d={outline}
             fill="none"
-            stroke="rgb(176 255 245 / 40%)"
+            stroke="rgba(176,200,210,0.45)"
             strokeWidth={3}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -145,8 +104,8 @@ export default function MiniAvatar({
           {/* Zone fills */}
           {exerciseParts.map((p) => {
             const intensity = getIntensity(p.appZone!, zoneIntensities);
-            const fill = getFillColor(intensity);
-            if (fill === 'transparent') return null;
+            if (intensity <= 0) return null;
+            const fill = zoneColor(intensity, 0.35 + intensity * 0.5);
             return getPaths(p).map((d, i) => (
               <path
                 key={`zf-${p.slug}-${i}`}

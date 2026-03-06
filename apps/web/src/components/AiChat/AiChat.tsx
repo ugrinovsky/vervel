@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 /** Минимальный баланс для отправки сообщения (равен AI_CHAT_MIN_CHARGE на backend) */
 const MIN_BALANCE = 0.5;
 const DISPLAY_STEP = 20;
+const MAX_INPUT_LENGTH = 1000;
 
 interface Message {
   role: 'user' | 'assistant';
@@ -88,7 +89,9 @@ export default function AiChat({ open, onClose }: Props) {
     const sentinel = topSentinelRef.current;
     if (!sentinel || messages.length === 0) return;
     const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) loadMoreHistory(); },
+      ([entry]) => {
+        if (entry.isIntersecting) loadMoreHistory();
+      },
       { threshold: 0.1 }
     );
     observer.observe(sentinel);
@@ -146,7 +149,9 @@ export default function AiChat({ open, onClose }: Props) {
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     // Reveal the new message immediately
-    setDisplayCount((prev) => Math.max(prev, newMessages.length - (messages.length - displayCount) + 1));
+    setDisplayCount((prev) =>
+      Math.max(prev, newMessages.length - (messages.length - displayCount) + 1)
+    );
     setInput('');
     setLoading(true);
     setError(null);
@@ -351,24 +356,33 @@ export default function AiChat({ open, onClose }: Props) {
             {/* Input area */}
             <div className="shrink-0 px-4 pb-4 pt-3 border-t border-(--color_border)">
               <div className="flex items-end gap-2">
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={
-                    hasEnoughBalance ? 'Спроси про тренировки…' : 'Пополните баланс в Профиле'
-                  }
-                  disabled={!hasEnoughBalance || loading}
-                  rows={1}
-                  className="flex-1 bg-(--color_bg_card) border border-(--color_border) rounded-2xl px-4 py-3 text-white text-sm resize-none outline-none focus:border-emerald-500/50 transition-colors placeholder:text-white/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ minHeight: '48px', maxHeight: '128px' }}
-                  onInput={(e) => {
-                    const t = e.currentTarget;
-                    t.style.height = 'auto';
-                    t.style.height = Math.min(t.scrollHeight, 128) + 'px';
-                  }}
-                />
+                <div className="relative flex-1">
+                  <textarea
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value.slice(0, MAX_INPUT_LENGTH))}
+                    onKeyDown={handleKeyDown}
+                    placeholder={
+                      hasEnoughBalance ? 'Спроси про тренировки…' : 'Пополните баланс в Профиле'
+                    }
+                    disabled={!hasEnoughBalance || loading}
+                    rows={1}
+                    className="w-full bg-(--color_bg_card) border border-(--color_border) rounded-2xl px-4 py-3 text-white text-sm resize-none outline-none focus:border-emerald-500/50 transition-colors placeholder:text-white/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ minHeight: '48px', maxHeight: '128px' }}
+                    onInput={(e) => {
+                      const t = e.currentTarget;
+                      t.style.height = 'auto';
+                      t.style.height = Math.min(t.scrollHeight, 128) + 'px';
+                    }}
+                  />
+                  {input.length > MAX_INPUT_LENGTH * 0.8 && (
+                    <span
+                      className={`absolute bottom-2 right-3 text-[10px] pointer-events-none ${input.length >= MAX_INPUT_LENGTH ? 'text-red-400' : 'text-white/30'}`}
+                    >
+                      {input.length}/{MAX_INPUT_LENGTH}
+                    </span>
+                  )}
+                </div>
                 <button
                   onClick={handleSend}
                   disabled={!input.trim() || loading || !hasEnoughBalance}

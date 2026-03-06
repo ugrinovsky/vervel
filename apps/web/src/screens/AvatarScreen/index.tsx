@@ -40,19 +40,6 @@ const ZONE_LABELS: Record<string, string> = {
 };
 
 /**
- * Maps ExerciseCatalog zone IDs → SVG zone names used in Avatar.
- * The backend stores zones as 'back', 'legs', 'core', 'glutes',
- * but the SVG avatar uses 'backMuscles', 'legMuscles', 'abdominalPress'.
- */
-const CATALOG_TO_SVG_ZONE: Record<string, string> = {
-  back: 'backMuscles',
-  legs: 'legMuscles',
-  core: 'abdominalPress',
-  // glutes: SVG glutealMuscles is commented out — map to legMuscles as closest
-  glutes: 'legMuscles',
-};
-
-/**
  * Фаза восстановления мышцы, определяется комбинацией:
  * - intensity (текущая нагрузка с decay)
  * - lastTrainedDaysAgo (когда последний раз тренировали)
@@ -172,13 +159,11 @@ export default function AvatarScreen() {
     loadStats();
   }, []);
 
-  // Для Avatar компонента — плоская карта intensity.
-  // Ремапим зоны ExerciseCatalog (back/legs/core/glutes) → имена SVG-зон аватара.
+  // Для Avatar компонента — плоская карта intensity по API-ключам зон.
   const zoneIntensities = useMemo(() => {
     const result: Record<string, number> = {};
     for (const [name, state] of Object.entries(zones)) {
-      const svgName = CATALOG_TO_SVG_ZONE[name] ?? name;
-      result[svgName] = Math.max(result[svgName] ?? 0, state.intensity);
+      result[name] = state.intensity;
     }
     return result;
   }, [zones]);

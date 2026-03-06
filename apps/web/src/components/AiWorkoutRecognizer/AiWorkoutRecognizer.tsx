@@ -6,6 +6,8 @@ import { aiApi, type AiWorkoutResult } from '@/api/ai';
 import { useAuth } from '@/contexts/AuthContext';
 
 const COST_RECOGNIZE = 9;
+const MAX_FILE_SIZE_MB = 5;
+const ALLOWED_TYPES = ['image/jpeg', 'image/png'] as const;
 
 interface Props {
   onResult: (result: AiWorkoutResult) => void;
@@ -99,6 +101,16 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
 
   const handleFile = (file: File) => {
     setError(null);
+
+    if (!ALLOWED_TYPES.includes(file.type as any)) {
+      setError('Поддерживаются только JPG и PNG');
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      setError(`Файл слишком большой. Максимум ${MAX_FILE_SIZE_MB} МБ`);
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
@@ -191,7 +203,7 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
                 >
                   <CameraIcon className="w-10 h-10" />
                   <span className="text-sm">Нажмите, чтобы выбрать фото</span>
-                  <span className="text-xs text-white/30">JPG, PNG, WEBP</span>
+                  <span className="text-xs text-white/30">JPG, PNG · до {MAX_FILE_SIZE_MB} МБ</span>
                 </button>
               ) : (
                 <div className="relative">
@@ -213,7 +225,7 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
               <input
                 ref={inputRef}
                 type="file"
-                accept="image/*"
+                accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                 capture="environment"
                 className="hidden"
                 onChange={(e) => {
