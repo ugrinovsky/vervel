@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import FullScreenChat from '@/components/FullScreenChat/FullScreenChat';
 import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
-import ModalOverlay from '@/components/ModalOverlay/ModalOverlay';
+import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import AnalyticsCards from '@/components/analytics/AnalyticsCards';
 import AvatarView from '@/components/AvatarView/AvatarView';
 import MiniAvatar from '@/components/MiniAvatar/MiniAvatar';
@@ -145,13 +145,14 @@ export default function TrainerAthleteDetailScreen() {
       />
 
       {/* ── Create workout overlay ────────────────────────────────────────── */}
-      <ModalOverlay open={showCreate}>
+      <BottomSheet open={showCreate} onClose={() => setShowCreate(false)} emoji="🏋️" title="Создать тренировку">
         <WorkoutInlineForm
+          noCard
           preselectedAssignee={{ type: 'athlete', id, name: athleteName }}
           onSuccess={() => setShowCreate(false)}
           onCancel={() => setShowCreate(false)}
         />
-      </ModalOverlay>
+      </BottomSheet>
 
       <div className="p-4 w-full max-w-2xl mx-auto">
         <BackButton onClick={() => navigate('/trainer/athletes')} />

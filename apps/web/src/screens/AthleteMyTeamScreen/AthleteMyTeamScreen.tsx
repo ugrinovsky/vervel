@@ -15,6 +15,7 @@ import {
   CalendarDaysIcon,
   SparklesIcon,
 } from '@heroicons/react/24/outline';
+import { TYPE_LABELS } from '@/constants/AnalyticsConstants';
 
 type ActiveChat = { chatId: number; title: string } | null;
 
@@ -24,12 +25,6 @@ type UpcomingWorkout = {
   workoutType: string;
   exerciseCount: number;
   notes: string | null;
-};
-
-const WORKOUT_LABELS: Record<string, string> = {
-  crossfit: 'CrossFit',
-  bodybuilding: 'Бодибилдинг',
-  cardio: 'Кардио',
 };
 
 const WORKOUT_COLORS: Record<string, string> = {
@@ -353,7 +348,7 @@ export default function AthleteMyTeamScreen() {
                 </div>
                 <div className="space-y-2">
                   {upcomingWorkouts.map((w) => {
-                    const label = WORKOUT_LABELS[w.workoutType] ?? w.workoutType;
+                    const label = TYPE_LABELS[w.workoutType] ?? w.workoutType;
                     const color = WORKOUT_COLORS[w.workoutType] ?? 'text-white';
                     const dateStr = formatWorkoutDate(w.date);
                     const isToday = dateStr === 'Сегодня';
@@ -370,7 +365,7 @@ export default function AthleteMyTeamScreen() {
                           <div className="flex items-center gap-2">
                             <span className={`text-xs font-semibold ${color}`}>{label}</span>
                             {isToday && (
-                              <span className="px-1.5 py-0.5 rounded bg-(--color_primary_light)/20 text-(--color_primary_light) text-[10px] font-medium">
+                              <span className="px-1.5 leading-4 rounded bg-(--color_primary_light)/20 text-(--color_primary_light) text-[10px] font-medium">
                                 Сегодня
                               </span>
                             )}
@@ -380,11 +375,11 @@ export default function AthleteMyTeamScreen() {
                             {w.notes ? ` · ${w.notes}` : ''}
                           </div>
                         </div>
-                        <div
-                          className={`text-xs font-medium shrink-0 ${isToday ? 'text-white' : 'text-(--color_text_muted)'}`}
-                        >
-                          {dateStr}
-                        </div>
+                        {!isToday && (
+                          <div className="text-xs font-medium shrink-0 text-(--color_text_muted)">
+                            {dateStr}
+                          </div>
+                        )}
                       </div>
                     );
                   })}

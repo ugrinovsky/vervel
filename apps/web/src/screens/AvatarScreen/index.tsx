@@ -7,12 +7,7 @@ import { avatarApi, type ZoneState } from '@/api/avatar';
 import { athleteApi } from '@/api/athlete';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
-
-const WORKOUT_LABELS: Record<string, string> = {
-  crossfit: 'CrossFit',
-  bodybuilding: 'Бодибилдинг',
-  cardio: 'Кардио',
-};
+import { TYPE_LABELS } from '@/constants/AnalyticsConstants';
 
 
 interface TodayWorkout {
@@ -87,7 +82,7 @@ export default function AvatarScreen() {
                     Тренировка от тренера · Сегодня
                   </div>
                   <div className="text-base font-bold text-white truncate">
-                    {WORKOUT_LABELS[todayWorkout.workoutType] ?? todayWorkout.workoutType}
+                    {TYPE_LABELS[todayWorkout.workoutType] ?? todayWorkout.workoutType}
                     {' · '}
                     {todayWorkout.exerciseCount} упр.
                   </div>

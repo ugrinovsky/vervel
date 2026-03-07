@@ -1,5 +1,6 @@
 import { WorkoutStats } from '@/types/Analytics';
 import { useMemo } from 'react';
+import { TYPE_LABELS } from '@/constants/AnalyticsConstants';
 import {
   BarChart,
   Bar,
@@ -25,12 +26,6 @@ const TYPE_COLORS: Record<string, string> = {
   mixed: '#fbbf24',
 };
 
-const TYPE_LABELS: Record<string, string> = {
-  bodybuilding: '💪 Бодибилдинг',
-  crossfit: '🏋️ Кроссфит',
-  cardio: '🏃 Кардио',
-  mixed: '🔥 Смешанная',
-};
 
 function formatVolume(v?: number) {
   if (!v || v === 0) return '—';

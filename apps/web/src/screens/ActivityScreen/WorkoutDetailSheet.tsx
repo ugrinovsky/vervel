@@ -8,7 +8,10 @@ import { exercisesApi } from '@/api/exercises';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
 import type { Exercise } from '@/types/Exercise';
 import { getWorkoutTypeLabel } from './utils';
+import { WOD_LABEL, type WodType } from '@/constants/workoutTypes';
 import zones from '@/constants/zones';
+import toast from 'react-hot-toast';
+import { PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 /* ─── Типы ──────────────────────────────────────────────────────────── */
 
@@ -21,12 +24,15 @@ interface FullWorkout {
     sets?: WorkoutSet[];
     rounds?: number;
     duration?: number;
+    timeCap?: number;
     wodType?: string;
+    distance?: number;
   }>;
   zonesLoad: Record<string, number>;
   totalIntensity: number;
   totalVolume: number;
   notes?: string;
+  rpe?: number;
 }
 
 interface Props {
@@ -36,29 +42,27 @@ interface Props {
 
 /* ─── Константы ─────────────────────────────────────────────────────── */
 
-// Строим маппинг из zones.ts + fallbacks для альтернативных ключей из БД
 const ZONE_LABEL_MAP = new Map(zones.map((z) => [z.id, z.label]));
 const ZONE_LABEL_FALLBACKS: Record<string, string> = {
-  back: 'Спина',
-  legs: 'Ноги',
-  glutes: 'Ягодицы',
-  core: 'Пресс',
-  glutealMuscles: 'Ягодицы',
+  back: 'Спина', legs: 'Ноги', glutes: 'Ягодицы', core: 'Пресс', glutealMuscles: 'Ягодицы',
 };
 function getZoneLabel(id: string): string {
   return ZONE_LABEL_MAP.get(id) ?? ZONE_LABEL_FALLBACKS[id] ?? id;
 }
-
 const ZONE_COLORS = [
-  'var(--color-emerald-400)',
-  'var(--color-emerald-600)',
-  'var(--color-emerald-300)',
-  'var(--color-emerald-700)',
-  'var(--color-emerald-500)',
-  'var(--color-emerald-200)',
-  'var(--color-emerald-800)',
-  'var(--color-emerald-100)',
+  'var(--color-emerald-400)', 'var(--color-emerald-600)', 'var(--color-emerald-300)',
+  'var(--color-emerald-700)', 'var(--color-emerald-500)', 'var(--color-emerald-200)',
 ];
+
+/* ─── RPE шкала ─────────────────────────────────────────────────────── */
+
+const RPE_LEVELS = [
+  { value: 1, label: 'Очень легко', emoji: '😴', color: 'bg-blue-500/20 border-blue-500/40 text-blue-300' },
+  { value: 2, label: 'Легко',       emoji: '😊', color: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' },
+  { value: 3, label: 'Норм',        emoji: '💪', color: 'bg-yellow-500/20 border-yellow-500/40 text-yellow-300' },
+  { value: 4, label: 'Тяжело',      emoji: '🔥', color: 'bg-orange-500/20 border-orange-500/40 text-orange-300' },
+  { value: 5, label: 'Максимум',    emoji: '💀', color: 'bg-red-500/20 border-red-500/40 text-red-300' },
+] as const;
 
 /* ─── Утилиты ───────────────────────────────────────────────────────── */
 
@@ -80,13 +84,26 @@ function formatSet(set: WorkoutSet, type: string): string {
 function exerciseVolume(sets?: WorkoutSet[]): number {
   return (sets ?? []).reduce((acc, s) => acc + (s.reps ?? 0) * (s.weight ?? 0), 0);
 }
-
 function formatVolume(v: number): string {
-  if (v >= 1000) return `${(v / 1000).toFixed(1)} т`;
-  return `${v} кг`;
+  return v >= 1000 ? `${(v / 1000).toFixed(1)} т` : `${v} кг`;
+}
+function extractTime(dateStr?: string): string | null {
+  if (!dateStr) return null;
+  try {
+    const d = new Date(dateStr);
+    const h = d.getHours();
+    const m = d.getMinutes();
+    if (h === 0 && m === 0) return null;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  } catch { return null; }
 }
 
-/* ─── Компоненты секций ─────────────────────────────────────────────── */
+// Есть ли подходы с повторами без веса (атлет должен дополнить)
+function hasSetsNeedingWeight(ex: FullWorkout['exercises'][number]): boolean {
+  return (ex.sets ?? []).some((s) => (s.reps ?? 0) > 0 && !s.weight);
+}
+
+/* ─── Секции ─────────────────────────────────────────────────────────  */
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
@@ -101,25 +118,27 @@ function IntensityBar({ value }: { value: number }) {
   return (
     <div className="flex items-center gap-2">
       <div className="flex-1 h-1.5 rounded-full bg-(--color_bg_card_hover) overflow-hidden">
-        <div
-          className="h-full rounded-full bg-linear-to-r from-emerald-600 to-emerald-400 transition-all duration-500"
-          style={{ width: `${pct}%` }}
-        />
+        <div className="h-full rounded-full bg-linear-to-r from-emerald-600 to-emerald-400 transition-all duration-500" style={{ width: `${pct}%` }} />
       </div>
       <span className="text-xs text-(--color_text_muted) tabular-nums w-8 text-right">{pct}%</span>
     </div>
   );
 }
 
+/* ─── Карточка упражнения ─────────────────────────────────────────── */
+
 function ExerciseCard({
-  ex,
-  exerciseName,
+  ex, exerciseName, isEditing, editSets, onSetChange,
 }: {
   ex: FullWorkout['exercises'][number];
   exerciseName: string;
+  isEditing: boolean;
+  editSets: WorkoutSet[];
+  onSetChange: (setIdx: number, weight: string) => void;
 }) {
-  const vol = exerciseVolume(ex.sets);
   const isWod = ex.type === 'wod';
+  const hasSets = editSets.length > 0;
+  const vol = isWod ? 0 : exerciseVolume(isEditing ? editSets : ex.sets);
 
   return (
     <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) space-y-2">
@@ -131,61 +150,108 @@ function ExerciseCard({
       </div>
 
       {isWod ? (
-        <div className="text-xs text-(--color_text_muted)">
-          {ex.wodType?.toUpperCase() ?? 'WOD'}
-          {ex.rounds ? ` · ${ex.rounds} раундов` : ''}
-          {ex.duration ? ` · ${Math.round(ex.duration / 60)} мин` : ''}
+        /* ── CrossFit WOD exercise ─────────────────────────────────── */
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {ex.wodType && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 border border-orange-500/30 text-orange-300 font-semibold">
+                {WOD_LABEL[ex.wodType as WodType] ?? ex.wodType.toUpperCase()}
+              </span>
+            )}
+            {ex.timeCap && (
+              <span className="text-xs text-(--color_text_muted)">{ex.timeCap} мин</span>
+            )}
+            {ex.rounds && (
+              <span className="text-xs text-(--color_text_muted)">{ex.rounds} раундов</span>
+            )}
+          </div>
+          <div className="flex items-center gap-3 text-xs">
+            {editSets[0]?.reps != null && (
+              <span className="text-(--color_text_secondary)">{editSets[0].reps} повт./раунд</span>
+            )}
+            {isEditing ? (
+              <input
+                type="number" min={0} step={2.5}
+                value={editSets[0]?.weight ?? ''}
+                onChange={(e) => onSetChange(0, e.target.value)}
+                onClick={(e) => e.currentTarget.select()}
+                placeholder="кг"
+                className="w-16 bg-black/20 border border-emerald-500/40 rounded-lg px-2 py-1 text-white text-sm text-center outline-none focus:border-emerald-400 transition-colors placeholder:text-white/25"
+              />
+            ) : editSets[0]?.weight ? (
+              <span className="text-(--color_text_secondary)">{editSets[0].weight} кг</span>
+            ) : (
+              <span className="text-white/30 italic">вес не указан</span>
+            )}
+            {ex.distance != null && (
+              <span className="text-(--color_text_muted)">{ex.distance} м</span>
+            )}
+          </div>
         </div>
-      ) : ex.sets && ex.sets.length > 0 ? (
-        <div className="space-y-1">
-          {ex.sets.map((s, i) => (
-            <div key={s.id ?? i} className="flex items-center gap-2 text-xs">
-              <span className="text-(--color_text_muted) w-10 shrink-0">Сет {i + 1}</span>
-              <span className="text-(--color_text_secondary)">{formatSet(s, ex.type)}</span>
+      ) : ex.type === 'cardio' || !hasSets ? (
+        /* ── Cardio / no data ──────────────────────────────────────── */
+        <div className="text-xs text-(--color_text_muted)">
+          {ex.duration ? `${Math.round(ex.duration / 60)} мин` : 'Кардио'}
+        </div>
+      ) : (
+        /* ── Bodybuilding sets ─────────────────────────────────────── */
+        <div className="space-y-1.5">
+          {isEditing && (
+            <div className="flex items-center gap-2 text-[10px] text-white/40 font-medium mb-0.5">
+              <span className="w-5" />
+              <span className="flex-1 text-center">повт</span>
+              <span className="flex-1 text-center">кг</span>
+            </div>
+          )}
+          {editSets.map((s, si) => (
+            <div key={s.id ?? si} className="flex items-center gap-2">
+              {isEditing ? (
+                <>
+                  <span className="text-[11px] font-mono font-semibold text-white/50 w-5 text-right shrink-0">{si + 1}</span>
+                  <div className="flex-1 px-2 py-1 rounded-lg bg-black/20 border border-white/10 text-sm text-white text-center tabular-nums">
+                    {s.reps ?? '—'} повт.
+                  </div>
+                  <input
+                    type="number" min={0} step={2.5}
+                    value={s.weight ?? ''}
+                    onChange={(e) => onSetChange(si, e.target.value)}
+                    onClick={(e) => e.currentTarget.select()}
+                    placeholder="кг"
+                    className="flex-1 bg-black/20 border border-emerald-500/40 rounded-lg px-2 py-1 text-white text-sm text-center outline-none focus:border-emerald-400 transition-colors placeholder:text-white/25"
+                  />
+                </>
+              ) : (
+                <>
+                  <span className="text-xs text-(--color_text_muted) w-10 shrink-0">Сет {si + 1}</span>
+                  <span className={`text-xs ${s.weight ? 'text-(--color_text_secondary)' : 'text-white/30 italic'}`}>
+                    {formatSet(s, ex.type)}
+                  </span>
+                  {!s.weight && (s.reps ?? 0) > 0 && (
+                    <span className="text-[10px] text-amber-400/70 ml-auto">вес не указан</span>
+                  )}
+                </>
+              )}
             </div>
           ))}
         </div>
-      ) : (
-        <span className="text-xs text-(--color_text_muted)">Нет данных по подходам</span>
       )}
     </div>
   );
 }
 
 function ZonesSection({ zonesLoad }: { zonesLoad: Record<string, number> }) {
-  const sorted = Object.entries(zonesLoad)
-    .filter(([, v]) => v > 0)
-    .sort(([, a], [, b]) => b - a);
-
+  const sorted = Object.entries(zonesLoad).filter(([, v]) => v > 0).sort(([, a], [, b]) => b - a);
   if (!sorted.length) return null;
-
-  const chartData = sorted.map(([zone, val]) => ({
-    name: getZoneLabel(zone),
-    value: Math.round(val * 100),
-  }));
-
+  const chartData = sorted.map(([zone, val]) => ({ name: getZoneLabel(zone), value: Math.round(val * 100) }));
   return (
     <div>
       <SectionTitle>Нагрузка по мышцам</SectionTitle>
       <ResponsiveContainer width="100%" height={sorted.length * 34 + 8}>
-        <BarChart
-          layout="vertical"
-          data={chartData}
-          margin={{ top: 0, right: 36, left: 0, bottom: 0 }}
-        >
+        <BarChart layout="vertical" data={chartData} margin={{ top: 0, right: 36, left: 0, bottom: 0 }}>
           <XAxis type="number" domain={[0, 100]} hide />
-          <YAxis
-            type="category"
-            dataKey="name"
-            width={72}
-            tick={{ fontSize: 12, fill: 'var(--color_text_muted)' }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <Bar dataKey="value" radius={[0, 4, 4, 0]} label={{ position: 'right', fontSize: 11, fill: 'var(--color_text_muted)', formatter: (v: number) => `${v}%` }}>
-            {chartData.map((_, i) => (
-              <Cell key={i} fill={ZONE_COLORS[i % ZONE_COLORS.length]} fillOpacity={0.85} />
-            ))}
+          <YAxis type="category" dataKey="name" width={72} tick={{ fontSize: 12, fill: 'var(--color_text_muted)' }} axisLine={false} tickLine={false} />
+          <Bar dataKey="value" radius={[0, 4, 4, 0]} label={{ position: 'right', fontSize: 11, fill: 'var(--color_text_muted)', formatter: (v: unknown) => `${v}%` }}>
+            {chartData.map((_, i) => <Cell key={i} fill={ZONE_COLORS[i % ZONE_COLORS.length]} fillOpacity={0.85} />)}
           </Bar>
         </BarChart>
       </ResponsiveContainer>
@@ -200,38 +266,116 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
   const [exerciseMap, setExerciseMap] = useState<Map<string, Exercise>>(new Map());
   const [loading, setLoading] = useState(false);
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [editExercises, setEditExercises] = useState<FullWorkout['exercises']>([]);
+  const [rpe, setRpe] = useState<number | null>(null);
+  const [savingWeights, setSavingWeights] = useState(false);
+  const [savingRpe, setSavingRpe] = useState(false);
+
   useEffect(() => {
     if (!workout?.id) return;
-
     setFullWorkout(null);
+    setIsEditing(false);
     setLoading(true);
 
-    Promise.all([
-      workoutsApi.get(workout.id),
-      exercisesApi.list(),
-    ])
+    Promise.all([workoutsApi.get(workout.id), exercisesApi.list()])
       .then(([res, list]) => {
-        setFullWorkout(res.data as FullWorkout);
+        const fw = res.data as FullWorkout;
+        setFullWorkout(fw);
+        setEditExercises(fw.exercises.map((ex) => ({ ...ex, sets: (ex.sets ?? []).map((s) => ({ ...s })) })));
+        setRpe(fw.rpe ?? null);
         setExerciseMap(new Map(list.map((e) => [e.id, e])));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [workout?.id]);
 
+  const handleSetChange = (exIdx: number, setIdx: number, rawWeight: string) => {
+    setEditExercises((prev) =>
+      prev.map((ex, i) => {
+        if (i !== exIdx) return ex;
+        const sets = (ex.sets ?? []).map((s, si) => {
+          if (si !== setIdx) return s;
+          const w = parseFloat(rawWeight);
+          return { ...s, weight: rawWeight === '' || isNaN(w) ? undefined : w };
+        });
+        return { ...ex, sets };
+      })
+    );
+  };
+
+  // Сохранение весов
+  const handleSaveWeights = async () => {
+    if (!fullWorkout) return;
+    setSavingWeights(true);
+    try {
+      await workoutsApi.update(fullWorkout.id, {
+        exercises: editExercises.map((ex) => ({
+          exerciseId: ex.exerciseId,
+          type: ex.type,
+          sets: ex.sets,
+          rounds: ex.rounds,
+          duration: ex.duration,
+          wodType: ex.wodType as 'amrap' | 'fortime' | 'emom' | 'tabata' | undefined,
+        })),
+      });
+      setFullWorkout((prev) => prev ? { ...prev, exercises: editExercises } : prev);
+      setIsEditing(false);
+      toast.success('Веса сохранены');
+    } catch {
+      toast.error('Ошибка сохранения');
+    } finally {
+      setSavingWeights(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    if (fullWorkout) {
+      setEditExercises(fullWorkout.exercises.map((ex) => ({ ...ex, sets: (ex.sets ?? []).map((s) => ({ ...s })) })));
+    }
+    setIsEditing(false);
+  };
+
+  // Сохранение оценки тренировки (RPE) — мгновенно при тапе
+  const handleRpeTap = async (value: number) => {
+    if (!fullWorkout) return;
+    const newRpe = rpe === value ? null : value;
+    setRpe(newRpe);
+    setSavingRpe(true);
+    try {
+      await workoutsApi.update(fullWorkout.id, { rpe: newRpe ?? undefined });
+      setFullWorkout((prev) => prev ? { ...prev, rpe: newRpe ?? undefined } : prev);
+    } catch {
+      setRpe(fullWorkout.rpe ?? null); // откат
+      toast.error('Не удалось сохранить оценку');
+    } finally {
+      setSavingRpe(false);
+    }
+  };
+
+  const timeLabel = extractTime(workout?.date);
   const dateLabel = workout?.date
     ? format(new Date(workout.date.slice(0, 10) + 'T12:00:00'), 'd MMMM yyyy', { locale: ru })
     : '';
+
+  const hasMissingWeights = fullWorkout?.exercises.some(hasSetsNeedingWeight) ?? false;
+  const currentRpeLevel = RPE_LEVELS.find((r) => r.value === rpe);
+  // Прошлая тренировка — можно оценивать и редактировать
+  const isPast = workout?.date ? new Date(workout.date) <= new Date() : false;
 
   return (
     <BottomSheet
       open={workout !== null}
       onClose={onClose}
       header={
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-bold text-white">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-lg font-bold text-white shrink-0">
             {getWorkoutTypeLabel(workout?.type ?? 'unknown')}
           </span>
-          <span className="text-sm text-(--color_text_muted)">{dateLabel}</span>
+          <span className="text-sm text-(--color_text_muted) truncate">{dateLabel}</span>
+          {timeLabel && (
+            <span className="text-sm font-semibold text-white/70 tabular-nums shrink-0">{timeLabel}</span>
+          )}
         </div>
       }
     >
@@ -242,96 +386,173 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
       )}
 
       {!loading && fullWorkout && (
-        <div className="space-y-6 pt-2">
-          {/* Интенсивность + бейджи */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              {workout?.scheduledWorkoutId != null && (
-                <span className="text-xs px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30">
-                  📋 От тренера
-                </span>
-              )}
-            </div>
-            <div>
-              <span className="text-xs text-(--color_text_muted) mb-1 block">Интенсивность</span>
-              <IntensityBar value={fullWorkout.totalIntensity} />
-            </div>
+        <div className="space-y-5 pt-1">
+
+          {/* ── Бейджи ───────────────────────────────────────────── */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {workout?.scheduledWorkoutId != null && (
+              <span className="text-xs px-2 py-1 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30 font-medium">
+                📋 От тренера
+              </span>
+            )}
+            {!isPast && (
+              <span className="text-xs px-2 py-1 bg-white/5 text-white/40 rounded-full border border-white/10">
+                предстоящая
+              </span>
+            )}
+            {isPast && hasMissingWeights && !isEditing && (
+              <span className="text-xs px-2 py-1 bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30">
+                ⚠ нет весов
+              </span>
+            )}
+            {isPast && !isEditing && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-(--color_bg_card_hover) text-(--color_text_muted) border border-(--color_border) hover:text-white transition-colors"
+              >
+                <PencilIcon className="w-3.5 h-3.5" />
+                {hasMissingWeights ? 'Добавить веса' : 'Изменить'}
+              </button>
+            )}
           </div>
 
-          {/* Список упражнений */}
-          {fullWorkout.exercises.length > 0 && (
-            <div>
-              <SectionTitle>Упражнения · {fullWorkout.exercises.length}</SectionTitle>
-              <div className="space-y-2">
-                {fullWorkout.exercises.map((ex, i) => {
-                  const name =
-                    exerciseMap.get(ex.exerciseId)?.title ??
-                    ex.exerciseId.replace(/_/g, ' ');
-                  return <ExerciseCard key={i} ex={ex} exerciseName={name} />;
+          {/* ── RPE — оценка (только прошедшая, вне режима редактирования) ── */}
+          {isPast && !isEditing && (
+            <div className="bg-(--color_bg_card_hover) rounded-xl p-3 border border-(--color_border)">
+              <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wide mb-2.5">
+                Как прошла тренировка?
+              </p>
+              <div className="grid grid-cols-5 gap-1.5">
+                {RPE_LEVELS.map((level) => {
+                  const selected = rpe === level.value;
+                  return (
+                    <button
+                      key={level.value}
+                      type="button"
+                      onClick={() => handleRpeTap(level.value)}
+                      disabled={savingRpe}
+                      className={`flex flex-col items-center gap-1 py-2 px-1 rounded-xl border transition-all disabled:opacity-50 ${
+                        selected
+                          ? `${level.color} scale-105`
+                          : 'bg-(--color_bg_card) border-(--color_border) hover:border-white/20 active:scale-95'
+                      }`}
+                    >
+                      <span className="text-xl">{level.emoji}</span>
+                      <span className={`text-[10px] font-medium leading-tight text-center ${selected ? '' : 'text-(--color_text_muted)'}`}>
+                        {level.label}
+                      </span>
+                    </button>
+                  );
                 })}
               </div>
             </div>
           )}
 
-          {/* Нагрузка по мышцам */}
-          <ZonesSection zonesLoad={fullWorkout.zonesLoad ?? {}} />
-
-          {/* Итого */}
-          <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border)">
-            <SectionTitle>Итого</SectionTitle>
-            <div className="grid grid-cols-2 gap-3">
-              {fullWorkout.totalVolume > 0 && (
-                <div>
-                  <div className="text-lg font-bold text-emerald-400">
-                    {formatVolume(fullWorkout.totalVolume)}
-                  </div>
-                  <div className="text-xs text-(--color_text_muted)">Объём</div>
-                </div>
-              )}
-              <div>
-                <div className="text-lg font-bold text-emerald-400">
-                  {Math.round(fullWorkout.totalIntensity * 100)}%
-                </div>
-                <div className="text-xs text-(--color_text_muted)">Интенсивность</div>
+          {/* ── Режим редактирования весов ────────────────────────── */}
+          {isEditing && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
+                <PencilIcon className="w-4 h-4 shrink-0" />
+                Укажите вес для каждого подхода
               </div>
-              <div>
-                <div className="text-lg font-bold text-white">
-                  {fullWorkout.exercises.length}
-                </div>
-                <div className="text-xs text-(--color_text_muted)">Упражнений</div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCancelEdit}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm text-(--color_text_muted) border border-(--color_border) hover:text-white transition-colors"
+                >
+                  <XMarkIcon className="w-4 h-4" />
+                  Отмена
+                </button>
+                <button
+                  onClick={handleSaveWeights}
+                  disabled={savingWeights}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium bg-emerald-500 text-black hover:bg-emerald-400 transition-colors disabled:opacity-50"
+                >
+                  <CheckIcon className="w-4 h-4" />
+                  {savingWeights ? 'Сохранение...' : 'Сохранить'}
+                </button>
               </div>
-              {fullWorkout.totalVolume > 0 && (
-                <div>
-                  <div className="text-lg font-bold text-amber-400">
-                    {Math.round(fullWorkout.totalVolume * 0.05).toLocaleString()}
-                  </div>
-                  <div className="text-xs text-(--color_text_muted)">Калорий ~</div>
-                </div>
-              )}
             </div>
-          </div>
+          )}
 
-          {/* Заметки */}
-          {fullWorkout.notes && (
+          {/* ── Интенсивность ──────────────────────────────────────── */}
+          {fullWorkout.totalIntensity > 0 && (
+            <div>
+              <span className="text-xs text-(--color_text_muted) mb-1 block">Интенсивность</span>
+              <IntensityBar value={fullWorkout.totalIntensity} />
+            </div>
+          )}
+
+          {/* ── Упражнения ─────────────────────────────────────────── */}
+          {fullWorkout.exercises.length > 0 && (
+            <div>
+              <SectionTitle>Упражнения · {fullWorkout.exercises.length}</SectionTitle>
+              <div className="space-y-2">
+                {fullWorkout.exercises.map((ex, i) => {
+                  const name = exerciseMap.get(ex.exerciseId)?.title ?? ex.exerciseId.replace(/_/g, ' ');
+                  return (
+                    <ExerciseCard
+                      key={i}
+                      ex={ex}
+                      exerciseName={name}
+                      isEditing={isEditing}
+                      editSets={editExercises[i]?.sets ?? ex.sets ?? []}
+                      onSetChange={(setIdx, weight) => handleSetChange(i, setIdx, weight)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── Нагрузка по зонам ──────────────────────────────────── */}
+          {!isEditing && <ZonesSection zonesLoad={fullWorkout.zonesLoad ?? {}} />}
+
+          {/* ── Итого ──────────────────────────────────────────────── */}
+          {!isEditing && (
+            <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border)">
+              <SectionTitle>Итого</SectionTitle>
+              <div className="grid grid-cols-2 gap-3">
+                {fullWorkout.totalVolume > 0 && (
+                  <div>
+                    <div className="text-lg font-bold text-emerald-400">{formatVolume(fullWorkout.totalVolume)}</div>
+                    <div className="text-xs text-(--color_text_muted)">Объём</div>
+                  </div>
+                )}
+                <div>
+                  <div className="text-lg font-bold text-emerald-400">{Math.round(fullWorkout.totalIntensity * 100)}%</div>
+                  <div className="text-xs text-(--color_text_muted)">Интенсивность</div>
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-white">{fullWorkout.exercises.length}</div>
+                  <div className="text-xs text-(--color_text_muted)">Упражнений</div>
+                </div>
+                {fullWorkout.totalVolume > 0 && (
+                  <div>
+                    <div className="text-lg font-bold text-amber-400">{Math.round(fullWorkout.totalVolume * 0.05).toLocaleString()}</div>
+                    <div className="text-xs text-(--color_text_muted)">Калорий ~</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── Заметки ────────────────────────────────────────────── */}
+          {!isEditing && fullWorkout.notes && (
             <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border)">
               <SectionTitle>Заметки</SectionTitle>
-              <p className="text-sm text-(--color_text_secondary) leading-relaxed">
-                {fullWorkout.notes}
-              </p>
+              <p className="text-sm text-(--color_text_secondary) leading-relaxed">{fullWorkout.notes}</p>
             </div>
           )}
         </div>
       )}
 
       {!loading && !fullWorkout && workout?.id && (
-        <div className="text-center py-10 text-(--color_text_muted) text-sm">
-          Не удалось загрузить детали
-        </div>
+        <div className="text-center py-10 text-(--color_text_muted) text-sm">Не удалось загрузить детали</div>
       )}
 
       {!loading && !workout?.id && (
         <div className="space-y-4 pt-2">
-          {/* Базовая инфа из timeline без id */}
           <div>
             <span className="text-xs text-(--color_text_muted) mb-1 block">Интенсивность</span>
             <IntensityBar value={workout?.intensity ?? 0} />
@@ -339,14 +560,9 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
           {(workout?.volume ?? 0) > 0 && (
             <div>
               <span className="text-xs text-(--color_text_muted)">Объём</span>
-              <p className="text-lg font-bold text-emerald-400 mt-0.5">
-                {formatVolume(workout?.volume ?? 0)}
-              </p>
+              <p className="text-lg font-bold text-emerald-400 mt-0.5">{formatVolume(workout?.volume ?? 0)}</p>
             </div>
           )}
-          <p className="text-xs text-(--color_text_muted)">
-            Детали по упражнениям появятся после обновления страницы
-          </p>
         </div>
       )}
     </BottomSheet>

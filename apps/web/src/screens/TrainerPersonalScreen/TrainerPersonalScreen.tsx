@@ -7,6 +7,7 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import { profileApi, type ProfileUser } from '@/api/profile';
 import { CameraIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import BackButton from '@/components/BackButton/BackButton';
+import FormField from '@/components/FormField';
 
 export default function TrainerPersonalScreen() {
   const navigate = useNavigate();
@@ -196,14 +197,15 @@ export default function TrainerPersonalScreen() {
           transition={{ delay: 0.1 }}
           className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) mb-4"
         >
-          <label className="text-sm font-medium text-white mb-2 block">О себе</label>
-          <textarea
-            value={bio}
-            onChange={(e) => setBio(e.target.value.slice(0, 500))}
-            rows={4}
-            placeholder="Расскажите о своём опыте, подходе к тренировкам…"
-            className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm resize-none outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-(--color_text_muted)"
-          />
+          <FormField label="О себе">
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value.slice(0, 500))}
+              rows={4}
+              placeholder="Расскажите о своём опыте, подходе к тренировкам…"
+              className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm resize-none outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-(--color_text_muted)"
+            />
+          </FormField>
           <p className="text-xs text-(--color_text_muted) text-right mt-1">{bio.length}/500</p>
         </motion.div>
 
@@ -214,14 +216,15 @@ export default function TrainerPersonalScreen() {
           transition={{ delay: 0.15 }}
           className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) mb-4"
         >
-          <label className="text-sm font-medium text-white mb-2 block">Образование</label>
-          <input
-            type="text"
-            value={education}
-            onChange={(e) => setEducation(e.target.value)}
-            placeholder="ВУЗ, специальность, курсы…"
-            className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-(--color_text_muted)"
-          />
+          <FormField label="Образование">
+            <input
+              type="text"
+              value={education}
+              onChange={(e) => setEducation(e.target.value)}
+              placeholder="ВУЗ, специальность, курсы…"
+              className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-(--color_text_muted)"
+            />
+          </FormField>
         </motion.div>
 
         {/* Specializations */}
@@ -231,48 +234,49 @@ export default function TrainerPersonalScreen() {
           transition={{ delay: 0.2 }}
           className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) mb-6"
         >
-          <label className="text-sm font-medium text-white mb-2 block">Специализации</label>
-
-          {specializations.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {specializations.map((s) => (
-                <span
-                  key={s}
-                  className="flex items-center gap-1 px-3 py-1 rounded-full bg-(--color_primary_light)/20 text-(--color_primary_light) text-sm"
+          <FormField label="Специализации">
+            <>
+              {specializations.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {specializations.map((s) => (
+                    <span
+                      key={s}
+                      className="flex items-center gap-1 px-3 py-1 rounded-full bg-(--color_primary_light)/20 text-(--color_primary_light) text-sm"
+                    >
+                      {s}
+                      <button
+                        onClick={() => removeSpec(s)}
+                        className="hover:opacity-70 transition-opacity"
+                      >
+                        <XMarkIcon className="w-3.5 h-3.5" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={specInput}
+                  onChange={(e) => setSpecInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addSpec();
+                    }
+                  }}
+                  placeholder="Кроссфит, Силовые, HIIT…"
+                  className="flex-1 bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-(--color_text_muted)"
+                />
+                <button
+                  onClick={addSpec}
+                  className="px-4 py-3 rounded-xl bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity"
                 >
-                  {s}
-                  <button
-                    onClick={() => removeSpec(s)}
-                    className="hover:opacity-70 transition-opacity"
-                  >
-                    <XMarkIcon className="w-3.5 h-3.5" />
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={specInput}
-              onChange={(e) => setSpecInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  addSpec();
-                }
-              }}
-              placeholder="Кроссфит, Силовые, HIIT…"
-              className="flex-1 bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-(--color_text_muted)"
-            />
-            <button
-              onClick={addSpec}
-              className="px-4 py-3 rounded-xl bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity"
-            >
-              +
-            </button>
-          </div>
+                  +
+                </button>
+              </div>
+            </>
+          </FormField>
         </motion.div>
 
         {/* Donation requisites */}
@@ -282,94 +286,84 @@ export default function TrainerPersonalScreen() {
           transition={{ delay: 0.25 }}
           className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) mb-6"
         >
-          <label className="text-sm font-medium text-white mb-1 block">
-            Реквизиты для поддержки
-          </label>
-          <p className="text-xs text-(--color_text_muted) mb-4">
-            Атлеты смогут поддержать вас финансово на вашей странице профиля
-          </p>
+          <FormField label="Реквизиты для поддержки">
+            <p className="text-xs text-(--color_text_muted) mb-4">
+              Атлеты смогут поддержать вас финансово на вашей странице профиля
+            </p>
+            <div className="space-y-3">
+              <FormField label="Телефон для СБП">
+                <input
+                  type="tel"
+                  value={donatePhone}
+                  onChange={(e) => {
+                    setDonateErrors((prev) => ({ ...prev, phone: undefined }));
+                    const raw = e.target.value.replace(/[^\d+]/g, '');
+                    // Normalize prefix
+                    let digits = raw.startsWith('+')
+                      ? '+' + raw.slice(1).replace(/\D/g, '')
+                      : raw.replace(/\D/g, '');
+                    if (digits.startsWith('8')) digits = '+7' + digits.slice(1);
+                    else if (digits.startsWith('7') && !digits.startsWith('+7'))
+                      digits = '+7' + digits.slice(1);
+                    else if (!digits.startsWith('+')) digits = '+7' + digits;
+                    // Keep only +7 + 10 digits
+                    const num = digits.replace(/^\+7/, '').replace(/\D/g, '').slice(0, 10);
+                    // Format: +7 XXX XXX-XX-XX
+                    let formatted = '+7';
+                    if (num.length > 0) formatted += ' ' + num.slice(0, 3);
+                    if (num.length > 3) formatted += ' ' + num.slice(3, 6);
+                    if (num.length > 6) formatted += '-' + num.slice(6, 8);
+                    if (num.length > 8) formatted += '-' + num.slice(8, 10);
+                    setDonatePhone(formatted);
+                  }}
+                  placeholder="+7 900 123-45-67"
+                  className={`w-full bg-(--color_bg_input) border rounded-xl px-4 py-3 text-white text-sm outline-none transition-colors placeholder:text-(--color_text_muted) ${donateErrors.phone ? 'border-red-500/60 focus:border-red-400' : 'border-(--color_border) focus:border-(--color_primary_light)'}`}
+                />
+                {donateErrors.phone && (
+                  <p className="text-xs text-red-400 mt-1">{donateErrors.phone}</p>
+                )}
+              </FormField>
 
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs text-(--color_text_muted) mb-1 block">
-                Телефон для СБП
-              </label>
-              <input
-                type="tel"
-                value={donatePhone}
-                onChange={(e) => {
-                  setDonateErrors((prev) => ({ ...prev, phone: undefined }));
-                  const raw = e.target.value.replace(/[^\d+]/g, '');
-                  // Normalize prefix
-                  let digits = raw.startsWith('+')
-                    ? '+' + raw.slice(1).replace(/\D/g, '')
-                    : raw.replace(/\D/g, '');
-                  if (digits.startsWith('8')) digits = '+7' + digits.slice(1);
-                  else if (digits.startsWith('7') && !digits.startsWith('+7'))
-                    digits = '+7' + digits.slice(1);
-                  else if (!digits.startsWith('+')) digits = '+7' + digits;
-                  // Keep only +7 + 10 digits
-                  const num = digits.replace(/^\+7/, '').replace(/\D/g, '').slice(0, 10);
-                  // Format: +7 XXX XXX-XX-XX
-                  let formatted = '+7';
-                  if (num.length > 0) formatted += ' ' + num.slice(0, 3);
-                  if (num.length > 3) formatted += ' ' + num.slice(3, 6);
-                  if (num.length > 6) formatted += '-' + num.slice(6, 8);
-                  if (num.length > 8) formatted += '-' + num.slice(8, 10);
-                  setDonatePhone(formatted);
-                }}
-                placeholder="+7 900 123-45-67"
-                className={`w-full bg-(--color_bg_input) border rounded-xl px-4 py-3 text-white text-sm outline-none transition-colors placeholder:text-(--color_text_muted) ${donateErrors.phone ? 'border-red-500/60 focus:border-red-400' : 'border-(--color_border) focus:border-(--color_primary_light)'}`}
-              />
-              {donateErrors.phone && (
-                <p className="text-xs text-red-400 mt-1">{donateErrors.phone}</p>
-              )}
-            </div>
+              <FormField label="Номер карты">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={donateCard}
+                  onChange={(e) => {
+                    setDonateErrors((prev) => ({ ...prev, card: undefined }));
+                    const digits = e.target.value.replace(/\D/g, '').slice(0, 16);
+                    const formatted = digits.replace(/(.{4})/g, '$1 ').trim();
+                    setDonateCard(formatted);
+                  }}
+                  placeholder="0000 0000 0000 0000"
+                  maxLength={19}
+                  className={`w-full bg-(--color_bg_input) border rounded-xl px-4 py-3 text-white text-sm outline-none transition-colors placeholder:text-(--color_text_muted) ${donateErrors.card ? 'border-red-500/60 focus:border-red-400' : 'border-(--color_border) focus:border-(--color_primary_light)'}`}
+                />
+                {donateErrors.card && (
+                  <p className="text-xs text-red-400 mt-1">{donateErrors.card}</p>
+                )}
+              </FormField>
 
-            <div>
-              <label className="text-xs text-(--color_text_muted) mb-1 block">Номер карты</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={donateCard}
-                onChange={(e) => {
-                  setDonateErrors((prev) => ({ ...prev, card: undefined }));
-                  const digits = e.target.value.replace(/\D/g, '').slice(0, 16);
-                  const formatted = digits.replace(/(.{4})/g, '$1 ').trim();
-                  setDonateCard(formatted);
-                }}
-                placeholder="0000 0000 0000 0000"
-                maxLength={19}
-                className={`w-full bg-(--color_bg_input) border rounded-xl px-4 py-3 text-white text-sm outline-none transition-colors placeholder:text-(--color_text_muted) ${donateErrors.card ? 'border-red-500/60 focus:border-red-400' : 'border-(--color_border) focus:border-(--color_primary_light)'}`}
-              />
-              {donateErrors.card && (
-                <p className="text-xs text-red-400 mt-1">{donateErrors.card}</p>
-              )}
+              <FormField label={<>Ссылка ЮКасса <span className="text-(--color_text_muted) font-normal">(необязательно)</span></>}>
+                <input
+                  type="url"
+                  value={donateYookassaLink}
+                  onChange={(e) => {
+                    setDonateErrors((prev) => ({ ...prev, link: undefined }));
+                    setDonateYookassaLink(e.target.value);
+                  }}
+                  placeholder="https://yoomoney.ru/to/..."
+                  className={`w-full bg-(--color_bg_input) border rounded-xl px-4 py-3 text-white text-sm outline-none transition-colors placeholder:text-(--color_text_muted) ${donateErrors.link ? 'border-red-500/60 focus:border-red-400' : 'border-(--color_border) focus:border-(--color_primary_light)'}`}
+                />
+                {donateErrors.link && (
+                  <p className="text-xs text-red-400 mt-1">{donateErrors.link}</p>
+                )}
+                <p className="text-xs text-(--color_text_muted) mt-1">
+                  Создайте ссылку в личном кабинете ЮКасса → Приём платежей → Форма оплаты
+                </p>
+              </FormField>
             </div>
-
-            <div>
-              <label className="text-xs text-(--color_text_muted) mb-1 block">
-                Ссылка ЮКасса{' '}
-                <span className="text-(--color_text_muted) font-normal">(необязательно)</span>
-              </label>
-              <input
-                type="url"
-                value={donateYookassaLink}
-                onChange={(e) => {
-                  setDonateErrors((prev) => ({ ...prev, link: undefined }));
-                  setDonateYookassaLink(e.target.value);
-                }}
-                placeholder="https://yoomoney.ru/to/..."
-                className={`w-full bg-(--color_bg_input) border rounded-xl px-4 py-3 text-white text-sm outline-none transition-colors placeholder:text-(--color_text_muted) ${donateErrors.link ? 'border-red-500/60 focus:border-red-400' : 'border-(--color_border) focus:border-(--color_primary_light)'}`}
-              />
-              {donateErrors.link && (
-                <p className="text-xs text-red-400 mt-1">{donateErrors.link}</p>
-              )}
-              <p className="text-xs text-(--color_text_muted) mt-1">
-                Создайте ссылку в личном кабинете ЮКасса → Приём платежей → Форма оплаты
-              </p>
-            </div>
-          </div>
+          </FormField>
         </motion.div>
 
         {/* Save */}

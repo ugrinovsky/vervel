@@ -7,7 +7,8 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import AddAthleteDrawer from '@/components/AddAthleteDrawer/AddAthleteDrawer';
 import { trainerApi, type AthleteListItem, type UnreadCounts } from '@/api/trainer';
 import InlineAthleteAvatar from '@/components/MiniAvatar/InlineAthleteAvatar';
-import { PlusIcon, TrashIcon, CheckIcon, XMarkIcon, UsersIcon, ClockIcon, ChatBubbleLeftEllipsisIcon, Squares2X2Icon, ViewColumnsIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, UsersIcon, ClockIcon, ChatBubbleLeftEllipsisIcon, Squares2X2Icon, ViewColumnsIcon } from '@heroicons/react/24/outline';
+import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 
 export default function TrainerAthletesListScreen() {
   const navigate = useNavigate();
@@ -15,7 +16,6 @@ export default function TrainerAthletesListScreen() {
   const [unreadCounts, setUnreadCounts] = useState<UnreadCounts | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddDrawer, setShowAddDrawer] = useState(false);
-  const [confirmRemoveId, setConfirmRemoveId] = useState<number | null>(null);
   const [cols, setCols] = useState<2 | 3>(() => {
     const stored = localStorage.getItem('athletes_grid_cols');
     return stored === '3' ? 3 : 2;
@@ -47,7 +47,6 @@ export default function TrainerAthletesListScreen() {
   const handleRemoveAthlete = async (athleteId: number) => {
     try {
       await trainerApi.removeAthlete(athleteId);
-      setConfirmRemoveId(null);
       toast.success('Атлет отвязан');
       loadData();
     } catch {
@@ -137,12 +136,14 @@ export default function TrainerAthletesListScreen() {
                         {unread > 99 ? '99+' : unread}
                       </div>
                     )}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setConfirmRemoveId(athlete.id); }}
-                      className="absolute top-2.5 left-2.5 text-(--color_text_muted) hover:text-red-400 transition-colors p-0.5 z-10"
-                    >
-                      <TrashIcon className="w-3.5 h-3.5" />
-                    </button>
+                    <ConfirmDeleteButton
+                      variant="overlay"
+                      label="Отвязать?"
+                      overlayRounded="rounded-2xl"
+                      overlayLayout="column"
+                      onConfirm={() => handleRemoveAthlete(athlete.id)}
+                      className="absolute top-2.5 left-2.5 z-10 p-0.5"
+                    />
                     <InlineAthleteAvatar athleteId={athlete.id} size={cols === 2 ? 'lg' : 'md'} />
                     <div className="w-full text-center">
                       <div className={`font-semibold text-white leading-tight line-clamp-2 ${cols === 2 ? 'text-sm' : 'text-xs'}`}>
@@ -152,22 +153,6 @@ export default function TrainerAthletesListScreen() {
                         {athlete.status === 'pending' ? '⏳ Ожидает' : athlete.email}
                       </div>
                     </div>
-                    {confirmRemoveId === athlete.id && (
-                      <div
-                        className="absolute inset-0 rounded-2xl bg-black/50 backdrop-blur-sm flex flex-col items-center justify-center gap-2 z-10"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <span className="text-xs text-red-400 font-medium">Отвязать?</span>
-                        <div className="flex gap-2">
-                          <button onClick={() => handleRemoveAthlete(athlete.id)} className="p-1.5 text-red-400 hover:text-red-300 transition-colors" title="Да">
-                            <CheckIcon className="w-5 h-5" />
-                          </button>
-                          <button onClick={() => setConfirmRemoveId(null)} className="p-1.5 text-white/60 hover:text-white transition-colors" title="Отмена">
-                            <XMarkIcon className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
-                    )}
                   </motion.div>
                 );
               })}

@@ -38,6 +38,11 @@ export interface AssignedTo {
   name: string;
 }
 
+export interface ExerciseSetDetail {
+  reps: number;
+  weight?: number;
+}
+
 export interface ExerciseData {
   exerciseId?: string;  // UUID упражнения из БД (нужен для расчёта зон нагрузки)
   name: string;
@@ -48,6 +53,11 @@ export interface ExerciseData {
   distance?: number;
   notes?: string;       // тренерский комментарий к упражнению
   blockId?: string;     // упражнения с одинаковым blockId — суперсет
+  setsDetail?: ExerciseSetDetail[]; // per-set data (pyramid support, bodybuilding only)
+  // CrossFit / WOD fields
+  wodType?: 'amrap' | 'fortime' | 'emom' | 'tabata';
+  timeCap?: number;     // минут: AMRAP — время работы; EMOM — общее время; For Time — time cap
+  rounds?: number;      // For Time / Tabata — количество раундов
 }
 
 export interface WorkoutData {

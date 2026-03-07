@@ -18,6 +18,18 @@ function pluralWorkouts(n: number): string {
   return `${n} тренировок`;
 }
 
+function extractTime(dateStr: string): string | null {
+  try {
+    const d = new Date(dateStr);
+    const h = d.getHours();
+    const m = d.getMinutes();
+    if (h === 0 && m === 0) return null;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  } catch {
+    return null;
+  }
+}
+
 function WorkoutTile({
   workout,
   onClick,
@@ -29,6 +41,8 @@ function WorkoutTile({
   const volumeKg = workout.volume ?? 0;
   const volumeLabel = volumeKg >= 1000 ? `${(volumeKg / 1000).toFixed(1)} т` : `${volumeKg} кг`;
   const intensityPct = Math.round((workout.intensity ?? 0) * 100);
+  const timeLabel = extractTime(workout.date);
+  const fromTrainer = workout.scheduledWorkoutId != null;
 
   return (
     <button
@@ -37,13 +51,18 @@ function WorkoutTile({
     >
       {/* Заголовок */}
       <div className="flex items-center justify-between gap-2 mb-3">
-        <span className="text-sm font-semibold text-white">
-          {getWorkoutTypeLabel(workout.type ?? 'unknown')}
-        </span>
-        <div className="flex items-center gap-1.5">
-          {workout.scheduledWorkoutId != null && (
-            <span className="text-xs px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30">
-              📋
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm font-semibold text-white truncate">
+            {getWorkoutTypeLabel(workout.type ?? 'unknown')}
+          </span>
+          {timeLabel && (
+            <span className="text-xs text-(--color_text_muted) tabular-nums shrink-0">{timeLabel}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {fromTrainer && (
+            <span className="text-xs px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30 font-medium">
+              от тренера
             </span>
           )}
           <span className="text-xs text-(--color_text_muted)">→</span>

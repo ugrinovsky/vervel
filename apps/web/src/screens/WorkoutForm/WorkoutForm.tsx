@@ -6,30 +6,25 @@ import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
-import DatePicker, { registerLocale } from 'react-datepicker';
-import { ru } from 'date-fns/locale';
-import UiListbox from '@/components/ui/Listbox';
+import WorkoutTypeTabs, { type WorkoutType } from '@/components/WorkoutTypeTabs';
+import WorkoutDateTimeRow from '@/components/WorkoutDateTimeRow';
+import FormField from '@/components/FormField';
 import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
 import ExerciseList from './ExerciseList';
 import ExerciseDrawer from './ExerciseDrawer';
 import { getLocalDateISOString } from '@/util/exercise';
 import { workoutsApi, WorkoutExercise } from '@/api/workouts';
 import type { ExerciseWithSets } from '@/types/Exercise';
-import { WorkoutTypeOption, workoutTypes } from '@/constants/workoutTypes';
 import AiWorkoutRecognizer from '@/components/AiWorkoutRecognizer/AiWorkoutRecognizer';
 import type { AiWorkoutResult } from '@/api/ai';
-import 'react-datepicker/dist/react-datepicker.css';
-import '@/styles/datepicker.css';
-
-registerLocale('ru', ru);
 
 export default function WorkoutForm() {
   const navigate = useNavigate();
   const location = useLocation();
   const prefillDate = (location.state as { date?: string } | null)?.date;
 
-  const [workoutType, setWorkoutType] = useState<WorkoutTypeOption>(workoutTypes[0]);
-  const [date, setDate] = useState(() => {
+  const [workoutType, setWorkoutType] = useState<WorkoutType>('crossfit');
+  const [date, setDate] = useState<Date>(() => {
     if (prefillDate) {
       const [y, m, d] = prefillDate.split('-').map(Number);
       return new Date(y, m - 1, d);
@@ -59,12 +54,7 @@ export default function WorkoutForm() {
   };
 
   const handleAiResult = (result: AiWorkoutResult) => {
-    // Устанавливаем тип тренировки из AI
-    const typeOption = workoutTypes.find((t) => t.value === result.workoutType) ?? workoutTypes[0];
-    setWorkoutType(typeOption);
-
-    // Конвертируем AiExercise[] → ExerciseWithSets[]
-    // exerciseId: реальный из каталога (для расчёта зон мышц) или временный 'ai-N'
+    setWorkoutType(result.workoutType);
     const converted: ExerciseWithSets[] = result.exercises.map((ex, i) => ({
       exerciseId: ex.exerciseId ?? `ai-${i}`,
       title: ex.name,
@@ -87,13 +77,13 @@ export default function WorkoutForm() {
     try {
       const exercisesPayload: WorkoutExercise[] = exercises.map((ex) => ({
         exerciseId: String(ex.exerciseId),
-        type: 'strength' as const,
+        type: workoutType === 'crossfit' ? 'wod' as const : workoutType === 'cardio' ? 'cardio' as const : 'strength' as const,
         sets: ex.sets,
       }));
 
       const payload = {
         date: `${getLocalDateISOString(date)}T${format(time, 'HH:mm')}:00`,
-        workoutType: workoutType.value,
+        workoutType,
         exercises: exercisesPayload,
         notes: notes || undefined,
       };
@@ -110,7 +100,7 @@ export default function WorkoutForm() {
   };
 
   return (
-    <Screen>
+    <Screen className="workout-form-screen">
       <div className="p-4 max-w-md text-white">
         <ScreenHeader
           icon="💪"
@@ -123,55 +113,28 @@ export default function WorkoutForm() {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-4"
         >
-          <div>
-            <label className="block mb-2 text-sm text-white/70">Тип тренировки</label>
-            <UiListbox value={workoutType} options={workoutTypes} onChange={setWorkoutType} />
-          </div>
+          <FormField label="Когда">
+            <WorkoutDateTimeRow
+              date={date}
+              time={time}
+              onDateChange={setDate}
+              onTimeChange={setTime}
+            />
+          </FormField>
 
-          {/* Date + Time row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block mb-2 text-sm text-white/70">Дата</label>
-              <DatePicker
-                selected={date}
-                onChange={(d: Date | null) => d && setDate(d)}
-                dateFormat="d MMM yyyy"
-                locale="ru"
-                wrapperClassName="w-full"
-                className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50"
-                calendarClassName="dark-datepicker"
-                popperPlacement="bottom-start"
-              />
-            </div>
-            <div>
-              <label className="block mb-2 text-sm text-white/70">Время</label>
-              <DatePicker
-                selected={time}
-                onChange={(t: Date | null) => t && setTime(t)}
-                showTimeSelect
-                showTimeSelectOnly
-                timeIntervals={15}
-                timeCaption="Время"
-                dateFormat="HH:mm"
-                timeFormat="HH:mm"
-                locale="ru"
-                wrapperClassName="w-full"
-                className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50"
-                calendarClassName="dark-datepicker"
-              />
-            </div>
-          </div>
+          <FormField label="Тип тренировки">
+            <WorkoutTypeTabs value={workoutType} onChange={setWorkoutType} />
+          </FormField>
 
-          <div>
-            <label className="block mb-2 text-sm text-white/70">Заметки (опционально)</label>
+          <FormField label="Заметки (опционально)">
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Как прошла тренировка, самочувствие..."
               rows={3}
-              className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/40 resize-none"
+              className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none placeholder:text-(--color_text_muted) leading-relaxed"
             />
-          </div>
+          </FormField>
         </motion.div>
 
         <motion.div
@@ -181,7 +144,7 @@ export default function WorkoutForm() {
           className="space-y-2"
         >
           <AiWorkoutRecognizer onResult={handleAiResult} />
-          <ExercisePicker onSelect={handleAddExercise} workoutType={workoutType.value} />
+          <ExercisePicker onSelect={handleAddExercise} workoutType={workoutType} />
         </motion.div>
 
         <motion.div
@@ -200,7 +163,7 @@ export default function WorkoutForm() {
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="mt-6 w-full py-3 rounded-xl bg-emerald-500 text-black font-medium disabled:opacity-50"
+            className="mt-6 w-full py-3 rounded-xl bg-(--color_primary_light) text-white font-medium disabled:opacity-50 hover:opacity-90 transition-opacity"
           >
             {loading ? 'Сохраняем…' : 'Сохранить'}
           </button>
@@ -210,6 +173,7 @@ export default function WorkoutForm() {
           <ExerciseDrawer
             open={showDrawer}
             exercise={currentExercise}
+            workoutType={workoutType}
             onClose={() => setShowDrawer(false)}
             onSave={handleSaveExercise}
           />

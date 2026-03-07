@@ -104,7 +104,13 @@ interface ContentProps {
   onAdd?: (exercise: ExerciseWithSets) => void;
 }
 
-export function ExerciseDetailContent({ exercise, full, loading, workoutType, onAdd }: ContentProps) {
+export function ExerciseDetailContent({
+  exercise,
+  full,
+  loading,
+  workoutType,
+  onAdd,
+}: ContentProps) {
   const [sets, setSets] = useState(3);
   const [reps, setReps] = useState(10);
   const [weight, setWeight] = useState(0);
@@ -170,7 +176,11 @@ export function ExerciseDetailContent({ exercise, full, loading, workoutType, on
       {loading && (
         <div className="space-y-2 mb-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-4 rounded bg-white/10 animate-pulse" style={{ width: `${70 + i * 10}%` }} />
+            <div
+              key={i}
+              className="h-4 rounded bg-white/10 animate-pulse"
+              style={{ width: `${70 + i * 10}%` }}
+            />
           ))}
         </div>
       )}
@@ -195,7 +205,9 @@ export function ExerciseDetailContent({ exercise, full, loading, workoutType, on
         <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
           {workoutType === 'cardio' ? (
             <div>
-              <label className="text-xs text-(--color_text_muted) mb-1 block">Длительность (мин)</label>
+              <label className="text-xs text-(--color_text_muted) mb-1 block">
+                Длительность (мин)
+              </label>
               <input
                 type="number"
                 value={duration}
@@ -219,7 +231,7 @@ export function ExerciseDetailContent({ exercise, full, loading, workoutType, on
                 />
               </div>
               <div>
-                <label className="text-xs text-(--color_text_muted) mb-1 block">Повторы</label>
+                <label className="text-xs text-(--color_text_muted) mb-1 block">Подходы</label>
                 <input
                   type="number"
                   value={reps}
@@ -267,7 +279,13 @@ interface Props {
   onAdd?: (exercise: ExerciseWithSets) => void;
 }
 
-export default function ExerciseDetailSheet({ exercise, open, onClose, workoutType, onAdd }: Props) {
+export default function ExerciseDetailSheet({
+  exercise,
+  open,
+  onClose,
+  workoutType,
+  onAdd,
+}: Props) {
   const [full, setFull] = useState<ExerciseFull | null>(null);
   const [loading, setLoading] = useState(false);
 

@@ -30,6 +30,7 @@ export interface CreateWorkoutDTO {
   workoutType: 'crossfit' | 'bodybuilding' | 'cardio';
   exercises: WorkoutExercise[];
   notes?: string;
+  rpe?: number; // 1-5 — субъективная оценка нагрузки (Rate of Perceived Exertion)
 }
 
 export const workoutsApi = {

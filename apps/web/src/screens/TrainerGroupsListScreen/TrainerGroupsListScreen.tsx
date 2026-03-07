@@ -5,7 +5,8 @@ import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import { trainerApi, type TrainerGroupItem, type UnreadCounts } from '@/api/trainer';
-import { PlusIcon, UserGroupIcon, TrashIcon, CheckIcon, XMarkIcon, UsersIcon, ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, UserGroupIcon, UsersIcon, ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline';
+import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 
 export default function TrainerGroupsListScreen() {
   const navigate = useNavigate();
@@ -14,7 +15,6 @@ export default function TrainerGroupsListScreen() {
   const [loading, setLoading] = useState(true);
   const [showGroupInput, setShowGroupInput] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
-  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   const loadData = async () => {
     try {
@@ -52,7 +52,6 @@ export default function TrainerGroupsListScreen() {
   const handleDeleteGroup = async (id: number) => {
     try {
       await trainerApi.deleteGroup(id);
-      setConfirmDeleteId(null);
       toast.success('Группа удалена');
       loadData();
     } catch {
@@ -163,27 +162,12 @@ export default function TrainerGroupsListScreen() {
                           {unread > 99 ? '99+' : unread}
                         </div>
                       )}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(group.id); }}
-                        className="text-(--color_text_muted) hover:text-red-400 transition-colors p-1"
-                      >
-                        <TrashIcon className="w-4 h-4" />
-                      </button>
+                      <ConfirmDeleteButton
+                        variant="overlay"
+                        label="Удалить группу?"
+                        onConfirm={() => handleDeleteGroup(group.id)}
+                      />
                     </div>
-                    {confirmDeleteId === group.id && (
-                      <div
-                        className="absolute inset-0 rounded-xl bg-black/40 backdrop-blur-sm flex items-center justify-center gap-3 z-10"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <span className="text-sm text-red-400 font-medium">Удалить группу?</span>
-                        <button onClick={() => handleDeleteGroup(group.id)} className="p-1.5 text-red-400 hover:text-red-300 transition-colors" title="Да">
-                          <CheckIcon className="w-5 h-5" />
-                        </button>
-                        <button onClick={() => setConfirmDeleteId(null)} className="p-1.5 text-white/60 hover:text-white transition-colors" title="Отмена">
-                          <XMarkIcon className="w-5 h-5" />
-                        </button>
-                      </div>
-                    )}
                   </div>
                 );
               })}

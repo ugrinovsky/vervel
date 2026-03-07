@@ -156,14 +156,9 @@ export const ZONE_LABELS: Record<string, string> = {
 } as const;
 
 /**
- * Лейблы для типов тренировок
+ * Лейблы для типов тренировок — source of truth в workoutTypes.ts
  */
-export const TYPE_LABELS: Record<string, string> = {
-  mixed: 'Смешанная',
-  crossfit: 'Кроссфит',
-  bodybuilding: 'Бодибилдинг',
-  cardio: 'Кардио',
-} as const;
+export { TYPE_LABELS } from '@/constants/workoutTypes';
 
 /**
  * Лейблы для периодов

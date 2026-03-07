@@ -1,20 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { getDaysInMonth, startOfMonth } from 'date-fns';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
+import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import TrainerCalendar, { type TrainerDayData } from '@/components/TrainerCalendar/TrainerCalendar';
 import { trainerApi, type ScheduledWorkout } from '@/api/trainer';
 
-import { PlusIcon, TrashIcon, CheckIcon, XMarkIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
-
-const WORKOUT_TYPE_LABELS: Record<string, string> = {
-  crossfit: 'CrossFit',
-  bodybuilding: 'Силовая',
-  cardio: 'Кардио',
-};
+import { PlusIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
+import { TYPE_LABELS } from '@/constants/AnalyticsConstants';
 
 const WORKOUT_TYPE_COLORS: Record<string, string> = {
   crossfit: 'bg-white/10 ring-1 ring-inset ring-white/20',
@@ -56,7 +53,6 @@ export default function TrainerCalendarScreen() {
   // selectedTime: null = form hidden, string = form open with that time pre-filled
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [editingWorkout, setEditingWorkout] = useState<ScheduledWorkout | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   const loadWorkouts = async (month: Date) => {
     try {
@@ -137,23 +133,11 @@ export default function TrainerCalendarScreen() {
   const openFormAt = (time: string) => {
     setEditingWorkout(null);
     setSelectedTime(time);
-    setTimeout(() => {
-      document.getElementById('workout-form')?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    }, 100);
   };
 
   const openEditForm = (workout: ScheduledWorkout) => {
     setSelectedTime(null);
     setEditingWorkout(workout);
-    setTimeout(() => {
-      document.getElementById('workout-form')?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    }, 100);
   };
 
   return (
@@ -241,8 +225,8 @@ export default function TrainerCalendarScreen() {
                             key={workout.id}
                             initial={{ opacity: 0, x: -8 }}
                             animate={{ opacity: 1, x: 0 }}
-                            onClick={() => { setConfirmDeleteId(null); openEditForm(workout); }}
-                            className={`relative rounded-xl px-3 py-2 flex items-center justify-between gap-2 cursor-pointer hover:opacity-90 transition-opacity ${
+                            onClick={() => openEditForm(workout)}
+                            className={`rounded-xl px-3 py-2 flex items-center justify-between gap-2 cursor-pointer hover:opacity-90 transition-opacity ${
                               editingWorkout?.id === workout.id ? 'ring-2 ring-white/40' : ''
                             } ${
                               WORKOUT_TYPE_COLORS[workout.workoutData.type] ??
@@ -254,7 +238,7 @@ export default function TrainerCalendarScreen() {
                                 {getWorkoutMinutes(workout.scheduledDate)}
                               </span>
                               <span className="text-sm font-medium text-white truncate">
-                                {WORKOUT_TYPE_LABELS[workout.workoutData.type] ??
+                                {TYPE_LABELS[workout.workoutData.type] ??
                                   workout.workoutData.type}
                               </span>
                               {workout.assignedTo.length > 0 && (
@@ -265,26 +249,7 @@ export default function TrainerCalendarScreen() {
                                 </span>
                               )}
                             </div>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(workout.id); }}
-                              className="text-white/40 hover:text-red-400 transition-colors shrink-0 p-1"
-                            >
-                              <TrashIcon className="w-3.5 h-3.5" />
-                            </button>
-                            {confirmDeleteId === workout.id && (
-                              <div
-                                className="absolute inset-0 rounded-xl bg-black/40 backdrop-blur-sm flex items-center justify-center gap-3 z-10"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <span className="text-sm text-red-400 font-medium">Удалить?</span>
-                                <button onClick={() => handleDelete(workout.id)} className="p-1.5 text-red-400 hover:text-red-300 transition-colors" title="Да">
-                                  <CheckIcon className="w-5 h-5" />
-                                </button>
-                                <button onClick={() => setConfirmDeleteId(null)} className="p-1.5 text-white/60 hover:text-white transition-colors" title="Отмена">
-                                  <XMarkIcon className="w-5 h-5" />
-                                </button>
-                              </div>
-                            )}
+                            <ConfirmDeleteButton onConfirm={() => handleDelete(workout.id)} />
                           </motion.div>
                         ))}
 
@@ -320,43 +285,39 @@ export default function TrainerCalendarScreen() {
             })}
           </div>
 
-          {/* Inline create / edit form */}
-          <AnimatePresence>
-            {(selectedTime !== null || editingWorkout !== null) && (
-              <motion.div
-                id="workout-form"
-                key={editingWorkout ? `edit-${editingWorkout.id}` : `${selectedDateStr}-${selectedTime}`}
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="px-3 mb-3"
-              >
-                {editingWorkout ? (
-                  <WorkoutInlineForm
-                    key={editingWorkout.id}
-                    editWorkout={editingWorkout}
-                    onSuccess={() => {
-                      setEditingWorkout(null);
-                      loadWorkouts(currentMonth);
-                    }}
-                    onCancel={() => setEditingWorkout(null)}
-                  />
-                ) : (
-                  <WorkoutInlineForm
-                    preselectedDate={selectedDateStr}
-                    preselectedTime={selectedTime!}
-                    onSuccess={() => {
-                      setSelectedTime(null);
-                      loadWorkouts(currentMonth);
-                    }}
-                    onCancel={() => setSelectedTime(null)}
-                  />
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </div>
+      <BottomSheet
+        open={selectedTime !== null || editingWorkout !== null}
+        onClose={() => { setSelectedTime(null); setEditingWorkout(null); }}
+        title={editingWorkout ? 'Редактировать тренировку' : 'Создать тренировку'}
+        emoji="💪"
+      >
+        {editingWorkout ? (
+          <WorkoutInlineForm
+            key={editingWorkout.id}
+            editWorkout={editingWorkout}
+            noCard
+            onSuccess={() => {
+              setEditingWorkout(null);
+              loadWorkouts(currentMonth);
+            }}
+            onCancel={() => setEditingWorkout(null)}
+          />
+        ) : selectedTime !== null ? (
+          <WorkoutInlineForm
+            key={`${selectedDateStr}-${selectedTime}`}
+            preselectedDate={selectedDateStr}
+            preselectedTime={selectedTime}
+            noCard
+            onSuccess={() => {
+              setSelectedTime(null);
+              loadWorkouts(currentMonth);
+            }}
+            onCancel={() => setSelectedTime(null)}
+          />
+        ) : null}
+      </BottomSheet>
     </Screen>
   );
 }
