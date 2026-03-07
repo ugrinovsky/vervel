@@ -15,6 +15,12 @@ export default function RegisterScreen() {
   );
   const [gender, setGender] = useState<'male' | 'female' | null>(null);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{
+    fullName?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
   const navigate = useNavigate();
   const { login } = useAuth();
   const inviteToken = new URLSearchParams(window.location.search).get('invite');
@@ -40,12 +46,16 @@ export default function RegisterScreen() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (password !== confirmPassword) {
-      toast.error('Пароли не совпадают');
-      return;
-    }
-    if (password.length < 6) {
-      toast.error('Минимум 6 символов в пароле');
+    const newErrors: typeof errors = {};
+    if (!fullName.trim()) newErrors.fullName = 'Введите имя';
+    if (!email) newErrors.email = 'Введите email';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = 'Некорректный email';
+    if (!password) newErrors.password = 'Введите пароль';
+    else if (password.length < 6) newErrors.password = 'Минимум 6 символов';
+    if (!confirmPassword) newErrors.confirmPassword = 'Повторите пароль';
+    else if (password !== confirmPassword) newErrors.confirmPassword = 'Пароли не совпадают';
+    if (Object.keys(newErrors).length) {
+      setErrors(newErrors);
       return;
     }
 
@@ -116,11 +126,11 @@ export default function RegisterScreen() {
               <input
                 type="text"
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50"
+                onChange={(e) => { setFullName(e.target.value); setErrors((p) => ({ ...p, fullName: undefined })); }}
+                className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.fullName ? 'border-red-400' : 'border-white/20'}`}
                 placeholder="Ваше имя"
-                required
               />
+              {errors.fullName && <p className="mt-1 text-xs text-red-400">{errors.fullName}</p>}
             </div>
 
             <div>
@@ -128,11 +138,11 @@ export default function RegisterScreen() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50"
+                onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: undefined })); }}
+                className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.email ? 'border-red-400' : 'border-white/20'}`}
                 placeholder="your@email.com"
-                required
               />
+              {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email}</p>}
             </div>
 
             <div>
@@ -140,11 +150,11 @@ export default function RegisterScreen() {
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50"
+                onChange={(e) => { setPassword(e.target.value); setErrors((p) => ({ ...p, password: undefined })); }}
+                className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.password ? 'border-red-400' : 'border-white/20'}`}
                 placeholder="Минимум 6 символов"
-                required
               />
+              {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password}</p>}
             </div>
 
             <div>
@@ -154,11 +164,11 @@ export default function RegisterScreen() {
               <input
                 type="password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50"
+                onChange={(e) => { setConfirmPassword(e.target.value); setErrors((p) => ({ ...p, confirmPassword: undefined })); }}
+                className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.confirmPassword ? 'border-red-400' : 'border-white/20'}`}
                 placeholder="Повторите пароль"
-                required
               />
+              {errors.confirmPassword && <p className="mt-1 text-xs text-red-400">{errors.confirmPassword}</p>}
             </div>
 
             {/* Gender selection */}

@@ -14,11 +14,6 @@ const WORKOUT_LABELS: Record<string, string> = {
   cardio: 'Кардио',
 };
 
-const WORKOUT_COLORS: Record<string, string> = {
-  crossfit: 'from-orange-500 to-red-500',
-  bodybuilding: 'from-violet-500 to-purple-500',
-  cardio: 'from-blue-500 to-cyan-500',
-};
 
 interface TodayWorkout {
   id: number;
@@ -81,8 +76,8 @@ export default function AvatarScreen() {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              onClick={() => navigate('/activity')}
-              className={`w-full text-left rounded-2xl p-4 mb-6 bg-linear-to-r ${WORKOUT_COLORS[todayWorkout.workoutType] ?? 'from-violet-500 to-purple-500'} relative overflow-hidden`}
+              onClick={() => navigate('/calendar')}
+              className="w-full text-left rounded-2xl p-4 mb-6 main-button relative overflow-hidden"
             >
               <div className="absolute inset-0 bg-black/20" />
               <div className="relative flex items-center gap-3">

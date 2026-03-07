@@ -23,7 +23,7 @@ export default function ActivityScreen() {
   const handleMonthChange = (newMonth: Date) => setCurrentMonth(newMonth);
 
   if (loading) {
-    return <Screen className="activity-screen" />;
+    return <Screen loading className="activity-screen" />;
   }
 
   if (!stats) {

@@ -34,11 +34,16 @@ const ASTEROIDS = [...Array(8)].map((_, i) => ({
   x2: Math.random() * 30 + 20,
 }));
 
+function validateEmail(v: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+}
+
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -78,6 +83,17 @@ export default function LoginScreen() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const newErrors: typeof errors = {};
+    if (!email) newErrors.email = 'Введите email';
+    else if (!validateEmail(email)) newErrors.email = 'Некорректный email';
+    if (!password) newErrors.password = 'Введите пароль';
+    else if (password.length < 6) newErrors.password = 'Минимум 6 символов';
+    if (Object.keys(newErrors).length) {
+      setErrors(newErrors);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -273,12 +289,12 @@ export default function LoginScreen() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50"
+                  onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: undefined })); }}
+                  className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.email ? 'border-red-400' : 'border-white/20'}`}
                   placeholder="your@email.com"
-                  required
                 />
               </div>
+              {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email}</p>}
             </div>
 
             {/* Пароль */}
@@ -288,10 +304,9 @@ export default function LoginScreen() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-white/50"
+                  onChange={(e) => { setPassword(e.target.value); setErrors((p) => ({ ...p, password: undefined })); }}
+                  className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.password ? 'border-red-400' : 'border-white/20'}`}
                   placeholder="••••••••"
-                  required
                 />
                 <button
                   type="button"
@@ -301,6 +316,7 @@ export default function LoginScreen() {
                   {showPassword ? '🌙' : '☀️'}
                 </button>
               </div>
+              {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password}</p>}
             </div>
 
             {/* Дополнительно */}
