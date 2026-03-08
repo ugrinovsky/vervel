@@ -6,9 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import { aiApi } from '@/api/ai';
 import { checkForNewAchievements } from '@/hooks/useAchievementToast';
 import { useAuth } from '@/contexts/AuthContext';
-
-/** Минимальный баланс для отправки сообщения (равен AI_CHAT_MIN_CHARGE на backend) */
-const MIN_BALANCE = 0.5;
+import { AI_CHAT_MIN_BALANCE as MIN_BALANCE } from '@/constants/ai';
 const DISPLAY_STEP = 20;
 const MAX_INPUT_LENGTH = 1000;
 

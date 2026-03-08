@@ -16,6 +16,7 @@ import {
   SparklesIcon,
 } from '@heroicons/react/24/outline';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
+import { AI_CHAT_MIN_BALANCE } from '@/constants/ai';
 
 type ActiveChat = { chatId: number; title: string } | null;
 
@@ -168,7 +169,7 @@ export default function AthleteMyTeamScreen() {
               Вопросы про тренировки, питание, восстановление
             </p>
           </div>
-          <span className="text-xs text-(--color_text_muted) shrink-0">6₽/сообщение</span>
+          <span className="text-xs text-(--color_text_muted) shrink-0">от {AI_CHAT_MIN_BALANCE}₽/сообщение</span>
         </motion.button>
 
         {isEmpty ? (
