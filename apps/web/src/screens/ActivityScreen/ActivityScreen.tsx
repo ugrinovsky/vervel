@@ -21,6 +21,7 @@ export default function ActivityScreen() {
 
   const handleSelectDay = (day: DayData) => setSelectedDate(day.date);
   const handleMonthChange = (newMonth: Date) => setCurrentMonth(newMonth);
+  const handleGoToToday = (today: Date) => setSelectedDate(today);
 
   if (loading) {
     return <Screen loading className="activity-screen" />;
@@ -65,6 +66,7 @@ export default function ActivityScreen() {
             selectedDate={selectedDate}
             onSelect={handleSelectDay}
             onMonthChange={handleMonthChange}
+            onGoToToday={handleGoToToday}
             month={currentMonth}
             days={days}
           />

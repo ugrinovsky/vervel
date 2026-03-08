@@ -5,6 +5,13 @@ import { WorkoutStats } from '@/types/Analytics';
 
 export type StatsPeriod = 'week' | 'month' | 'year';
 
+const localDateStr = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
 const getDateRange = (period: StatsPeriod) => {
   const now = new Date();
   const from = new Date(now);
@@ -14,8 +21,8 @@ const getDateRange = (period: StatsPeriod) => {
   if (period === 'year') from.setFullYear(now.getFullYear() - 1);
 
   return {
-    from: from.toISOString().slice(0, 10),
-    to: now.toISOString().slice(0, 10) + 'T23:59:59',
+    from: localDateStr(from),
+    to: localDateStr(now) + 'T23:59:59',
   };
 };
 

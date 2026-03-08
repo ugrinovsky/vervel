@@ -16,6 +16,7 @@ interface ActivityCalendarProps {
   selectedDate: Date | null;
   onSelect: (day: DayData) => void;
   onMonthChange?: (month: Date) => void;
+  onGoToToday?: (today: Date) => void;
   month?: Date;
   days: DayData[];
 }
@@ -51,6 +52,7 @@ export default function ActivityCalendar({
   selectedDate,
   onSelect,
   onMonthChange,
+  onGoToToday,
   month = new Date(),
   days,
 }: ActivityCalendarProps) {
@@ -71,6 +73,7 @@ export default function ActivityCalendar({
     const today = new Date();
     setCurrentMonth(today);
     onMonthChange?.(today);
+    onGoToToday?.(today);
   };
 
   const startDayIndex = getMondayIndex(startOfMonth(currentMonth));

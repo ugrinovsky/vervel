@@ -21,6 +21,7 @@ export interface WorkoutExercise {
   type: 'strength' | 'cardio' | 'wod';
   sets?: WorkoutSet[];
   wodType?: 'amrap' | 'fortime' | 'emom' | 'tabata';
+  timeCap?: number;
   duration?: number;
   rounds?: number;
 }

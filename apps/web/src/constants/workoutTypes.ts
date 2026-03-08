@@ -1,46 +1,21 @@
-export interface WorkoutTypeOption {
-  value: 'bodybuilding' | 'crossfit' | 'cardio';
-  label: string;
-}
+// ── Workout Type Config (единый источник истины для лейблов) ─────────
 
-export const workoutTypes: WorkoutTypeOption[] = [
-  { value: 'bodybuilding', label: '💪 Бодибилдинг' },
-  { value: 'crossfit', label: '🏋️ Кроссфит' },
-  { value: 'cardio', label: '🏃 Кардио' },
-];
-
-// ── CrossFit WOD types ───────────────────────────────────────────────
-
-export type WodType = 'amrap' | 'fortime' | 'emom' | 'tabata';
-
-export interface WodTypeOption {
-  value: WodType;
-  label: string;
-  hint: string;
-}
-
-export const WOD_TYPES: WodTypeOption[] = [
-  { value: 'amrap',   label: 'AMRAP',    hint: 'макс. раундов за время' },
-  { value: 'fortime', label: 'For Time', hint: 'раунды на время' },
-  { value: 'emom',    label: 'EMOM',     hint: 'каждую минуту' },
-  { value: 'tabata',  label: 'Tabata',   hint: '20с/10с × раунды' },
-];
-
-export const WOD_LABEL: Record<WodType, string> = {
-  amrap:   'AMRAP',
-  fortime: 'For Time',
-  emom:    'EMOM',
-  tabata:  'Tabata',
-};
-
-// ── Workout type labels (shared across all screens) ──────────────────
-
-export const TYPE_LABELS: Record<string, string> = {
-  mixed:        'Смешанная',
+export const WORKOUT_TYPE_CONFIG: Record<string, string> = {
   crossfit:     'Кроссфит',
   bodybuilding: 'Бодибилдинг',
   cardio:       'Кардио',
 };
+
+// ── CrossFit WOD types ───────────────────────────────────────────────
+
+export const WOD_CONFIG = {
+  amrap:   { label: 'AMRAP',    hint: 'макс. раундов за время' },
+  fortime: { label: 'For Time', hint: 'раунды на время' },
+  emom:    { label: 'EMOM',     hint: 'каждую минуту' },
+  tabata:  { label: 'Tabata',   hint: '20с/10с × раунды' },
+} as const;
+
+export type WodType = keyof typeof WOD_CONFIG;
 
 // ── Brief exercise summary (for chips / previews) ────────────────────
 
@@ -57,7 +32,7 @@ export interface ExerciseBriefData {
 export function exerciseBrief(ex: ExerciseBriefData): string {
   if (ex.duration != null) return `${ex.duration} мин`;
   if (ex.wodType) {
-    const wod = WOD_LABEL[ex.wodType as WodType] ?? ex.wodType.toUpperCase();
+    const wod = WOD_CONFIG[ex.wodType as WodType]?.label ?? ex.wodType.toUpperCase();
     const ctx = ex.timeCap ? ` ${ex.timeCap}мин` : ex.rounds ? ` ${ex.rounds}р` : '';
     const reps = ex.reps ? ` · ${ex.reps}×` : '';
     return wod + ctx + reps;

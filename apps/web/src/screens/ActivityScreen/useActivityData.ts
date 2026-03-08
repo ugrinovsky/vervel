@@ -1,27 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
-import { useWorkoutStats } from '@/hooks/useWorkoutsStats';
+import { workoutsApi } from '@/api/workouts';
 import type { DayData } from '@/components/ActivityGraph/ActivityGraph';
-import type { WorkoutTimelineEntry } from '@/types/Analytics';
+import type { WorkoutTimelineEntry, WorkoutStats } from '@/types/Analytics';
 
 const DEFAULT_DURATION = 60;
 const CALORIES_PER_KG = 0.05;
-
-const VOLUME_THRESHOLDS = {
-  HIGH: 15000,
-  MEDIUM: 10000,
-} as const;
-
-function getLoadLevel(volume?: number, intensity?: number): DayData['load'] {
-  if (volume && volume > 0) {
-    if (volume > VOLUME_THRESHOLDS.HIGH) return 'high';
-    if (volume > VOLUME_THRESHOLDS.MEDIUM) return 'medium';
-    return 'low';
-  }
-  // Кардио/кросс-фит: volume = 0, но тренировка реальная — используем intensity
-  if (intensity && intensity > 0) return 'low';
-  return 'none';
-}
 
 function findWorkoutByDate(timeline: WorkoutTimelineEntry[], dateStr: string) {
   return timeline.find((w) => format(new Date(w.date), 'yyyy-MM-dd') === dateStr);
@@ -61,11 +45,30 @@ const EMPTY_DAY_STATS: DayStats = {
   fromTrainer: false,
 };
 
+const localDateStr = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
 export function useActivityData() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [stats, setStats] = useState<WorkoutStats | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const { data: stats, loading } = useWorkoutStats('month');
+  useEffect(() => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const from = localDateStr(new Date(year, month, 1));
+    const to = localDateStr(new Date(year, month + 1, 0)) + 'T23:59:59';
+    setLoading(true);
+    workoutsApi.stats(from, to)
+      .then((res) => setStats(res.data))
+      .catch(() => setStats(null))
+      .finally(() => setLoading(false));
+  }, [currentMonth]);
 
   const days: DayData[] = useMemo(() => {
     if (!stats?.timeline) return [];
@@ -81,8 +84,8 @@ export function useActivityData() {
       return {
         date,
         workoutsCount: workout ? 1 : 0,
-        load: getLoadLevel(workout?.volume, workout?.intensity),
-        workoutType: workout?.type,
+        load: (workout?.loadLevel ?? 'none') as DayData['load'],
+        workoutType: workout?.type as DayData['workoutType'],
         intensity: workout?.intensity,
         fromTrainer: workout?.scheduledWorkoutId != null,
       };

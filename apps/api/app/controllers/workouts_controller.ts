@@ -13,7 +13,7 @@ export default class WorkoutsController {
     const user = auth.user!;
     const data = await request.validateUsing(createWorkoutValidator);
 
-    const calculated = await WorkoutCalculator.calculateZoneLoads(data.exercises, data.workoutType);
+    const calculated = await WorkoutCalculator.calculateZoneLoads(data.exercises, data.workoutType, data.rpe);
 
     const workout = await Workout.create({
       userId: user.id,
@@ -21,6 +21,7 @@ export default class WorkoutsController {
       workoutType: data.workoutType,
       exercises: data.exercises,
       notes: data.notes || '',
+      rpe: data.rpe ?? null,
       zonesLoad: calculated.zonesLoad,
       totalIntensity: calculated.totalIntensity,
       totalVolume: calculated.totalVolume,
@@ -85,13 +86,14 @@ export default class WorkoutsController {
 
     const data = await request.validateUsing(updateWorkoutValidator);
 
-    const calculated = await WorkoutCalculator.calculateZoneLoads(data.exercises, data.workoutType);
+    const calculated = await WorkoutCalculator.calculateZoneLoads(data.exercises, data.workoutType, data.rpe);
 
     workout.merge({
       date: DateTime.fromISO(data.date),
       workoutType: data.workoutType,
       exercises: data.exercises,
       notes: data.notes || '',
+      rpe: data.rpe ?? null,
       zonesLoad: calculated.zonesLoad,
       totalIntensity: calculated.totalIntensity,
       totalVolume: calculated.totalVolume,

@@ -8,7 +8,7 @@ import { exercisesApi } from '@/api/exercises';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
 import type { Exercise } from '@/types/Exercise';
 import { getWorkoutTypeLabel } from './utils';
-import { WOD_LABEL, type WodType } from '@/constants/workoutTypes';
+import { WOD_CONFIG, type WodType } from '@/constants/workoutTypes';
 import zones from '@/constants/zones';
 import toast from 'react-hot-toast';
 import { PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -155,7 +155,7 @@ function ExerciseCard({
           <div className="flex flex-wrap items-center gap-1.5">
             {ex.wodType && (
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 border border-orange-500/30 text-orange-300 font-semibold">
-                {WOD_LABEL[ex.wodType as WodType] ?? ex.wodType.toUpperCase()}
+                {WOD_CONFIG[ex.wodType as WodType]?.label ?? ex.wodType.toUpperCase()}
               </span>
             )}
             {ex.timeCap && (
@@ -304,21 +304,34 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
     );
   };
 
+  // Строит полный payload для PUT /workouts/:id (backend требует все поля)
+  const buildUpdatePayload = (overrides: { exercises?: FullWorkout['exercises']; rpe?: number | null }) => {
+    const exercises = (overrides.exercises ?? editExercises).map((ex) => ({
+      exerciseId: ex.exerciseId,
+      type: ex.type,
+      sets: ex.sets,
+      rounds: ex.rounds,
+      duration: ex.duration,
+      wodType: ex.wodType as 'amrap' | 'fortime' | 'emom' | 'tabata' | undefined,
+    }));
+    const rpeVal = 'rpe' in overrides
+      ? (overrides.rpe ?? undefined)
+      : (fullWorkout!.rpe ?? undefined);
+    return {
+      date: workout!.date.slice(0, 19).replace(' ', 'T'),
+      workoutType: fullWorkout!.workoutType as 'crossfit' | 'bodybuilding' | 'cardio',
+      exercises,
+      notes: fullWorkout!.notes,
+      rpe: rpeVal,
+    };
+  };
+
   // Сохранение весов
   const handleSaveWeights = async () => {
-    if (!fullWorkout) return;
+    if (!fullWorkout || !workout) return;
     setSavingWeights(true);
     try {
-      await workoutsApi.update(fullWorkout.id, {
-        exercises: editExercises.map((ex) => ({
-          exerciseId: ex.exerciseId,
-          type: ex.type,
-          sets: ex.sets,
-          rounds: ex.rounds,
-          duration: ex.duration,
-          wodType: ex.wodType as 'amrap' | 'fortime' | 'emom' | 'tabata' | undefined,
-        })),
-      });
+      await workoutsApi.update(fullWorkout.id, buildUpdatePayload({ exercises: editExercises }));
       setFullWorkout((prev) => prev ? { ...prev, exercises: editExercises } : prev);
       setIsEditing(false);
       toast.success('Веса сохранены');
@@ -338,12 +351,12 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
 
   // Сохранение оценки тренировки (RPE) — мгновенно при тапе
   const handleRpeTap = async (value: number) => {
-    if (!fullWorkout) return;
+    if (!fullWorkout || !workout) return;
     const newRpe = rpe === value ? null : value;
     setRpe(newRpe);
     setSavingRpe(true);
     try {
-      await workoutsApi.update(fullWorkout.id, { rpe: newRpe ?? undefined });
+      await workoutsApi.update(fullWorkout.id, buildUpdatePayload({ rpe: newRpe }));
       setFullWorkout((prev) => prev ? { ...prev, rpe: newRpe ?? undefined } : prev);
     } catch {
       setRpe(fullWorkout.rpe ?? null); // откат

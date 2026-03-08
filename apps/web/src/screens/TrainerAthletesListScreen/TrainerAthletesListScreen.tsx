@@ -7,7 +7,7 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import AddAthleteDrawer from '@/components/AddAthleteDrawer/AddAthleteDrawer';
 import { trainerApi, type AthleteListItem, type UnreadCounts } from '@/api/trainer';
 import InlineAthleteAvatar from '@/components/MiniAvatar/InlineAthleteAvatar';
-import { PlusIcon, UsersIcon, ClockIcon, ChatBubbleLeftEllipsisIcon, Squares2X2Icon, ViewColumnsIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, UsersIcon, ClockIcon, ChatBubbleLeftEllipsisIcon, Squares2X2Icon, ViewColumnsIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 
 export default function TrainerAthletesListScreen() {
@@ -16,10 +16,16 @@ export default function TrainerAthletesListScreen() {
   const [unreadCounts, setUnreadCounts] = useState<UnreadCounts | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddDrawer, setShowAddDrawer] = useState(false);
-  const [cols, setCols] = useState<2 | 3>(() => {
-    const stored = localStorage.getItem('athletes_grid_cols');
-    return stored === '3' ? 3 : 2;
+  type ViewMode = '2' | '3' | 'list';
+  const [view, setView] = useState<ViewMode>(() => {
+    const stored = localStorage.getItem('athletes_view_mode');
+    return stored === '3' || stored === 'list' ? (stored as ViewMode) : '2';
   });
+
+  const setViewMode = (v: ViewMode) => {
+    setView(v);
+    localStorage.setItem('athletes_view_mode', v);
+  };
 
   const loadData = async () => {
     try {
@@ -95,17 +101,22 @@ export default function TrainerAthletesListScreen() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-(--color_text_muted) uppercase tracking-wide">Атлеты</h2>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  const next = cols === 2 ? 3 : 2;
-                  setCols(next);
-                  localStorage.setItem('athletes_grid_cols', String(next));
-                }}
-                className="p-1.5 rounded-lg bg-(--color_bg_card) border border-(--color_border) text-(--color_text_muted) hover:text-white transition-colors"
-                title={cols === 2 ? '3 колонки' : '2 колонки'}
-              >
-                {cols === 2 ? <ViewColumnsIcon className="w-4 h-4" /> : <Squares2X2Icon className="w-4 h-4" />}
-              </button>
+              <div className="flex items-center rounded-lg bg-(--color_bg_card) border border-(--color_border) overflow-hidden">
+                {([
+                  { v: '2', icon: <Squares2X2Icon className="w-4 h-4" />, title: '2 колонки' },
+                  { v: '3', icon: <ViewColumnsIcon className="w-4 h-4" />, title: '3 колонки' },
+                  { v: 'list', icon: <Bars3Icon className="w-4 h-4" />, title: 'Список' },
+                ] as const).map(({ v, icon, title }) => (
+                  <button
+                    key={v}
+                    onClick={() => setViewMode(v)}
+                    title={title}
+                    className={`p-1.5 transition-colors ${view === v ? 'bg-(--color_primary_light) text-white' : 'text-(--color_text_muted) hover:text-white'}`}
+                  >
+                    {icon}
+                  </button>
+                ))}
+              </div>
               <button
                 onClick={() => setShowAddDrawer(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity"
@@ -120,8 +131,44 @@ export default function TrainerAthletesListScreen() {
             <p className="text-sm text-(--color_text_muted) text-center py-8">
               Пока нет привязанных атлетов
             </p>
+          ) : view === 'list' ? (
+            <div className="flex flex-col gap-2">
+              {athletes.map((athlete) => {
+                const unread = getAthleteUnread(athlete.id);
+                return (
+                  <motion.div
+                    key={athlete.id}
+                    whileTap={{ scale: 0.99 }}
+                    className="relative flex items-center gap-3 px-4 py-3 rounded-xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors cursor-pointer"
+                    onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}
+                  >
+                    <ConfirmDeleteButton
+                      variant="overlay"
+                      label="Отвязать?"
+                      overlayRounded="rounded-xl"
+                      overlayLayout="column"
+                      onConfirm={() => handleRemoveAthlete(athlete.id)}
+                      className="absolute top-2 left-2 z-10 p-0.5"
+                    />
+                    <div className="flex-1 min-w-0 pl-6">
+                      <div className="font-semibold text-white text-sm truncate">
+                        {athlete.fullName || 'Без имени'}
+                      </div>
+                      <div className="text-[11px] text-(--color_text_muted) truncate">
+                        {athlete.status === 'pending' ? '⏳ Ожидает' : athlete.email}
+                      </div>
+                    </div>
+                    {unread > 0 && (
+                      <div className="min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
+                        {unread > 99 ? '99+' : unread}
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
           ) : (
-            <div className={`grid gap-3 ${cols === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+            <div className={`grid gap-3 ${view === '2' ? 'grid-cols-2' : 'grid-cols-3'}`}>
               {athletes.map((athlete) => {
                 const unread = getAthleteUnread(athlete.id);
                 return (
@@ -144,14 +191,16 @@ export default function TrainerAthletesListScreen() {
                       onConfirm={() => handleRemoveAthlete(athlete.id)}
                       className="absolute top-2.5 left-2.5 z-10 p-0.5"
                     />
-                    <InlineAthleteAvatar athleteId={athlete.id} size={cols === 2 ? 'lg' : 'md'} />
+                    <InlineAthleteAvatar athleteId={athlete.id} size={view === '2' ? 'lg' : 'md'} />
                     <div className="w-full text-center">
-                      <div className={`font-semibold text-white leading-tight line-clamp-2 ${cols === 2 ? 'text-sm' : 'text-xs'}`}>
+                      <div className={`font-semibold text-white leading-tight line-clamp-2 ${view === '2' ? 'text-sm' : 'text-xs'}`}>
                         {athlete.fullName || 'Без имени'}
                       </div>
-                      <div className="text-[11px] text-(--color_text_muted) truncate mt-0.5">
-                        {athlete.status === 'pending' ? '⏳ Ожидает' : athlete.email}
-                      </div>
+                      {view === '2' && (
+                        <div className="text-[11px] text-(--color_text_muted) truncate mt-0.5">
+                          {athlete.status === 'pending' ? '⏳ Ожидает' : athlete.email}
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 );

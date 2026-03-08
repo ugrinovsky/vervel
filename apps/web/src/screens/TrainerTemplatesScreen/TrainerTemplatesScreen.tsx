@@ -10,7 +10,7 @@ import WorkoutExercisesEditor, { normalizeExercisesForType } from '@/components/
 import { trainerApi, type WorkoutTemplate, type ExerciseData } from '@/api/trainer';
 import { PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
-import { TYPE_LABELS, exerciseBrief } from '@/constants/workoutTypes';
+import { WORKOUT_TYPE_CONFIG, exerciseBrief } from '@/constants/workoutTypes';
 
 export default function TrainerTemplatesScreen() {
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
@@ -147,7 +147,7 @@ export default function TrainerTemplatesScreen() {
                       <div className="flex items-center gap-2">
                         <div className="text-sm font-medium text-white truncate">{template.name}</div>
                         <span className="text-xs px-2 py-0.5 rounded-full bg-(--color_primary_light) text-white shrink-0">
-                          {TYPE_LABELS[template.workoutType] ?? template.workoutType}
+                          {WORKOUT_TYPE_CONFIG[template.workoutType] ?? template.workoutType}
                         </span>
                       </div>
                       {template.description && (

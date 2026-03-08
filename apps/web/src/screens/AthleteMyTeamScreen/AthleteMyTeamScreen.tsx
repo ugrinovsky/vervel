@@ -15,7 +15,7 @@ import {
   CalendarDaysIcon,
   SparklesIcon,
 } from '@heroicons/react/24/outline';
-import { TYPE_LABELS } from '@/constants/AnalyticsConstants';
+import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 
 type ActiveChat = { chatId: number; title: string } | null;
 
@@ -348,7 +348,7 @@ export default function AthleteMyTeamScreen() {
                 </div>
                 <div className="space-y-2">
                   {upcomingWorkouts.map((w) => {
-                    const label = TYPE_LABELS[w.workoutType] ?? w.workoutType;
+                    const label = WORKOUT_TYPE_CONFIG[w.workoutType] ?? w.workoutType;
                     const color = WORKOUT_COLORS[w.workoutType] ?? 'text-white';
                     const dateStr = formatWorkoutDate(w.date);
                     const isToday = dateStr === 'Сегодня';

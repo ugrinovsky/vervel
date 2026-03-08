@@ -5,7 +5,7 @@ import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { aiApi, type AiWorkoutResult } from '@/api/ai';
 import { useAuth } from '@/contexts/AuthContext';
 
-const COST_RECOGNIZE = 9;
+const COST_RECOGNIZE = 10;
 const MAX_FILE_SIZE_MB = 5;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png'] as const;
 

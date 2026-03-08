@@ -26,6 +26,8 @@ export default function WorkoutDateTimeRow({ date, time, onDateChange, onTimeCha
         wrapperClassName="w-full"
         className={INPUT_CLS}
         calendarClassName="dark-datepicker"
+        popperPlacement="bottom-start"
+        portalId="datepicker-portal"
       />
       <DatePicker
         selected={time}
@@ -40,6 +42,8 @@ export default function WorkoutDateTimeRow({ date, time, onDateChange, onTimeCha
         wrapperClassName="w-full"
         className={INPUT_CLS}
         calendarClassName="dark-datepicker"
+        popperPlacement="bottom-start"
+        portalId="datepicker-portal"
       />
     </div>
   );

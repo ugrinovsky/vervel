@@ -5,6 +5,7 @@ export const createWorkoutValidator = vine.compile(
     date: vine.string().trim(),
     workoutType: vine.enum(['bodybuilding', 'crossfit', 'cardio']),
     notes: vine.string().trim().nullable().optional(),
+    rpe: vine.number().min(1).max(10).nullable().optional(),
     exercises: vine.array(
       vine.object({
         exerciseId: vine.string().trim(),

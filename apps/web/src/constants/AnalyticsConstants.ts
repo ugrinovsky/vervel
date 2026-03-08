@@ -158,7 +158,7 @@ export const ZONE_LABELS: Record<string, string> = {
 /**
  * Лейблы для типов тренировок — source of truth в workoutTypes.ts
  */
-export { TYPE_LABELS } from '@/constants/workoutTypes';
+export { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
 
 /**
  * Лейблы для периодов

@@ -1,10 +1,6 @@
-export type WorkoutType = 'crossfit' | 'bodybuilding' | 'cardio';
+import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
 
-const LABELS: Record<WorkoutType, string> = {
-  crossfit: 'CrossFit',
-  bodybuilding: 'Силовая',
-  cardio: 'Кардио',
-};
+export type WorkoutType = 'crossfit' | 'bodybuilding' | 'cardio';
 
 interface Props {
   value: WorkoutType;
@@ -25,7 +21,7 @@ export default function WorkoutTypeTabs({ value, onChange }: Props) {
               : 'bg-(--color_bg_card_hover) text-(--color_text_muted) hover:text-white border border-(--color_border)'
           }`}
         >
-          {LABELS[type]}
+          {WORKOUT_TYPE_CONFIG[type]}
         </button>
       ))}
     </div>

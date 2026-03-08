@@ -11,7 +11,7 @@ import { trainerApi, type ScheduledWorkout } from '@/api/trainer';
 
 import { PlusIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
-import { TYPE_LABELS } from '@/constants/AnalyticsConstants';
+import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 
 const WORKOUT_TYPE_COLORS: Record<string, string> = {
   crossfit: 'bg-white/10 ring-1 ring-inset ring-white/20',
@@ -238,7 +238,7 @@ export default function TrainerCalendarScreen() {
                                 {getWorkoutMinutes(workout.scheduledDate)}
                               </span>
                               <span className="text-sm font-medium text-white truncate">
-                                {TYPE_LABELS[workout.workoutData.type] ??
+                                {WORKOUT_TYPE_CONFIG[workout.workoutData.type] ??
                                   workout.workoutData.type}
                               </span>
                               {workout.assignedTo.length > 0 && (

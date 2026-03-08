@@ -6,7 +6,7 @@ import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import { trainerApi, type TodayOverview, type UnreadCounts } from '@/api/trainer';
 import { ClockIcon, UserGroupIcon, UsersIcon, ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline';
-import { TYPE_LABELS } from '@/constants/AnalyticsConstants';
+import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 
 export default function TrainerTodayScreen() {
   const navigate = useNavigate();
@@ -158,7 +158,7 @@ export default function TrainerTodayScreen() {
                       </span>
                     </div>
                     <span className="text-xs px-2 py-1 rounded-full bg-(--color_primary_light) text-white">
-                      {TYPE_LABELS[workout.workoutData.type] ?? workout.workoutData.type}
+                      {WORKOUT_TYPE_CONFIG[workout.workoutData.type] ?? workout.workoutData.type}
                     </span>
                   </div>
 

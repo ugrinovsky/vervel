@@ -1,6 +1,6 @@
 import { WorkoutStats } from '@/types/Analytics';
 import { useMemo } from 'react';
-import { TYPE_LABELS } from '@/constants/AnalyticsConstants';
+import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 import {
   BarChart,
   Bar,
@@ -39,7 +39,7 @@ function CustomTooltip({ active, payload, label }: any) {
   return (
     <div className="bg-gray-900/95 border border-white/10 rounded-xl px-3 py-2.5 text-xs shadow-2xl">
       <p className="text-white font-semibold mb-1">{label}</p>
-      {d?.type && <p className="text-white/50 mb-1">{TYPE_LABELS[d.type] ?? d.type}</p>}
+      {d?.type && <p className="text-white/50 mb-1">{WORKOUT_TYPE_CONFIG[d.type] ?? d.type}</p>}
       <p style={{ color: payload[0].fill }}>Интенсивность: {d?.intensity ?? 0}%</p>
       {d?.volume > 0 && <p className="text-white/60">Объём: {formatVolume(d.volume)}</p>}
     </div>
@@ -174,7 +174,7 @@ export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
                   className="w-2.5 h-2.5 rounded-full"
                   style={{ backgroundColor: TYPE_COLORS[type] ?? '#10b981' }}
                 />
-                <span className="text-xs text-(--color_text_muted)">{TYPE_LABELS[type] ?? type}</span>
+                <span className="text-xs text-(--color_text_muted)">{WORKOUT_TYPE_CONFIG[type] ?? type}</span>
               </div>
             ))}
           </div>

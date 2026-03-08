@@ -6,7 +6,7 @@
  *   - WorkoutExercisesEditor (inline list in trainer forms)
  *   - ExerciseDrawer (BottomSheet per-exercise in athlete/trainer workout form)
  */
-import { WOD_TYPES } from '@/constants/workoutTypes';
+import { WOD_CONFIG, type WodType } from '@/constants/workoutTypes';
 import { DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
 
@@ -74,19 +74,19 @@ export default function ExerciseParamsEditor({
       <div className="space-y-2">
         {/* WOD type selector */}
         <div className="grid grid-cols-4 gap-1">
-          {WOD_TYPES.map((wod) => (
+          {(Object.entries(WOD_CONFIG) as [WodType, { label: string; hint: string }][]).map(([value, cfg]) => (
             <button
-              key={wod.value}
+              key={value}
               type="button"
-              onClick={() => onPatch({ wodType: wod.value === wodType ? undefined : wod.value })}
-              title={wod.hint}
+              onClick={() => onPatch({ wodType: value === wodType ? undefined : value })}
+              title={cfg.hint}
               className={`py-1 rounded-lg text-[11px] font-medium transition-colors ${
-                wodType === wod.value
+                wodType === value
                   ? 'bg-(--color_primary_light) text-white'
                   : 'bg-black/20 border border-white/10 text-white/40 hover:text-white/70'
               }`}
             >
-              {wod.label}
+              {cfg.label}
             </button>
           ))}
         </div>

@@ -41,7 +41,10 @@ export default function ProfileScreen() {
   const inTrainerMode = isTrainer && (!isAthlete || activeMode === 'trainer');
   const inAthleteMode = isAthlete && (!isTrainer || activeMode === 'athlete');
 
-  const [activeTab, setActiveTab] = useState<Tab>('profile');
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    const t = searchParams.get('tab') as Tab;
+    return t === 'wallet' || t === 'settings' ? t : 'profile';
+  });
   const [data, setData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -136,7 +139,7 @@ export default function ProfileScreen() {
         .then((res) => setBalance(res.data.balance))
         .catch(() => {});
       txInit();
-      setSearchParams({}, { replace: true });
+      setSearchParams({ tab: 'wallet' }, { replace: true });
       setActiveTab('wallet');
     }
   }, []);
@@ -377,7 +380,10 @@ export default function ProfileScreen() {
           {TABS.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setSearchParams({ tab: tab.id }, { replace: true });
+              }}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 activeTab === tab.id
                   ? 'bg-(--color_primary_light) text-white shadow-sm'

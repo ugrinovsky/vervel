@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
 import { WorkoutStats } from '@/types/Analytics';
-import { TYPE_LABELS, PERIOD_LABELS, DISPLAY, formatVolume } from '@/constants/AnalyticsConstants';
+import { WORKOUT_TYPE_CONFIG, PERIOD_LABELS, DISPLAY, formatVolume } from '@/constants/AnalyticsConstants';
 
 type Period = 'week' | 'month' | 'year';
 
@@ -137,7 +137,7 @@ export default function StatsOverview({ period, data }: StatsOverviewProps) {
                   <div key={type}>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs text-(--color_text_secondary)">
-                        {TYPE_LABELS[type] ?? type}
+                        {WORKOUT_TYPE_CONFIG[type] ?? type}
                       </span>
                       <span className="text-xs font-semibold text-white">
                         {count}{' '}

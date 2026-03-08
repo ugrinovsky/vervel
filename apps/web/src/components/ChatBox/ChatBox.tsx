@@ -8,6 +8,7 @@ import { chatApi } from '@/api/chat';
 import type { ChatMessage, ExerciseData } from '@/api/trainer';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
+import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
 
 const PAGE_SIZE = 20;
 
@@ -30,16 +31,10 @@ function parseWorkoutPreview(content: string): WorkoutPreviewData | null {
   }
 }
 
-const TYPE_CONFIG = {
-  crossfit: { emoji: '🔥', label: 'CrossFit', color: 'text-orange-400' },
-  bodybuilding: { emoji: '💪', label: 'Силовая', color: 'text-blue-400' },
-  cardio: { emoji: '🏃', label: 'Кардио', color: 'text-green-400' },
-};
-
 function WorkoutPreviewCard({ data, onClick }: { data: WorkoutPreviewData; onClick?: () => void }) {
   const [y, m, d] = data.date.split('-').map(Number);
   const dateStr = format(new Date(y, m - 1, d), 'd MMMM', { locale: ru });
-  const cfg = TYPE_CONFIG[data.workoutType];
+  const typeLabel = WORKOUT_TYPE_CONFIG[data.workoutType] ?? data.workoutType;
 
   return (
     <div
@@ -48,11 +43,8 @@ function WorkoutPreviewCard({ data, onClick }: { data: WorkoutPreviewData; onCli
     >
       <div className="px-4 py-3 bg-white/5 border-b border-white/10">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-base">{cfg.emoji}</span>
-            <span className="text-sm font-semibold text-white">Тренировка</span>
-          </div>
-          <span className={`text-xs font-medium ${cfg.color}`}>{cfg.label}</span>
+          <span className="text-sm font-semibold text-white">Тренировка</span>
+          <span className="text-xs font-medium text-white/60">{typeLabel}</span>
         </div>
         <div className="text-xs text-white/50 mt-0.5">
           📅 {dateStr} · {data.time}
@@ -106,7 +98,7 @@ function WorkoutDetailSheet({
   if (!data) return null;
   const [y, m, d] = data.date.split('-').map(Number);
   const dateStr = format(new Date(y, m - 1, d), 'd MMMM yyyy', { locale: ru });
-  const cfg = TYPE_CONFIG[data.workoutType];
+  const typeLabel = WORKOUT_TYPE_CONFIG[data.workoutType] ?? data.workoutType;
 
   type ExBlock = { superset: boolean; blockId?: string; items: typeof data.exercises };
   const blocks: ExBlock[] = [];
@@ -126,10 +118,9 @@ function WorkoutDetailSheet({
       header={
         <div>
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-2xl">{cfg.emoji}</span>
             <span className="text-lg font-bold text-white">Тренировка</span>
           </div>
-          <span className={`text-sm font-semibold ${cfg.color}`}>{cfg.label}</span>
+          <span className="text-sm font-semibold text-white/60">{typeLabel}</span>
         </div>
       }
     >

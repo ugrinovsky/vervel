@@ -1,4 +1,4 @@
-import { TYPE_LABELS } from '@/constants/AnalyticsConstants';
+import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 
 export const formatVolume = (volume: number): string => {
   if (volume >= 1000) {
@@ -15,4 +15,4 @@ export const formatVolumeCompact = (volume: number): string => {
 };
 
 export const getWorkoutTypeLabel = (type: string): string =>
-  TYPE_LABELS[type] ?? 'Тренировка';
+  WORKOUT_TYPE_CONFIG[type] ?? 'Тренировка';

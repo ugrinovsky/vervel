@@ -20,7 +20,8 @@ const createWorkout = (
   zonesLoad: Record<string, number>,
   totalVolume: number,
   totalIntensity: number | string,
-  date = new Date()
+  date = new Date(),
+  exercises: any[] = [{ exerciseId: 'ex1' }]
 ) =>
   ({
     id,
@@ -28,6 +29,7 @@ const createWorkout = (
     zonesLoad,
     totalVolume,
     totalIntensity,
+    exercises,
     date,
   }) as any;
 
@@ -200,6 +202,62 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     assert.equal(result.totalIntensity, 0);
   });
 
+  /* -------------------------------- RPE -------------------------------- */
+  test('rpe масштабирует нагрузку: rpe=10 → 100%, rpe=5 → 50%', async ({ assert }) => {
+    const exercise = createExercise('ex1', ['грудь'], 1.0);
+    WorkoutCalculator['loadExercises'] = async () => new Map([['ex1', exercise]]);
+
+    const input = [{ exerciseId: 'ex1', type: 'strength' as const, sets: [{ id: '1', reps: 10, weight: 100 }] }];
+
+    const full = await WorkoutCalculator.calculateZoneLoads(input, 'bodybuilding', 10);
+    const half = await WorkoutCalculator.calculateZoneLoads(input, 'bodybuilding', 5);
+    const none = await WorkoutCalculator.calculateZoneLoads(input, 'bodybuilding');
+
+    assert.closeTo(full.totalIntensity, none.totalIntensity, 0.001);
+    assert.closeTo(half.totalIntensity, none.totalIntensity * 0.5, 0.001);
+  });
+
+  test('rpe=null не меняет результат', async ({ assert }) => {
+    const exercise = createExercise('ex1', ['спина'], 0.7);
+    WorkoutCalculator['loadExercises'] = async () => new Map([['ex1', exercise]]);
+
+    const input = [{ exerciseId: 'ex1', type: 'strength' as const, sets: [{ id: '1', reps: 10, weight: 80 }] }];
+
+    const withNull = await WorkoutCalculator.calculateZoneLoads(input, 'bodybuilding', null);
+    const withUndefined = await WorkoutCalculator.calculateZoneLoads(input, 'bodybuilding');
+
+    assert.closeTo(withNull.totalIntensity, withUndefined.totalIntensity, 0.0001);
+  });
+
+  /* -------------------------------- GET LOAD LEVEL -------------------------------- */
+  test('getLoadLevel: volume > 15000 → high', ({ assert }) => {
+    assert.equal(WorkoutCalculator.getLoadLevel(15001, 0, true), 'high');
+    assert.equal(WorkoutCalculator.getLoadLevel(20000, 0.5, true), 'high');
+  });
+
+  test('getLoadLevel: 10000 < volume <= 15000 → medium', ({ assert }) => {
+    assert.equal(WorkoutCalculator.getLoadLevel(15000, 0, true), 'medium');
+    assert.equal(WorkoutCalculator.getLoadLevel(10001, 0, true), 'medium');
+  });
+
+  test('getLoadLevel: 0 < volume <= 10000 → low', ({ assert }) => {
+    assert.equal(WorkoutCalculator.getLoadLevel(9044, 0, true), 'low');
+    assert.equal(WorkoutCalculator.getLoadLevel(1, 0, false), 'low');
+  });
+
+  test('getLoadLevel: volume=0, intensity>0 (кардио/кроссфит) → low', ({ assert }) => {
+    assert.equal(WorkoutCalculator.getLoadLevel(0, 0.36, true), 'low');
+    assert.equal(WorkoutCalculator.getLoadLevel(0, 0.01, false), 'low');
+  });
+
+  test('getLoadLevel: volume=0, intensity=0, но упражнения есть → low (не в каталоге)', ({ assert }) => {
+    assert.equal(WorkoutCalculator.getLoadLevel(0, 0, true), 'low');
+  });
+
+  test('getLoadLevel: нет тренировки → none', ({ assert }) => {
+    assert.equal(WorkoutCalculator.getLoadLevel(0, 0, false), 'none');
+  });
+
   /* -------------------------------- CALCULATE PERIOD STATS -------------------------------- */
   test('calculatePeriodStats: корректно считает по пустому массиву', ({ assert }) => {
     const result = WorkoutCalculator.calculatePeriodStats([], 'week');
@@ -247,5 +305,26 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     assert.equal(result.timeline.length, 2);
     assert.equal(result.timeline[0].intensity, 0.8);
     assert.equal(result.timeline[1].intensity, 0.6);
+    // loadLevel должен присутствовать в каждой записи
+    assert.equal(result.timeline[0].loadLevel, 'low'); // volume=1000 → low
+    assert.equal(result.timeline[1].loadLevel, 'low'); // volume=500 → low
+  });
+
+  test('calculatePeriodStats: timeline содержит loadLevel=none при intensity=0 и нет упражнений', ({ assert }) => {
+    const w = createWorkout('w1', 'bodybuilding', {}, 0, 0, new Date(), []);
+    const result = WorkoutCalculator.calculatePeriodStats([w], 'week');
+    assert.equal(result.timeline[0].loadLevel, 'none');
+  });
+
+  test('calculatePeriodStats: timeline содержит loadLevel=low когда упражнения есть но intensity=0', ({ assert }) => {
+    const w = createWorkout('w1', 'bodybuilding', {}, 0, 0, new Date(), [{ exerciseId: 'unknown' }]);
+    const result = WorkoutCalculator.calculatePeriodStats([w], 'week');
+    assert.equal(result.timeline[0].loadLevel, 'low');
+  });
+
+  test('calculatePeriodStats: timeline содержит loadLevel=high при большом volume', ({ assert }) => {
+    const w = createWorkout('w1', 'bodybuilding', { ноги: 1 }, 20000, 0.9);
+    const result = WorkoutCalculator.calculatePeriodStats([w], 'week');
+    assert.equal(result.timeline[0].loadLevel, 'high');
   });
 });

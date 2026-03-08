@@ -7,7 +7,7 @@ import { avatarApi, type ZoneState } from '@/api/avatar';
 import { athleteApi } from '@/api/athlete';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
-import { TYPE_LABELS } from '@/constants/AnalyticsConstants';
+import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 
 
 interface TodayWorkout {
@@ -40,7 +40,8 @@ export default function AvatarScreen() {
           setLastWorkoutDaysAgo(avatarRes.data.data.lastWorkoutDaysAgo);
         }
         if (workoutsRes.data.success) {
-          const todayStr = new Date().toISOString().slice(0, 10);
+          const d = new Date();
+          const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
           const found = workoutsRes.data.data.find(
             (w) => (w.date as string).slice(0, 10) === todayStr
           );
@@ -82,7 +83,7 @@ export default function AvatarScreen() {
                     Тренировка от тренера · Сегодня
                   </div>
                   <div className="text-base font-bold text-white truncate">
-                    {TYPE_LABELS[todayWorkout.workoutType] ?? todayWorkout.workoutType}
+                    {WORKOUT_TYPE_CONFIG[todayWorkout.workoutType] ?? todayWorkout.workoutType}
                     {' · '}
                     {todayWorkout.exerciseCount} упр.
                   </div>

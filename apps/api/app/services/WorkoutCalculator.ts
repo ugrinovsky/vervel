@@ -43,7 +43,8 @@ export class WorkoutCalculator {
    */
   static async calculateZoneLoads(
     exercises: WorkoutExercise[],
-    workoutType: Workout['workoutType']
+    workoutType: Workout['workoutType'],
+    rpe?: number | null
   ): Promise<WorkoutCalculationResult> {
     const zoneLoads: Record<string, number> = {};
     let totalVolume = 0;
@@ -63,7 +64,19 @@ export class WorkoutCalculator {
       }
     }
 
-    return this.normalizeResult(zoneLoads, totalVolume);
+    const result = this.normalizeResult(zoneLoads, totalVolume);
+
+    // RPE scales the stored load: RPE 10 = 100% of calculated, RPE 5 = 50%, RPE 1 = 10%.
+    // This reflects the athlete's actual perceived effort — if it felt easy, it stresses muscles less.
+    if (rpe != null) {
+      const rpeFactor = rpe / 10;
+      for (const zone of Object.keys(result.zonesLoad)) {
+        result.zonesLoad[zone] = Math.min(result.zonesLoad[zone] * rpeFactor, NORMALIZATION.MAX_ZONE_LOAD);
+      }
+      result.totalIntensity = Math.min(result.totalIntensity * rpeFactor, NORMALIZATION.MAX_ZONE_LOAD);
+    }
+
+    return result;
   }
 
   /* ---------------------------------------------------------------- */
@@ -161,6 +174,23 @@ export class WorkoutCalculator {
       load: baseIntensity * timeFactor,
       volume: 0,
     };
+  }
+
+  /**
+   * Определяет уровень нагрузки тренировки для отображения в календаре.
+   * hasExercises — true если у тренировки были упражнения, даже если они не нашлись в каталоге.
+   */
+  static getLoadLevel(
+    volume: number,
+    intensity: number,
+    hasExercises: boolean
+  ): 'none' | 'low' | 'medium' | 'high' {
+    if (volume > 15000) return 'high';
+    if (volume > 10000) return 'medium';
+    if (volume > 0) return 'low';
+    if (intensity > 0) return 'low';
+    if (hasExercises) return 'low';
+    return 'none';
   }
 
   private static normalizeResult(
@@ -282,6 +312,7 @@ export class WorkoutCalculator {
       volume: number;
       type: string;
       scheduledWorkoutId: number | null;
+      loadLevel: 'none' | 'low' | 'medium' | 'high';
     }>;
     period: string;
   } {
@@ -330,15 +361,21 @@ export class WorkoutCalculator {
       });
     }
 
-    const timeline = workouts.map((w) => ({
-      id: w.id,
-      date: w.date.toString(),
-      intensity:
-        typeof w.totalIntensity === 'string' ? parseFloat(w.totalIntensity) : w.totalIntensity || 0,
-      volume: Number(w.totalVolume) || 0, // ✅ Принудительно конвертируем в число
-      type: w.workoutType || 'unknown',
-      scheduledWorkoutId: w.scheduledWorkoutId ?? null,
-    }));
+    const timeline = workouts.map((w) => {
+      const volume = Number(w.totalVolume) || 0;
+      const intensity =
+        typeof w.totalIntensity === 'string' ? parseFloat(w.totalIntensity) : w.totalIntensity || 0;
+      const hasExercises = Array.isArray(w.exercises) && w.exercises.length > 0;
+      return {
+        id: w.id,
+        date: w.date.toString(),
+        intensity,
+        volume,
+        type: w.workoutType || 'unknown',
+        scheduledWorkoutId: w.scheduledWorkoutId ?? null,
+        loadLevel: WorkoutCalculator.getLoadLevel(volume, intensity, hasExercises),
+      };
+    });
 
     return {
       workoutsCount: workouts.length,
