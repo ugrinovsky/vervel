@@ -6,7 +6,7 @@ export interface AiExercise {
   sets: number
   reps?: number
   weight?: number
-  duration?: number // секунды (кардио)
+  duration?: number // минуты (кардио)
   notes?: string
   /** Заполняется после матчинга к каталогу упражнений (если нашли совпадение) */
   exerciseId?: string
@@ -24,13 +24,17 @@ const PARSE_SYSTEM_PROMPT = `You are a fitness assistant. You are given text rec
 Requirements:
 1. Return only JSON, no surrounding text
 2. Format: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"Barbell Bench Press","displayName":"Жим штанги лёжа","sets":3,"reps":10,"weight":80,"duration":null,"notes":null}],"notes":"general notes"}
-3. weight — in kilograms, duration — in seconds
+3. weight — in kilograms, duration — in MINUTES (not seconds)
 4. If a parameter is not specified — use null
-5. Determine workout type from context (CrossFit = WOD/AMRAP/For Time, bodybuilding = isolation exercises, cardio = running/cycling/swimming)
+5. Determine workout type strictly:
+   - "crossfit" = WOD, AMRAP, For Time, EMOM, Tabata, circuit training, functional fitness, HIIT with barbell/bodyweight
+   - "bodybuilding" = strength training, weightlifting, isolation exercises, hypertrophy, powerlifting, muscle building (bench press, squats, curls, etc.)
+   - "cardio" = running, cycling, swimming, rowing, stretching, yoga, mobility, flexibility, pilates, walking, any low-intensity or duration-based activity
 6. "name" — standard English gym terminology for catalog matching (e.g. "Barbell Bench Press", "Back Squat", "Pull-Up", "Deadlift")
 7. "displayName" — Russian name shown to the user (e.g. "Жим штанги лёжа", "Приседания со штангой", "Подтягивания", "Становая тяга"). For non-standard CrossFit exercises write the Russian transliteration or translation.
 8. Interpret abbreviations: "5х10" = 5 sets of 10 reps, "x" or "×" = sets×reps
-9. notes field — write in Russian for user readability`
+9. For cardio exercises always set duration (in minutes); for strength/crossfit set reps
+10. notes field — write in Russian for user readability`
 
 // Системный промпт для AI-чата (фитнес-советник)
 const CHAT_SYSTEM_PROMPT = `Ты — AI-помощник фитнес-приложения Vervel. Ты разбираешься в тренировках, питании, восстановлении и спортивной науке. Отвечай на русском языке. Давай конкретные, полезные советы. Если вопрос не связан с фитнесом или спортом — вежливо перенаправь разговор к теме тренировок. Будь дружелюбным и мотивирующим.`
@@ -41,13 +45,19 @@ const GENERATE_SYSTEM_PROMPT = `You are a professional fitness trainer. Generate
 Requirements:
 1. Return only JSON, no surrounding text
 2. Format: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"Barbell Bench Press","displayName":"Жим штанги лёжа","sets":3,"reps":10,"weight":null,"duration":null,"notes":"техника в 1-2 предложения"}],"notes":"общие рекомендации"}
-3. weight — in kilograms (null if not applicable), duration — in seconds (null if not applicable)
+3. weight — in kilograms (null if not applicable), duration — in MINUTES (not seconds, null if not applicable)
 4. Generate a realistic workout with correct volume and intensity
 5. Take into account fitness level if specified: beginner, intermediate, advanced
-6. "name" — standard English gym terminology for catalog matching (e.g. "Barbell Bench Press", "Back Squat", "Pull-Up", "Deadlift", "Dumbbell Curl")
-7. "displayName" — Russian exercise name shown in the app UI (e.g. "Жим штанги лёжа", "Приседания со штангой")
-8. 4-8 exercises for a standard workout
-9. notes and technique tips — write in Russian for user readability`
+6. Determine workout type strictly:
+   - "crossfit" = WOD, AMRAP, For Time, EMOM, Tabata, circuit training, functional fitness, HIIT with barbell/bodyweight
+   - "bodybuilding" = strength training, weightlifting, isolation exercises, hypertrophy, powerlifting, muscle building (bench press, squats, curls, etc.)
+   - "cardio" = running, cycling, swimming, rowing, stretching, yoga, mobility, flexibility, pilates, walking, any low-intensity or duration-based activity
+7. For cardio workouts: set duration (in minutes) for each exercise, set reps and weight to null
+8. For crossfit/bodybuilding: set reps, set duration to null
+9. "name" — standard English gym terminology for catalog matching (e.g. "Barbell Bench Press", "Back Squat", "Pull-Up", "Deadlift", "Dumbbell Curl")
+10. "displayName" — Russian exercise name shown in the app UI (e.g. "Жим штанги лёжа", "Приседания со штангой")
+11. 4-8 exercises for a standard workout
+12. notes and technique tips — write in Russian for user readability`
 
 // Yandex Vision OCR — специализированный OCR для текста (включая рукописный)
 const VISION_OCR_URL = 'https://ocr.api.cloud.yandex.net/ocr/v1/recognizeText'

@@ -137,8 +137,13 @@ export default function WorkoutFormBase({
     setWorkoutType(result.workoutType);
     const converted: ExerciseData[] = result.exercises.map((ex, i) => {
       const base = { exerciseId: ex.exerciseId ?? `ai-${i}`, name: ex.displayName ?? ex.name, notes: ex.notes };
-      if (ex.duration != null) return { ...base, duration: ex.duration };
-      if (result.workoutType === 'crossfit') return { ...base, reps: ex.reps ?? 10, weight: ex.weight };
+      if (result.workoutType === 'cardio') {
+        return { ...base, duration: ex.duration ?? 20 };
+      }
+      if (result.workoutType === 'crossfit') {
+        return { ...base, reps: ex.reps ?? 10, weight: ex.weight };
+      }
+      // bodybuilding
       const setsDetail = Array.from({ length: ex.sets ?? 3 }, () => ({ reps: ex.reps ?? 10, weight: ex.weight }));
       return { ...base, sets: ex.sets, reps: ex.reps, weight: ex.weight, setsDetail };
     });
