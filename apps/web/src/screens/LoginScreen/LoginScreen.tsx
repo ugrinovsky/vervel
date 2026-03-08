@@ -4,6 +4,7 @@ import { authApi, getOAuthRedirectUrl } from '@/api/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
+import VerveLogo from '@/components/VerveLogo/VerveLogo';
 
 // Генерируем ВСЕ значения для звезд ОДИН РАЗ
 const STARS = [...Array(150)].map((_, i) => ({
@@ -276,7 +277,7 @@ export default function LoginScreen() {
 
           {/* Заголовок */}
           <div className="text-center mb-8 relative z-10">
-            <h1 className="text-5xl font-bold mb-2 text-white">Vervel</h1>
+            <VerveLogo className="h-14 w-auto mx-auto mb-2" />
             <p className="text-emerald-200/80">Войдите в свой аккаунт</p>
           </div>
 
@@ -289,7 +290,10 @@ export default function LoginScreen() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: undefined })); }}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setErrors((p) => ({ ...p, email: undefined }));
+                  }}
                   className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.email ? 'border-red-400' : 'border-white/20'}`}
                   placeholder="your@email.com"
                 />
@@ -304,7 +308,10 @@ export default function LoginScreen() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => { setPassword(e.target.value); setErrors((p) => ({ ...p, password: undefined })); }}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setErrors((p) => ({ ...p, password: undefined }));
+                  }}
                   className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.password ? 'border-red-400' : 'border-white/20'}`}
                   placeholder="••••••••"
                 />

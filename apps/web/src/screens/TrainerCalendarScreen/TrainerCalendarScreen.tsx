@@ -155,7 +155,11 @@ export default function TrainerCalendarScreen() {
       <div className="flex flex-col h-full px-4">
         {/* ── Page header ── */}
         <div className="pt-4 pb-1 shrink-0">
-          <ScreenHeader icon="📅" title="Календарь" description="Планируйте тренировки для атлетов и групп по датам" />
+          <ScreenHeader
+            icon="📅"
+            title="Календарь"
+            description="Планируйте тренировки для атлетов и групп по датам"
+          />
         </div>
 
         {/* ── Calendar (top) ── */}
@@ -177,7 +181,7 @@ export default function TrainerCalendarScreen() {
         </div>
 
         {/* ── Divider ── */}
-        <div className="border-t border-(--color_border) shrink-0" />
+        <div className="border-t border-(--color_border) shrink-0 mt-3 mb-3" />
 
         {/* ── Selected day timeline (bottom) ── */}
         <div className="flex-1 overflow-y-auto">
@@ -225,7 +229,9 @@ export default function TrainerCalendarScreen() {
                 <div key={hour} className="flex gap-2 min-h-10">
                   {/* Hour label */}
                   <div className="w-10 shrink-0 pt-1.5">
-                    <span className={`text-xs font-mono ${isCurrentHour ? 'text-red-400 font-semibold' : 'text-(--color_text_muted)'}`}>
+                    <span
+                      className={`text-xs font-mono ${isCurrentHour ? 'text-red-400 font-semibold' : 'text-(--color_text_muted)'}`}
+                    >
                       {timeStr}
                     </span>
                   </div>
@@ -311,12 +317,14 @@ export default function TrainerCalendarScreen() {
               );
             })}
           </div>
-
         </div>
       </div>
       <BottomSheet
         open={selectedTime !== null || editingWorkout !== null}
-        onClose={() => { setSelectedTime(null); setEditingWorkout(null); }}
+        onClose={() => {
+          setSelectedTime(null);
+          setEditingWorkout(null);
+        }}
         title={editingWorkout ? 'Редактировать тренировку' : 'Создать тренировку'}
         emoji="💪"
       >
