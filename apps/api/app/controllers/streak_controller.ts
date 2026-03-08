@@ -93,6 +93,23 @@ export default class StreakController {
   }
 
   /**
+   * Проверить и разблокировать достижения (вызывается при старте приложения)
+   */
+  async checkAndUnlock({ auth, response }: HttpContext) {
+    try {
+      const user = auth.user!
+      const newlyUnlocked = await AchievementService.checkAndUnlockAchievements(user.id)
+      return response.json({ success: true, data: { newlyUnlocked } })
+    } catch (error) {
+      console.error('Check achievements error:', error)
+      return response.internalServerError({
+        success: false,
+        message: 'Ошибка при проверке достижений',
+      })
+    }
+  }
+
+  /**
    * Отметить достижения как просмотренные
    */
   async markAchievementsSeen({ auth, request, response }: HttpContext) {

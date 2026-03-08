@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -7,7 +7,7 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import AddAthleteDrawer from '@/components/AddAthleteDrawer/AddAthleteDrawer';
 import { trainerApi, type AthleteListItem, type UnreadCounts } from '@/api/trainer';
 import InlineAthleteAvatar from '@/components/MiniAvatar/InlineAthleteAvatar';
-import { PlusIcon, UsersIcon, ClockIcon, ChatBubbleLeftEllipsisIcon, Squares2X2Icon, ViewColumnsIcon, Bars3Icon } from '@heroicons/react/24/outline';
+import { PlusIcon, UsersIcon, ClockIcon, ChatBubbleLeftEllipsisIcon, Squares2X2Icon, ViewColumnsIcon, Bars3Icon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 
 export default function TrainerAthletesListScreen() {
@@ -16,6 +16,7 @@ export default function TrainerAthletesListScreen() {
   const [unreadCounts, setUnreadCounts] = useState<UnreadCounts | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddDrawer, setShowAddDrawer] = useState(false);
+  const [search, setSearch] = useState('');
   type ViewMode = '2' | '3' | 'list';
   const [view, setView] = useState<ViewMode>(() => {
     const stored = localStorage.getItem('athletes_view_mode');
@@ -46,6 +47,16 @@ export default function TrainerAthletesListScreen() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const filteredAthletes = useMemo(() => {
+    if (!search.trim()) return athletes;
+    const q = search.toLowerCase();
+    return athletes.filter(
+      (a) =>
+        (a.fullName ?? '').toLowerCase().includes(q) ||
+        (a.email ?? '').toLowerCase().includes(q)
+    );
+  }, [athletes, search]);
 
   const getAthleteUnread = (athleteId: number) =>
     unreadCounts?.athletes.find((a) => a.athleteId === athleteId)?.unread ?? 0;
@@ -98,6 +109,20 @@ export default function TrainerAthletesListScreen() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
+          {/* Search */}
+          {athletes.length > 0 && (
+            <div className="relative mb-3">
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--color_text_muted) pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Поиск по имени или email…"
+                className="w-full pl-9 pr-4 py-2 text-sm rounded-xl bg-(--color_bg_card) border border-(--color_border) text-white placeholder:text-(--color_text_muted) focus:outline-none focus:border-(--color_primary_light)/60"
+              />
+            </div>
+          )}
+
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-(--color_text_muted) uppercase tracking-wide">Атлеты</h2>
             <div className="flex items-center gap-2">
@@ -131,9 +156,13 @@ export default function TrainerAthletesListScreen() {
             <p className="text-sm text-(--color_text_muted) text-center py-8">
               Пока нет привязанных атлетов
             </p>
+          ) : filteredAthletes.length === 0 ? (
+            <p className="text-sm text-(--color_text_muted) text-center py-8">
+              Ничего не найдено
+            </p>
           ) : view === 'list' ? (
             <div className="flex flex-col gap-2">
-              {athletes.map((athlete) => {
+              {filteredAthletes.map((athlete) => {
                 const unread = getAthleteUnread(athlete.id);
                 return (
                   <motion.div
@@ -169,7 +198,7 @@ export default function TrainerAthletesListScreen() {
             </div>
           ) : (
             <div className={`grid gap-3 ${view === '2' ? 'grid-cols-2' : 'grid-cols-3'}`}>
-              {athletes.map((athlete) => {
+              {filteredAthletes.map((athlete) => {
                 const unread = getAthleteUnread(athlete.id);
                 return (
                   <motion.div

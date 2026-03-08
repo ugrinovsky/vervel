@@ -4,6 +4,7 @@ import { SparklesIcon, PaperAirplaneIcon, XMarkIcon } from '@heroicons/react/24/
 import ModalOverlay from '@/components/ModalOverlay/ModalOverlay';
 import ReactMarkdown from 'react-markdown';
 import { aiApi } from '@/api/ai';
+import { checkForNewAchievements } from '@/hooks/useAchievementToast';
 import { useAuth } from '@/contexts/AuthContext';
 
 /** Минимальный баланс для отправки сообщения (равен AI_CHAT_MIN_CHARGE на backend) */
@@ -171,6 +172,7 @@ export default function AiChat({ open, onClose }: Props) {
       };
       setMessages((prev) => [...prev, assistantMsg]);
       setBalance(res.data.balance);
+      checkForNewAchievements();
     } catch (err: any) {
       const data = err?.response?.data;
       if (data?.balance !== undefined) setBalance(data.balance);

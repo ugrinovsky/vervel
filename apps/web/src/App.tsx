@@ -15,6 +15,7 @@ import InviteScreen from '@/screens/InviteScreen/InviteScreen';
 import DocsScreen from '@/screens/DocsScreen/DocsScreen';
 import AvatarScreen from '@/screens/AvatarScreen';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { useAchievementToast } from '@/hooks/useAchievementToast';
 
 import 'tailwindcss';
 import './App.css';
@@ -42,6 +43,7 @@ function HomeScreen(): JSX.Element {
 
 function AppContent(): JSX.Element {
   const location = useLocation();
+  useAchievementToast();
   const isAuthPage =
     location.pathname === '/login' ||
     location.pathname === '/register' ||

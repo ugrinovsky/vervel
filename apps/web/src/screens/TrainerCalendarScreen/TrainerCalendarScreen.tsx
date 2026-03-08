@@ -50,6 +50,7 @@ export default function TrainerCalendarScreen() {
   const [workouts, setWorkouts] = useState<ScheduledWorkout[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date>(today);
+  const [now, setNow] = useState(() => new Date());
   // selectedTime: null = form hidden, string = form open with that time pre-filled
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [editingWorkout, setEditingWorkout] = useState<ScheduledWorkout | null>(null);
@@ -72,6 +73,11 @@ export default function TrainerCalendarScreen() {
   useEffect(() => {
     loadWorkouts(currentMonth);
   }, [currentMonth]);
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const handleMonthChange = (month: Date) => {
     setCurrentMonth(startOfMonth(month));
@@ -127,6 +133,10 @@ export default function TrainerCalendarScreen() {
       toast.error('Ошибка удаления');
     }
   };
+
+  const isToday = toDateKey(selectedDate) === toDateKey(now);
+  const nowHour = now.getHours();
+  const nowMinutes = now.getMinutes();
 
   const selectedDateStr = toDateKey(selectedDate);
 
@@ -209,15 +219,32 @@ export default function TrainerCalendarScreen() {
               const timeStr = formatHour(hour);
               const isActive = selectedTime === timeStr;
 
+              const isCurrentHour = isToday && hour === nowHour;
+
               return (
                 <div key={hour} className="flex gap-2 min-h-10">
                   {/* Hour label */}
                   <div className="w-10 shrink-0 pt-1.5">
-                    <span className="text-xs text-(--color_text_muted) font-mono">{timeStr}</span>
+                    <span className={`text-xs font-mono ${isCurrentHour ? 'text-red-400 font-semibold' : 'text-(--color_text_muted)'}`}>
+                      {timeStr}
+                    </span>
                   </div>
 
                   {/* Content area */}
-                  <div className="flex-1 border-l border-(--color_border) pl-3 py-1 mb-0.5">
+                  <div className="flex-1 border-l border-(--color_border) pl-3 py-1 mb-0.5 relative">
+                    {/* Current time indicator */}
+                    {isCurrentHour && (
+                      <div
+                        className="absolute left-0 right-0 flex items-center pointer-events-none z-10"
+                        style={{ top: `${(nowMinutes / 60) * 100}%` }}
+                      >
+                        <div className="w-2 h-2 rounded-full bg-red-400 shrink-0 -ml-1" />
+                        <div className="flex-1 h-px bg-red-400/70" />
+                        <span className="text-[10px] text-red-400 font-mono shrink-0 ml-1">
+                          {String(nowHour).padStart(2, '0')}:{String(nowMinutes).padStart(2, '0')}
+                        </span>
+                      </div>
+                    )}
                     {hasWorkouts ? (
                       <div className="space-y-1.5">
                         {hourWorkouts.map((workout) => (

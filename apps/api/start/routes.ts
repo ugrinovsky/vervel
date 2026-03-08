@@ -59,6 +59,7 @@ router
 
     // Achievement routes
     router.get('achievements', '#controllers/streak_controller.achievements');
+    router.post('achievements/check', '#controllers/streak_controller.checkAndUnlock');
     router.post('achievements/seen', '#controllers/streak_controller.markAchievementsSeen');
 
     // Invite

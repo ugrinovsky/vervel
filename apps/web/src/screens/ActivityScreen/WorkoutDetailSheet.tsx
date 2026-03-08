@@ -247,9 +247,9 @@ function ZonesSection({ zonesLoad }: { zonesLoad: Record<string, number> }) {
     <div>
       <SectionTitle>Нагрузка по мышцам</SectionTitle>
       <ResponsiveContainer width="100%" height={sorted.length * 34 + 8}>
-        <BarChart layout="vertical" data={chartData} margin={{ top: 0, right: 36, left: 0, bottom: 0 }}>
+        <BarChart layout="vertical" data={chartData} margin={{ top: 0, right: 44, left: 0, bottom: 0 }}>
           <XAxis type="number" domain={[0, 100]} hide />
-          <YAxis type="category" dataKey="name" width={72} tick={{ fontSize: 12, fill: 'var(--color_text_muted)' }} axisLine={false} tickLine={false} />
+          <YAxis type="category" dataKey="name" width={92} tick={{ fontSize: 12, fill: 'var(--color_text_muted)' }} axisLine={false} tickLine={false} />
           <Bar dataKey="value" radius={[0, 4, 4, 0]} label={{ position: 'right', fontSize: 11, fill: 'var(--color_text_muted)', formatter: (v: unknown) => `${v}%` }}>
             {chartData.map((_, i) => <Cell key={i} fill={ZONE_COLORS[i % ZONE_COLORS.length]} fillOpacity={0.85} />)}
           </Bar>

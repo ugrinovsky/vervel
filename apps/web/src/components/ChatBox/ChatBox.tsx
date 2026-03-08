@@ -9,6 +9,7 @@ import type { ChatMessage, ExerciseData } from '@/api/trainer';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
+import { checkForNewAchievements } from '@/hooks/useAchievementToast';
 
 const PAGE_SIZE = 20;
 
@@ -373,6 +374,7 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
       setMessages((prev) => [...prev, msg]);
       newestIdRef.current = msg.id;
       scrollToBottom('smooth');
+      checkForNewAchievements();
     } catch {
       toast.error('Ошибка отправки сообщения');
       setNewMessage(content);

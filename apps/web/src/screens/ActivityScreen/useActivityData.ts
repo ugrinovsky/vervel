@@ -57,6 +57,9 @@ export function useActivityData() {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [stats, setStats] = useState<WorkoutStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
+
+  const refetch = () => setRefetchTrigger((t) => t + 1);
 
   useEffect(() => {
     const year = currentMonth.getFullYear();
@@ -68,7 +71,7 @@ export function useActivityData() {
       .then((res) => setStats(res.data))
       .catch(() => setStats(null))
       .finally(() => setLoading(false));
-  }, [currentMonth]);
+  }, [currentMonth, refetchTrigger]);
 
   const days: DayData[] = useMemo(() => {
     if (!stats?.timeline) return [];
@@ -159,5 +162,6 @@ export function useActivityData() {
     dayStats,
     dayWorkouts,
     monthlyStats,
+    refetch,
   };
 }

@@ -54,6 +54,9 @@ export const streakApi = {
   getAchievements: () =>
     privateApi.get<{ success: boolean; data: AchievementsData }>('/achievements'),
 
+  checkAndUnlock: () =>
+    privateApi.post<{ success: boolean; data: { newlyUnlocked: Achievement[] } }>('/achievements/check'),
+
   markAchievementsSeen: (achievementIds: number[]) =>
     privateApi.post<{ success: boolean; message: string }>('/achievements/seen', {
       achievementIds,

@@ -6,10 +6,14 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 import { getWorkoutTypeLabel } from './utils';
 import WorkoutDetailSheet from './WorkoutDetailSheet';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
+import { workoutsApi } from '@/api/workouts';
+import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
+import toast from 'react-hot-toast';
 
 interface DayDetailsProps {
   date: Date;
   workouts: WorkoutTimelineEntry[];
+  onDeleted: () => void;
 }
 
 function pluralWorkouts(n: number): string {
@@ -32,10 +36,14 @@ function extractTime(dateStr: string): string | null {
 
 function WorkoutTile({
   workout,
+  isUpcoming,
   onClick,
+  onDelete,
 }: {
   workout: WorkoutTimelineEntry;
+  isUpcoming: boolean;
   onClick: () => void;
+  onDelete?: () => Promise<void>;
 }) {
   const hasVolume = (workout.volume ?? 0) > 0;
   const volumeKg = workout.volume ?? 0;
@@ -45,9 +53,13 @@ function WorkoutTile({
   const fromTrainer = workout.scheduledWorkoutId != null;
 
   return (
-    <button
+    <div
       onClick={onClick}
-      className="w-full text-left bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) active:scale-[0.98] transition-transform hover:border-(--color_primary_light)/40"
+      className={`relative w-full text-left rounded-xl p-4 border transition-colors cursor-pointer active:scale-[0.98] ${
+        isUpcoming
+          ? 'bg-(--color_bg_card) border-(--color_primary_light)/40 ring-1 ring-inset ring-(--color_primary_light)/20 hover:border-(--color_primary_light)/60'
+          : 'bg-(--color_bg_card) border-(--color_border) hover:border-(--color_primary_light)/30'
+      }`}
     >
       {/* Заголовок */}
       <div className="flex items-center justify-between gap-2 mb-3">
@@ -60,12 +72,28 @@ function WorkoutTile({
           )}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
+          {isUpcoming ? (
+            <span className="text-xs px-1.5 py-0.5 bg-(--color_primary_light)/15 text-(--color_primary_icon) rounded-full border border-(--color_primary_light)/30 font-medium">
+              Предстоящая
+            </span>
+          ) : (
+            <span className="text-xs px-1.5 py-0.5 bg-white/5 text-(--color_text_muted) rounded-full border border-white/10 font-medium">
+              Прошедшая
+            </span>
+          )}
           {fromTrainer && (
             <span className="text-xs px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30 font-medium">
               от тренера
             </span>
           )}
-          <span className="text-xs text-(--color_text_muted)">→</span>
+          {onDelete && (
+            <ConfirmDeleteButton
+              variant="inline"
+              label="Удалить?"
+              onConfirm={onDelete}
+            />
+          )}
+          {!onDelete && <span className="text-xs text-(--color_text_muted)">→</span>}
         </div>
       </div>
 
@@ -92,17 +120,58 @@ function WorkoutTile({
           <span className="text-sm font-semibold text-emerald-400">{volumeLabel}</span>
         </div>
       )}
-    </button>
+    </div>
   );
 }
 
-export default function DayDetails({ date, workouts }: DayDetailsProps) {
+function SectionDivider({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-2 my-1">
+      <div className="flex-1 h-px bg-white/10" />
+      <span className="text-[11px] text-(--color_text_muted) uppercase tracking-wide font-medium shrink-0">
+        {label}
+      </span>
+      <div className="flex-1 h-px bg-white/10" />
+    </div>
+  );
+}
+
+export default function DayDetails({ date, workouts, onDeleted }: DayDetailsProps) {
   const [activeWorkout, setActiveWorkout] = useState<WorkoutTimelineEntry | null>(null);
   const navigate = useNavigate();
   const hasWorkouts = workouts.length > 0;
 
+  const now = new Date();
+  const past = workouts.filter((w) => new Date(w.date) < now);
+  const upcoming = workouts.filter((w) => new Date(w.date) >= now);
+  const hasBothGroups = past.length > 0 && upcoming.length > 0;
+
   const handleAddWorkout = () => {
     navigate('/workouts/new', { state: { date: format(date, 'yyyy-MM-dd') } });
+  };
+
+  const handleDelete = async (workout: WorkoutTimelineEntry) => {
+    if (!workout.id) return;
+    try {
+      await workoutsApi.delete(workout.id);
+      toast.success('Тренировка удалена');
+      onDeleted();
+    } catch {
+      toast.error('Ошибка при удалении');
+    }
+  };
+
+  const renderTile = (w: WorkoutTimelineEntry, i: number, isUpcoming: boolean) => {
+    const canDelete = !w.scheduledWorkoutId && !!w.id;
+    return (
+      <WorkoutTile
+        key={i}
+        workout={w}
+        isUpcoming={isUpcoming}
+        onClick={() => setActiveWorkout(w)}
+        onDelete={canDelete ? () => handleDelete(w) : undefined}
+      />
+    );
   };
 
   return (
@@ -131,9 +200,24 @@ export default function DayDetails({ date, workouts }: DayDetailsProps) {
 
           {hasWorkouts ? (
             <div className="space-y-3">
-              {workouts.map((w, i) => (
-                <WorkoutTile key={i} workout={w} onClick={() => setActiveWorkout(w)} />
-              ))}
+              {/* Прошедшие */}
+              {past.length > 0 && (
+                <>
+                  {hasBothGroups && <SectionDivider label="Прошедшие" />}
+                  {past.map((w, i) => renderTile(w, i, false))}
+                </>
+              )}
+
+              {/* Разделитель */}
+              {hasBothGroups && <SectionDivider label="Предстоящие" />}
+
+              {/* Предстоящие */}
+              {upcoming.length > 0 && (
+                <>
+                  {!hasBothGroups && <SectionDivider label="Предстоящие" />}
+                  {upcoming.map((w, i) => renderTile(w, past.length + i, true))}
+                </>
+              )}
             </div>
           ) : (
             <div className="text-center py-10">

@@ -17,6 +17,7 @@ export default function ActivityScreen() {
     days,
     dayWorkouts,
     monthlyStats,
+    refetch,
   } = useActivityData();
 
   const handleSelectDay = (day: DayData) => setSelectedDate(day.date);
@@ -81,7 +82,7 @@ export default function ActivityScreen() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
             >
-              <DayDetails date={selectedDate} workouts={dayWorkouts} />
+              <DayDetails date={selectedDate} workouts={dayWorkouts} onDeleted={refetch} />
             </motion.div>
           )}
         </AnimatePresence>

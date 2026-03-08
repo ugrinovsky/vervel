@@ -6,6 +6,7 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import WorkoutFormBase, { type WorkoutFormData } from '@/components/WorkoutFormBase/WorkoutFormBase';
 import { getLocalDateISOString } from '@/util/exercise';
 import { workoutsApi, type WorkoutExercise } from '@/api/workouts';
+import { checkForNewAchievements } from '@/hooks/useAchievementToast';
 import type { ExerciseData } from '@/api/trainer';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
 
@@ -56,6 +57,7 @@ export default function WorkoutForm() {
         notes: data.notes || undefined,
       });
       toast.success('Тренировка сохранена 💪');
+      checkForNewAchievements();
       navigate(-1);
     } catch (err: any) {
       toast.error(err?.response?.data?.message || err?.message || 'Ошибка сохранения');
