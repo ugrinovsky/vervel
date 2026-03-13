@@ -3,22 +3,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import type { Exercise, ExerciseFull, ExerciseWithSets } from '@/types/Exercise';
 import { exercisesApi } from '@/api/exercises';
-
-/* ------------------------------------------------------------------ */
-/* Labels                                                               */
-/* ------------------------------------------------------------------ */
-
-const ZONE_LABELS: Record<string, string> = {
-  chests: 'Грудь',
-  back: 'Спина',
-  legs: 'Ноги',
-  shoulders: 'Плечи',
-  biceps: 'Бицепс',
-  triceps: 'Трицепс',
-  core: 'Кор',
-  glutes: 'Ягодицы',
-  forearms: 'Предплечья',
-};
+import { getZoneLabel } from '@/util/zones';
 
 const CATEGORY_LABELS: Record<string, string> = {
   strength: 'Силовые',
@@ -165,7 +150,7 @@ export function ExerciseDetailContent({
                 key={zone}
                 className="px-2.5 py-1 rounded-full text-xs font-medium bg-(--color_primary_light)/20 text-(--color_primary_light)"
               >
-                {ZONE_LABELS[zone] ?? zone}
+                {getZoneLabel(zone)}
               </span>
             ))}
           </div>

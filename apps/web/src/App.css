@@ -83,6 +83,8 @@ body,
   line-height: calc(var(--spacing) * 8);
   /* color: oklch(0.97 0 0 / 0.49); */
   color: oklch(1 0 0 / 0.72);
+  display: flex;
+  justify-content: center;
 }
 
 html::-webkit-scrollbar {

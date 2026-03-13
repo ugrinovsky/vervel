@@ -15,9 +15,15 @@ function PageLoader() {
   );
 }
 
-export default function Screen({ children, loading, className = '' }: PropsWithChildren<ScreenProps>) {
+export default function Screen({
+  children,
+  loading,
+  className = '',
+}: PropsWithChildren<ScreenProps>) {
   return (
-    <div className={`screen flex flex-col md:flex-row items-stretch h-full ${className}`.trim()}>
+    <div
+      className={`screen flex flex-col md:flex-row items-stretch justify-center h-full w-full max-w-[798px] ${className}`.trim()}
+    >
       {loading ? <PageLoader /> : children}
     </div>
   );

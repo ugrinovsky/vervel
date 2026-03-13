@@ -5,22 +5,7 @@ import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { ExerciseDetailContent } from '@/components/ExerciseDetailSheet/ExerciseDetailSheet';
 import type { Exercise, ExerciseFull, ExerciseCategory, MuscleZone, ExerciseWithSets } from '@/types/Exercise';
 import { exercisesApi } from '@/api/exercises';
-
-/* ------------------------------------------------------------------ */
-/* Labels                                                               */
-/* ------------------------------------------------------------------ */
-
-const ZONE_LABELS: Record<MuscleZone, string> = {
-  chests: 'Грудь',
-  back: 'Спина',
-  legs: 'Ноги',
-  shoulders: 'Плечи',
-  biceps: 'Бицепс',
-  triceps: 'Трицепс',
-  core: 'Кор',
-  glutes: 'Ягодицы',
-  forearms: 'Предплечья',
-};
+import { getZoneLabel } from '@/util/zones';
 
 const CATEGORY_LABELS: Record<ExerciseCategory, string> = {
   strength: 'Силовые',
@@ -76,7 +61,7 @@ function ExerciseCard({
                 key={zone}
                 className="text-[10px] px-1.5 py-0.5 rounded-full bg-(--color_primary_light)/15 text-(--color_primary_light)"
               >
-                {ZONE_LABELS[zone as MuscleZone] ?? zone}
+                {getZoneLabel(zone)}
               </span>
             ))}
           </div>
@@ -156,7 +141,7 @@ export default function ExercisePicker({ onSelect, workoutType }: Props) {
   /* Available zones */
   const availableZones = useMemo<MuscleZone[]>(() => {
     const set = new Set(exercises.flatMap((e) => e.zones));
-    return (Object.keys(ZONE_LABELS) as MuscleZone[]).filter((z) => set.has(z));
+    return [...set] as MuscleZone[];
   }, [exercises]);
 
   /* Filtered exercises */
@@ -294,7 +279,7 @@ export default function ExercisePicker({ onSelect, workoutType }: Props) {
                 {availableZones.map((zone) => (
                   <FilterChip
                     key={zone}
-                    label={ZONE_LABELS[zone]}
+                    label={getZoneLabel(zone)}
                     active={zoneFilter === zone}
                     onClick={() => setZoneFilter(zoneFilter === zone ? null : zone)}
                   />

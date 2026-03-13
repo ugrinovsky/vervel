@@ -52,7 +52,6 @@ export default function WorkoutExercisesEditor({
   superset = true,
   toolbar,
 }: Props) {
-
   // ── Helpers ─────────────────────────────────────────────────────────
 
   const update = (index: number, patch: Partial<ExerciseData>) => {
@@ -64,40 +63,48 @@ export default function WorkoutExercisesEditor({
   };
 
   const addSet = (exIdx: number) => {
-    onChange(exercises.map((ex, i) => {
-      if (i !== exIdx || ex.duration != null) return ex;
-      const detail = ex.setsDetail ?? [];
-      const last = detail[detail.length - 1];
-      return { ...ex, setsDetail: [...detail, { reps: last?.reps ?? 10, weight: last?.weight }] };
-    }));
+    onChange(
+      exercises.map((ex, i) => {
+        if (i !== exIdx || ex.duration != null) return ex;
+        const detail = ex.setsDetail ?? [];
+        const last = detail[detail.length - 1];
+        return { ...ex, setsDetail: [...detail, { reps: last?.reps ?? 10, weight: last?.weight }] };
+      })
+    );
   };
 
   const removeSet = (exIdx: number, setIdx: number) => {
-    onChange(exercises.map((ex, i) => {
-      if (i !== exIdx || ex.duration != null) return ex;
-      const detail = ex.setsDetail ?? [];
-      if (detail.length <= 1) return ex;
-      return { ...ex, setsDetail: detail.filter((_, si) => si !== setIdx) };
-    }));
+    onChange(
+      exercises.map((ex, i) => {
+        if (i !== exIdx || ex.duration != null) return ex;
+        const detail = ex.setsDetail ?? [];
+        if (detail.length <= 1) return ex;
+        return { ...ex, setsDetail: detail.filter((_, si) => si !== setIdx) };
+      })
+    );
   };
 
   const dupSet = (exIdx: number, setIdx: number) => {
-    onChange(exercises.map((ex, i) => {
-      if (i !== exIdx || ex.duration != null) return ex;
-      const detail = [...(ex.setsDetail ?? [])];
-      detail.splice(setIdx + 1, 0, { ...detail[setIdx] });
-      return { ...ex, setsDetail: detail };
-    }));
+    onChange(
+      exercises.map((ex, i) => {
+        if (i !== exIdx || ex.duration != null) return ex;
+        const detail = [...(ex.setsDetail ?? [])];
+        detail.splice(setIdx + 1, 0, { ...detail[setIdx] });
+        return { ...ex, setsDetail: detail };
+      })
+    );
   };
 
   const updateSet = (exIdx: number, setIdx: number, field: 'reps' | 'weight', raw: string) => {
-    onChange(exercises.map((ex, i) => {
-      if (i !== exIdx || ex.duration != null) return ex;
-      const detail = [...(ex.setsDetail ?? [])];
-      const val = field === 'weight' ? parseFloat(raw) : parseInt(raw, 10);
-      detail[setIdx] = { ...detail[setIdx], [field]: raw === '' || isNaN(val) ? undefined : val };
-      return { ...ex, setsDetail: detail };
-    }));
+    onChange(
+      exercises.map((ex, i) => {
+        if (i !== exIdx || ex.duration != null) return ex;
+        const detail = [...(ex.setsDetail ?? [])];
+        const val = field === 'weight' ? parseFloat(raw) : parseInt(raw, 10);
+        detail[setIdx] = { ...detail[setIdx], [field]: raw === '' || isNaN(val) ? undefined : val };
+        return { ...ex, setsDetail: detail };
+      })
+    );
   };
 
   const toggleLink = (i: number) => {
@@ -129,7 +136,8 @@ export default function WorkoutExercisesEditor({
       data = {
         exerciseId: String(ex.exerciseId),
         name: ex.title,
-        sets: 3, reps: 10,
+        sets: 3,
+        reps: 10,
         setsDetail: [{ reps: 10 }, { reps: 10 }, { reps: 10 }],
       };
     }
@@ -156,18 +164,18 @@ export default function WorkoutExercisesEditor({
             return (
               <div key={i}>
                 <div
-                  className={`p-3 rounded-xl border transition-colors ${
+                  className={`p-3 rounded-xl min-w-0 border transition-colors ${
                     isInBlock
                       ? 'bg-amber-500/10 border-amber-500/40'
                       : 'bg-white/[0.07] border-white/10'
                   }`}
                 >
                   {/* Index + name + remove */}
-                  <div className="flex items-start gap-2.5">
+                  <div className="flex items-start gap-2.5 min-w-0">
                     <span className="shrink-0 mt-0.5 text-[10px] font-mono text-white/30 w-4 text-right leading-snug">
                       {String(i + 1).padStart(2, '0')}
                     </span>
-                    <p className="flex-1 text-sm font-medium text-white leading-snug truncate">
+                    <p className="flex-1 text-sm font-medium text-white leading-snug min-w-0 truncate">
                       {ex.name}
                     </p>
                     <ConfirmDeleteButton
@@ -178,7 +186,7 @@ export default function WorkoutExercisesEditor({
                   </div>
 
                   {/* Params */}
-                  <div className="mt-2 ml-6">
+                  <div className="mt-2">
                     <ExerciseParamsEditor
                       workoutType={workoutType}
                       duration={ex.duration}

@@ -2,13 +2,13 @@ import { useState, useMemo } from 'react';
 import { FireIcon } from '@heroicons/react/24/outline';
 import { WorkoutStats } from '@/types/Analytics';
 import {
-  ZONE_LABELS,
   DISPLAY,
   TREND_THRESHOLDS,
   getTrendDirection,
   getLoadLabel,
   type TrendDirection,
 } from '@/constants/AnalyticsConstants';
+import { getZoneLabel } from '@/util/zones';
 
 interface TopMusclesProps {
   period: 'week' | 'month' | 'year';
@@ -57,8 +57,8 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
 
         return {
           id: zone,
-          name: ZONE_LABELS[zone] || zone,
-          displayName: ZONE_LABELS[zone] || zone,
+          name: getZoneLabel(zone),
+          displayName: getZoneLabel(zone),
           percentage,
           relativeLoad,
           trend,

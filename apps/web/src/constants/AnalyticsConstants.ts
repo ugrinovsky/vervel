@@ -137,25 +137,6 @@ export const RADAR = {
 /* -------------------------------- ЗОНЫ И ТИПЫ -------------------------------- */
 
 /**
- * Лейблы для мышечных зон (используется в нескольких компонентах)
- */
-export const ZONE_LABELS: Record<string, string> = {
-  chests: 'Грудь',
-  triceps: 'Трицепс',
-  shoulders: 'Плечи',
-  legMuscles: 'Ноги',
-  trapezoids: 'Трапеции',
-  calfMuscles: 'Икры',
-  abdominalPress: 'Пресс',
-  biceps: 'Бицепс',
-  glutes: 'Ягодицы',
-  backMuscles: 'Спина',
-  forearms: 'Предплечья',
-  obliquePress: 'Косые мышцы',
-  core: 'Кор',
-} as const;
-
-/**
  * Лейблы для типов тренировок — source of truth в workoutTypes.ts
  */
 export { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';

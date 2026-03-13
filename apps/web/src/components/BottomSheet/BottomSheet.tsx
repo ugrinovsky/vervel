@@ -39,23 +39,25 @@ export default function BottomSheet({ open, onClose, title, emoji, header, child
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
-            className="background relative w-full rounded-t-3xl p-6 pb-6 max-h-[90vh] overflow-y-auto"
+            className="background relative w-full rounded-t-3xl p-6 pb-6 max-h-[90vh] overflow-y-auto justify-center flex"
             style={{ backgroundColor: 'var(--color_bg_card)' }}
           >
-            {/* Handle */}
-            <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-white/20" />
+            <div className={'max-w-[798px] w-full h-max'}>
+              {/* Handle */}
+              <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-white/20" />
 
-            {/* Header */}
-            <div className="flex items-start justify-between pt-2 mb-4">
-              {headerContent}
-              <CloseButton onClick={onClose} className="ml-2" />
+              {/* Header */}
+              <div className="flex items-start justify-between pt-2 mb-4">
+                {headerContent}
+                <CloseButton onClick={onClose} className="ml-2" />
+              </div>
+
+              {children}
             </div>
-
-            {children}
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>,
-    document.body,
+    document.body
   );
 }

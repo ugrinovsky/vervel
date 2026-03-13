@@ -45,12 +45,19 @@ interface Props {
 export default function ExerciseParamsEditor({
   workoutType,
   duration,
-  wodType, timeCap, rounds, reps, weight, distance,
+  wodType,
+  timeCap,
+  rounds,
+  reps,
+  weight,
+  distance,
   setsDetail,
   onPatch,
-  onAddSet, onRemoveSet, onDupSet, onUpdateSet,
+  onAddSet,
+  onRemoveSet,
+  onDupSet,
+  onUpdateSet,
 }: Props) {
-
   /* ── Cardio ─────────────────────────────────────────────────────── */
   if (workoutType === 'cardio') {
     return (
@@ -74,21 +81,23 @@ export default function ExerciseParamsEditor({
       <div className="space-y-2">
         {/* WOD type selector */}
         <div className="grid grid-cols-4 gap-1">
-          {(Object.entries(WOD_CONFIG) as [WodType, { label: string; hint: string }][]).map(([value, cfg]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => onPatch({ wodType: value === wodType ? undefined : value })}
-              title={cfg.hint}
-              className={`py-1 rounded-lg text-[11px] font-medium transition-colors ${
-                wodType === value
-                  ? 'bg-(--color_primary_light) text-white'
-                  : 'bg-black/20 border border-white/10 text-white/40 hover:text-white/70'
-              }`}
-            >
-              {cfg.label}
-            </button>
-          ))}
+          {(Object.entries(WOD_CONFIG) as [WodType, { label: string; hint: string }][]).map(
+            ([value, cfg]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => onPatch({ wodType: value === wodType ? undefined : value })}
+                title={cfg.hint}
+                className={`py-1 rounded-lg text-[11px] font-medium transition-colors ${
+                  wodType === value
+                    ? 'bg-(--color_primary_light) text-white'
+                    : 'bg-black/20 border border-white/10 text-white/40 hover:text-white/70'
+                }`}
+              >
+                {cfg.label}
+              </button>
+            )
+          )}
         </div>
 
         {/* Context fields: timeCap / rounds */}
@@ -103,10 +112,12 @@ export default function ExerciseParamsEditor({
                   type="number"
                   min={1}
                   value={timeCap ?? ''}
-                  onChange={(e) => onPatch({ timeCap: e.target.value ? +e.target.value : undefined })}
+                  onChange={(e) =>
+                    onPatch({ timeCap: e.target.value ? +e.target.value : undefined })
+                  }
                   onClick={(e) => e.currentTarget.select()}
                   placeholder="20"
-                  className="w-14 bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white text-sm text-center outline-none focus:border-white/25 transition-colors"
+                  className="w-14 w-full bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white text-sm text-center outline-none focus:border-white/25 transition-colors"
                 />
               </div>
             )}
@@ -117,10 +128,12 @@ export default function ExerciseParamsEditor({
                   type="number"
                   min={1}
                   value={rounds ?? (wodType === 'tabata' ? 8 : '')}
-                  onChange={(e) => onPatch({ rounds: e.target.value ? +e.target.value : undefined })}
+                  onChange={(e) =>
+                    onPatch({ rounds: e.target.value ? +e.target.value : undefined })
+                  }
                   onClick={(e) => e.currentTarget.select()}
                   placeholder={wodType === 'tabata' ? '8' : '3'}
-                  className="w-14 bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white text-sm text-center outline-none focus:border-white/25 transition-colors"
+                  className="w-14 w-full bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white text-sm text-center outline-none focus:border-white/25 transition-colors"
                 />
               </div>
             )}
@@ -133,27 +146,34 @@ export default function ExerciseParamsEditor({
           <span className="flex-1 text-center">кг</span>
           <span className="flex-1 text-center">м</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-3 gap-1">
           <input
-            type="number" min={1} value={reps ?? ''}
+            type="number"
+            min={1}
+            value={reps ?? ''}
             onChange={(e) => onPatch({ reps: e.target.value ? +e.target.value : undefined })}
             onClick={(e) => e.currentTarget.select()}
             placeholder="10"
-            className="flex-1 min-w-0 bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white text-sm text-center outline-none focus:border-white/30 transition-colors"
+            className="flex-1 min-w-0 w-full bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white text-sm text-center outline-none focus:border-white/30 transition-colors"
           />
           <input
-            type="number" min={0} step={2.5} value={weight ?? ''}
+            type="number"
+            min={0}
+            step={2.5}
+            value={weight ?? ''}
             onChange={(e) => onPatch({ weight: e.target.value ? +e.target.value : undefined })}
             onClick={(e) => e.currentTarget.select()}
             placeholder="—"
-            className="flex-1 min-w-0 bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white/80 text-sm text-center outline-none focus:border-white/30 transition-colors placeholder:text-white/20"
+            className="flex-1 min-w-0 w-full bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white/80 text-sm text-center outline-none focus:border-white/30 transition-colors placeholder:text-white/20"
           />
           <input
-            type="number" min={0} value={distance ?? ''}
+            type="number"
+            min={0}
+            value={distance ?? ''}
             onChange={(e) => onPatch({ distance: e.target.value ? +e.target.value : undefined })}
             onClick={(e) => e.currentTarget.select()}
             placeholder="—"
-            className="flex-1 min-w-0 bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white/80 text-sm text-center outline-none focus:border-white/30 transition-colors placeholder:text-white/20"
+            className="flex-1 min-w-0 w-full bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white/80 text-sm text-center outline-none focus:border-white/30 transition-colors placeholder:text-white/20"
           />
         </div>
       </div>
@@ -176,30 +196,37 @@ export default function ExerciseParamsEditor({
             {si + 1}
           </span>
           <input
-            type="number" min={1} value={set.reps ?? ''}
+            type="number"
+            min={1}
+            value={set.reps ?? ''}
             onChange={(e) => onUpdateSet?.(si, 'reps', e.target.value)}
             onClick={(e) => e.currentTarget.select()}
             placeholder="10"
-            className="flex-1 min-w-0 bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white text-sm text-center outline-none focus:border-white/30 transition-colors"
+            className="flex-1 min-w-0 w-full bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white text-sm text-center outline-none focus:border-white/30 transition-colors"
           />
           <span className="text-[10px] text-white/20 shrink-0">×</span>
           <input
-            type="number" min={0} step={2.5} value={set.weight ?? ''}
+            type="number"
+            min={0}
+            step={2.5}
+            value={set.weight ?? ''}
             onChange={(e) => onUpdateSet?.(si, 'weight', e.target.value)}
             onClick={(e) => e.currentTarget.select()}
             placeholder="— кг"
-            className="flex-1 min-w-0 bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white/80 text-sm text-center outline-none focus:border-white/30 transition-colors placeholder:text-white/20"
+            className="flex-1 min-w-0 w-full bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white/80 text-sm text-center outline-none focus:border-white/30 transition-colors placeholder:text-white/20"
           />
           <div className="flex gap-1 shrink-0 w-14 justify-end">
             <button
-              type="button" onClick={() => onDupSet?.(si)}
+              type="button"
+              onClick={() => onDupSet?.(si)}
               className="w-6 h-6 flex items-center justify-center rounded-md text-white/30 hover:text-blue-400 hover:bg-blue-500/15 transition-colors"
               title="Дублировать"
             >
               <DocumentDuplicateIcon className="w-3.5 h-3.5" />
             </button>
             <button
-              type="button" onClick={() => onRemoveSet?.(si)}
+              type="button"
+              onClick={() => onRemoveSet?.(si)}
               disabled={(setsDetail ?? []).length <= 1}
               className="w-6 h-6 flex items-center justify-center rounded-md text-white/30 hover:text-red-400 hover:bg-red-500/15 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
               title="Удалить"
@@ -210,7 +237,8 @@ export default function ExerciseParamsEditor({
         </div>
       ))}
       <button
-        type="button" onClick={onAddSet}
+        type="button"
+        onClick={onAddSet}
         className="mt-0.5 text-[11px] text-white/35 hover:text-emerald-400 transition-colors flex items-center gap-1 font-medium"
       >
         <span className="text-sm leading-none">+</span> подход

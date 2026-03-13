@@ -1,155 +1,165 @@
-import { LightBulbIcon, ClockIcon } from '@heroicons/react/24/outline';
-import { getZoneLabel } from '@/util/zones';
 import { generateRecommendations } from '@/util/getRecomendations';
+import type { Recommendation } from '@/util/getRecomendations';
+import { getZoneLabel } from '@/util/zones';
 import { WorkoutStats } from '@/types/Analytics';
-
-export interface Recommendation {
-  id: string;
-  type: 'focus' | 'improvement' | 'achievement' | 'warning';
-  title: string;
-  description: string;
-  priority: 'high' | 'medium' | 'low';
-  estimatedTime?: string;
-  muscleGroups?: string[];
-}
 
 interface RecommendationsProps {
   stats: WorkoutStats;
 }
 
+const TYPE_CONFIG: Record<
+  Recommendation['type'],
+  { emoji: string; label: string; color: string; bg: string; border: string }
+> = {
+  warning: {
+    emoji: '⚠️',
+    label: 'Внимание',
+    color: '#f87171',
+    bg: 'rgba(248,113,113,0.07)',
+    border: 'rgba(248,113,113,0.25)',
+  },
+  focus: {
+    emoji: '🎯',
+    label: 'Фокус',
+    color: 'var(--color_primary_light)',
+    bg: 'rgb(var(--color_primary_light_ch) / 0.07)',
+    border: 'rgb(var(--color_primary_light_ch) / 0.25)',
+  },
+  improvement: {
+    emoji: '📈',
+    label: 'Прогресс',
+    color: 'var(--color_primary_light)',
+    bg: 'rgb(var(--color_primary_light_ch) / 0.07)',
+    border: 'rgb(var(--color_primary_light_ch) / 0.25)',
+  },
+  achievement: {
+    emoji: '🏆',
+    label: 'Достижение',
+    color: '#fbbf24',
+    bg: 'rgba(251,191,36,0.07)',
+    border: 'rgba(251,191,36,0.25)',
+  },
+};
+
+const PRIORITY_DOT: Record<Recommendation['priority'], string | null> = {
+  high: '#f87171',
+  medium: '#fbbf24',
+  low: null,
+};
+
 export default function Recommendations({ stats }: RecommendationsProps) {
   const recommendations = generateRecommendations(stats);
 
-  const getTypeColor = (type: Recommendation['type']) => {
-    switch (type) {
-      case 'focus':
-        return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-      case 'improvement':
-        return 'bg-teal-500/20 text-teal-400 border-teal-500/30';
-      case 'achievement':
-        return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-      case 'warning':
-        return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
-    }
-  };
+  const highCount = recommendations.filter((r) => r.priority === 'high').length;
+  const warnCount = recommendations.filter((r) => r.type === 'warning').length;
 
-  const getTypeIcon = (type: Recommendation['type']) => {
-    switch (type) {
-      case 'focus':
-        return '🎯';
-      case 'improvement':
-        return '📈';
-      case 'achievement':
-        return '🏆';
-      case 'warning':
-        return '⚠️';
-    }
-  };
-
-  const getPriorityColor = (priority: Recommendation['priority']) => {
-    switch (priority) {
-      case 'high':
-        return 'bg-orange-500';
-      case 'medium':
-        return 'bg-amber-500';
-      case 'low':
-        return 'bg-emerald-500';
-    }
-  };
-
-  const highPriorityCount = recommendations.filter((rec) => rec.priority === 'high').length;
+  if (recommendations.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 gap-3">
+        <div className="text-4xl">✅</div>
+        <p className="text-sm font-semibold text-white">Всё в порядке</p>
+        <p className="text-xs text-(--color_text_muted) text-center leading-relaxed">
+          Нагрузка сбалансирована, интенсивность в норме.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <LightBulbIcon className="w-5 h-5 text-amber-400 shrink-0" />
-          <div>
-            <p className="text-sm text-[var(--color_text_muted)]">Персональные советы</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div
-            className={`px-2 py-1 rounded-full text-xs ${
-              highPriorityCount > 0 ? 'bg-orange-500/20 text-orange-400' : 'bg-[var(--color_bg_card)] text-[var(--color_text_muted)]'
-            }`}
+    <div className="space-y-3">
+      {/* Сводка */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs text-(--color_text_muted)">{recommendations.length} советов</span>
+        {highCount > 0 && (
+          <span
+            className="text-xs font-semibold px-2 py-0.5 rounded-full"
+            style={{ color: '#f87171', backgroundColor: 'rgba(248,113,113,0.12)' }}
           >
-            {highPriorityCount} важных
-          </div>
-        </div>
+            {highCount} важных
+          </span>
+        )}
+        {warnCount > 0 && (
+          <span
+            className="text-xs font-semibold px-2 py-0.5 rounded-full"
+            style={{ color: '#fbbf24', backgroundColor: 'rgba(251,191,36,0.12)' }}
+          >
+            {warnCount} предупреждений
+          </span>
+        )}
       </div>
 
-      <div className="space-y-4">
-        {recommendations.map((rec) => (
+      {/* Карточки */}
+      {recommendations.map((rec) => {
+        const cfg = TYPE_CONFIG[rec.type];
+        const dotColor = PRIORITY_DOT[rec.priority];
+        return (
           <div
             key={rec.id}
-            className={`
-              p-4 rounded-xl border transition-all duration-200
-              ${getTypeColor(rec.type)}
-              hover:scale-[1.02] hover:shadow-lg
-            `}
+            className="rounded-xl border overflow-hidden"
+            style={{ borderColor: cfg.border, backgroundColor: cfg.bg }}
           >
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-3">
-                <div className="text-xl">{getTypeIcon(rec.type)}</div>
+            {/* Цветная полоска сверху для warning и high */}
+            {rec.priority === 'high' && (
+              <div className="h-0.5 w-full" style={{ backgroundColor: cfg.color }} />
+            )}
 
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-bold text-white leading-tight">{rec.title}</h4>
-                    {rec.priority === 'high' && (
-                      <div
-                        className={`w-2 h-2 rounded-full animate-pulse ${getPriorityColor(
-                          rec.priority
-                        )}`}
-                      ></div>
+            <div className="p-4">
+              {/* Заголовок */}
+              <div className="flex items-start gap-2.5 mb-2">
+                <span className="text-lg leading-none mt-0.5 shrink-0">{cfg.emoji}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-bold text-white leading-tight">{rec.title}</span>
+                    {dotColor && (
+                      <span
+                        className="inline-block w-1.5 h-1.5 rounded-full shrink-0 animate-pulse"
+                        style={{ backgroundColor: dotColor }}
+                      />
                     )}
                   </div>
-
-                  <p className="text-sm text-[var(--color_text_secondary)] mb-3">{rec.description}</p>
-
-                  {rec.muscleGroups && (
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {rec.muscleGroups.map((muscle) => (
-                        <span
-                          key={muscle}
-                          className="px-2 py-1 text-xs bg-[var(--color_bg_card)]/50 rounded-full text-[var(--color_text_secondary)]"
-                        >
-                          {getZoneLabel(muscle)}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {rec.estimatedTime && (
-                    <div className="flex items-center gap-4 text-sm">
-                      {rec.estimatedTime && (
-                        <div className="flex items-center gap-1 text-[var(--color_text_muted)]">
-                          <ClockIcon className="w-3 h-3" />
-                          <span>{rec.estimatedTime}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <span
+                    className="text-[10px] font-semibold uppercase tracking-wide"
+                    style={{ color: cfg.color }}
+                  >
+                    {cfg.label}
+                  </span>
                 </div>
               </div>
+
+              {/* Описание */}
+              <p className="text-xs text-(--color_text_muted) leading-relaxed mb-2">
+                {rec.description}
+              </p>
+
+              {/* Мышечные группы */}
+              {rec.muscleGroups && rec.muscleGroups.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {rec.muscleGroups.map((m) => (
+                    <span
+                      key={m}
+                      className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                      style={{
+                        backgroundColor: 'rgba(255,255,255,0.08)',
+                        color: 'rgba(255,255,255,0.6)',
+                      }}
+                    >
+                      {getZoneLabel(m)}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Время */}
+              {rec.estimatedTime && (
+                <div className="flex items-center gap-1 text-[10px] text-(--color_text_muted)">
+                  <span>⏱</span>
+                  <span>{rec.estimatedTime}</span>
+                </div>
+              )}
             </div>
           </div>
-        ))}
-      </div>
-
-      <div className="mt-6 pt-4 border-t border-[var(--color_border)]">
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <div className="text-xl font-bold text-white">{recommendations.length}</div>
-            <div className="text-xs text-[var(--color_text_muted)]">Всего</div>
-          </div>
-          <div>
-            <div className="text-xl font-bold text-amber-400">{highPriorityCount}</div>
-            <div className="text-xs text-[var(--color_text_muted)]">Важные</div>
-          </div>
-        </div>
-      </div>
-    </>
+        );
+      })}
+    </div>
   );
 }

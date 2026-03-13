@@ -45,16 +45,14 @@ export default function ModalOverlay({
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
-              className="absolute inset-x-4 top-4 bottom-24 rounded-2xl border border-(--color_border) flex flex-col overflow-hidden"
+              className="absolute max-w-[798px] mx-auto w-full inset-x-4 top-4 bottom-24 rounded-2xl border border-(--color_border) flex flex-col overflow-hidden"
               style={{ backgroundColor: 'var(--color_bg_card)' }}
             >
               {children}
             </motion.div>
           ) : (
             <div className="min-h-full p-4 pb-24 flex flex-col">
-              <div className="w-full max-w-2xl mx-auto mt-safe">
-                {children}
-              </div>
+              <div className="w-full max-w-2xl mx-auto mt-safe">{children}</div>
             </div>
           )}
         </motion.div>

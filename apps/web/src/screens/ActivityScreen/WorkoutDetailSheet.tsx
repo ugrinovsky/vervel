@@ -9,7 +9,7 @@ import type { WorkoutTimelineEntry } from '@/types/Analytics';
 import type { Exercise } from '@/types/Exercise';
 import { getWorkoutTypeLabel } from './utils';
 import { WOD_CONFIG, type WodType } from '@/constants/workoutTypes';
-import zones from '@/constants/zones';
+import { getZoneLabel } from '@/util/zones';
 import toast from 'react-hot-toast';
 import { PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
@@ -42,13 +42,6 @@ interface Props {
 
 /* ─── Константы ─────────────────────────────────────────────────────── */
 
-const ZONE_LABEL_MAP = new Map(zones.map((z) => [z.id, z.label]));
-const ZONE_LABEL_FALLBACKS: Record<string, string> = {
-  back: 'Спина', legs: 'Ноги', glutes: 'Ягодицы', core: 'Пресс', glutealMuscles: 'Ягодицы',
-};
-function getZoneLabel(id: string): string {
-  return ZONE_LABEL_MAP.get(id) ?? ZONE_LABEL_FALLBACKS[id] ?? id;
-}
 const ZONE_COLORS = [
   'var(--color-emerald-400)', 'var(--color-emerald-600)', 'var(--color-emerald-300)',
   'var(--color-emerald-700)', 'var(--color-emerald-500)', 'var(--color-emerald-200)',

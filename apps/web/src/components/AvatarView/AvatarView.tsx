@@ -3,24 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Avatar from '@/components/Avatar/Avatar';
 import type { ZoneState } from '@/api/avatar';
 import type { BodyGender } from '@/components/Avatar/bodyZones';
-
-const ZONE_LABELS: Record<string, string> = {
-  chests: 'Грудь',
-  shoulders: 'Плечи',
-  trapezoids: 'Трапеции',
-  abdominalPress: 'Пресс',
-  obliquePress: 'Косые мышцы',
-  backMuscles: 'Спина',
-  legMuscles: 'Ноги',
-  biceps: 'Бицепс',
-  triceps: 'Трицепс',
-  forearms: 'Предплечья',
-  calfMuscles: 'Икры',
-  back: 'Спина',
-  legs: 'Ноги',
-  core: 'Пресс',
-  glutes: 'Ягодицы',
-};
+import { getZoneLabel } from '@/util/zones';
 
 type Phase = 'destroyed' | 'recovering' | 'almost_ready' | 'recovered' | 'untrained';
 
@@ -32,38 +15,39 @@ function getPhase(zone: ZoneState): Phase {
   return 'recovered';
 }
 
-const PHASE_CONFIG: Record<Phase, { label: string; color: string; barColor: string; tip: string }> = {
-  destroyed: {
-    label: 'Убита',
-    color: 'text-red-400',
-    barColor: 'from-red-600 to-red-400',
-    tip: 'Мышца получила серьёзную нагрузку. Не тренируйте её минимум 48 часов.',
-  },
-  recovering: {
-    label: 'Восстанавливается',
-    color: 'text-orange-400',
-    barColor: 'from-orange-500 to-yellow-400',
-    tip: 'Мышца ещё восстанавливается. Лучше поработать с другими группами.',
-  },
-  almost_ready: {
-    label: 'Почти готова',
-    color: 'text-yellow-300',
-    barColor: 'from-yellow-500 to-green-400',
-    tip: 'Почти восстановилась. Лёгкая нагрузка допустима.',
-  },
-  recovered: {
-    label: 'Отдохнула',
-    color: 'text-green-400',
-    barColor: 'from-green-500 to-green-400',
-    tip: 'Мышца полностью восстановилась. Можно нагружать.',
-  },
-  untrained: {
-    label: 'Не тренировалась',
-    color: 'text-(--color_text_muted)',
-    barColor: 'from-gray-600 to-gray-500',
-    tip: 'Эта группа мышц не получала нагрузки. Обратите на неё внимание.',
-  },
-};
+const PHASE_CONFIG: Record<Phase, { label: string; color: string; barColor: string; tip: string }> =
+  {
+    destroyed: {
+      label: 'Перегружено',
+      color: 'text-red-400',
+      barColor: 'from-red-600 to-red-400',
+      tip: 'Мышца получила серьёзную нагрузку. Не тренируйте её минимум 48 часов.',
+    },
+    recovering: {
+      label: 'Восстановление',
+      color: 'text-orange-400',
+      barColor: 'from-orange-500 to-yellow-400',
+      tip: 'Мышца ещё восстанавливается. Лучше поработать с другими группами.',
+    },
+    almost_ready: {
+      label: 'Почти готово',
+      color: 'text-yellow-300',
+      barColor: 'from-yellow-500 to-green-400',
+      tip: 'Почти восстановилась. Лёгкая нагрузка допустима.',
+    },
+    recovered: {
+      label: 'Восстановлено',
+      color: 'text-green-400',
+      barColor: 'from-green-500 to-green-400',
+      tip: 'Мышца полностью восстановилась. Можно нагружать.',
+    },
+    untrained: {
+      label: 'Без нагрузки',
+      color: 'text-(--color_text_muted)',
+      barColor: 'from-gray-600 to-gray-500',
+      tip: 'Эта группа мышц не получала нагрузки. Обратите на неё внимание.',
+    },
+  };
 
 function getDaysAgoText(days: number | null): string {
   if (days === null) return 'Нет тренировок';
@@ -259,7 +243,7 @@ export default function AvatarView({
               <div className="flex items-center justify-between text-sm">
                 <span className="text-(--color_text_muted)">Самая уставшая</span>
                 <span className={`font-medium ${PHASE_CONFIG[getPhase(summary.max.zone)].color}`}>
-                  {ZONE_LABELS[summary.max.name] || summary.max.name} —{' '}
+                  {getZoneLabel(summary.max.name)} —{' '}
                   {PHASE_CONFIG[getPhase(summary.max.zone)].label}
                 </span>
               </div>
@@ -267,7 +251,7 @@ export default function AvatarView({
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-(--color_text_muted)">Самая отдохнувшая</span>
                   <span className={`font-medium ${PHASE_CONFIG[getPhase(summary.min.zone)].color}`}>
-                    {ZONE_LABELS[summary.min.name] || summary.min.name} —{' '}
+                    {getZoneLabel(summary.min.name)} —{' '}
                     {PHASE_CONFIG[getPhase(summary.min.zone)].label}
                   </span>
                 </div>
@@ -288,9 +272,7 @@ export default function AvatarView({
               className="glass rounded-2xl p-5"
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-white">
-                  {ZONE_LABELS[selectedZone] || selectedZone}
-                </h3>
+                <h3 className="text-lg font-bold text-white">{getZoneLabel(selectedZone)}</h3>
                 <button
                   onClick={() => setSelectedZone(null)}
                   className="text-(--color_text_muted) hover:text-white transition-colors text-sm"
@@ -324,9 +306,7 @@ export default function AvatarView({
                         : 'hover:bg-(--color_bg_card_hover)'
                     }`}
                   >
-                    <span className="text-sm text-white flex-1">
-                      {ZONE_LABELS[name] || name}
-                    </span>
+                    <span className="text-sm text-white flex-1">{getZoneLabel(name)}</span>
                     <div className="w-24 h-1.5 bg-(--color_border) rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full bg-gradient-to-r ${getBarColorByIntensity(zoneState.intensity)}`}

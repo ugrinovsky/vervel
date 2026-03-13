@@ -5,22 +5,7 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import ExerciseDetailSheet from '@/components/ExerciseDetailSheet/ExerciseDetailSheet';
 import { useExercises } from '@/hooks/useExercises';
 import type { Exercise, ExerciseCategory, MuscleZone } from '@/types/Exercise';
-
-/* ------------------------------------------------------------------ */
-/* Labels                                                               */
-/* ------------------------------------------------------------------ */
-
-const ZONE_LABELS: Record<MuscleZone, string> = {
-  chests: 'Грудь',
-  back: 'Спина',
-  legs: 'Ноги',
-  shoulders: 'Плечи',
-  biceps: 'Бицепс',
-  triceps: 'Трицепс',
-  core: 'Кор',
-  glutes: 'Ягодицы',
-  forearms: 'Предплечья',
-};
+import { getZoneLabel } from '@/util/zones';
 
 const CATEGORY_LABELS: Record<ExerciseCategory, string> = {
   strength: 'Силовые',
@@ -115,7 +100,7 @@ function ExerciseCard({ exercise, onClick }: { exercise: Exercise; onClick: () =
               key={zone}
               className="text-[10px] px-1.5 py-0.5 rounded-full bg-(--color_primary_light)/15 text-(--color_primary_light)"
             >
-              {ZONE_LABELS[zone as MuscleZone] ?? zone}
+              {getZoneLabel(zone)}
             </span>
           ))}
         </div>
@@ -159,7 +144,7 @@ export default function TrainerExerciseLibraryScreen() {
   /* Available zones */
   const availableZones = useMemo<MuscleZone[]>(() => {
     const set = new Set(exercises.flatMap((e) => e.zones));
-    return (Object.keys(ZONE_LABELS) as MuscleZone[]).filter((z) => set.has(z));
+    return [...set] as MuscleZone[];
   }, [exercises]);
 
   /* Filtered exercises */
@@ -217,7 +202,7 @@ export default function TrainerExerciseLibraryScreen() {
           {availableZones.map((zone) => (
             <FilterChip
               key={zone}
-              label={ZONE_LABELS[zone]}
+              label={getZoneLabel(zone)}
               active={zoneFilter === zone}
               onClick={() => setZoneFilter(zoneFilter === zone ? null : zone)}
             />
