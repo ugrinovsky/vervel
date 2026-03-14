@@ -87,7 +87,7 @@ const DOCS: Record<string, { title: string; content: React.ReactNode }> = {
           <ul className="list-disc list-inside space-y-1 mt-2">
             <li>Получить доступ к своим персональным данным.</li>
             <li>Исправить неточные данные (через раздел «Настройки»).</li>
-            <li>Удалить аккаунт и связанные данные — напишите на support@vervel.app.</li>
+            <li>Удалить аккаунт и связанные данные — напишите на nazar9505@yandex.ru.</li>
             <li>Отозвать согласие на обработку данных.</li>
           </ul>
         </Section>
@@ -102,8 +102,8 @@ const DOCS: Record<string, { title: string; content: React.ReactNode }> = {
         <Section title="8. Контакты">
           <p>
             По вопросам обработки персональных данных:{' '}
-            <a href="mailto:support@vervel.app" className="text-(--color_primary_light)">
-              support@vervel.app
+            <a href="mailto:nazar9505@yandex.ru" className="text-(--color_primary_light)">
+              nazar9505@yandex.ru
             </a>
           </p>
         </Section>
@@ -121,9 +121,10 @@ const DOCS: Record<string, { title: string; content: React.ReactNode }> = {
 
         <Section title="1. Предмет оферты">
           <p>
-            Настоящий документ является публичной офертой (предложением) Vervel (далее —
-            «Исполнитель») о заключении договора на оказание информационных и сервисных услуг по
-            доступу к веб-приложению Vervel (далее — «Сервис»).
+            Настоящий документ является публичной офертой (предложением) Угриновского Назария
+            Васильевича, ИНН 861714148460, самозанятый (далее — «Исполнитель»), о заключении
+            договора на оказание информационных и сервисных услуг по доступу к веб-приложению
+            Vervel (далее — «Сервис»).
           </p>
           <p className="mt-2">
             Акцептом (принятием) оферты считается регистрация в Сервисе или пополнение баланса
@@ -169,8 +170,8 @@ const DOCS: Record<string, { title: string; content: React.ReactNode }> = {
           <p>
             Пополненные средства возврату не подлежат, за исключением технических ошибок Сервиса.
             Для обращения по возврату:{' '}
-            <a href="mailto:support@vervel.app" className="text-(--color_primary_light)">
-              support@vervel.app
+            <a href="mailto:nazar9505@yandex.ru" className="text-(--color_primary_light)">
+              nazar9505@yandex.ru
             </a>
           </p>
         </Section>
@@ -208,7 +209,7 @@ const DOCS: Record<string, { title: string; content: React.ReactNode }> = {
         <Section title="7. Изменение условий">
           <p>
             Исполнитель вправе изменять условия оферты. Актуальная версия всегда доступна по адресу
-            vervel.app/docs/offer. Продолжение использования Сервиса после изменений означает
+            vervel.ru/docs/offer. Продолжение использования Сервиса после изменений означает
             согласие с новыми условиями.
           </p>
         </Section>
@@ -216,8 +217,8 @@ const DOCS: Record<string, { title: string; content: React.ReactNode }> = {
         <Section title="8. Контакты">
           <p>
             По вопросам:{' '}
-            <a href="mailto:support@vervel.app" className="text-(--color_primary_light)">
-              support@vervel.app
+            <a href="mailto:nazar9505@yandex.ru" className="text-(--color_primary_light)">
+              nazar9505@yandex.ru
             </a>
           </p>
         </Section>
@@ -233,24 +234,28 @@ const DOCS: Record<string, { title: string; content: React.ReactNode }> = {
           Информация о юридическом лице, осуществляющем деятельность через Сервис Vervel.
         </p>
 
-        <Section title="Наименование">
-          <p>Vervel (Верvel)</p>
-          <p className="text-(--color_text_muted) text-sm mt-1">
-            Форма деятельности: ИП / Самозанятый
-          </p>
+        <Section title="Продавец">
+          <div className="space-y-1">
+            <p className="text-white font-medium">Угриновский Назарий Васильевич</p>
+            <p className="text-(--color_text_muted) text-sm">Самозанятый</p>
+            <p className="mt-2">
+              <span className="text-(--color_text_muted) text-sm">ИНН:</span>{' '}
+              <strong className="text-white">861714148460</strong>
+            </p>
+          </div>
         </Section>
 
         <Section title="Контактные данные">
           <div className="space-y-2">
             <div>
               <span className="text-(--color_text_muted) text-sm">Email:</span>
-              <a href="mailto:support@vervel.app" className="ml-2 text-(--color_primary_light)">
-                support@vervel.app
+              <a href="mailto:nazar9505@yandex.ru" className="ml-2 text-(--color_primary_light)">
+                nazar9505@yandex.ru
               </a>
             </div>
             <div>
               <span className="text-(--color_text_muted) text-sm">Сайт:</span>
-              <span className="ml-2 text-white">vervel.app</span>
+              <span className="ml-2 text-white">vervel.ru</span>
             </div>
           </div>
         </Section>
@@ -269,8 +274,8 @@ const DOCS: Record<string, { title: string; content: React.ReactNode }> = {
         <Section title="Налоговый режим">
           <p className="text-(--color_text_muted) text-sm">
             Применяется специальный налоговый режим «Налог на профессиональный доход»
-            (самозанятость) или упрощённая система налогообложения. Чек формируется автоматически
-            через ЮКасса при каждом пополнении баланса.
+            (самозанятость). Чек формируется автоматически через ЮКасса при каждом пополнении
+            баланса.
           </p>
         </Section>
 
@@ -285,8 +290,8 @@ const DOCS: Record<string, { title: string; content: React.ReactNode }> = {
         <Section title="По всем вопросам">
           <p>
             Напишите нам:{' '}
-            <a href="mailto:support@vervel.app" className="text-(--color_primary_light)">
-              support@vervel.app
+            <a href="mailto:nazar9505@yandex.ru" className="text-(--color_primary_light)">
+              nazar9505@yandex.ru
             </a>
           </p>
           <p className="text-(--color_text_muted) text-sm mt-1">
@@ -352,7 +357,7 @@ export default function DocsScreen() {
         </div>
 
         <p className="text-xs text-(--color_text_muted) text-center mt-6">
-          Vervel · support@vervel.app
+          Vervel · nazar9505@yandex.ru
         </p>
       </div>
     </div>
