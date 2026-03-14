@@ -13,6 +13,7 @@ export interface RegisterDTO {
   password: string;
   role: UserRole;
   gender?: 'male' | 'female';
+  refId?: number;
 }
 
 export interface AuthResponse {

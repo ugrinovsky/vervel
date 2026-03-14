@@ -58,6 +58,7 @@
     "@adonisjs/lucid": "^21.6.1",
     "@vinejs/vine": "^3.0.1",
     "adonis-lucid-soft-deletes": "^2.1.0",
+    "disposable-email-domains": "^1.0.62",
     "fuzzball": "^2.2.3",
     "luxon": "^3.7.2",
     "pg": "^8.17.2",

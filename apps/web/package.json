@@ -14,6 +14,7 @@
     "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",
     "@tailwindcss/vite": "^4.1.18",
+    "@vkid/sdk": "^2.6.5",
     "axios": "^1.13.2",
     "framer-motion": "^12.33.0",
     "jsqr": "^1.4.0",

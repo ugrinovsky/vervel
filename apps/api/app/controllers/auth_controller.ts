@@ -1,8 +1,14 @@
 import type { HttpContext } from '@adonisjs/core/http';
 import hash from '@adonisjs/core/services/hash';
 import limiter from '@adonisjs/limiter/services/main';
+import db from '@adonisjs/lucid/services/db';
+// @ts-ignore — no types for this package
+import disposableDomains from 'disposable-email-domains';
 import User from '#models/user';
 import { registerValidator } from '#validators/auth_validator';
+import { AiBalanceService } from '#services/AiBalanceService';
+
+const disposableSet: Set<string> = new Set(disposableDomains);
 
 export default class AuthController {
   public async login({ request, response }: HttpContext) {
@@ -73,12 +79,58 @@ export default class AuthController {
 
     const data = await request.validateUsing(registerValidator);
 
+    const emailDomain = data.email.split('@')[1]?.toLowerCase();
+    if (emailDomain && disposableSet.has(emailDomain)) {
+      return response.unprocessableEntity({ message: 'Временные почтовые адреса не допускаются. Используйте постоянный email.' });
+    }
+
     const existing = await User.findBy('email', data.email);
     if (existing) {
-      return response.conflict({ message: 'Email уже зарегистрирован' });
+      const wantsAthlete = data.role === 'athlete' || data.role === 'both';
+      const wantsTrainer = data.role === 'trainer' || data.role === 'both';
+      const hasAthlete = existing.role === 'athlete' || existing.role === 'both';
+      const hasTrainer = existing.role === 'trainer' || existing.role === 'both';
+
+      if ((wantsAthlete && !hasAthlete) || (wantsTrainer && !hasTrainer)) {
+        existing.role = 'both';
+        await existing.save();
+        const token = await User.accessTokens.create(existing);
+        return response.ok({
+          user: {
+            id: existing.id,
+            email: existing.email,
+            fullName: existing.fullName,
+            role: existing.role,
+            gender: existing.gender,
+          },
+          token,
+          upgraded: true,
+        });
+      }
+
+      return response.conflict({ message: 'Этот email уже зарегистрирован. Войдите в аккаунт.' });
     }
 
     await registerLimit.increment(`register_ip_${ip}`);
+
+    // Validate referrer if provided: must exist, must be an athlete, must not exceed referral cap
+    let validRefId: number | null = null;
+    if (data.refId) {
+      const referrer = await User.find(data.refId);
+      if (referrer && referrer.isAthlete) {
+        const referralCount = await db
+          .from('balance_transactions')
+          .where('user_id', referrer.id)
+          .where('type', 'bonus')
+          .where('description', 'like', 'Реферальный бонус%')
+          .count('* as total')
+          .first();
+        const count = Number(referralCount?.total ?? 0);
+        if (count < 2) {
+          validRefId = referrer.id;
+        }
+      }
+    }
 
     const user = await User.create({
       fullName: data.fullName,
@@ -86,7 +138,17 @@ export default class AuthController {
       password: data.password,
       role: data.role,
       gender: data.gender ?? null,
+      referredById: validRefId,
     });
+
+    if (validRefId) {
+      AiBalanceService.topup(
+        validRefId,
+        AiBalanceService.REFERRAL_BONUS,
+        'bonus',
+        `Реферальный бонус за приглашение пользователя ${user.email}`
+      ).catch(() => {});
+    }
 
     const token = await User.accessTokens.create(user);
 

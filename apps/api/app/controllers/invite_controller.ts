@@ -1,6 +1,8 @@
 import type { HttpContext } from '@adonisjs/core/http'
+import db from '@adonisjs/lucid/services/db'
 import TrainerAthlete from '#models/trainer_athlete'
 import AchievementService from '#services/AchievementService'
+import { AiBalanceService } from '#services/AiBalanceService'
 
 export default class InviteController {
   async acceptInvite({ auth, request, response }: HttpContext) {
@@ -53,6 +55,19 @@ export default class InviteController {
 
     AchievementService.checkAndUnlockAchievements(user.id).catch(() => {})
     return response.ok({ success: true, message: 'Вы привязаны к тренеру' })
+  }
+
+  async getReferralStats({ auth, response }: HttpContext) {
+    const user = auth.user!
+
+    const countRow = await db.from('users').where('referred_by_id', user.id).count('* as total').first()
+    const count = Number(countRow?.total ?? 0)
+    const totalEarned = count * AiBalanceService.REFERRAL_BONUS
+
+    return response.ok({
+      success: true,
+      data: { count, totalEarned, bonusPerReferral: AiBalanceService.REFERRAL_BONUS },
+    })
   }
 
   async getQrData({ auth, response }: HttpContext) {

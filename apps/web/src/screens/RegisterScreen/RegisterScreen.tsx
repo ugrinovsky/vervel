@@ -24,6 +24,7 @@ export default function RegisterScreen() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const inviteToken = new URLSearchParams(window.location.search).get('invite');
+  const refId = new URLSearchParams(window.location.search).get('ref');
 
   const toggleRole = (role: 'athlete' | 'trainer') => {
     setSelectedRoles((prev) => {
@@ -67,14 +68,21 @@ export default function RegisterScreen() {
         password,
         role: getRole(),
         ...(gender ? { gender } : {}),
+        ...(refId ? { refId: Number(refId) } : {}),
       });
-      const { user, token } = response.data;
+      const { user, token, upgraded } = response.data as any;
       const tokenValue = typeof token === 'string' ? token : token?.token || '';
       login(user, tokenValue);
-      toast.success(`Добро пожаловать, ${user.fullName}!`);
+      toast.success(upgraded ? `Роль обновлена. Добро пожаловать, ${user.fullName}!` : `Добро пожаловать, ${user.fullName}!`);
       navigate(inviteToken ? `/invite/${inviteToken}` : '/');
-    } catch {
-      toast.error('Ошибка при регистрации');
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const message = err?.response?.data?.message;
+      if (status === 409 || status === 422) {
+        setErrors((p) => ({ ...p, email: message || 'Недопустимый email' }));
+      } else {
+        toast.error('Ошибка при регистрации');
+      }
     } finally {
       setLoading(false);
     }

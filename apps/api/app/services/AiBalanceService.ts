@@ -91,6 +91,37 @@ export class AiBalanceService {
     })
   }
 
+  /** Сумма реферального бонуса */
+  static readonly REFERRAL_BONUS = 50
+
+  /**
+   * Начисляет средства на баланс пользователя (бонус/пополнение).
+   * @returns новый баланс
+   */
+  static async topup(userId: number, amount: number, type: 'topup' | 'bonus', description: string): Promise<number> {
+    return await db.transaction(async (trx) => {
+      const user = await User.query({ client: trx })
+        .where('id', userId)
+        .forUpdate()
+        .firstOrFail()
+
+      user.balance = Math.round((user.balance + amount) * 100) / 100
+      user.useTransaction(trx)
+      await user.save()
+
+      await trx.table('balance_transactions').insert({
+        user_id: userId,
+        amount,
+        balance_after: user.balance,
+        type,
+        description,
+        created_at: new Date(),
+      })
+
+      return user.balance
+    })
+  }
+
   /**
    * Возвращает текущий баланс пользователя.
    */

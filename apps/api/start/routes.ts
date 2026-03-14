@@ -27,6 +27,7 @@ router.post('/payments/webhook', '#controllers/payments_controller.webhook');
 router.get('/oauth/:provider/redirect', [OAuthController, 'redirect']);
 router.get('/oauth/:provider/callback', [OAuthController, 'callback']);
 router.post('/oauth/set-role', [OAuthController, 'setRole']);
+router.post('/oauth/vk/sdk-login', [OAuthController, 'vkSdkLogin']);
 
 router.get('/', async () => {
   return {
@@ -49,6 +50,7 @@ router
     router.post('profile/photo', '#controllers/profile_controller.uploadPhoto');
     router.put('profile/password', '#controllers/profile_controller.changePassword');
     router.post('profile/become-athlete', '#controllers/profile_controller.becomeAthlete');
+    router.post('profile/become-trainer', '#controllers/profile_controller.becomeTrainer');
 
     // Публичный профиль тренера (для атлетов)
     router.get('athlete/trainers/:trainerId/profile', '#controllers/profile_controller.getTrainerPublicProfile');
@@ -65,6 +67,7 @@ router
     // Invite
     router.post('invite/accept', '#controllers/invite_controller.acceptInvite');
     router.get('profile/qr-data', '#controllers/invite_controller.getQrData');
+    router.get('referral/stats', '#controllers/invite_controller.getReferralStats');
 
     // Athlete: my groups and trainers
     router.get('athlete/my-groups', '#controllers/athlete_controller.getMyGroups');

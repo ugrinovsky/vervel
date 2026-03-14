@@ -60,6 +60,9 @@ export default class User extends compose(BaseModel, AuthFinder) {
   declare themeHue: number | null;
 
   @column()
+  declare referredById: number | null;
+
+  @column()
   declare donatePhone: string | null;
 
   @column()

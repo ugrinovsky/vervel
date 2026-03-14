@@ -65,6 +65,9 @@ export const profileApi = {
   becomeAthlete: () =>
     privateApi.post<{ success: boolean; data: { user: ProfileUser } }>('/profile/become-athlete'),
 
+  becomeTrainer: () =>
+    privateApi.post<{ success: boolean; data: { user: ProfileUser } }>('/profile/become-trainer'),
+
   uploadPhoto: (file: File) => {
     const form = new FormData();
     form.append('photo', file);

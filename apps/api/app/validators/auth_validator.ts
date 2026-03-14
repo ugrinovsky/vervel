@@ -7,5 +7,6 @@ export const registerValidator = vine.compile(
     password: vine.string().minLength(6).maxLength(100),
     role: vine.enum(['athlete', 'trainer', 'both']),
     gender: vine.enum(['male', 'female']).optional(),
+    refId: vine.number().positive().optional(),
   })
 )

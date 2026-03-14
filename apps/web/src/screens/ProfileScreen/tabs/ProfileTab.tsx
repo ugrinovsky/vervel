@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { profileApi, type ProfileData } from '@/api/profile';
+import { privateApi } from '@/api/http/privateApi';
 import { useAuth } from '@/contexts/AuthContext';
 import AthleteQrCode from '@/components/AthleteQrCode/AthleteQrCode';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
@@ -21,7 +22,17 @@ export default function ProfileTab({ data, trainerStats }: Props) {
   const inAthleteMode = isAthlete && (!isTrainer || activeMode === 'athlete');
 
   const [becomingAthlete, setBecomingAthlete] = useState(false);
+  const [becomingTrainer, setBecomingTrainer] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const [referralStats, setReferralStats] = useState<{ count: number; totalEarned: number; bonusPerReferral: number } | null>(null);
+
+  useEffect(() => {
+    if (!inAthleteMode) return;
+    privateApi
+      .get<{ success: boolean; data: { count: number; totalEarned: number; bonusPerReferral: number } }>('/referral/stats')
+      .then((res) => setReferralStats(res.data.data))
+      .catch(() => {});
+  }, [inAthleteMode]);
 
   const getInitials = () => {
     if (data.user.fullName) {
@@ -46,6 +57,22 @@ export default function ProfileTab({ data, trainerStats }: Props) {
       toast.error('Ошибка при активации режима атлета');
     } finally {
       setBecomingAthlete(false);
+    }
+  };
+
+  const handleBecomeTrainer = async () => {
+    try {
+      setBecomingTrainer(true);
+      const res = await profileApi.becomeTrainer();
+      if (res.data.success && user && token) {
+        const updatedUser = res.data.data.user;
+        login({ ...user, role: updatedUser.role as any }, token);
+        toast.success('Режим тренера активирован!');
+      }
+    } catch {
+      toast.error('Ошибка при активации режима тренера');
+    } finally {
+      setBecomingTrainer(false);
     }
   };
 
@@ -143,6 +170,30 @@ export default function ProfileTab({ data, trainerStats }: Props) {
             </div>
             <div className="text-(--color_text_muted) text-sm">→</div>
           </button>
+
+          {/* Referral link */}
+          <button
+            onClick={() => {
+              const url = `${window.location.origin}/register?ref=${data.user.id}`;
+              navigator.clipboard.writeText(url);
+              toast.success('Реферальная ссылка скопирована!');
+            }}
+            className="w-full flex items-center gap-4 p-5 bg-(--color_bg_card) rounded-2xl border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
+          >
+            <div className="text-3xl">🎁</div>
+            <div className="flex-1">
+              <div className="text-sm font-medium text-white">Пригласить друга</div>
+              <div className="text-xs text-(--color_text_muted) mt-0.5">
+                +{referralStats?.bonusPerReferral ?? 50}₽ на баланс за каждого
+                {referralStats && referralStats.count > 0 && (
+                  <span className="ml-2 text-(--color_primary_light)">
+                    · {referralStats.count} {referralStats.count === 1 ? 'приведён' : 'приведено'} · +{referralStats.totalEarned}₽
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="text-(--color_text_muted) text-sm">📋</div>
+          </button>
         </>
       )}
 
@@ -199,6 +250,28 @@ export default function ProfileTab({ data, trainerStats }: Props) {
                 className="px-5 py-2.5 rounded-xl text-sm font-medium bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50"
               >
                 {becomingAthlete ? 'Активация...' : 'Стать атлетом'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Become trainer */}
+      {isAthlete && !isTrainer && (
+        <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
+          <div className="flex items-start gap-4">
+            <div className="text-3xl">🏋️</div>
+            <div className="flex-1">
+              <h2 className="text-base font-semibold text-white mb-1">Стать тренером</h2>
+              <p className="text-sm text-(--color_text_muted) mb-4">
+                Активируйте режим тренера, чтобы вести группы, атлетов и расписание тренировок.
+              </p>
+              <button
+                onClick={handleBecomeTrainer}
+                disabled={becomingTrainer}
+                className="px-5 py-2.5 rounded-xl text-sm font-medium bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {becomingTrainer ? 'Активация...' : 'Стать тренером'}
               </button>
             </div>
           </div>

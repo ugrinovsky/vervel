@@ -22,8 +22,7 @@ export function createApi(): AxiosInstance {
         return Promise.reject(new Error('Не авторизован'));
       }
 
-      const message = error.response?.data?.message || 'Ошибка API';
-      return Promise.reject(new Error(message));
+      return Promise.reject(error);
     }
   );
 

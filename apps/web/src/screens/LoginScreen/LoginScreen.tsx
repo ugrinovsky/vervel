@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router';
-import { authApi, getOAuthRedirectUrl } from '@/api/auth';
+import { authApi } from '@/api/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import VerveLogo from '@/components/VerveLogo/VerveLogo';
+import VkIdButton from '@/components/VkIdButton/VkIdButton';
 
 // Генерируем ВСЕ значения для звезд ОДИН РАЗ
 const STARS = [...Array(150)].map((_, i) => ({
@@ -398,31 +399,9 @@ export default function LoginScreen() {
             </div>
           </div>
 
-          {/* <div className="space-y-3 relative z-10">
-            <motion.a
-              href={getOAuthRedirectUrl('vk')}
-              className="w-full py-3 px-4 rounded-xl font-medium flex items-center justify-center space-x-2 bg-[#0077FF] hover:bg-[#0066DD] text-white transition-colors"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <svg className="w-5 h-5" viewBox="0 0 48 48" fill="currentColor">
-                <path d="M25.26 34.39c-8.66 0-13.6-5.94-13.78-15.86h4.32c.12 7.28 3.36 10.36 5.92 11l.48-.16v-6.92h4.08v3.96c2.48-.28 5.16-3.04 6.04-5.96h4.08c-.68 3.84-3.52 6.68-5.52 7.84 2 1.04 5.28 3.44 6.52 8.12h-4.48c-1.04-3.2-3.64-5.68-7.08-6.04v6.04l-.58-.02z" />
-              </svg>
-              <span>VKontakte</span>
-            </motion.a>
-
-            <motion.a
-              href={getOAuthRedirectUrl('yandex')}
-              className="w-full py-3 px-4 rounded-xl font-medium flex items-center justify-center space-x-2 bg-[#FC3F1D] hover:bg-[#E63515] text-white transition-colors"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm4.72 17.53h-2.88l-2.88-5.18h-.88v5.18H7.2V6.47h3.84c2.64 0 4.32 1.2 4.32 3.36 0 1.68-.96 2.76-2.4 3.12l3.12 4.58h-.36zm-6.64-7.2h.96c1.44 0 2.16-.6 2.16-1.68s-.72-1.68-2.16-1.68h-.96v3.36z" />
-              </svg>
-              <span>Yandex</span>
-            </motion.a>
-          </div> */}
+          <div className="relative z-10">
+            <VkIdButton />
+          </div>
 
           {/* Тестовые данные */}
           <motion.div

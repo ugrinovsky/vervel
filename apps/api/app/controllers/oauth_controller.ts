@@ -230,6 +230,95 @@ export default class OAuthController {
   }
 
   /**
+   * Authenticate with VK ID SDK (frontend OneTap flow)
+   * POST /oauth/vk/sdk-login
+   */
+  public async vkSdkLogin({ request, response }: HttpContext) {
+    const { accessToken, userId } = request.only(['accessToken', 'userId'])
+
+    if (!accessToken || !userId) {
+      return response.badRequest({ message: 'accessToken and userId are required' })
+    }
+
+    try {
+      // Get user info from VK API
+      const userInfoUrl = `https://api.vk.com/method/users.get?access_token=${accessToken}&v=5.131&fields=first_name,last_name`
+      const userInfoResponse = await fetch(userInfoUrl)
+      const userInfoData: any = await userInfoResponse.json()
+
+      let name: string | null = null
+      if (userInfoData.response?.[0]) {
+        const u = userInfoData.response[0]
+        name = `${u.first_name} ${u.last_name}`.trim()
+      }
+
+      const providerUserId = String(userId)
+
+      // Check existing OAuth connection
+      let oauthProvider = await OAuthProvider.query()
+        .where('provider', 'vk')
+        .where('provider_user_id', providerUserId)
+        .first()
+
+      let user: User
+
+      if (oauthProvider) {
+        await oauthProvider.load('user')
+        user = oauthProvider.user
+        oauthProvider.accessToken = accessToken
+        await oauthProvider.save()
+      } else {
+        // No existing connection — create new user with synthetic email
+        const syntheticEmail = `vk_${providerUserId}@vkid.user`
+        const existing = await User.findBy('email', syntheticEmail)
+
+        if (existing) {
+          user = existing
+        } else {
+          user = await User.create({
+            email: syntheticEmail,
+            fullName: name || `VK User ${providerUserId}`,
+            password: null,
+            role: null as any,
+          })
+        }
+
+        oauthProvider = await OAuthProvider.create({
+          userId: user.id,
+          provider: 'vk',
+          providerUserId,
+          accessToken,
+          refreshToken: null,
+          expiresAt: null,
+        })
+      }
+
+      const token = await User.accessTokens.create(user)
+
+      if (!user.role) {
+        return response.ok({
+          needsRole: true,
+          tempToken: token.value!.release(),
+          userId: user.id,
+        })
+      }
+
+      return response.ok({
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+        },
+        token,
+      })
+    } catch (error) {
+      console.error('VK SDK login error:', error)
+      return response.internalServerError({ message: 'Ошибка авторизации через VK' })
+    }
+  }
+
+  /**
    * Set user role after OAuth registration
    * POST /oauth/set-role
    */
