@@ -65,21 +65,17 @@ export default class OAuthController {
       return response.badRequest({ message: 'Invalid OAuth provider' })
     }
 
+    const appUrl = env.get('APP_URL') || 'http://localhost:5173'
+
     // Check for OAuth errors
     if (request.input('error')) {
-      return response
-        .redirect()
-        .status(302)
-        .toPath(`/login?error=oauth_denied&provider=${provider}`)
+      return response.redirect(302, `${appUrl}/login?error=oauth_denied&provider=${provider}`)
     }
 
     const code = request.input('code')
 
     if (!code) {
-      return response
-        .redirect()
-        .status(302)
-        .toPath(`/login?error=oauth_failed&provider=${provider}`)
+      return response.redirect(302, `${appUrl}/login?error=oauth_failed&provider=${provider}`)
     }
 
     try {
@@ -315,6 +311,99 @@ export default class OAuthController {
     } catch (error) {
       console.error('VK SDK login error:', error)
       return response.internalServerError({ message: 'Ошибка авторизации через VK' })
+    }
+  }
+
+  /**
+   * Authenticate with Yandex SDK (frontend YaAuthSuggest flow)
+   * POST /oauth/yandex/sdk-login
+   */
+  public async yandexSdkLogin({ request, response }: HttpContext) {
+    const { accessToken } = request.only(['accessToken'])
+
+    if (!accessToken) {
+      return response.badRequest({ message: 'accessToken is required' })
+    }
+
+    try {
+      const userInfoResponse = await fetch('https://login.yandex.ru/info', {
+        headers: { Authorization: `OAuth ${accessToken}` },
+      })
+      const userInfo: any = await userInfoResponse.json()
+
+      const email: string | null = userInfo.default_email || null
+      const name: string | null = userInfo.display_name || userInfo.real_name || null
+      const providerUserId = String(userInfo.id)
+
+      if (!email) {
+        return response.badRequest({ message: 'Яндекс не предоставил email' })
+      }
+
+      let oauthProvider = await OAuthProvider.query()
+        .where('provider', 'yandex')
+        .where('provider_user_id', providerUserId)
+        .first()
+
+      let user: User
+
+      if (oauthProvider) {
+        await oauthProvider.load('user')
+        user = oauthProvider.user
+        oauthProvider.accessToken = accessToken
+        await oauthProvider.save()
+      } else {
+        const existing = await User.findBy('email', email)
+
+        if (existing) {
+          user = existing
+          oauthProvider = await OAuthProvider.create({
+            userId: user.id,
+            provider: 'yandex',
+            providerUserId,
+            accessToken,
+            refreshToken: null,
+            expiresAt: null,
+          })
+        } else {
+          user = await User.create({
+            email,
+            fullName: name || email,
+            password: null,
+            role: null as any,
+          })
+          oauthProvider = await OAuthProvider.create({
+            userId: user.id,
+            provider: 'yandex',
+            providerUserId,
+            accessToken,
+            refreshToken: null,
+            expiresAt: null,
+          })
+        }
+      }
+
+      const token = await User.accessTokens.create(user)
+
+      if (!user.role) {
+        return response.ok({
+          needsRole: true,
+          tempToken: token.value!.release(),
+          userId: user.id,
+        })
+      }
+
+      return response.ok({
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+        },
+        token,
+      })
+    } catch (error) {
+      console.error('Yandex SDK login error:', error)
+      return response.internalServerError({ message: 'Ошибка авторизации через Яндекс' })
     }
   }
 

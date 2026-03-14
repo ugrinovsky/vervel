@@ -10,11 +10,14 @@ import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { trainerApi, type AthleteListItem, type TrainerGroupItem } from '@/api/trainer';
 import AthleteAvatarsRow from '@/components/AthleteAvatarsRow/AthleteAvatarsRow';
 import InlineAthleteAvatar from '@/components/MiniAvatar/InlineAthleteAvatar';
-import { PlusIcon, UsersIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, UsersIcon, ChatBubbleLeftIcon, TrophyIcon } from '@heroicons/react/24/outline';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 import BackButton from '@/components/BackButton/BackButton';
 
 type Tab = 'members' | 'chat';
+
+type LeaderboardEntry = { id: number; fullName: string | null; workouts: number; volume: number; intensity: number };
+type LeaderboardMetric = 'workouts' | 'volume' | 'intensity';
 
 export default function TrainerGroupDetailScreen() {
   const { groupId } = useParams<{ groupId: string }>();
@@ -29,6 +32,11 @@ export default function TrainerGroupDetailScreen() {
   const [chatId, setChatId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddPicker, setShowAddPicker] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [lbPeriod, setLbPeriod] = useState<7 | 30>(7);
+  const [lbMetric, setLbMetric] = useState<LeaderboardMetric>('workouts');
+  const [lbLoading, setLbLoading] = useState(false);
 
   const loadData = async () => {
     try {
@@ -73,6 +81,19 @@ export default function TrainerGroupDetailScreen() {
       loadData();
     } catch {
       toast.error('Ошибка удаления');
+    }
+  };
+
+  const openLeaderboard = async (period: 7 | 30 = lbPeriod) => {
+    setShowLeaderboard(true);
+    setLbLoading(true);
+    try {
+      const res = await trainerApi.getGroupLeaderboard(id, period);
+      setLeaderboard(res.data.data);
+    } catch {
+      toast.error('Ошибка загрузки лидерборда');
+    } finally {
+      setLbLoading(false);
     }
   };
 
@@ -123,10 +144,17 @@ export default function TrainerGroupDetailScreen() {
           </button>
           <button
             onClick={() => setShowCreateSheet(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-colors bg-(--color_bg_card) text-(--color_text_muted) hover:text-white"
+            className="flex items-center justify-center w-9 h-9 rounded-xl transition-colors bg-(--color_bg_card) text-(--color_text_muted) hover:text-white shrink-0"
+            title="Создать тренировку"
           >
             <PlusIcon className="w-4 h-4" />
-            Создать
+          </button>
+          <button
+            onClick={() => openLeaderboard()}
+            className="flex items-center justify-center w-9 h-9 rounded-xl transition-colors bg-(--color_bg_card) text-(--color_text_muted) hover:text-white shrink-0"
+            title="Лидерборд"
+          >
+            <TrophyIcon className="w-4 h-4" />
           </button>
         </div>
 
@@ -184,26 +212,28 @@ export default function TrainerGroupDetailScreen() {
                 В группе пока нет атлетов
               </p>
             ) : (
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
                 {athletes.map((athlete) => (
                   <div
                     key={athlete.id}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors cursor-pointer"
+                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors cursor-pointer relative"
                     onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}
                   >
-                    <InlineAthleteAvatar athleteId={athlete.id} />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium text-white truncate">
+                    <div onClick={(e) => e.stopPropagation()} className="absolute top-2 right-2">
+                      <ConfirmDeleteButton
+                        label="Убрать?"
+                        onConfirm={() => handleRemoveFromGroup(athlete.id)}
+                      />
+                    </div>
+                    <InlineAthleteAvatar athleteId={athlete.id} size="md" />
+                    <div className="text-center min-w-0 w-full">
+                      <div className="text-xs font-medium text-white truncate">
                         {athlete.fullName || 'Без имени'}
                       </div>
-                      <div className="text-xs text-(--color_text_muted) truncate">
+                      <div className="text-[10px] text-(--color_text_muted) truncate">
                         {athlete.email}
                       </div>
                     </div>
-                    <ConfirmDeleteButton
-                      label="Убрать?"
-                      onConfirm={() => handleRemoveFromGroup(athlete.id)}
-                    />
                   </div>
                 ))}
               </div>
@@ -223,6 +253,97 @@ export default function TrainerGroupDetailScreen() {
             onSuccess={() => setShowCreateSheet(false)}
             onCancel={() => setShowCreateSheet(false)}
           />
+        </BottomSheet>
+
+        <BottomSheet
+          open={showLeaderboard}
+          onClose={() => setShowLeaderboard(false)}
+          emoji="🏆"
+          title="Лидерборд"
+        >
+          {/* Period toggle */}
+          <div className="flex gap-2 mb-2">
+            {([7, 30] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => { setLbPeriod(p); openLeaderboard(p); }}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  lbPeriod === p
+                    ? 'bg-(--color_primary_light) text-white'
+                    : 'bg-(--color_bg_card_hover) text-(--color_text_muted)'
+                }`}
+              >
+                {p === 7 ? 'Неделя' : 'Месяц'}
+              </button>
+            ))}
+          </div>
+          {/* Metric toggle */}
+          <div className="flex gap-2 mb-4">
+            {([
+              { key: 'workouts', label: '🏋️ Тренировки', hint: 'кол-во' },
+              { key: 'volume', label: '⚖️ Тоннаж', hint: 'кг поднято' },
+              { key: 'intensity', label: '🔥 Баллы', hint: 'RPE × объём' },
+            ] as { key: LeaderboardMetric; label: string; hint: string }[]).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setLbMetric(key)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  lbMetric === key
+                    ? 'bg-(--color_primary_light) text-white'
+                    : 'bg-(--color_bg_card_hover) text-(--color_text_muted)'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {lbLoading ? (
+            <div className="text-center py-8 text-(--color_text_muted) text-sm">Загрузка...</div>
+          ) : leaderboard.length === 0 ? (
+            <div className="text-center py-8 text-(--color_text_muted) text-sm">Нет данных</div>
+          ) : (
+            <div className="space-y-2">
+              {[...leaderboard]
+                .sort((a, b) => b[lbMetric] - a[lbMetric])
+                .map((entry, i) => {
+                  const sorted = [...leaderboard].sort((a, b) => b[lbMetric] - a[lbMetric]);
+                  const max = sorted[0]?.[lbMetric] || 1;
+                  const value = entry[lbMetric];
+                  const pct = max > 0 ? (value / max) * 100 : 0;
+                  const medals = ['🥇', '🥈', '🥉'];
+                  const medal = medals[i] || `${i + 1}.`;
+                  const valueLabel =
+                    lbMetric === 'workouts'
+                      ? `${value} трен.`
+                      : lbMetric === 'volume'
+                        ? `${value.toLocaleString()} кг`
+                        : `${Math.round(value)} б.`;
+
+                  return (
+                    <div
+                      key={entry.id}
+                      className="rounded-xl border p-3"
+                      style={{ borderColor: 'var(--color_border)', backgroundColor: 'var(--color_bg_card)' }}
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-lg w-7 shrink-0">{medal}</span>
+                        <span className="text-sm font-medium text-white flex-1 truncate">
+                          {entry.fullName || 'Без имени'}
+                        </span>
+                        <span className="text-sm font-bold text-white">{valueLabel}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
+                        <div
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{ width: `${pct}%`, backgroundColor: 'var(--color_primary_light)' }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
         </BottomSheet>
       </div>
     </Screen>

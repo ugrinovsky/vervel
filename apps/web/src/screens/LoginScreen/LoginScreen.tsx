@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import VerveLogo from '@/components/VerveLogo/VerveLogo';
 import VkIdButton from '@/components/VkIdButton/VkIdButton';
+import YandexIdButton from '@/components/YandexIdButton/YandexIdButton';
 
 // Генерируем ВСЕ значения для звезд ОДИН РАЗ
 const STARS = [...Array(150)].map((_, i) => ({
@@ -418,8 +419,9 @@ export default function LoginScreen() {
             </div>
           </div>
 
-          <div className="relative z-10">
+          <div className="relative z-10 flex flex-col gap-3">
             <VkIdButton />
+            <YandexIdButton />
           </div>
 
           {/* Тестовые данные */}

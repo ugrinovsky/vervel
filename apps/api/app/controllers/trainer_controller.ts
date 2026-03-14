@@ -648,4 +648,57 @@ export default class TrainerController {
 
     return startDate
   }
+
+  /**
+   * Get group leaderboard
+   * GET /trainer/groups/:id/leaderboard?period=7|30
+   */
+  async getGroupLeaderboard({ auth, params, request, response }: HttpContext) {
+    const trainer = auth.user!
+    const period = Number(request.input('period', 7))
+    const days = [7, 30].includes(period) ? period : 7
+
+    const group = await TrainerGroup.query()
+      .where('id', params.id)
+      .where('trainerId', trainer.id)
+      .preload('athletes')
+      .firstOrFail()
+
+    const since = DateTime.now().minus({ days }).toJSDate()
+    const athleteIds = group.athletes.map((a) => a.id)
+
+    if (athleteIds.length === 0) {
+      return response.ok({ success: true, data: [] })
+    }
+
+    const workouts = await Workout.query()
+      .whereIn('userId', athleteIds)
+      .where('date', '>=', since)
+      .whereNull('deleted_at')
+
+    const statsMap = new Map<number, { workouts: number; volume: number; intensity: number }>()
+    for (const id of athleteIds) {
+      statsMap.set(id, { workouts: 0, volume: 0, intensity: 0 })
+    }
+
+    for (const w of workouts) {
+      const s = statsMap.get(w.userId)!
+      s.workouts += 1
+      s.volume += Number(w.totalVolume) || 0
+      s.intensity += Number(w.totalIntensity) || 0
+    }
+
+    const data = group.athletes.map((a) => {
+      const s = statsMap.get(a.id)!
+      return {
+        id: a.id,
+        fullName: a.fullName,
+        workouts: s.workouts,
+        volume: Math.round(s.volume),
+        intensity: Math.round(s.intensity * 100) / 100,
+      }
+    })
+
+    return response.ok({ success: true, data })
+  }
 }

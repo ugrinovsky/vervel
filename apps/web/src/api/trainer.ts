@@ -191,6 +191,11 @@ export const trainerApi = {
     privateApi.post(`/trainer/groups/${groupId}/athletes`, { athleteId }),
   removeAthleteFromGroup: (groupId: number, athleteId: number) =>
     privateApi.delete(`/trainer/groups/${groupId}/athletes/${athleteId}`),
+  getGroupLeaderboard: (groupId: number, period: 7 | 30 = 7) =>
+    privateApi.get<{
+      success: boolean;
+      data: { id: number; fullName: string | null; workouts: number; volume: number; intensity: number }[];
+    }>(`/trainer/groups/${groupId}/leaderboard?period=${period}`),
 
   // Chats
   getOrCreateGroupChat: (groupId: number) =>

@@ -28,6 +28,7 @@ router.get('/oauth/:provider/redirect', [OAuthController, 'redirect']);
 router.get('/oauth/:provider/callback', [OAuthController, 'callback']);
 router.post('/oauth/set-role', [OAuthController, 'setRole']);
 router.post('/oauth/vk/sdk-login', [OAuthController, 'vkSdkLogin']);
+router.post('/oauth/yandex/sdk-login', [OAuthController, 'yandexSdkLogin']);
 
 router.get('/', async () => {
   return {
@@ -137,6 +138,7 @@ router
     router.put('groups/:id', '#controllers/trainer_controller.updateGroup');
     router.delete('groups/:id', '#controllers/trainer_controller.deleteGroup');
     router.get('groups/:id/athletes', '#controllers/trainer_controller.getGroupAthletes');
+    router.get('groups/:id/leaderboard', '#controllers/trainer_controller.getGroupLeaderboard');
     router.post('groups/:id/athletes', '#controllers/trainer_controller.addAthleteToGroup');
     router.delete('groups/:id/athletes/:athleteId', '#controllers/trainer_controller.removeAthleteFromGroup');
 
