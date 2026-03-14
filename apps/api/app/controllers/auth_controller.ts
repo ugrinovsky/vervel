@@ -2,6 +2,7 @@ import type { HttpContext } from '@adonisjs/core/http';
 import hash from '@adonisjs/core/services/hash';
 import limiter from '@adonisjs/limiter/services/main';
 import db from '@adonisjs/lucid/services/db';
+
 // @ts-ignore — no types for this package
 import disposableDomains from 'disposable-email-domains' assert { type: 'json' };
 import User from '#models/user';
