@@ -11,8 +11,9 @@ import { getWorkoutTypeLabel } from './utils';
 import { WOD_CONFIG, type WodType } from '@/constants/workoutTypes';
 import { getZoneLabel } from '@/util/zones';
 import toast from 'react-hot-toast';
-import { PencilIcon, CheckIcon, XMarkIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
-import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
+import { PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import ExerciseDrawer from '@/screens/WorkoutForm/ExerciseDrawer';
+import type { ExerciseWithSets } from '@/types/Exercise';
 
 /* ─── Типы ──────────────────────────────────────────────────────────── */
 
@@ -122,18 +123,16 @@ function IntensityBar({ value }: { value: number }) {
 /* ─── Карточка упражнения ─────────────────────────────────────────── */
 
 function ExerciseCard({
-  ex, exerciseName, isEditing, editSets, onSetChange, onReplaceClick,
+  ex, exerciseName, isEditing, onEditClick,
 }: {
   ex: FullWorkout['exercises'][number];
   exerciseName: string;
   isEditing: boolean;
-  editSets: WorkoutSet[];
-  onSetChange: (setIdx: number, weight: string) => void;
-  onReplaceClick?: () => void;
+  onEditClick?: () => void;
 }) {
   const isWod = ex.type === 'wod';
-  const hasSets = editSets.length > 0;
-  const vol = isWod ? 0 : exerciseVolume(isEditing ? editSets : ex.sets);
+  const hasSets = (ex.sets ?? []).length > 0;
+  const vol = isWod ? 0 : exerciseVolume(ex.sets);
 
   return (
     <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) space-y-2">
@@ -145,18 +144,17 @@ function ExerciseCard({
           )}
           {isEditing && (
             <button
-              onClick={onReplaceClick}
+              onClick={onEditClick}
               className="p-1 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
-              title="Заменить упражнение"
+              title="Редактировать упражнение"
             >
-              <ArrowsRightLeftIcon className="w-3.5 h-3.5" />
+              <PencilIcon className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
       </div>
 
       {isWod ? (
-        /* ── CrossFit WOD exercise ─────────────────────────────────── */
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-1.5">
             {ex.wodType && (
@@ -164,78 +162,35 @@ function ExerciseCard({
                 {WOD_CONFIG[ex.wodType as WodType]?.label ?? ex.wodType.toUpperCase()}
               </span>
             )}
-            {ex.timeCap && (
-              <span className="text-xs text-(--color_text_muted)">{ex.timeCap} мин</span>
-            )}
-            {ex.rounds && (
-              <span className="text-xs text-(--color_text_muted)">{ex.rounds} раундов</span>
-            )}
+            {ex.timeCap && <span className="text-xs text-(--color_text_muted)">{ex.timeCap} мин</span>}
+            {ex.rounds && <span className="text-xs text-(--color_text_muted)">{ex.rounds} раундов</span>}
           </div>
           <div className="flex items-center gap-3 text-xs">
-            {editSets[0]?.reps != null && (
-              <span className="text-(--color_text_secondary)">{editSets[0].reps} повт./раунд</span>
+            {ex.sets?.[0]?.reps != null && (
+              <span className="text-(--color_text_secondary)">{ex.sets[0].reps} повт./раунд</span>
             )}
-            {isEditing ? (
-              <input
-                type="number" min={0} step={2.5}
-                value={editSets[0]?.weight ?? ''}
-                onChange={(e) => onSetChange(0, e.target.value)}
-                onClick={(e) => e.currentTarget.select()}
-                placeholder="кг"
-                className="w-16 bg-black/20 border border-emerald-500/40 rounded-lg px-2 py-1 text-white text-sm text-center outline-none focus:border-emerald-400 transition-colors placeholder:text-white/25"
-              />
-            ) : editSets[0]?.weight ? (
-              <span className="text-(--color_text_secondary)">{editSets[0].weight} кг</span>
+            {ex.sets?.[0]?.weight ? (
+              <span className="text-(--color_text_secondary)">{ex.sets[0].weight} кг</span>
             ) : (
               <span className="text-white/30 italic">вес не указан</span>
             )}
-            {ex.distance != null && (
-              <span className="text-(--color_text_muted)">{ex.distance} м</span>
-            )}
+            {ex.distance != null && <span className="text-(--color_text_muted)">{ex.distance} м</span>}
           </div>
         </div>
       ) : ex.type === 'cardio' || !hasSets ? (
-        /* ── Cardio / no data ──────────────────────────────────────── */
         <div className="text-xs text-(--color_text_muted)">
           {ex.duration ? `${Math.round(ex.duration / 60)} мин` : 'Кардио'}
         </div>
       ) : (
-        /* ── Bodybuilding sets ─────────────────────────────────────── */
         <div className="space-y-1.5">
-          {isEditing && (
-            <div className="flex items-center gap-2 text-[10px] text-white/40 font-medium mb-0.5">
-              <span className="w-5" />
-              <span className="flex-1 text-center">повт</span>
-              <span className="flex-1 text-center">кг</span>
-            </div>
-          )}
-          {editSets.map((s, si) => (
+          {(ex.sets ?? []).map((s, si) => (
             <div key={s.id ?? si} className="flex items-center gap-2">
-              {isEditing ? (
-                <>
-                  <span className="text-[11px] font-mono font-semibold text-white/50 w-5 text-right shrink-0">{si + 1}</span>
-                  <div className="flex-1 px-2 py-1 rounded-lg bg-black/20 border border-white/10 text-sm text-white text-center tabular-nums">
-                    {s.reps ?? '—'} повт.
-                  </div>
-                  <input
-                    type="number" min={0} step={2.5}
-                    value={s.weight ?? ''}
-                    onChange={(e) => onSetChange(si, e.target.value)}
-                    onClick={(e) => e.currentTarget.select()}
-                    placeholder="кг"
-                    className="flex-1 bg-black/20 border border-emerald-500/40 rounded-lg px-2 py-1 text-white text-sm text-center outline-none focus:border-emerald-400 transition-colors placeholder:text-white/25"
-                  />
-                </>
-              ) : (
-                <>
-                  <span className="text-xs text-(--color_text_muted) w-10 shrink-0">Сет {si + 1}</span>
-                  <span className={`text-xs ${s.weight ? 'text-(--color_text_secondary)' : 'text-white/30 italic'}`}>
-                    {formatSet(s, ex.type)}
-                  </span>
-                  {!s.weight && (s.reps ?? 0) > 0 && (
-                    <span className="text-[10px] text-amber-400/70 ml-auto">вес не указан</span>
-                  )}
-                </>
+              <span className="text-xs text-(--color_text_muted) w-10 shrink-0">Сет {si + 1}</span>
+              <span className={`text-xs ${s.weight ? 'text-(--color_text_secondary)' : 'text-white/30 italic'}`}>
+                {formatSet(s, ex.type)}
+              </span>
+              {s.weight == null && (s.reps ?? 0) > 0 && (
+                <span className="text-[10px] text-amber-400/70 ml-auto">вес не указан</span>
               )}
             </div>
           ))}
@@ -274,7 +229,7 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
 
   const [isEditing, setIsEditing] = useState(false);
   const [editExercises, setEditExercises] = useState<FullWorkout['exercises']>([]);
-  const [replacingIdx, setReplacingIdx] = useState<number | null>(null);
+  const [editingExIdx, setEditingExIdx] = useState<number | null>(null);
   const [rpe, setRpe] = useState<number | null>(null);
   const [savingWeights, setSavingWeights] = useState(false);
   const [savingRpe, setSavingRpe] = useState(false);
@@ -296,20 +251,6 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [workout?.id]);
-
-  const handleSetChange = (exIdx: number, setIdx: number, rawWeight: string) => {
-    setEditExercises((prev) =>
-      prev.map((ex, i) => {
-        if (i !== exIdx) return ex;
-        const sets = (ex.sets ?? []).map((s, si) => {
-          if (si !== setIdx) return s;
-          const w = parseFloat(rawWeight);
-          return { ...s, weight: rawWeight === '' || isNaN(w) ? undefined : w };
-        });
-        return { ...ex, sets };
-      })
-    );
-  };
 
   // Строит полный payload для PUT /workouts/:id (backend требует все поля)
   const buildUpdatePayload = (overrides: { exercises?: FullWorkout['exercises']; rpe?: number | null }) => {
@@ -356,17 +297,34 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
     setIsEditing(false);
   };
 
-  const handleReplaceExercise = (exercise: { exerciseId: string; title: string }) => {
-    if (replacingIdx === null) return;
+  // Конвертирует FullWorkout exercise → ExerciseWithSets для ExerciseDrawer
+  const toExerciseWithSets = (ex: FullWorkout['exercises'][number], title: string): ExerciseWithSets => ({
+    exerciseId: ex.exerciseId,
+    title,
+    sets: (ex.sets ?? []).map((s) => ({ id: s.id ?? crypto.randomUUID(), reps: s.reps ?? 0, weight: s.weight ?? 0 })),
+    duration: ex.duration ? Math.round(ex.duration / 60) : undefined,
+  });
+
+  // Сохраняет результат ExerciseDrawer обратно в editExercises
+  const handleExerciseDrawerSave = (saved: ExerciseWithSets) => {
+    if (editingExIdx === null) return;
     setEditExercises((prev) =>
-      prev.map((ex, i) => (i === replacingIdx ? { ...ex, exerciseId: exercise.exerciseId } : ex))
+      prev.map((ex, i) => {
+        if (i !== editingExIdx) return ex;
+        return {
+          ...ex,
+          exerciseId: String(saved.exerciseId),
+          sets: saved.sets.map((s) => ({ id: s.id, reps: s.reps, weight: s.weight })),
+          duration: saved.duration != null ? saved.duration * 60 : ex.duration,
+        };
+      })
     );
     setExerciseMap((prev) => {
       const next = new Map(prev);
-      next.set(exercise.exerciseId, { id: exercise.exerciseId, title: exercise.title } as any);
+      next.set(String(saved.exerciseId), { id: String(saved.exerciseId), title: saved.title } as any);
       return next;
     });
-    setReplacingIdx(null);
+    setEditingExIdx(null);
   };
 
   // Сохранение оценки тренировки (RPE) — мгновенно при тапе
@@ -521,7 +479,7 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
             <div>
               <SectionTitle>Упражнения · {fullWorkout.exercises.length}</SectionTitle>
               <div className="space-y-2">
-                {fullWorkout.exercises.map((ex, i) => {
+                {(isEditing ? editExercises : fullWorkout.exercises).map((ex, i) => {
                   const name = exerciseMap.get(ex.exerciseId)?.title ?? ex.exerciseId.replace(/_/g, ' ');
                   return (
                     <ExerciseCard
@@ -529,9 +487,7 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
                       ex={ex}
                       exerciseName={name}
                       isEditing={isEditing}
-                      editSets={editExercises[i]?.sets ?? ex.sets ?? []}
-                      onSetChange={(setIdx, weight) => handleSetChange(i, setIdx, weight)}
-                      onReplaceClick={() => setReplacingIdx(i)}
+                      onEditClick={() => setEditingExIdx(i)}
                     />
                   );
                 })}
@@ -585,13 +541,19 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
         <div className="text-center py-10 text-(--color_text_muted) text-sm">Не удалось загрузить детали</div>
       )}
 
-      {/* ExercisePicker для замены упражнения */}
-      {replacingIdx !== null && (
-        <ExercisePicker
+      {/* ExerciseDrawer для редактирования упражнения */}
+      {editingExIdx !== null && editExercises[editingExIdx] && (
+        <ExerciseDrawer
           open={true}
-          onClose={() => setReplacingIdx(null)}
-          workoutType={fullWorkout?.workoutType ?? 'bodybuilding'}
-          onSelect={(ex) => handleReplaceExercise(ex)}
+          exercise={toExerciseWithSets(
+            editExercises[editingExIdx],
+            exerciseMap.get(editExercises[editingExIdx].exerciseId)?.title
+              ?? editExercises[editingExIdx].exerciseId.replace(/_/g, ' ')
+          )}
+          workoutType={(fullWorkout?.workoutType ?? 'bodybuilding') as any}
+          onClose={() => setEditingExIdx(null)}
+          onSave={handleExerciseDrawerSave}
+          allowReplace
         />
       )}
 

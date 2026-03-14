@@ -10,6 +10,8 @@ import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
 import type { ExerciseData } from '@/api/trainer';
 import type { ExerciseWithSets } from '@/types/Exercise';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
+import { useState } from 'react';
+import { ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 
 interface Props {
   workoutType: WorkoutType;
@@ -52,6 +54,19 @@ export default function WorkoutExercisesEditor({
   superset = true,
   toolbar,
 }: Props) {
+  const [replacingIdx, setReplacingIdx] = useState<number | null>(null);
+
+  const handleReplace = (ex: ExerciseWithSets) => {
+    if (replacingIdx === null) return;
+    onChange(
+      exercises.map((old, i) => {
+        if (i !== replacingIdx) return old;
+        return { ...old, exerciseId: String(ex.exerciseId), name: ex.title };
+      })
+    );
+    setReplacingIdx(null);
+  };
+
   // ── Helpers ─────────────────────────────────────────────────────────
 
   const update = (index: number, patch: Partial<ExerciseData>) => {
@@ -170,7 +185,7 @@ export default function WorkoutExercisesEditor({
                       : 'bg-white/[0.07] border-white/10'
                   }`}
                 >
-                  {/* Index + name + remove */}
+                  {/* Index + name + replace + remove */}
                   <div className="flex items-start gap-2.5 min-w-0">
                     <span className="shrink-0 mt-0.5 text-[10px] font-mono text-white/30 w-4 text-right leading-snug">
                       {String(i + 1).padStart(2, '0')}
@@ -178,6 +193,14 @@ export default function WorkoutExercisesEditor({
                     <p className="flex-1 text-sm font-medium text-white leading-snug min-w-0 truncate">
                       {ex.name}
                     </p>
+                    <button
+                      type="button"
+                      onClick={() => setReplacingIdx(i)}
+                      className="text-white/30 hover:text-emerald-400 transition-colors shrink-0 mt-0.5"
+                      title="Заменить упражнение"
+                    >
+                      <ArrowsRightLeftIcon className="w-4 h-4" />
+                    </button>
                     <ConfirmDeleteButton
                       icon="x"
                       onConfirm={() => removeExercise(i)}
@@ -242,6 +265,15 @@ export default function WorkoutExercisesEditor({
       )}
 
       <ExercisePicker onSelect={handleExercisePicked} workoutType={workoutType} />
+
+      {replacingIdx !== null && (
+        <ExercisePicker
+          open={true}
+          onClose={() => setReplacingIdx(null)}
+          onSelect={handleReplace}
+          workoutType={workoutType}
+        />
+      )}
     </div>
   );
 }

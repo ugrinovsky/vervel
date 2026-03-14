@@ -1,8 +1,9 @@
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import ExerciseParamsEditor, { type SetDetail } from '@/components/ExerciseParamsEditor/ExerciseParamsEditor';
+import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
 import type { ExerciseWithSets } from '@/types/Exercise';
 import { useEffect, useState } from 'react';
-import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/outline';
+import { ArrowUpIcon, ArrowDownIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
 
 interface Props {
@@ -11,9 +12,13 @@ interface Props {
   workoutType?: WorkoutType;
   onClose: () => void;
   onSave: (exercise: ExerciseWithSets) => void;
+  /** Если передан — показывает кнопку "Сменить упражнение" */
+  allowReplace?: boolean;
 }
 
-export default function ExerciseDrawer({ open, exercise, workoutType = 'bodybuilding', onClose, onSave }: Props) {
+export default function ExerciseDrawer({ open, exercise, workoutType = 'bodybuilding', onClose, onSave, allowReplace }: Props) {
+  const [currentExercise, setCurrentExercise] = useState<ExerciseWithSets>(exercise);
+  const [replacerOpen, setReplacerOpen] = useState(false);
   // ── State ──────────────────────────────────────────────────────────
 
   // Bodybuilding
@@ -30,13 +35,11 @@ export default function ExerciseDrawer({ open, exercise, workoutType = 'bodybuil
   // Cardio
   const [duration, setDuration] = useState<number>(20);
 
-  // ── Init on open ───────────────────────────────────────────────────
+  // ── Init on open / exercise change ────────────────────────────────
 
-  useEffect(() => {
-    if (!open) return;
-
+  const initFromExercise = (ex: ExerciseWithSets) => {
     if (workoutType === 'crossfit') {
-      const first = exercise.sets?.[0];
+      const first = ex.sets?.[0];
       setReps(first?.reps ?? 10);
       setWeight(first?.weight || undefined);
       setWodType(undefined);
@@ -44,15 +47,20 @@ export default function ExerciseDrawer({ open, exercise, workoutType = 'bodybuil
       setRounds(undefined);
       setDistance(undefined);
     } else if (workoutType === 'cardio') {
-      setDuration(exercise.duration ?? 20);
+      setDuration(ex.duration ?? 20);
     } else {
-      // bodybuilding
       setSetsDetail(
-        exercise.sets?.length
-          ? exercise.sets.map((s) => ({ reps: s.reps, weight: s.weight || undefined }))
+        ex.sets?.length
+          ? ex.sets.map((s) => ({ reps: s.reps, weight: s.weight || undefined }))
           : [{ reps: 10 }, { reps: 10 }, { reps: 10 }]
       );
     }
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    setCurrentExercise(exercise);
+    initFromExercise(exercise);
   }, [open, exercise, workoutType]);
 
   // ── Bodybuilding set helpers ───────────────────────────────────────
@@ -112,19 +120,28 @@ export default function ExerciseDrawer({ open, exercise, workoutType = 'bodybuil
     if ('distance' in patch) setDistance(patch.distance as number | undefined);
   };
 
+  // ── Replace exercise ──────────────────────────────────────────────
+
+  const handleReplace = (selected: ExerciseWithSets) => {
+    const replaced = { ...selected, sets: currentExercise.sets, duration: currentExercise.duration };
+    setCurrentExercise(replaced);
+    initFromExercise(replaced);
+    setReplacerOpen(false);
+  };
+
   // ── Save ───────────────────────────────────────────────────────────
 
   const handleSave = () => {
     if (workoutType === 'crossfit') {
       onSave({
-        ...exercise,
+        ...currentExercise,
         sets: [{ id: crypto.randomUUID(), reps, weight: weight ?? 0 }],
       });
     } else if (workoutType === 'cardio') {
-      onSave({ ...exercise, duration });
+      onSave({ ...currentExercise, duration });
     } else {
       onSave({
-        ...exercise,
+        ...currentExercise,
         sets: setsDetail.map((s) => ({
           id: crypto.randomUUID(),
           reps: s.reps ?? 10,
@@ -137,8 +154,27 @@ export default function ExerciseDrawer({ open, exercise, workoutType = 'bodybuil
   /* ─── Render ─────────────────────────────────────────────────────── */
 
   return (
-    <BottomSheet open={open} onClose={onClose} title={exercise.title}>
+    <BottomSheet open={open} onClose={onClose} title={currentExercise.title}>
       <div className="space-y-4">
+
+        {/* Replace exercise */}
+        {allowReplace && (
+          <>
+            <button
+              onClick={() => setReplacerOpen(true)}
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-white/20 text-white/50 hover:text-white hover:border-white/40 text-sm transition-colors"
+            >
+              <ArrowsRightLeftIcon className="w-4 h-4" />
+              Сменить упражнение
+            </button>
+            <ExercisePicker
+              open={replacerOpen}
+              onClose={() => setReplacerOpen(false)}
+              workoutType={workoutType}
+              onSelect={handleReplace}
+            />
+          </>
+        )}
 
         {/* Pyramid buttons — bodybuilding only */}
         {workoutType === 'bodybuilding' && (
