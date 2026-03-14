@@ -4,3 +4,6 @@ package-lock.json
 
 # Claude Code local settings
 .claude/
+
+# Docker secrets (managed per-environment)
+.env
