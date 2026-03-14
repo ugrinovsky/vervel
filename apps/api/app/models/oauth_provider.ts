@@ -6,6 +6,8 @@ import User from './user.js'
 export type ProviderName = 'vk' | 'yandex'
 
 export default class OAuthProvider extends BaseModel {
+  static table = 'oauth_providers'
+
   @column({ isPrimary: true })
   declare id: number
 
