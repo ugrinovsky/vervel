@@ -38,11 +38,50 @@ function loadScript(): Promise<void> {
   });
 }
 
+async function handleYandexToken(
+  accessToken: string,
+  login: (user: any, token: string) => void,
+  navigate: (path: string) => void
+) {
+  const res = await publicApi.post<{
+    user: { id: number; email: string; fullName: string; role: string };
+    token: any;
+    needsRole?: boolean;
+    tempToken?: string;
+    userId?: number;
+  }>('/oauth/yandex/sdk-login', { accessToken });
+
+  const resData = res.data;
+
+  if (resData.needsRole) {
+    navigate(`/select-role?token=${resData.tempToken}&userId=${resData.userId}`);
+    return;
+  }
+
+  login(resData.user as any, resData.token.token);
+  toast.success(`Добро пожаловать, ${resData.user.fullName}!`);
+  navigate('/');
+}
+
 export default function YandexIdButton() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  // Handle full-page redirect flow: /suggest/token redirects back with ?ya_token=...
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const yaToken = params.get('ya_token');
+    if (!yaToken) return;
+
+    window.history.replaceState({}, '', window.location.pathname);
+
+    handleYandexToken(yaToken, login, navigate).catch(() => {
+      toast.error('Ошибка авторизации через Яндекс');
+    });
+  }, []);
+
+  // Handle popup/iframe flow via SDK
   useEffect(() => {
     if (!containerRef.current || !YANDEX_CLIENT_ID) return;
 
@@ -78,25 +117,7 @@ export default function YandexIdButton() {
       .then((result) => result?.handler())
       .then(async (data) => {
         if (!data?.access_token) return;
-
-        const res = await publicApi.post<{
-          user: { id: number; email: string; fullName: string; role: string };
-          token: any;
-          needsRole?: boolean;
-          tempToken?: string;
-          userId?: number;
-        }>('/oauth/yandex/sdk-login', { accessToken: data.access_token });
-
-        const resData = res.data;
-
-        if (resData.needsRole) {
-          navigate(`/select-role?token=${resData.tempToken}&userId=${resData.userId}`);
-          return;
-        }
-
-        login(resData.user as any, resData.token.token);
-        toast.success(`Добро пожаловать, ${resData.user.fullName}!`);
-        navigate('/');
+        await handleYandexToken(data.access_token, login, navigate);
       })
       .catch((error) => {
         console.error('YaAuthSuggest error:', error);

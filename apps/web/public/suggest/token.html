@@ -3,6 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <script src="https://yastatic.net/s3/passport-sdk/autofill/v1/sdk-suggest-token.js"></script>
+  <script>
+    window.addEventListener('load', function () {
+      // If opened in popup/iframe — SDK handles it. Only act on full-page redirect.
+      if (window.opener || window.parent !== window) return;
+      var params = new URLSearchParams(window.location.hash.substring(1));
+      var token = params.get('access_token');
+      if (token) {
+        window.location.replace('/login?ya_token=' + encodeURIComponent(token));
+      } else {
+        window.location.replace('/login?error=ya_auth_failed');
+      }
+    });
+  </script>
 </head>
 <body></body>
 </html>
