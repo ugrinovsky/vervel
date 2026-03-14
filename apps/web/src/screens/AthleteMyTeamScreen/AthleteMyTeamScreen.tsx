@@ -148,8 +148,12 @@ export default function AthleteMyTeamScreen() {
       />
       <AiChat open={aiChatOpen} onClose={() => setAiChatOpen(false)} />
 
-      <div className="p-4 w-full max-w-2xl mx-auto">
-        <ScreenHeader icon="🤝" title="Моя команда" description="Тренеры и группы, с которыми вы работаете — покажите QR-код тренеру или введите код приглашения, чтобы присоединиться" />
+      <div className="p-4 w-full mx-auto">
+        <ScreenHeader
+          icon="🤝"
+          title="Моя команда"
+          description="Тренеры и группы, с которыми вы работаете — покажите QR-код тренеру или введите код приглашения, чтобы присоединиться"
+        />
 
         {/* AI Assistant card */}
         <motion.button
@@ -169,7 +173,9 @@ export default function AthleteMyTeamScreen() {
               Вопросы про тренировки, питание, восстановление
             </p>
           </div>
-          <span className="text-xs text-(--color_text_muted) shrink-0">от {AI_CHAT_MIN_BALANCE}₽/сообщение</span>
+          <span className="text-xs text-(--color_text_muted) shrink-0">
+            от {AI_CHAT_MIN_BALANCE}₽/сообщение
+          </span>
         </motion.button>
 
         {isEmpty ? (

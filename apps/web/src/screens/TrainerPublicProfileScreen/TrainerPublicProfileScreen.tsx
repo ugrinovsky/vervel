@@ -60,7 +60,8 @@ export default function TrainerPublicProfileScreen() {
   };
 
   const donationAmount = customAmount ? Number(customAmount) : selectedAmount;
-  const hasDonateDetails = profile?.donatePhone || profile?.donateCard || profile?.donateYookassaLink;
+  const hasDonateDetails =
+    profile?.donatePhone || profile?.donateCard || profile?.donateYookassaLink;
 
   const initials = profile?.fullName
     ? profile.fullName
@@ -82,7 +83,7 @@ export default function TrainerPublicProfileScreen() {
         onClose={() => setChatOpen(false)}
       />
 
-      <div className="p-4 w-full max-w-2xl mx-auto">
+      <div className="p-4 w-full mx-auto">
         <BackButton onClick={() => navigate(-1)} />
 
         {/* Header: photo + name + specializations */}
@@ -102,9 +103,7 @@ export default function TrainerPublicProfileScreen() {
               <span className="text-4xl font-bold text-white">{initials}</span>
             )}
           </div>
-          <h1 className="text-xl font-bold text-white mb-1">
-            {profile.fullName || 'Тренер'}
-          </h1>
+          <h1 className="text-xl font-bold text-white mb-1">{profile.fullName || 'Тренер'}</h1>
           {profile.specializations && profile.specializations.length > 0 && (
             <div className="flex flex-wrap justify-center gap-1.5 mt-2">
               {profile.specializations.map((s) => (
@@ -176,12 +175,17 @@ export default function TrainerPublicProfileScreen() {
           ) : (
             <>
               {/* Amount selector */}
-              <p className="text-xs text-(--color_text_muted) mb-3">Выберите сумму или введите свою</p>
+              <p className="text-xs text-(--color_text_muted) mb-3">
+                Выберите сумму или введите свою
+              </p>
               <div className="grid grid-cols-4 gap-2 mb-3">
                 {DONATION_AMOUNTS.map((amount) => (
                   <button
                     key={amount}
-                    onClick={() => { setSelectedAmount(amount); setCustomAmount(''); }}
+                    onClick={() => {
+                      setSelectedAmount(amount);
+                      setCustomAmount('');
+                    }}
                     className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
                       selectedAmount === amount && !customAmount
                         ? 'bg-(--color_primary_light) text-white'
@@ -195,7 +199,10 @@ export default function TrainerPublicProfileScreen() {
               <input
                 type="number"
                 value={customAmount}
-                onChange={(e) => { setCustomAmount(e.target.value); setSelectedAmount(null); }}
+                onChange={(e) => {
+                  setCustomAmount(e.target.value);
+                  setSelectedAmount(null);
+                }}
                 placeholder="Другая сумма, ₽"
                 className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-(--color_text_muted) mb-4"
               />
@@ -240,7 +247,11 @@ export default function TrainerPublicProfileScreen() {
                 {/* YooKassa link */}
                 {profile.donateYookassaLink && (
                   <a
-                    href={donationAmount ? `${profile.donateYookassaLink}?sum=${donationAmount}` : profile.donateYookassaLink}
+                    href={
+                      donationAmount
+                        ? `${profile.donateYookassaLink}?sum=${donationAmount}`
+                        : profile.donateYookassaLink
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity"

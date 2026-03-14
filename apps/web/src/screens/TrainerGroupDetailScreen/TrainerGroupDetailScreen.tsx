@@ -88,7 +88,7 @@ export default function TrainerGroupDetailScreen() {
         onClose={() => setActiveTab('members')}
       />
 
-      <div className="p-4 w-full max-w-2xl mx-auto">
+      <div className="p-4 w-full mx-auto">
         <BackButton onClick={() => navigate('/trainer/groups')} />
 
         <ScreenHeader
@@ -162,9 +162,7 @@ export default function TrainerGroupDetailScreen() {
                     onClick={() => handleAddToGroup(a.id)}
                     className="w-full flex items-center gap-3 p-2.5 rounded-lg bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors text-left"
                   >
-                    <span className="text-sm text-white">
-                      {a.fullName || a.email}
-                    </span>
+                    <span className="text-sm text-white">{a.fullName || a.email}</span>
                     <span className="text-xs text-(--color_text_muted)">{a.email}</span>
                   </button>
                 ))}
@@ -213,8 +211,12 @@ export default function TrainerGroupDetailScreen() {
           </motion.div>
         )}
 
-
-        <BottomSheet open={showCreateSheet} onClose={() => setShowCreateSheet(false)} emoji="🏋️" title="Создать тренировку">
+        <BottomSheet
+          open={showCreateSheet}
+          onClose={() => setShowCreateSheet(false)}
+          emoji="🏋️"
+          title="Создать тренировку"
+        >
           <WorkoutInlineForm
             noCard
             preselectedAssignee={{ type: 'group', id, name: group?.name || 'Группа' }}

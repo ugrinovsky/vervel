@@ -5,7 +5,12 @@ import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import { trainerApi, type TrainerGroupItem, type UnreadCounts } from '@/api/trainer';
-import { PlusIcon, UserGroupIcon, UsersIcon, ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline';
+import {
+  PlusIcon,
+  UserGroupIcon,
+  UsersIcon,
+  ChatBubbleLeftEllipsisIcon,
+} from '@heroicons/react/24/outline';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 
 export default function TrainerGroupsListScreen() {
@@ -64,8 +69,12 @@ export default function TrainerGroupsListScreen() {
 
   return (
     <Screen loading={loading} className="trainer-groups-list-screen">
-      <div className="p-4 w-full max-w-2xl mx-auto">
-        <ScreenHeader icon="👥" title="Группы" description="Ваши тренировочные группы — создавайте группы, добавляйте атлетов, назначайте тренировки и ведите чат" />
+      <div className="p-4 w-full mx-auto">
+        <ScreenHeader
+          icon="👥"
+          title="Группы"
+          description="Ваши тренировочные группы — создавайте группы, добавляйте атлетов, назначайте тренировки и ведите чат"
+        />
 
         {/* Stats */}
         <motion.div
@@ -86,8 +95,12 @@ export default function TrainerGroupsListScreen() {
             <div className="text-[11px] text-(--color_text_muted) text-center">Атлетов</div>
           </div>
           <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
-            <ChatBubbleLeftEllipsisIcon className={`w-5 h-5 ${(unreadCounts?.groups.reduce((s, g) => s + g.unread, 0) ?? 0) > 0 ? 'text-red-400' : 'text-(--color_text_muted)'}`} />
-            <div className={`text-xl font-bold ${(unreadCounts?.groups.reduce((s, g) => s + g.unread, 0) ?? 0) > 0 ? 'text-red-400' : 'text-white'}`}>
+            <ChatBubbleLeftEllipsisIcon
+              className={`w-5 h-5 ${(unreadCounts?.groups.reduce((s, g) => s + g.unread, 0) ?? 0) > 0 ? 'text-red-400' : 'text-(--color_text_muted)'}`}
+            />
+            <div
+              className={`text-xl font-bold ${(unreadCounts?.groups.reduce((s, g) => s + g.unread, 0) ?? 0) > 0 ? 'text-red-400' : 'text-white'}`}
+            >
               {unreadCounts?.groups.reduce((s, g) => s + g.unread, 0) ?? 0}
             </div>
             <div className="text-[11px] text-(--color_text_muted) text-center">Новых сообщ.</div>

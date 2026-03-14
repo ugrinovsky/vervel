@@ -37,23 +37,24 @@ interface RawExercise {
 // ──────────────────────────────────────────────
 
 const MUSCLE_TO_ZONE: Record<string, string> = {
-  chest: 'chests',
-  abdominals: 'core',
-  lats: 'back',
-  'middle back': 'back',
-  'lower back': 'back',
-  traps: 'back',
-  biceps: 'biceps',
-  triceps: 'triceps',
-  shoulders: 'shoulders',
-  quadriceps: 'legs',
-  hamstrings: 'legs',
-  calves: 'legs',
-  abductors: 'legs',
-  adductors: 'legs',
-  glutes: 'glutes',
-  forearms: 'forearms',
-  neck: 'shoulders',
+  chest:          'chests',
+  abdominals:     'core',
+  obliques:       'obliques',
+  lats:           'back',
+  'middle back':  'back',
+  'lower back':   'back',
+  traps:          'back',
+  biceps:         'biceps',
+  triceps:        'triceps',
+  shoulders:      'shoulders',
+  quadriceps:     'legs',
+  hamstrings:     'legs',
+  calves:         'calves',   // separate zone, not merged into legs
+  abductors:      'legs',
+  adductors:      'legs',
+  glutes:         'glutes',
+  forearms:       'forearms',
+  neck:           'shoulders',
 }
 
 const CATEGORY_MAP: Record<string, CatalogExercise['category']> = {

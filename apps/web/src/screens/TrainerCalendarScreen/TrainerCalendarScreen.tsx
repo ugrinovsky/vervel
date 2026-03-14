@@ -152,7 +152,7 @@ export default function TrainerCalendarScreen() {
 
   return (
     <Screen className="trainer-calendar-screen">
-      <div className="flex flex-col h-full px-4">
+      <div className="flex flex-col h-full px-4 w-full">
         {/* ── Page header ── */}
         <div className="pt-4 pb-1 shrink-0">
           <ScreenHeader
@@ -226,7 +226,7 @@ export default function TrainerCalendarScreen() {
               const isCurrentHour = isToday && hour === nowHour;
 
               return (
-                <div key={hour} className="flex gap-2 min-h-10">
+                <div key={hour} className="flex gap-2 min-h-10 border-t border-white/4">
                   {/* Hour label */}
                   <div className="w-10 shrink-0 pt-1.5">
                     <span

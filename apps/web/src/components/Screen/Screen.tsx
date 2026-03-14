@@ -22,7 +22,7 @@ export default function Screen({
 }: PropsWithChildren<ScreenProps>) {
   return (
     <div
-      className={`screen flex flex-col md:flex-row items-stretch justify-center h-full w-full max-w-[798px] ${className}`.trim()}
+      className={`screen flex flex-col md:flex-row items-stretch justify-center h-full w-full max-w-[798px] mx-auto ${className}`.trim()}
     >
       {loading ? <PageLoader /> : children}
     </div>

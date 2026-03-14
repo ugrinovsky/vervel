@@ -67,7 +67,7 @@ export default function WorkoutForm() {
 
   return (
     <Screen className="workout-form-screen">
-      <div className="p-4 max-w-md text-white">
+      <div className="p-4 w-full flex-1 text-white">
         <ScreenHeader
           icon="💪"
           title="Новая тренировка"

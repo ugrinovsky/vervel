@@ -17,7 +17,7 @@ type Tab = 'profile' | 'wallet' | 'settings';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'profile', label: 'Профиль' },
-  { id: 'wallet', label: 'Кошелёк' },
+  { id: 'wallet', label: 'Кошелек' },
   { id: 'settings', label: 'Настройки' },
 ];
 
@@ -38,11 +38,17 @@ export default function ProfileScreen() {
   useEffect(() => {
     loadProfile();
     if (isTrainer) {
-      trainerApi.getProfileStats().then((res) => {
-        if (res.data.success) setTrainerStats(res.data.data);
-      }).catch(() => {});
+      trainerApi
+        .getProfileStats()
+        .then((res) => {
+          if (res.data.success) setTrainerStats(res.data.data);
+        })
+        .catch(() => {});
     }
-    aiApi.getBalance().then((res) => setBalance(res.data.balance)).catch(() => {});
+    aiApi
+      .getBalance()
+      .then((res) => setBalance(res.data.balance))
+      .catch(() => {});
   }, [isTrainer, inTrainerMode]);
 
   // Handle redirect back from YooKassa after successful payment
@@ -50,7 +56,10 @@ export default function ProfileScreen() {
     if (searchParams.get('topup') === 'success' && !topupHandled.current) {
       topupHandled.current = true;
       toast.success('Баланс пополнен!');
-      aiApi.getBalance().then((res) => setBalance(res.data.balance)).catch(() => {});
+      aiApi
+        .getBalance()
+        .then((res) => setBalance(res.data.balance))
+        .catch(() => {});
       setSearchParams({ tab: 'wallet' }, { replace: true });
       setActiveTab('wallet');
     }
@@ -77,8 +86,12 @@ export default function ProfileScreen() {
 
   return (
     <Screen className="profile-screen">
-      <div className="p-4 w-full max-w-2xl mx-auto">
-        <ScreenHeader icon="👤" title="Профиль" description="Ваш аккаунт, кошелёк для оплаты AI-функций и настройки приложения" />
+      <div className="p-4 w-full mx-auto">
+        <ScreenHeader
+          icon="👤"
+          title="Профиль"
+          description="Ваш аккаунт, кошелек для оплаты AI-функций и настройки приложения"
+        />
 
         {/* Tabs */}
         <div className="flex gap-1 bg-(--color_bg_card) rounded-2xl p-1 border border-(--color_border) mb-6">
@@ -105,13 +118,20 @@ export default function ProfileScreen() {
             <ProfileTab key="profile" data={data} trainerStats={trainerStats} />
           )}
           {activeTab === 'wallet' && (
-            <WalletTab key="wallet" balance={balance} setBalance={setBalance} inTrainerMode={inTrainerMode} />
+            <WalletTab
+              key="wallet"
+              balance={balance}
+              setBalance={setBalance}
+              inTrainerMode={inTrainerMode}
+            />
           )}
           {activeTab === 'settings' && (
             <SettingsTab
               key="settings"
               data={data}
-              onProfileUpdate={(updatedUser) => setData((prev) => prev ? { ...prev, user: updatedUser } : prev)}
+              onProfileUpdate={(updatedUser) =>
+                setData((prev) => (prev ? { ...prev, user: updatedUser } : prev))
+              }
             />
           )}
         </AnimatePresence>

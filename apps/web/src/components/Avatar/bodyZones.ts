@@ -92,20 +92,24 @@ export const API_TO_BODY_ZONE: Record<string, string> = {
   glutes:    'glutealMuscles',
 };
 
-/** SVG appZone name → API zone name (backend) */
+/**
+ * SVG appZone → canonical camelCase zone key used in normalizedZones.
+ * Keys that share the same "canonical" key will all highlight together when that zone is selected.
+ * Keys that map to their own canonical key highlight independently.
+ */
 export const BODY_ZONE_TO_API: Record<string, string> = {
   chests:          'chests',
   biceps:          'biceps',
   triceps:         'triceps',
   shoulders:       'shoulders',
   forearms:        'forearms',
-  trapezoids:      'back',
-  abdominalPress:  'core',
-  obliquePress:    'core',
-  backMuscles:     'back',
-  legMuscles:      'legs',
-  calfMuscles:     'legs',
-  glutealMuscles:  'glutes',
+  trapezoids:      'backMuscles',   // trapezoids is part of back
+  abdominalPress:  'abdominalPress',
+  obliquePress:    'obliquePress',  // separate from abs — highlights independently
+  backMuscles:     'backMuscles',
+  legMuscles:      'legMuscles',
+  calfMuscles:     'calfMuscles',   // separate from legs — highlights independently
+  glutealMuscles:  'glutealMuscles',
 };
 
 export const maleBody: BodyViewDef = {

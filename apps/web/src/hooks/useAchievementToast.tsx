@@ -60,11 +60,11 @@ export async function checkForNewAchievements() {
 
 /** Монтируется в App — проверяет при старте и при возврате на вкладку */
 export function useAchievementToast() {
-  const { token } = useAuth();
+  const { token, activeMode } = useAuth();
   const initialDone = useRef(false);
 
   useEffect(() => {
-    if (!token) {
+    if (!token || activeMode === 'trainer') {
       initialDone.current = false;
       lastCheckAt = 0; // сбрасываем дебаунс при логауте
       return;
@@ -83,5 +83,5 @@ export function useAchievementToast() {
 
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [token]);
+  }, [token, activeMode]);
 }

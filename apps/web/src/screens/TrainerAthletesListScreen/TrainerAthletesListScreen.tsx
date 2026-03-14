@@ -7,7 +7,16 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import AddAthleteDrawer from '@/components/AddAthleteDrawer/AddAthleteDrawer';
 import { trainerApi, type AthleteListItem, type UnreadCounts } from '@/api/trainer';
 import InlineAthleteAvatar from '@/components/MiniAvatar/InlineAthleteAvatar';
-import { PlusIcon, UsersIcon, ClockIcon, ChatBubbleLeftEllipsisIcon, Squares2X2Icon, ViewColumnsIcon, Bars3Icon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import {
+  PlusIcon,
+  UsersIcon,
+  ClockIcon,
+  ChatBubbleLeftEllipsisIcon,
+  Squares2X2Icon,
+  ViewColumnsIcon,
+  Bars3Icon,
+  MagnifyingGlassIcon,
+} from '@heroicons/react/24/outline';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 
 export default function TrainerAthletesListScreen() {
@@ -53,8 +62,7 @@ export default function TrainerAthletesListScreen() {
     const q = search.toLowerCase();
     return athletes.filter(
       (a) =>
-        (a.fullName ?? '').toLowerCase().includes(q) ||
-        (a.email ?? '').toLowerCase().includes(q)
+        (a.fullName ?? '').toLowerCase().includes(q) || (a.email ?? '').toLowerCase().includes(q)
     );
   }, [athletes, search]);
 
@@ -73,8 +81,12 @@ export default function TrainerAthletesListScreen() {
 
   return (
     <Screen loading={loading} className="trainer-athletes-list-screen">
-      <div className="p-4 w-full max-w-2xl mx-auto">
-        <ScreenHeader icon="🏃" title="Атлеты" description="Атлеты на индивидуальном ведении — смотрите аналитику, переписывайтесь и назначайте персональные тренировки" />
+      <div className="p-4 w-full mx-auto">
+        <ScreenHeader
+          icon="🏃"
+          title="Атлеты"
+          description="Атлеты на индивидуальном ведении — смотрите аналитику, переписывайтесь и назначайте персональные тренировки"
+        />
 
         {/* Stats */}
         <motion.div
@@ -88,15 +100,23 @@ export default function TrainerAthletesListScreen() {
             <div className="text-[11px] text-(--color_text_muted) text-center">Всего</div>
           </div>
           <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
-            <ClockIcon className={`w-5 h-5 ${athletes.filter((a) => a.status === 'pending').length > 0 ? 'text-amber-400' : 'text-(--color_text_muted)'}`} />
-            <div className={`text-xl font-bold ${athletes.filter((a) => a.status === 'pending').length > 0 ? 'text-amber-400' : 'text-white'}`}>
+            <ClockIcon
+              className={`w-5 h-5 ${athletes.filter((a) => a.status === 'pending').length > 0 ? 'text-amber-400' : 'text-(--color_text_muted)'}`}
+            />
+            <div
+              className={`text-xl font-bold ${athletes.filter((a) => a.status === 'pending').length > 0 ? 'text-amber-400' : 'text-white'}`}
+            >
               {athletes.filter((a) => a.status === 'pending').length}
             </div>
             <div className="text-[11px] text-(--color_text_muted) text-center">Ожидают</div>
           </div>
           <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
-            <ChatBubbleLeftEllipsisIcon className={`w-5 h-5 ${(unreadCounts?.athletes.reduce((s, a) => s + a.unread, 0) ?? 0) > 0 ? 'text-red-400' : 'text-(--color_text_muted)'}`} />
-            <div className={`text-xl font-bold ${(unreadCounts?.athletes.reduce((s, a) => s + a.unread, 0) ?? 0) > 0 ? 'text-red-400' : 'text-white'}`}>
+            <ChatBubbleLeftEllipsisIcon
+              className={`w-5 h-5 ${(unreadCounts?.athletes.reduce((s, a) => s + a.unread, 0) ?? 0) > 0 ? 'text-red-400' : 'text-(--color_text_muted)'}`}
+            />
+            <div
+              className={`text-xl font-bold ${(unreadCounts?.athletes.reduce((s, a) => s + a.unread, 0) ?? 0) > 0 ? 'text-red-400' : 'text-white'}`}
+            >
               {unreadCounts?.athletes.reduce((s, a) => s + a.unread, 0) ?? 0}
             </div>
             <div className="text-[11px] text-(--color_text_muted) text-center">Новых сообщ.</div>
@@ -124,14 +144,18 @@ export default function TrainerAthletesListScreen() {
           )}
 
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-(--color_text_muted) uppercase tracking-wide">Атлеты</h2>
+            <h2 className="text-sm font-semibold text-(--color_text_muted) uppercase tracking-wide">
+              Атлеты
+            </h2>
             <div className="flex items-center gap-2">
               <div className="flex items-center rounded-lg bg-(--color_bg_card) border border-(--color_border) overflow-hidden">
-                {([
-                  { v: '2', icon: <Squares2X2Icon className="w-4 h-4" />, title: '2 колонки' },
-                  { v: '3', icon: <ViewColumnsIcon className="w-4 h-4" />, title: '3 колонки' },
-                  { v: 'list', icon: <Bars3Icon className="w-4 h-4" />, title: 'Список' },
-                ] as const).map(({ v, icon, title }) => (
+                {(
+                  [
+                    { v: '2', icon: <Squares2X2Icon className="w-4 h-4" />, title: '2 колонки' },
+                    { v: '3', icon: <ViewColumnsIcon className="w-4 h-4" />, title: '3 колонки' },
+                    { v: 'list', icon: <Bars3Icon className="w-4 h-4" />, title: 'Список' },
+                  ] as const
+                ).map(({ v, icon, title }) => (
                   <button
                     key={v}
                     onClick={() => setViewMode(v)}
@@ -157,9 +181,7 @@ export default function TrainerAthletesListScreen() {
               Пока нет привязанных атлетов
             </p>
           ) : filteredAthletes.length === 0 ? (
-            <p className="text-sm text-(--color_text_muted) text-center py-8">
-              Ничего не найдено
-            </p>
+            <p className="text-sm text-(--color_text_muted) text-center py-8">Ничего не найдено</p>
           ) : view === 'list' ? (
             <div className="flex flex-col gap-2">
               {filteredAthletes.map((athlete) => {
@@ -222,7 +244,9 @@ export default function TrainerAthletesListScreen() {
                     />
                     <InlineAthleteAvatar athleteId={athlete.id} size={view === '2' ? 'lg' : 'md'} />
                     <div className="w-full text-center">
-                      <div className={`font-semibold text-white leading-tight line-clamp-2 ${view === '2' ? 'text-sm' : 'text-xs'}`}>
+                      <div
+                        className={`font-semibold text-white leading-tight line-clamp-2 ${view === '2' ? 'text-sm' : 'text-xs'}`}
+                      >
                         {athlete.fullName || 'Без имени'}
                       </div>
                       {view === '2' && (

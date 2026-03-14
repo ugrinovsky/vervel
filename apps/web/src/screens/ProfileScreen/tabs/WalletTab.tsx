@@ -22,7 +22,8 @@ export default function WalletTab({ balance, setBalance, inTrainerMode }: Props)
   const [aiChatOpen, setAiChatOpen] = useState(false);
 
   const txFetcher = useCallback(
-    (offset: number, limit: number) => aiApi.getTransactions(offset, limit).then((r) => r.data.data),
+    (offset: number, limit: number) =>
+      aiApi.getTransactions(offset, limit).then((r) => r.data.data),
     []
   );
   const {
@@ -70,11 +71,13 @@ export default function WalletTab({ balance, setBalance, inTrainerMode }: Props)
       <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-lg font-semibold text-white">Кошелёк</h2>
+            <h2 className="text-lg font-semibold text-white">Кошелек</h2>
             <p className="text-xs text-(--color_text_muted) mt-0.5">AI-функции, донаты тренерам</p>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold text-white">{balance !== null ? `${balance}₽` : '—'}</div>
+            <div className="text-2xl font-bold text-white">
+              {balance !== null ? `${balance}₽` : '—'}
+            </div>
             <div className="text-xs text-(--color_text_muted)">баланс</div>
           </div>
         </div>
@@ -92,7 +95,10 @@ export default function WalletTab({ balance, setBalance, inTrainerMode }: Props)
                 { label: 'AI-чат', cost: 'от 0.5₽' },
               ]
           ).map(({ label, cost }) => (
-            <div key={label} className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-xs text-(--color_text_muted)">
+            <div
+              key={label}
+              className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-xs text-(--color_text_muted)"
+            >
               {label} — <span className="text-white/70">{cost}</span>
             </div>
           ))}
@@ -119,7 +125,11 @@ export default function WalletTab({ balance, setBalance, inTrainerMode }: Props)
           disabled={!selectedAmount || topping}
           className="w-full py-3 rounded-xl bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {topping ? 'Переход к оплате…' : selectedAmount ? `Пополнить на ${selectedAmount}₽` : 'Выберите сумму'}
+          {topping
+            ? 'Переход к оплате…'
+            : selectedAmount
+              ? `Пополнить на ${selectedAmount}₽`
+              : 'Выберите сумму'}
         </button>
       </div>
 
@@ -133,7 +143,9 @@ export default function WalletTab({ balance, setBalance, inTrainerMode }: Props)
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-semibold text-white">AI-помощник</div>
-          <p className="text-xs text-(--color_text_muted) mt-0.5">Тренировки, питание, восстановление — от 0.5₽/сообщение</p>
+          <p className="text-xs text-(--color_text_muted) mt-0.5">
+            Тренировки, питание, восстановление — от 0.5₽/сообщение
+          </p>
         </div>
         <span className="text-(--color_text_muted) text-sm">→</span>
       </button>
@@ -150,7 +162,12 @@ export default function WalletTab({ balance, setBalance, inTrainerMode }: Props)
             <div className="space-y-2">
               {transactions.map((tx) => {
                 const isIncome = tx.amount > 0;
-                const typeMap: Record<string, string> = { topup: '💳', chat: '🤖', generate: '✨', recognize: '📷' };
+                const typeMap: Record<string, string> = {
+                  topup: '💳',
+                  chat: '🤖',
+                  generate: '✨',
+                  recognize: '📷',
+                };
                 const emoji = typeMap[tx.type] ?? '💰';
                 return (
                   <div key={tx.id} className="flex items-center gap-2">
@@ -158,11 +175,17 @@ export default function WalletTab({ balance, setBalance, inTrainerMode }: Props)
                     <div className="flex-1 min-w-0">
                       <div className="text-xs text-white truncate">{tx.description}</div>
                       <div className="text-xs text-(--color_text_muted)">
-                        {new Date(tx.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                        {new Date(tx.createdAt).toLocaleDateString('ru-RU', {
+                          day: 'numeric',
+                          month: 'short',
+                        })}
                       </div>
                     </div>
-                    <div className={`text-sm font-semibold shrink-0 ${isIncome ? 'text-emerald-400' : 'text-(--color_text_muted)'}`}>
-                      {isIncome ? '+' : ''}{tx.amount}₽
+                    <div
+                      className={`text-sm font-semibold shrink-0 ${isIncome ? 'text-emerald-400' : 'text-(--color_text_muted)'}`}
+                    >
+                      {isIncome ? '+' : ''}
+                      {tx.amount}₽
                     </div>
                   </div>
                 );

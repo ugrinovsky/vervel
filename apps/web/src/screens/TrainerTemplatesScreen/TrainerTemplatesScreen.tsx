@@ -6,7 +6,9 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import FormField from '@/components/FormField';
 import WorkoutTypeTabs, { type WorkoutType } from '@/components/WorkoutTypeTabs';
-import WorkoutExercisesEditor, { normalizeExercisesForType } from '@/components/WorkoutExercisesEditor/WorkoutExercisesEditor';
+import WorkoutExercisesEditor, {
+  normalizeExercisesForType,
+} from '@/components/WorkoutExercisesEditor/WorkoutExercisesEditor';
 import { trainerApi, type WorkoutTemplate, type ExerciseData } from '@/api/trainer';
 import { PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
@@ -23,7 +25,9 @@ export default function TrainerTemplatesScreen() {
   const [templateExercises, setTemplateExercises] = useState<ExerciseData[]>([]);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { loadTemplates(); }, []);
+  useEffect(() => {
+    loadTemplates();
+  }, []);
 
   const loadTemplates = async () => {
     try {
@@ -55,7 +59,10 @@ export default function TrainerTemplatesScreen() {
     setShowForm(true);
   };
 
-  const closeForm = () => { if (saving) return; setShowForm(false); };
+  const closeForm = () => {
+    if (saving) return;
+    setShowForm(false);
+  };
 
   const handleTypeChange = (newType: WorkoutType) => {
     setTemplateType(newType);
@@ -65,7 +72,10 @@ export default function TrainerTemplatesScreen() {
   };
 
   const handleSave = async () => {
-    if (!templateName.trim()) { toast.error('Укажите название шаблона'); return; }
+    if (!templateName.trim()) {
+      toast.error('Укажите название шаблона');
+      return;
+    }
     try {
       setSaving(true);
       const payload = {
@@ -103,7 +113,7 @@ export default function TrainerTemplatesScreen() {
 
   return (
     <Screen className="trainer-templates-screen">
-      <div className="p-4 w-full max-w-2xl mx-auto">
+      <div className="p-4 w-full mx-auto">
         <ScreenHeader
           icon="📋"
           title="Шаблоны"
@@ -133,7 +143,9 @@ export default function TrainerTemplatesScreen() {
           ) : templates.length === 0 ? (
             <div className="text-center py-8">
               <div className="text-4xl mb-2">📋</div>
-              <p className="text-sm text-(--color_text_muted)">Пока нет шаблонов. Создайте первый!</p>
+              <p className="text-sm text-(--color_text_muted)">
+                Пока нет шаблонов. Создайте первый!
+              </p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -145,30 +157,53 @@ export default function TrainerTemplatesScreen() {
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <div className="text-sm font-medium text-white truncate">{template.name}</div>
+                        <div className="text-sm font-medium text-white truncate">
+                          {template.name}
+                        </div>
                         <span className="text-xs px-2 py-0.5 rounded-full bg-(--color_primary_light) text-white shrink-0">
                           {WORKOUT_TYPE_CONFIG[template.workoutType] ?? template.workoutType}
                         </span>
                       </div>
                       {template.description && (
-                        <div className="text-xs text-(--color_text_muted) mt-0.5 truncate">{template.description}</div>
+                        <div className="text-xs text-(--color_text_muted) mt-0.5 truncate">
+                          {template.description}
+                        </div>
                       )}
                     </div>
                     <div className="flex items-center gap-1 ml-2 shrink-0">
-                      <button onClick={() => openEdit(template)} className="p-1.5 text-(--color_text_muted) hover:text-white transition-colors" title="Редактировать">
+                      <button
+                        onClick={() => openEdit(template)}
+                        className="p-1.5 text-(--color_text_muted) hover:text-white transition-colors"
+                        title="Редактировать"
+                      >
                         <PencilIcon className="w-4 h-4" />
                       </button>
-                      <ConfirmDeleteButton variant="overlay" label="Удалить шаблон?" onConfirm={() => handleDelete(template.id)} />
+                      <ConfirmDeleteButton
+                        variant="overlay"
+                        label="Удалить шаблон?"
+                        onConfirm={() => handleDelete(template.id)}
+                      />
                     </div>
                   </div>
 
                   {template.exercises?.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {template.exercises.slice(0, 4).map((ex, i) => {
-                        const brief = exerciseBrief({ duration: ex.duration, wodType: ex.wodType, timeCap: ex.timeCap, rounds: ex.rounds, reps: ex.reps, sets: ex.sets });
+                        const brief = exerciseBrief({
+                          duration: ex.duration,
+                          wodType: ex.wodType,
+                          timeCap: ex.timeCap,
+                          rounds: ex.rounds,
+                          reps: ex.reps,
+                          sets: ex.sets,
+                        });
                         return (
-                          <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-(--color_bg_card) text-(--color_text_secondary)">
-                            {ex.name}{brief ? ` · ${brief}` : ''}
+                          <span
+                            key={i}
+                            className="text-[10px] px-2 py-0.5 rounded-full bg-(--color_bg_card) text-(--color_text_secondary)"
+                          >
+                            {ex.name}
+                            {brief ? ` · ${brief}` : ''}
                           </span>
                         );
                       })}
@@ -208,7 +243,16 @@ export default function TrainerTemplatesScreen() {
             <WorkoutTypeTabs value={templateType} onChange={handleTypeChange} />
           </FormField>
 
-          <FormField label={<>Упражнения{templateExercises.length > 0 && <span className="text-white/40 ml-1">({templateExercises.length})</span>}</>}>
+          <FormField
+            label={
+              <>
+                Упражнения
+                {templateExercises.length > 0 && (
+                  <span className="text-white/40 ml-1">({templateExercises.length})</span>
+                )}
+              </>
+            }
+          >
             <WorkoutExercisesEditor
               workoutType={templateType}
               exercises={templateExercises}

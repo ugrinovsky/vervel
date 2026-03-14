@@ -5,6 +5,33 @@ import type { ZoneState } from '@/api/avatar';
 import type { BodyGender } from '@/components/Avatar/bodyZones';
 import { getZoneLabel } from '@/util/zones';
 
+/**
+ * Normalizes short API zone keys (from ExerciseCatalog) and legacy seeder keys
+ * to the canonical camelCase keys that match BODY_ZONE_TO_API.
+ * Zones that map to the same canonical key are merged (highest intensity wins).
+ */
+const ZONE_NORMALIZE: Record<string, string> = {
+  back: 'backMuscles',
+  trapezoids: 'backMuscles', // seeder stores 'trapezoids' directly
+  traps: 'backMuscles',
+  legs: 'legMuscles',
+  calves: 'calfMuscles',
+  glutes: 'glutealMuscles',
+  core: 'abdominalPress',
+  abs: 'abdominalPress',
+  obliques: 'obliquePress',
+  chest: 'chests',
+  arms: 'biceps',
+};
+
+/**
+ * If selectedZone has no data, fall back to this zone for panel display.
+ * The selectedZone stays as-is for SVG highlighting (precise region).
+ */
+const ZONE_DISPLAY_FALLBACK: Record<string, string> = {
+  obliquePress: 'abdominalPress',
+};
+
 type Phase = 'destroyed' | 'recovering' | 'almost_ready' | 'recovered' | 'untrained';
 
 function getPhase(zone: ZoneState): Phase {
@@ -15,36 +42,41 @@ function getPhase(zone: ZoneState): Phase {
   return 'recovered';
 }
 
-const PHASE_CONFIG: Record<Phase, { label: string; color: string; barColor: string; tip: string }> =
+const PHASE_CONFIG: Record<Phase, { label: string; color: string; barColor: string; dotBg: string | null; tip: string }> =
   {
     destroyed: {
       label: 'Перегружено',
       color: 'text-red-400',
       barColor: 'from-red-600 to-red-400',
+      dotBg: 'bg-red-500/70',
       tip: 'Мышца получила серьёзную нагрузку. Не тренируйте её минимум 48 часов.',
     },
     recovering: {
-      label: 'Восстановление',
+      label: 'Отдых',
       color: 'text-orange-400',
       barColor: 'from-orange-500 to-yellow-400',
+      dotBg: 'bg-orange-500/70',
       tip: 'Мышца ещё восстанавливается. Лучше поработать с другими группами.',
     },
     almost_ready: {
       label: 'Почти готово',
       color: 'text-yellow-300',
       barColor: 'from-yellow-500 to-green-400',
+      dotBg: 'bg-yellow-400/70',
       tip: 'Почти восстановилась. Лёгкая нагрузка допустима.',
     },
     recovered: {
-      label: 'Восстановлено',
-      color: 'text-green-400',
-      barColor: 'from-green-500 to-green-400',
+      label: 'Готово',
+      color: 'text-cyan-400',
+      barColor: 'from-cyan-500 to-green-400',
+      dotBg: 'bg-cyan-500/70',
       tip: 'Мышца полностью восстановилась. Можно нагружать.',
     },
     untrained: {
       label: 'Без нагрузки',
       color: 'text-(--color_text_muted)',
       barColor: 'from-gray-600 to-gray-500',
+      dotBg: null,
       tip: 'Эта группа мышц не получала нагрузки. Обратите на неё внимание.',
     },
   };
@@ -134,16 +166,34 @@ export default function AvatarView({
 }: AvatarViewProps) {
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
 
-  const zoneIntensities = useMemo(() => {
-    const result: Record<string, number> = {};
-    for (const [name, state] of Object.entries(zones)) {
-      result[name] = state.intensity;
+  const normalizedZones = useMemo(() => {
+    const result: Record<string, ZoneState> = {};
+    for (const [key, state] of Object.entries(zones)) {
+      const canonical = ZONE_NORMALIZE[key] ?? key;
+      const existing = result[canonical];
+      if (!existing || state.intensity > existing.intensity) {
+        result[canonical] = state;
+      }
     }
     return result;
   }, [zones]);
 
+  const zoneIntensities = useMemo(() => {
+    const result: Record<string, number> = {};
+    for (const [name, state] of Object.entries(normalizedZones)) {
+      result[name] = state.intensity;
+    }
+    return result;
+  }, [normalizedZones]);
+
+  const resolvedDisplayZone = selectedZone
+    ? normalizedZones[selectedZone]
+      ? selectedZone
+      : (ZONE_DISPLAY_FALLBACK[selectedZone] ?? selectedZone)
+    : null;
+
   const summary = useMemo(() => {
-    const entries = Object.entries(zones);
+    const entries = Object.entries(normalizedZones);
     const loaded = entries.filter(([, z]) => z.intensity > 0);
     const total = entries.length;
     if (loaded.length === 0) {
@@ -187,22 +237,14 @@ export default function AvatarView({
         />
 
         <div className="flex items-center justify-center gap-3 mt-3 text-xs text-(--color_text_muted) flex-wrap">
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-red-500/70" />
-            <span>Убита</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-orange-500/70" />
-            <span>Восстан.</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-yellow-400/70" />
-            <span>Почти</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-green-500/70" />
-            <span>Отдохнула</span>
-          </div>
+          {(Object.entries(PHASE_CONFIG) as [Phase, (typeof PHASE_CONFIG)[Phase]][])
+            .filter(([, cfg]) => cfg.dotBg !== null)
+            .map(([phase, cfg]) => (
+              <div key={phase} className="flex items-center gap-1.5">
+                <div className={`w-2.5 h-2.5 rounded-sm ${cfg.dotBg}`} />
+                <span>{cfg.label}</span>
+              </div>
+            ))}
         </div>
       </div>
 

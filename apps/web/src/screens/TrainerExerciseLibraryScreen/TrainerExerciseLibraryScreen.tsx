@@ -162,110 +162,118 @@ export default function TrainerExerciseLibraryScreen() {
 
   return (
     <Screen className="trainer-exercise-library-screen">
-      <ScreenHeader
-        className="px-4 pt-4"
-        icon={<BookOpenIcon className="w-6 h-6 text-(--color_primary_light)" />}
-        title="Библиотека упражнений"
-        description="Готовые упражнения по категориям — добавляйте в тренировки и шаблоны"
-      />
+      <div className="flex flex-col h-full px-4 w-full">
+        <ScreenHeader
+          className="px-4 pt-4"
+          icon={<BookOpenIcon className="w-6 h-6 text-(--color_primary_light)" />}
+          title="Библиотека упражнений"
+          description="Готовые упражнения по категориям — добавляйте в тренировки и шаблоны"
+        />
 
-      {/* Sticky filter area */}
-      <div className="px-4 pt-2 pb-3 space-y-2.5 sticky top-0 z-10" style={{ backgroundColor: 'var(--color_bg_screen)' }}>
-        {/* Search */}
-        <div className="relative">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={`Поиск среди ${exercises.length} упражнений...`}
-            className="w-full bg-(--color_bg_card) border border-(--color_border) rounded-xl pl-9 pr-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-white/30"
-          />
-        </div>
-
-        {/* Category filters */}
-        <div className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
-          <FilterChip label="Все" active={!categoryFilter} onClick={() => setCategoryFilter(null)} />
-          {availableCategories.map((cat) => (
-            <FilterChip
-              key={cat}
-              label={CATEGORY_LABELS[cat]}
-              active={categoryFilter === cat}
-              onClick={() => setCategoryFilter(categoryFilter === cat ? null : cat)}
+        {/* Sticky filter area */}
+        <div
+          className="px-4 pt-2 pb-3 space-y-2.5 sticky top-0 z-10"
+          style={{ backgroundColor: 'var(--color_bg_screen)' }}
+        >
+          {/* Search */}
+          <div className="relative">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={`Поиск среди ${exercises.length} упражнений...`}
+              className="w-full bg-(--color_bg_card) border border-(--color_border) rounded-xl pl-9 pr-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-white/30"
             />
-          ))}
-        </div>
+          </div>
 
-        {/* Zone filters */}
-        <div className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
-          <FilterChip label="Все зоны" active={!zoneFilter} onClick={() => setZoneFilter(null)} />
-          {availableZones.map((zone) => (
+          {/* Category filters */}
+          <div className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
             <FilterChip
-              key={zone}
-              label={getZoneLabel(zone)}
-              active={zoneFilter === zone}
-              onClick={() => setZoneFilter(zoneFilter === zone ? null : zone)}
+              label="Все"
+              active={!categoryFilter}
+              onClick={() => setCategoryFilter(null)}
             />
-          ))}
-        </div>
-      </div>
-
-      {/* Results count */}
-      <div className="px-4 mb-3">
-        <p className="text-xs text-(--color_text_muted)">
-          {loading
-            ? '…'
-            : filtered.length > 80
-            ? `Показано 80 из ${filtered.length} — уточните поиск`
-            : `${filtered.length} упражнений`}
-        </p>
-      </div>
-
-      {/* Grid */}
-      <div className="px-4 pb-24">
-        {loading ? (
-          <div className="grid grid-cols-2 gap-3">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="rounded-2xl overflow-hidden border border-white/10 bg-white/5">
-                <div className="aspect-video bg-white/10 animate-pulse" />
-                <div className="p-2.5 space-y-1.5">
-                  <div className="h-3 bg-white/10 rounded animate-pulse w-3/4" />
-                  <div className="h-2.5 bg-white/10 rounded animate-pulse w-1/2" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : visible.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <span className="text-4xl mb-3">🔍</span>
-            <p className="text-white/50 text-sm">Ничего не найдено</p>
-            <p className="text-white/30 text-xs mt-1">Попробуйте другой запрос</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {visible.map((ex) => (
-              <ExerciseCard
-                key={ex.id}
-                exercise={ex}
-                onClick={() => setSelectedExercise(ex)}
+            {availableCategories.map((cat) => (
+              <FilterChip
+                key={cat}
+                label={CATEGORY_LABELS[cat]}
+                active={categoryFilter === cat}
+                onClick={() => setCategoryFilter(categoryFilter === cat ? null : cat)}
               />
             ))}
           </div>
-        )}
 
-        {filtered.length > 80 && !loading && (
-          <p className="text-center text-xs text-(--color_text_muted) mt-4">
-            Уточните поиск или выберите категорию / зону мышц
+          {/* Zone filters */}
+          <div className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
+            <FilterChip label="Все зоны" active={!zoneFilter} onClick={() => setZoneFilter(null)} />
+            {availableZones.map((zone) => (
+              <FilterChip
+                key={zone}
+                label={getZoneLabel(zone)}
+                active={zoneFilter === zone}
+                onClick={() => setZoneFilter(zoneFilter === zone ? null : zone)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Results count */}
+        <div className="px-4 mb-3">
+          <p className="text-xs text-(--color_text_muted)">
+            {loading
+              ? '…'
+              : filtered.length > 80
+                ? `Показано 80 из ${filtered.length} — уточните поиск`
+                : `${filtered.length} упражнений`}
           </p>
-        )}
-      </div>
+        </div>
 
-      {/* Detail sheet (read-only, no "add to workout" button) */}
-      <ExerciseDetailSheet
-        exercise={selectedExercise}
-        open={!!selectedExercise}
-        onClose={() => setSelectedExercise(null)}
-      />
+        {/* Grid */}
+        <div className="px-4 pb-24">
+          {loading ? (
+            <div className="grid grid-cols-2 gap-3">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="rounded-2xl overflow-hidden border border-white/10 bg-white/5"
+                >
+                  <div className="aspect-video bg-white/10 animate-pulse" />
+                  <div className="p-2.5 space-y-1.5">
+                    <div className="h-3 bg-white/10 rounded animate-pulse w-3/4" />
+                    <div className="h-2.5 bg-white/10 rounded animate-pulse w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : visible.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <span className="text-4xl mb-3">🔍</span>
+              <p className="text-white/50 text-sm">Ничего не найдено</p>
+              <p className="text-white/30 text-xs mt-1">Попробуйте другой запрос</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {visible.map((ex) => (
+                <ExerciseCard key={ex.id} exercise={ex} onClick={() => setSelectedExercise(ex)} />
+              ))}
+            </div>
+          )}
+
+          {filtered.length > 80 && !loading && (
+            <p className="text-center text-xs text-(--color_text_muted) mt-4">
+              Уточните поиск или выберите категорию / зону мышц
+            </p>
+          )}
+        </div>
+
+        {/* Detail sheet (read-only, no "add to workout" button) */}
+        <ExerciseDetailSheet
+          exercise={selectedExercise}
+          open={!!selectedExercise}
+          onClose={() => setSelectedExercise(null)}
+        />
+      </div>
     </Screen>
   );
 }

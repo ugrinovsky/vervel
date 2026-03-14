@@ -5,7 +5,12 @@ import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import { trainerApi, type TodayOverview, type UnreadCounts } from '@/api/trainer';
-import { ClockIcon, UserGroupIcon, UsersIcon, ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline';
+import {
+  ClockIcon,
+  UserGroupIcon,
+  UsersIcon,
+  ChatBubbleLeftEllipsisIcon,
+} from '@heroicons/react/24/outline';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 
 export default function TrainerTodayScreen() {
@@ -43,8 +48,12 @@ export default function TrainerTodayScreen() {
 
   return (
     <Screen loading={loading} className="trainer-today-screen">
-      <div className="p-4 w-full max-w-2xl mx-auto">
-        <ScreenHeader icon="☀️" title="Сегодня" description="Что происходит сегодня — запланированные тренировки, непрочитанные сообщения и активность атлетов" />
+      <div className="p-4 w-full mx-auto">
+        <ScreenHeader
+          icon="☀️"
+          title="Сегодня"
+          description="Что происходит сегодня — запланированные тренировки, непрочитанные сообщения и активность атлетов"
+        />
 
         {/* Unread messages banners */}
         {unreadCounts && (
@@ -65,7 +74,8 @@ export default function TrainerTodayScreen() {
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-white">Группы</div>
                     <div className="text-xs text-(--color_text_muted)">
-                      {groupsWithUnread.length} {groupsWithUnread.length === 1 ? 'группа' : 'групп'} с непрочитанными
+                      {groupsWithUnread.length} {groupsWithUnread.length === 1 ? 'группа' : 'групп'}{' '}
+                      с непрочитанными
                     </div>
                   </div>
                   <div className="min-w-6 h-6 px-1.5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
@@ -91,7 +101,8 @@ export default function TrainerTodayScreen() {
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-white">Персоналки</div>
                     <div className="text-xs text-(--color_text_muted)">
-                      {athletesWithUnread.length} {athletesWithUnread.length === 1 ? 'атлет' : 'атлетов'} с непрочитанными
+                      {athletesWithUnread.length}{' '}
+                      {athletesWithUnread.length === 1 ? 'атлет' : 'атлетов'} с непрочитанными
                     </div>
                   </div>
                   <div className="min-w-6 h-6 px-1.5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shrink-0">

@@ -16,21 +16,18 @@ import DayDetails from '@/screens/ActivityScreen/DayDetails';
 import { useAthleteStats, type StatsPeriod } from '@/hooks/useAthleteStats';
 import { useAthleteAvatar } from '@/hooks/useAthleteAvatar';
 import { trainerApi, type PeriodizationData } from '@/api/trainer';
-import {
-  ChatBubbleLeftIcon,
-  PlusIcon,
-} from '@heroicons/react/24/outline';
+import { ChatBubbleLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
 import BackButton from '@/components/BackButton/BackButton';
 import type { MonthlyStatsData } from '@/screens/ActivityScreen/useActivityData';
 
 type Tab = 'analytics' | 'activity' | 'avatar';
 
-const VOLUME_HIGH   = 15000;
+const VOLUME_HIGH = 15000;
 const VOLUME_MEDIUM = 10000;
 
 function getLoadLevel(volume?: number, intensity?: number): DayData['load'] {
   if (volume && volume > 0) {
-    if (volume > VOLUME_HIGH)   return 'high';
+    if (volume > VOLUME_HIGH) return 'high';
     if (volume > VOLUME_MEDIUM) return 'medium';
     return 'low';
   }
@@ -43,12 +40,12 @@ export default function TrainerAthleteDetailScreen() {
   const navigate = useNavigate();
   const id = Number(athleteId);
 
-  const [tab, setTab]             = useState<Tab>('analytics');
+  const [tab, setTab] = useState<Tab>('analytics');
   const [timeRange, setTimeRange] = useState<StatsPeriod>('week');
-  const [showChat, setShowChat]   = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
-  const [chatId, setChatId]         = useState<number | null>(null);
-  const [athleteName, setAthleteName]   = useState('Атлет');
+  const [chatId, setChatId] = useState<number | null>(null);
+  const [athleteName, setAthleteName] = useState('Атлет');
   const [athleteEmail, setAthleteEmail] = useState('');
   const [periodization, setPeriodization] = useState<PeriodizationData | null>(null);
 
@@ -56,7 +53,7 @@ export default function TrainerAthleteDetailScreen() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
 
-  const { data: stats }      = useAthleteStats(id, timeRange);
+  const { data: stats } = useAthleteStats(id, timeRange);
   const { data: monthStats } = useAthleteStats(id, 'month');
   const { data: avatarData, loading: avatarLoading } = useAthleteAvatar(id);
 
@@ -145,7 +142,12 @@ export default function TrainerAthleteDetailScreen() {
       />
 
       {/* ── Create workout overlay ────────────────────────────────────────── */}
-      <BottomSheet open={showCreate} onClose={() => setShowCreate(false)} emoji="🏋️" title="Создать тренировку">
+      <BottomSheet
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        emoji="🏋️"
+        title="Создать тренировку"
+      >
         <WorkoutInlineForm
           noCard
           preselectedAssignee={{ type: 'athlete', id, name: athleteName }}
@@ -154,7 +156,7 @@ export default function TrainerAthleteDetailScreen() {
         />
       </BottomSheet>
 
-      <div className="p-4 w-full max-w-2xl mx-auto">
+      <div className="p-4 w-full mx-auto">
         <BackButton onClick={() => navigate('/trainer/athletes')} />
 
         {/* ── Hero: FIO + MiniAvatar ────────────────────────────────────── */}
@@ -165,9 +167,7 @@ export default function TrainerAthleteDetailScreen() {
         >
           <MiniAvatar zoneIntensities={zoneIntensities} size="lg" />
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-white leading-tight truncate">
-              {athleteName}
-            </h1>
+            <h1 className="text-2xl font-bold text-white leading-tight truncate">{athleteName}</h1>
             {athleteEmail && (
               <p className="text-sm text-(--color_text_muted) mt-0.5 truncate">{athleteEmail}</p>
             )}
@@ -204,11 +204,13 @@ export default function TrainerAthleteDetailScreen() {
           transition={{ delay: 0.1 }}
           className="flex gap-1 mb-6 bg-(--color_bg_card) rounded-xl p-1"
         >
-          {([
-            ['analytics', 'Аналитика'],
-            ['activity',  'Активность'],
-            ['avatar',    'Зоны мышц'],
-          ] as [Tab, string][]).map(([t, label]) => (
+          {(
+            [
+              ['analytics', 'Аналитика'],
+              ['activity', 'Активность'],
+              ['avatar', 'Зоны мышц'],
+            ] as [Tab, string][]
+          ).map(([t, label]) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -247,7 +249,11 @@ export default function TrainerAthleteDetailScreen() {
             </motion.div>
 
             {stats ? (
-              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 }}
+              >
                 <AnalyticsCards
                   stats={stats}
                   monthStats={monthStats}

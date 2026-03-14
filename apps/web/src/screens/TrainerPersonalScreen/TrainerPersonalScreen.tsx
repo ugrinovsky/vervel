@@ -142,7 +142,7 @@ export default function TrainerPersonalScreen() {
 
   return (
     <Screen className="trainer-personal-screen">
-      <div className="p-4 w-full max-w-2xl mx-auto">
+      <div className="p-4 w-full mx-auto">
         <BackButton onClick={() => navigate(-1)} />
 
         <ScreenHeader
@@ -344,7 +344,14 @@ export default function TrainerPersonalScreen() {
                 )}
               </FormField>
 
-              <FormField label={<>Ссылка ЮКасса <span className="text-(--color_text_muted) font-normal">(необязательно)</span></>}>
+              <FormField
+                label={
+                  <>
+                    Ссылка ЮКасса{' '}
+                    <span className="text-(--color_text_muted) font-normal">(необязательно)</span>
+                  </>
+                }
+              >
                 <input
                   type="url"
                   value={donateYookassaLink}
