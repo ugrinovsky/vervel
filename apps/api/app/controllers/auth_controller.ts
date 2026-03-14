@@ -3,7 +3,7 @@ import hash from '@adonisjs/core/services/hash';
 import limiter from '@adonisjs/limiter/services/main';
 import db from '@adonisjs/lucid/services/db';
 // @ts-ignore — no types for this package
-import disposableDomains from 'disposable-email-domains';
+import disposableDomains from 'disposable-email-domains' assert { type: 'json' };
 import User from '#models/user';
 import { registerValidator } from '#validators/auth_validator';
 import { AiBalanceService } from '#services/AiBalanceService';
@@ -52,7 +52,9 @@ export default class AuthController {
     });
 
     if (loginLimitRes === null) {
-      return response.tooManyRequests({ message: 'Слишком много попыток. Попробуйте через 30 минут.' });
+      return response.tooManyRequests({
+        message: 'Слишком много попыток. Попробуйте через 30 минут.',
+      });
     }
 
     return loginLimitRes;
@@ -62,10 +64,16 @@ export default class AuthController {
     const ip = request.ip();
 
     // Rate limit: 5 registrations per IP per 10 minutes
-    const registerLimit = limiter.use({ requests: 5, duration: '10 mins', blockDuration: '60 mins' });
+    const registerLimit = limiter.use({
+      requests: 5,
+      duration: '10 mins',
+      blockDuration: '60 mins',
+    });
     const isLimited = await registerLimit.isBlocked(`register_ip_${ip}`);
     if (isLimited) {
-      return response.tooManyRequests({ message: 'Слишком много регистраций с этого адреса. Попробуйте позже.' });
+      return response.tooManyRequests({
+        message: 'Слишком много регистраций с этого адреса. Попробуйте позже.',
+      });
     }
 
     // Honeypot: if filled, silently reject (bots)
@@ -81,7 +89,9 @@ export default class AuthController {
 
     const emailDomain = data.email.split('@')[1]?.toLowerCase();
     if (emailDomain && disposableSet.has(emailDomain)) {
-      return response.unprocessableEntity({ message: 'Временные почтовые адреса не допускаются. Используйте постоянный email.' });
+      return response.unprocessableEntity({
+        message: 'Временные почтовые адреса не допускаются. Используйте постоянный email.',
+      });
     }
 
     const existing = await User.findBy('email', data.email);
