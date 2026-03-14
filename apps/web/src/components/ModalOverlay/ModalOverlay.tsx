@@ -34,7 +34,7 @@ export default function ModalOverlay({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
           className={`modal-overlay fixed inset-0 z-50 bg-black/70 backdrop-blur-sm ${
-            variant === 'form' ? 'overflow-y-auto overscroll-contain' : ''
+            variant === 'form' ? 'overflow-y-auto overscroll-contain' : 'overflow-hidden'
           }`}
           onClick={variant === 'fullscreen' ? onClose : undefined}
         >
@@ -45,7 +45,7 @@ export default function ModalOverlay({
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
-              className="absolute max-w-[798px] mx-auto w-full inset-x-4 top-4 bottom-24 rounded-2xl border border-(--color_border) flex flex-col overflow-hidden"
+              className="absolute max-w-[798px] w-[calc(100%-2rem)] left-1/2 -translate-x-1/2 top-4 bottom-24 rounded-2xl border border-(--color_border) flex flex-col overflow-hidden"
               style={{ backgroundColor: 'var(--color_bg_card)' }}
             >
               {children}

@@ -1,4 +1,4 @@
-import { type PropsWithChildren, type ReactNode } from 'react';
+import { type PropsWithChildren, type ReactNode, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import CloseButton from '@/components/ui/CloseButton';
@@ -14,6 +14,15 @@ interface Props extends PropsWithChildren {
 }
 
 export default function BottomSheet({ open, onClose, title, emoji, header, children }: Props) {
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [open]);
+
   const headerContent = header ?? (
     <div className="flex items-center gap-2">
       {emoji && <span className="text-2xl">{emoji}</span>}
@@ -39,7 +48,7 @@ export default function BottomSheet({ open, onClose, title, emoji, header, child
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
-            className="background relative w-full rounded-t-3xl p-6 pb-6 max-h-[90vh] overflow-y-auto justify-center flex"
+            className="background relative w-full rounded-t-3xl p-6 pb-6 max-h-[90dvh] overflow-y-auto overscroll-contain justify-center flex"
             style={{ backgroundColor: 'var(--color_bg_card)' }}
           >
             <div className={'max-w-[798px] w-full h-max'}>
