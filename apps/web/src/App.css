@@ -1,5 +1,9 @@
 @import 'tailwindcss';
 
+html, body {
+  background-color: rgb(14, 58, 72);
+}
+
 /* ─── AI chat markdown ───────────────────────────────────────────────────── */
 .ai-markdown p {
   margin-bottom: 0.5em;
