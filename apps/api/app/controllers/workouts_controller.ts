@@ -4,6 +4,7 @@ import Workout from '#models/workout';
 import { WorkoutCalculator } from '#services/WorkoutCalculator';
 import { StreakService } from '#services/StreakService';
 import { createWorkoutValidator, updateWorkoutValidator } from '#validators/workout_validator';
+import { ExerciseCatalog } from '#services/ExerciseCatalog';
 
 export default class WorkoutsController {
   /**
@@ -117,6 +118,64 @@ export default class WorkoutsController {
     await workout.delete();
 
     return response.noContent();
+  }
+
+  /**
+   * Последние тренировки по зоне мышц
+   * GET /workouts/by-zone?zone=chests&limit=5
+   */
+  async byZone({ auth, request, response }: HttpContext) {
+    const user = auth.user!;
+    const zone = request.input('zone');
+    const limit = Math.min(Number(request.input('limit', 5)), 20);
+
+    if (!zone) return response.badRequest({ message: 'zone is required' });
+
+    const catalog = ExerciseCatalog.all();
+    const catalogMap = new Map(catalog.map((e) => [e.id, e.title]));
+
+    // Алиасы зон (как в AvatarView ZONE_NORMALIZE)
+    const ZONE_ALIASES: Record<string, string[]> = {
+      backMuscles: ['back', 'trapezoids', 'traps'],
+      legMuscles: ['legs'],
+      calfMuscles: ['calves'],
+      glutealMuscles: ['glutes'],
+      abdominalPress: ['core', 'abs'],
+      obliquePress: ['obliques'],
+      chests: ['chest'],
+      biceps: ['arms'],
+    };
+    const aliases = [zone, ...(ZONE_ALIASES[zone] ?? [])];
+
+    const workouts = await Workout.query()
+      .where('userId', user.id)
+      .orderBy('date', 'desc')
+      .limit(50); // берём больше, фильтруем ниже
+
+    const filtered = workouts
+      .filter((w) => {
+        const load = w.zonesLoad as Record<string, number> | null;
+        if (!load) return false;
+        return aliases.some((alias) => (load[alias] ?? 0) > 0);
+      })
+      .slice(0, limit)
+      .map((w) => {
+        const load = w.zonesLoad as Record<string, number>;
+        const zoneLoad = aliases.reduce((max, alias) => Math.max(max, load[alias] ?? 0), 0);
+        const exercises = ((w.exercises as any[]) ?? []).map((ex: any) => ({
+          exerciseId: ex.exerciseId,
+          name: catalogMap.get(ex.exerciseId) ?? ex.exerciseId?.replace(/_/g, ' ') ?? '—',
+        }));
+        return {
+          id: w.id,
+          date: w.date,
+          workoutType: w.workoutType,
+          zoneLoad,
+          exercises,
+        };
+      });
+
+    return response.ok(filtered);
   }
 
   /**

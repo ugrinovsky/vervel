@@ -66,10 +66,10 @@ export class WorkoutCalculator {
 
     const result = this.normalizeResult(zoneLoads, totalVolume);
 
-    // RPE scales the stored load: RPE 10 = 100% of calculated, RPE 5 = 50%, RPE 1 = 10%.
+    // RPE scales the stored load: RPE 5 = 100% of calculated, RPE 1 = 20%.
     // This reflects the athlete's actual perceived effort — if it felt easy, it stresses muscles less.
     if (rpe != null) {
-      const rpeFactor = rpe / 10;
+      const rpeFactor = rpe / 5;
       for (const zone of Object.keys(result.zonesLoad)) {
         result.zonesLoad[zone] = Math.min(result.zonesLoad[zone] * rpeFactor, NORMALIZATION.MAX_ZONE_LOAD);
       }

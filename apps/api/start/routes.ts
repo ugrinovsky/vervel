@@ -41,6 +41,7 @@ router.get('/exercises/:id', '#controllers/exercises_controller.show');
 router
   .group(() => {
     router.get('workouts/stats', '#controllers/workouts_controller.stats');
+    router.get('workouts/by-zone', '#controllers/workouts_controller.byZone');
     router.resource('workouts', WorkoutsController).apiOnly();
 
     router.get('avatar/stats', '#controllers/avatars_controller.getZoneIntensities');

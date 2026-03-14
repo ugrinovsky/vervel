@@ -1,9 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Avatar from '@/components/Avatar/Avatar';
 import type { ZoneState } from '@/api/avatar';
 import type { BodyGender } from '@/components/Avatar/bodyZones';
 import { getZoneLabel } from '@/util/zones';
+import { workoutsApi, type ZoneWorkout } from '@/api/workouts';
+import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
 
 /**
  * Normalizes short API zone keys (from ExerciseCatalog) and legacy seeder keys
@@ -103,11 +105,11 @@ function ZoneDetail({ zone }: { zone: ZoneState }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-0.5">
         <span className={`text-lg font-bold ${cfg.color}`}>{cfg.label}</span>
         {zone.lastTrainedDaysAgo !== undefined && (
           <span className="text-xs text-(--color_text_muted)">
-            {getDaysAgoText(zone.lastTrainedDaysAgo)}
+            Последняя нагрузка: {getDaysAgoText(zone.lastTrainedDaysAgo).toLowerCase()}
           </span>
         )}
       </div>
@@ -149,6 +151,38 @@ function ZoneDetail({ zone }: { zone: ZoneState }) {
   );
 }
 
+function ZoneWorkoutCard({ workout: w }: { workout: ZoneWorkout }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="bg-(--color_bg_card) rounded-xl overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-3 py-2.5 text-left"
+      >
+        <span className="text-xs font-semibold text-white">
+          {new Date(w.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-(--color_text_muted)">
+            {WORKOUT_TYPE_CONFIG[w.workoutType] ?? w.workoutType}
+          </span>
+          <span className={`text-[10px] text-(--color_text_muted) transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
+        </div>
+      </button>
+      {open && (
+        <div className="flex flex-wrap gap-1 px-3 pb-3">
+          {w.exercises.map((ex) => (
+            <span key={ex.exerciseId} className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.07] text-white/70">
+              {ex.name}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface AvatarViewProps {
   zones: Record<string, ZoneState>;
   totalWorkouts: number;
@@ -165,6 +199,8 @@ export default function AvatarView({
   gender = 'male',
 }: AvatarViewProps) {
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
+  const [zoneWorkouts, setZoneWorkouts] = useState<ZoneWorkout[] | null>(null);
+  const [zoneWorkoutsLoading, setZoneWorkoutsLoading] = useState(false);
 
   const normalizedZones = useMemo(() => {
     const result: Record<string, ZoneState> = {};
@@ -211,6 +247,28 @@ export default function AvatarView({
         : null,
     };
   }, [zones]);
+
+  useEffect(() => {
+    if (!selectedZone) {
+      setZoneWorkouts(null);
+      return;
+    }
+    let cancelled = false;
+    setZoneWorkoutsLoading(true);
+    setZoneWorkouts(null);
+    workoutsApi.byZone(selectedZone, 5).then((res) => {
+      if (!cancelled) {
+        setZoneWorkouts(res.data ?? []);
+        setZoneWorkoutsLoading(false);
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setZoneWorkouts([]);
+        setZoneWorkoutsLoading(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [selectedZone]);
 
   const handleZoneClick = (zoneName: string) => {
     setSelectedZone((prev) => (prev === zoneName ? null : zoneName));
@@ -323,6 +381,29 @@ export default function AvatarView({
                 </button>
               </div>
               <ZoneDetail zone={zones[selectedZone]} />
+
+              {/* Recent workouts for this zone */}
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <h4 className="text-xs font-semibold text-(--color_text_secondary) uppercase tracking-wider mb-3">
+                  Последние тренировки
+                </h4>
+                {zoneWorkoutsLoading && (
+                  <div className="flex items-center gap-2 text-xs text-(--color_text_muted)">
+                    <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
+                    Загрузка...
+                  </div>
+                )}
+                {!zoneWorkoutsLoading && zoneWorkouts?.length === 0 && (
+                  <p className="text-xs text-(--color_text_muted)">Нет тренировок для этой зоны</p>
+                )}
+                {!zoneWorkoutsLoading && zoneWorkouts && zoneWorkouts.length > 0 && (
+                  <div className="space-y-2">
+                    {zoneWorkouts.map((w) => (
+                      <ZoneWorkoutCard key={w.id} workout={w} />
+                    ))}
+                  </div>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

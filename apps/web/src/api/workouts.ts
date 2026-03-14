@@ -34,6 +34,14 @@ export interface CreateWorkoutDTO {
   rpe?: number; // 1-5 — субъективная оценка нагрузки (Rate of Perceived Exertion)
 }
 
+export interface ZoneWorkout {
+  id: number;
+  date: string;
+  workoutType: string;
+  zoneLoad: number;
+  exercises: { exerciseId: string; name: string }[];
+}
+
 export const workoutsApi = {
   create: (data: CreateWorkoutDTO) => privateApi.post('/workouts', data),
   list: (page = 1, limit = 20) => privateApi.get('/workouts', { params: { page, limit } }),
@@ -41,4 +49,6 @@ export const workoutsApi = {
   update: (id: number, data: Partial<CreateWorkoutDTO>) => privateApi.put(`/workouts/${id}`, data),
   delete: (id: number) => privateApi.delete(`/workouts/${id}`),
   stats: (from: string, to: string) => privateApi.get('/workouts/stats', { params: { from, to } }),
+  byZone: (zone: string, limit = 5) =>
+    privateApi.get<ZoneWorkout[]>('/workouts/by-zone', { params: { zone, limit } }),
 };

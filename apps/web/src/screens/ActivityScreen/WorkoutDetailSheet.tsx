@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { BarChart, Bar, XAxis, YAxis, Cell, ResponsiveContainer } from 'recharts';
+import WorkoutDateTimeRow from '@/components/WorkoutDateTimeRow';
+import { getLocalDateISOString } from '@/util/exercise';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { workoutsApi, type WorkoutSet } from '@/api/workouts';
 import { exercisesApi } from '@/api/exercises';
@@ -211,9 +213,13 @@ function ZonesSection({ zonesLoad }: { zonesLoad: Record<string, number> }) {
         <BarChart layout="vertical" data={chartData} margin={{ top: 0, right: 44, left: 0, bottom: 0 }}>
           <XAxis type="number" domain={[0, 100]} hide />
           <YAxis type="category" dataKey="name" width={92} tick={{ fontSize: 12, fill: 'var(--color_text_muted)' }} axisLine={false} tickLine={false} />
-          <Bar dataKey="value" radius={[0, 4, 4, 0]} label={{ position: 'right', fontSize: 11, fill: 'var(--color_text_muted)', formatter: (v: unknown) => `${v}%` }}>
-            {chartData.map((_, i) => <Cell key={i} fill={ZONE_COLORS[i % ZONE_COLORS.length]} fillOpacity={0.85} />)}
-          </Bar>
+          <Bar
+            dataKey="value"
+            radius={[0, 4, 4, 0]}
+            label={{ position: 'right', fontSize: 11, fill: 'var(--color_text_muted)', formatter: (v: unknown) => `${v}%` }}
+            fill={ZONE_COLORS[0]}
+            fillOpacity={0.85}
+          />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -230,6 +236,8 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [editExercises, setEditExercises] = useState<FullWorkout['exercises']>([]);
   const [editingExIdx, setEditingExIdx] = useState<number | null>(null);
+  const [editDate, setEditDate] = useState<Date>(new Date());
+  const [editTime, setEditTime] = useState<Date>(new Date());
   const [rpe, setRpe] = useState<number | null>(null);
   const [savingWeights, setSavingWeights] = useState(false);
   const [savingRpe, setSavingRpe] = useState(false);
@@ -266,7 +274,7 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
       ? (overrides.rpe ?? undefined)
       : (fullWorkout!.rpe ?? undefined);
     return {
-      date: workout!.date.slice(0, 19).replace(' ', 'T'),
+      date: `${getLocalDateISOString(editDate)}T${format(editTime, 'HH:mm')}:00`,
       workoutType: fullWorkout!.workoutType as 'crossfit' | 'bodybuilding' | 'cardio',
       exercises,
       notes: fullWorkout!.notes,
@@ -334,8 +342,8 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
     setRpe(newRpe);
     setSavingRpe(true);
     try {
-      await workoutsApi.update(fullWorkout.id, buildUpdatePayload({ rpe: newRpe }));
-      setFullWorkout((prev) => prev ? { ...prev, rpe: newRpe ?? undefined } : prev);
+      const res = await workoutsApi.update(fullWorkout.id, buildUpdatePayload({ rpe: newRpe }));
+      setFullWorkout(res.data as FullWorkout);
     } catch {
       setRpe(fullWorkout.rpe ?? null); // откат
       toast.error('Не удалось сохранить оценку');
@@ -398,7 +406,17 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
             )}
             {isPast && !isEditing && (
               <button
-                onClick={() => setIsEditing(true)}
+                onClick={() => {
+              const raw = workout?.date ?? '';
+              const [y, m, d] = raw.slice(0, 10).split('-').map(Number);
+              setEditDate(new Date(y, m - 1, d));
+              const t = new Date();
+              const timeStr = extractTime(raw);
+              if (timeStr) { const [h, min] = timeStr.split(':').map(Number); t.setHours(h, min, 0, 0); }
+              else t.setHours(9, 0, 0, 0);
+              setEditTime(t);
+              setIsEditing(true);
+            }}
                 className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-(--color_bg_card_hover) text-(--color_text_muted) border border-(--color_border) hover:text-white transition-colors"
               >
                 <PencilIcon className="w-3.5 h-3.5" />
@@ -444,8 +462,14 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
             <div className="space-y-3">
               <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
                 <PencilIcon className="w-4 h-4 shrink-0" />
-                Редактируйте веса или замените упражнение
+                Редактируйте дату, время, веса или замените упражнение
               </div>
+              <WorkoutDateTimeRow
+                date={editDate}
+                time={editTime}
+                onDateChange={setEditDate}
+                onTimeChange={setEditTime}
+              />
               <div className="flex gap-2">
                 <button
                   onClick={handleCancelEdit}
