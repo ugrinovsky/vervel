@@ -81,8 +81,10 @@ export default function RegisterScreen() {
       const message = err?.response?.data?.message;
       if (status === 409 || status === 422) {
         setErrors((p) => ({ ...p, email: message || 'Недопустимый email' }));
+      } else if (status === 429) {
+        toast.error(message || 'Слишком много попыток. Попробуйте позже.');
       } else {
-        toast.error(message || 'Ошибка при регистрации');
+        toast.error('Ошибка при регистрации');
       }
     } finally {
       setLoading(false);
