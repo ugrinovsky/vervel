@@ -113,10 +113,14 @@ function FilterChip({
 interface Props {
   onSelect: (exercise: ExerciseWithSets) => void;
   workoutType: string;
+  /** Controlled mode: if provided, hides the built-in trigger button */
+  open?: boolean;
+  onClose?: () => void;
 }
 
-export default function ExercisePicker({ onSelect, workoutType }: Props) {
+export default function ExercisePicker({ onSelect, workoutType, open: controlledOpen, onClose: onControlledClose }: Props) {
   const [open, setOpen] = useState(false);
+  const isOpen = controlledOpen !== undefined ? controlledOpen : open;
   const [view, setView] = useState<'list' | 'detail'>('list');
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [search, setSearch] = useState('');
@@ -177,7 +181,11 @@ export default function ExercisePicker({ onSelect, workoutType }: Props) {
   };
 
   const handleClose = () => {
-    setOpen(false);
+    if (onControlledClose) {
+      onControlledClose();
+    } else {
+      setOpen(false);
+    }
     setView('list');
     setSearch('');
     setCategoryFilter(null);
@@ -230,15 +238,17 @@ export default function ExercisePicker({ onSelect, workoutType }: Props) {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="mt-6 w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-colors"
-      >
-        <PlusIcon className="w-4 h-4" />
-        <span className="text-sm">Добавить упражнение</span>
-      </button>
+      {controlledOpen === undefined && (
+        <button
+          onClick={() => setOpen(true)}
+          className="mt-6 w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-colors"
+        >
+          <PlusIcon className="w-4 h-4" />
+          <span className="text-sm">Добавить упражнение</span>
+        </button>
+      )}
 
-      <BottomSheet open={open} onClose={handleClose} header={headerContent}>
+      <BottomSheet open={isOpen} onClose={handleClose} header={headerContent}>
         <AnimatePresence mode="wait" initial={false}>
           {view === 'list' ? (
             <motion.div

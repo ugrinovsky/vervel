@@ -8,6 +8,8 @@ export interface AiExercise {
   weight?: number
   duration?: number // минуты (кардио)
   notes?: string
+  /** Если упражнение часть суперсета — одинаковая метка у группы (напр. "A") */
+  supersetGroup?: string
   /** Заполняется после матчинга к каталогу упражнений (если нашли совпадение) */
   exerciseId?: string
 }
@@ -23,9 +25,10 @@ const PARSE_SYSTEM_PROMPT = `You are a fitness assistant. You are given text rec
 
 Requirements:
 1. Return only JSON, no surrounding text
-2. Format: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"Barbell Bench Press","displayName":"Жим штанги лёжа","sets":3,"reps":10,"weight":80,"duration":null,"notes":null}],"notes":"general notes"}
+2. Format: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"Barbell Bench Press","displayName":"Жим штанги лёжа","sets":3,"reps":10,"weight":80,"duration":null,"notes":null,"supersetGroup":null}],"notes":"general notes"}
 3. weight — in kilograms, duration — in MINUTES (not seconds)
 4. If a parameter is not specified — use null
+5. supersetGroup — if exercises are performed as a superset, assign them the same letter (e.g. "A"). Different superset pairs use different letters ("A", "B", etc.). If not a superset — use null
 5. Determine workout type strictly:
    - "crossfit" = WOD, AMRAP, For Time, EMOM, Tabata, circuit training, functional fitness, HIIT with barbell/bodyweight
    - "bodybuilding" = strength training, weightlifting, isolation exercises, hypertrophy, powerlifting, muscle building (bench press, squats, curls, etc.)
@@ -44,7 +47,7 @@ const GENERATE_SYSTEM_PROMPT = `You are a professional fitness trainer. Generate
 
 Requirements:
 1. Return only JSON, no surrounding text
-2. Format: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"Barbell Bench Press","displayName":"Жим штанги лёжа","sets":3,"reps":10,"weight":null,"duration":null,"notes":"техника в 1-2 предложения"}],"notes":"общие рекомендации"}
+2. Format: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"Barbell Bench Press","displayName":"Жим штанги лёжа","sets":3,"reps":10,"weight":null,"duration":null,"notes":"техника в 1-2 предложения","supersetGroup":null}],"notes":"общие рекомендации"}
 3. weight — in kilograms (null if not applicable), duration — in MINUTES (not seconds, null if not applicable)
 4. Generate a realistic workout with correct volume and intensity
 5. Take into account fitness level if specified: beginner, intermediate, advanced
@@ -57,7 +60,8 @@ Requirements:
 9. "name" — standard English gym terminology for catalog matching (e.g. "Barbell Bench Press", "Back Squat", "Pull-Up", "Deadlift", "Dumbbell Curl")
 10. "displayName" — Russian exercise name shown in the app UI (e.g. "Жим штанги лёжа", "Приседания со штангой")
 11. 4-8 exercises for a standard workout
-12. notes and technique tips — write in Russian for user readability`
+12. notes and technique tips — write in Russian for user readability
+13. supersetGroup — if the user mentions supersets or paired exercises, assign them the same letter (e.g. "A"). Different superset pairs use different letters ("A", "B", etc.). If not a superset — use null`
 
 // Yandex Vision OCR — специализированный OCR для текста (включая рукописный)
 const VISION_OCR_URL = 'https://ocr.api.cloud.yandex.net/ocr/v1/recognizeText'
@@ -315,6 +319,7 @@ export class YandexAiService {
         weight: ex.weight != null ? Number(ex.weight) : undefined,
         duration: ex.duration != null ? Number(ex.duration) : undefined,
         notes: ex.notes != null ? String(ex.notes) : undefined,
+        supersetGroup: ex.supersetGroup != null ? String(ex.supersetGroup) : undefined,
       })
     )
 

@@ -11,7 +11,8 @@ import { getWorkoutTypeLabel } from './utils';
 import { WOD_CONFIG, type WodType } from '@/constants/workoutTypes';
 import { getZoneLabel } from '@/util/zones';
 import toast from 'react-hot-toast';
-import { PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, CheckIcon, XMarkIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
+import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
 
 /* ─── Типы ──────────────────────────────────────────────────────────── */
 
@@ -93,7 +94,7 @@ function extractTime(dateStr?: string): string | null {
 
 // Есть ли подходы с повторами без веса (атлет должен дополнить)
 function hasSetsNeedingWeight(ex: FullWorkout['exercises'][number]): boolean {
-  return (ex.sets ?? []).some((s) => (s.reps ?? 0) > 0 && !s.weight);
+  return (ex.sets ?? []).some((s) => (s.reps ?? 0) > 0 && s.weight == null);
 }
 
 /* ─── Секции ─────────────────────────────────────────────────────────  */
@@ -121,13 +122,14 @@ function IntensityBar({ value }: { value: number }) {
 /* ─── Карточка упражнения ─────────────────────────────────────────── */
 
 function ExerciseCard({
-  ex, exerciseName, isEditing, editSets, onSetChange,
+  ex, exerciseName, isEditing, editSets, onSetChange, onReplaceClick,
 }: {
   ex: FullWorkout['exercises'][number];
   exerciseName: string;
   isEditing: boolean;
   editSets: WorkoutSet[];
   onSetChange: (setIdx: number, weight: string) => void;
+  onReplaceClick?: () => void;
 }) {
   const isWod = ex.type === 'wod';
   const hasSets = editSets.length > 0;
@@ -137,9 +139,20 @@ function ExerciseCard({
     <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) space-y-2">
       <div className="flex items-start justify-between gap-2">
         <span className="text-sm font-semibold text-white leading-tight">{exerciseName}</span>
-        {vol > 0 && (
-          <span className="text-xs text-emerald-400 font-semibold shrink-0">{formatVolume(vol)}</span>
-        )}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {vol > 0 && (
+            <span className="text-xs text-emerald-400 font-semibold">{formatVolume(vol)}</span>
+          )}
+          {isEditing && (
+            <button
+              onClick={onReplaceClick}
+              className="p-1 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
+              title="Заменить упражнение"
+            >
+              <ArrowsRightLeftIcon className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
       </div>
 
       {isWod ? (
@@ -261,6 +274,7 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
 
   const [isEditing, setIsEditing] = useState(false);
   const [editExercises, setEditExercises] = useState<FullWorkout['exercises']>([]);
+  const [replacingIdx, setReplacingIdx] = useState<number | null>(null);
   const [rpe, setRpe] = useState<number | null>(null);
   const [savingWeights, setSavingWeights] = useState(false);
   const [savingRpe, setSavingRpe] = useState(false);
@@ -342,6 +356,19 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
     setIsEditing(false);
   };
 
+  const handleReplaceExercise = (exercise: { exerciseId: string; title: string }) => {
+    if (replacingIdx === null) return;
+    setEditExercises((prev) =>
+      prev.map((ex, i) => (i === replacingIdx ? { ...ex, exerciseId: exercise.exerciseId } : ex))
+    );
+    setExerciseMap((prev) => {
+      const next = new Map(prev);
+      next.set(exercise.exerciseId, { id: exercise.exerciseId, title: exercise.title } as any);
+      return next;
+    });
+    setReplacingIdx(null);
+  };
+
   // Сохранение оценки тренировки (RPE) — мгновенно при тапе
   const handleRpeTap = async (value: number) => {
     if (!fullWorkout || !workout) return;
@@ -417,7 +444,7 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
                 className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-(--color_bg_card_hover) text-(--color_text_muted) border border-(--color_border) hover:text-white transition-colors"
               >
                 <PencilIcon className="w-3.5 h-3.5" />
-                {hasMissingWeights ? 'Добавить веса' : 'Изменить'}
+                Редактировать
               </button>
             )}
           </div>
@@ -454,12 +481,12 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
             </div>
           )}
 
-          {/* ── Режим редактирования весов ────────────────────────── */}
+          {/* ── Режим редактирования ──────────────────────────────── */}
           {isEditing && (
             <div className="space-y-3">
               <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
                 <PencilIcon className="w-4 h-4 shrink-0" />
-                Укажите вес для каждого подхода
+                Редактируйте веса или замените упражнение
               </div>
               <div className="flex gap-2">
                 <button
@@ -504,6 +531,7 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
                       isEditing={isEditing}
                       editSets={editExercises[i]?.sets ?? ex.sets ?? []}
                       onSetChange={(setIdx, weight) => handleSetChange(i, setIdx, weight)}
+                      onReplaceClick={() => setReplacingIdx(i)}
                     />
                   );
                 })}
@@ -555,6 +583,16 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
 
       {!loading && !fullWorkout && workout?.id && (
         <div className="text-center py-10 text-(--color_text_muted) text-sm">Не удалось загрузить детали</div>
+      )}
+
+      {/* ExercisePicker для замены упражнения */}
+      {replacingIdx !== null && (
+        <ExercisePicker
+          open={true}
+          onClose={() => setReplacingIdx(null)}
+          workoutType={fullWorkout?.workoutType ?? 'bodybuilding'}
+          onSelect={(ex) => handleReplaceExercise(ex)}
+        />
       )}
 
       {!loading && !workout?.id && (

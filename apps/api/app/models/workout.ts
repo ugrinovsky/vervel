@@ -54,6 +54,11 @@ export type WorkoutExercise = {
    * Для For Time
    */
   rounds?: number;
+
+  /**
+   * Если упражнение часть суперсета — одинаковая метка у группы (напр. "A", "B")
+   */
+  supersetGroup?: string;
 };
 
 export default class Workout extends compose(BaseModel, SoftDeletes) {
