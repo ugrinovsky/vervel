@@ -279,7 +279,20 @@ export default function LoginScreen() {
           {/* Заголовок */}
           <div className="text-center mb-8 relative z-10">
             <VerveLogo className="h-14 w-auto mx-auto mb-2" />
-            <p className="text-emerald-200/80">Войдите в свой аккаунт</p>
+            <p className="text-emerald-200/90 font-medium mb-3">
+              Тренируйся умнее — с AI или с тренером
+            </p>
+            <div className="flex flex-wrap justify-center gap-2 text-xs mb-4">
+              {['AI-тренировки', 'Распознавание', 'AI-чат', 'Тренеры'].map((feat) => (
+                <span
+                  key={feat}
+                  className="px-2.5 py-1 rounded-full border border-emerald-400/30 bg-white/5 text-emerald-200/70"
+                >
+                  {feat}
+                </span>
+              ))}
+            </div>
+            <p className="text-emerald-200/50 text-sm">Войдите в свой аккаунт</p>
           </div>
 
           {/* Форма */}

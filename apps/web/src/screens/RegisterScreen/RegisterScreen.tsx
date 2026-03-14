@@ -52,7 +52,8 @@ export default function RegisterScreen() {
     if (!email) newErrors.email = 'Введите email';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = 'Некорректный email';
     if (!password) newErrors.password = 'Введите пароль';
-    else if (password.length < 6) newErrors.password = 'Минимум 6 символов';
+    else if (password.length < 8 || !/(?=.*[a-zA-Zа-яА-Я])(?=.*\d)/.test(password))
+      newErrors.password = 'Минимум 8 символов, буквы и цифры';
     if (!confirmPassword) newErrors.confirmPassword = 'Повторите пароль';
     else if (password !== confirmPassword) newErrors.confirmPassword = 'Пароли не совпадают';
     if (Object.keys(newErrors).length) {
@@ -81,7 +82,7 @@ export default function RegisterScreen() {
       if (status === 409 || status === 422) {
         setErrors((p) => ({ ...p, email: message || 'Недопустимый email' }));
       } else {
-        toast.error('Ошибка при регистрации');
+        toast.error(message || 'Ошибка при регистрации');
       }
     } finally {
       setLoading(false);
@@ -160,7 +161,7 @@ export default function RegisterScreen() {
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setErrors((p) => ({ ...p, password: undefined })); }}
                 className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.password ? 'border-red-400' : 'border-white/20'}`}
-                placeholder="Минимум 6 символов"
+                placeholder="Минимум 8 символов, буквы и цифры"
               />
               {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password}</p>}
             </div>
