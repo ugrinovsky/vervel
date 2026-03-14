@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { Link } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import Avatar from '@/components/Avatar/Avatar';
 import type { ZoneState } from '@/api/avatar';
@@ -26,13 +27,6 @@ const ZONE_NORMALIZE: Record<string, string> = {
   arms: 'biceps',
 };
 
-/**
- * If selectedZone has no data, fall back to this zone for panel display.
- * The selectedZone stays as-is for SVG highlighting (precise region).
- */
-const ZONE_DISPLAY_FALLBACK: Record<string, string> = {
-  obliquePress: 'abdominalPress',
-};
 
 type Phase = 'destroyed' | 'recovering' | 'almost_ready' | 'recovered' | 'untrained';
 
@@ -222,11 +216,6 @@ export default function AvatarView({
     return result;
   }, [normalizedZones]);
 
-  const resolvedDisplayZone = selectedZone
-    ? normalizedZones[selectedZone]
-      ? selectedZone
-      : (ZONE_DISPLAY_FALLBACK[selectedZone] ?? selectedZone)
-    : null;
 
   const summary = useMemo(() => {
     const entries = Object.entries(normalizedZones);
@@ -413,6 +402,61 @@ export default function AvatarView({
           <h3 className="text-sm font-semibold text-(--color_text_secondary) uppercase tracking-wider mb-4">
             Все зоны
           </h3>
+          {Object.keys(zones).length === 0 ? (
+            <div className="space-y-5 py-2">
+              <p className="text-sm text-(--color_text_muted) leading-relaxed">
+                Здесь появится карта восстановления мышц после первых тренировок. Вот как работать с системой:
+              </p>
+
+              <div className="space-y-3">
+                <div className="flex gap-3 items-start">
+                  <span className="text-base leading-snug">1️⃣</span>
+                  <div className="flex flex-col">
+                    <Link to="/workouts/new" className="text-sm font-medium text-white underline underline-offset-2 decoration-(--color_primary) inline-flex items-center gap-1 mb-1 after:content-['→']">
+                      Залогируй тренировку
+                    </Link>
+                    <p className="text-xs text-(--color_text_muted) mt-0.5">
+                      После каждой тренировки добавляй упражнения, веса и повторения. Система рассчитает нагрузку по зонам.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 items-start">
+                  <span className="text-base leading-snug">2️⃣</span>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-white mb-1">Смотри карту восстановления</span>
+                    <p className="text-xs text-(--color_text_muted) mt-0.5">
+                      Кликай на мышцы на аватаре — увидишь усталость и когда можно снова нагружать. Красный = отдыхай, зелёный = готово.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 items-start">
+                  <span className="text-base leading-snug">3️⃣</span>
+                  <div className="flex flex-col">
+                    <Link to="/calendar" className="text-sm font-medium text-white underline underline-offset-2 decoration-(--color_primary) inline-flex items-center gap-1 mb-1 after:content-['→']">
+                      Планируй по календарю
+                    </Link>
+                    <p className="text-xs text-(--color_text_muted) mt-0.5">
+                      Тренируйся 3–4 раза в неделю, чередуй группы мышц. Система сама покажет что уже готово к нагрузке.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 items-start">
+                  <span className="text-base leading-snug">4️⃣</span>
+                  <div className="flex flex-col">
+                    <Link to="/analytics" className="text-sm font-medium text-white underline underline-offset-2 decoration-(--color_primary) inline-flex items-center gap-1 mb-1 after:content-['→']">
+                      Следи за прогрессом
+                    </Link>
+                    <p className="text-xs text-(--color_text_muted) mt-0.5">
+                      В аналитике виден прогресс по весам, объёму и частоте. Раз в месяц сверяй — есть ли рост.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
           <div className="space-y-2">
             {Object.entries(zones)
               .sort((a, b) => b[1].intensity - a[1].intensity)
@@ -443,6 +487,7 @@ export default function AvatarView({
                 );
               })}
           </div>
+          )}
         </div>
       </div>
     </motion.div>
