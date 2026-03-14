@@ -152,6 +152,9 @@ export default function RegisterScreen() {
                 onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: undefined })); }}
                 className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.email ? 'border-red-400' : 'border-white/20'}`}
                 placeholder="your@email.com"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
               />
               {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email}</p>}
             </div>
@@ -164,6 +167,9 @@ export default function RegisterScreen() {
                 onChange={(e) => { setPassword(e.target.value); setErrors((p) => ({ ...p, password: undefined })); }}
                 className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.password ? 'border-red-400' : 'border-white/20'}`}
                 placeholder="Минимум 8 символов, буквы и цифры"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
               />
               {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password}</p>}
             </div>
@@ -178,6 +184,9 @@ export default function RegisterScreen() {
                 onChange={(e) => { setConfirmPassword(e.target.value); setErrors((p) => ({ ...p, confirmPassword: undefined })); }}
                 className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.confirmPassword ? 'border-red-400' : 'border-white/20'}`}
                 placeholder="Повторите пароль"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
               />
               {errors.confirmPassword && <p className="mt-1 text-xs text-red-400">{errors.confirmPassword}</p>}
             </div>

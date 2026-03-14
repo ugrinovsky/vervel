@@ -283,7 +283,7 @@ export default function LoginScreen() {
               Тренируйся умнее — с AI или с тренером
             </p>
             <div className="flex flex-wrap justify-center gap-2 text-xs mb-4">
-              {['AI-тренировки', 'Распознавание', 'AI-чат', 'Тренеры'].map((feat) => (
+              {['AI-тренировки', 'Распознавание', 'AI-чат', 'Тренеры онлайн'].map((feat) => (
                 <span
                   key={feat}
                   className="px-2.5 py-1 rounded-full border border-emerald-400/30 bg-white/5 text-emerald-200/70"
@@ -310,6 +310,9 @@ export default function LoginScreen() {
                   }}
                   className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.email ? 'border-red-400' : 'border-white/20'}`}
                   placeholder="your@email.com"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
               </div>
               {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email}</p>}
@@ -328,6 +331,9 @@ export default function LoginScreen() {
                   }}
                   className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.password ? 'border-red-400' : 'border-white/20'}`}
                   placeholder="••••••••"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                 />
                 <button
                   type="button"

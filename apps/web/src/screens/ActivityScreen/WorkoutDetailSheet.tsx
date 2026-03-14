@@ -31,6 +31,7 @@ interface FullWorkout {
     timeCap?: number;
     wodType?: string;
     distance?: number;
+    blockId?: string;
   }>;
   zonesLoad: Record<string, number>;
   totalIntensity: number;
@@ -132,14 +133,18 @@ function ExerciseCard({
   isEditing: boolean;
   onEditClick?: () => void;
 }) {
+  const isInSuperset = !!ex.blockId;
   const isWod = ex.type === 'wod';
   const hasSets = (ex.sets ?? []).length > 0;
   const vol = isWod ? 0 : exerciseVolume(ex.sets);
 
   return (
-    <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) space-y-2">
+    <div className={`rounded-xl p-3 border space-y-2 ${isInSuperset ? 'bg-amber-500/10 border-amber-500/40' : 'bg-(--color_bg_card) border-(--color_border)'}`}>
       <div className="flex items-start justify-between gap-2">
-        <span className="text-sm font-semibold text-white leading-tight">{exerciseName}</span>
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          {isInSuperset && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 font-semibold shrink-0">СС</span>}
+          <span className="text-sm font-semibold text-white leading-tight truncate">{exerciseName}</span>
+        </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {vol > 0 && (
             <span className="text-xs text-emerald-400 font-semibold">{formatVolume(vol)}</span>
@@ -269,6 +274,7 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
       rounds: ex.rounds,
       duration: ex.duration,
       wodType: ex.wodType as 'amrap' | 'fortime' | 'emom' | 'tabata' | undefined,
+      blockId: ex.blockId,
     }));
     const rpeVal = 'rpe' in overrides
       ? (overrides.rpe ?? undefined)
@@ -502,17 +508,48 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
           {fullWorkout.exercises.length > 0 && (
             <div>
               <SectionTitle>Упражнения · {fullWorkout.exercises.length}</SectionTitle>
-              <div className="space-y-2">
-                {(isEditing ? editExercises : fullWorkout.exercises).map((ex, i) => {
+              <div className="space-y-0">
+                {(isEditing ? editExercises : fullWorkout.exercises).map((ex, i, arr) => {
                   const name = exerciseMap.get(ex.exerciseId)?.title ?? ex.exerciseId.replace(/_/g, ' ');
+                  const isLinkedToNext = isEditing && i < arr.length - 1 && !!ex.blockId && ex.blockId === arr[i + 1].blockId;
+                  const showSupersetBtn = isEditing && i < arr.length - 1;
                   return (
-                    <ExerciseCard
-                      key={i}
-                      ex={ex}
-                      exerciseName={name}
-                      isEditing={isEditing}
-                      onEditClick={() => setEditingExIdx(i)}
-                    />
+                    <div key={i} className={showSupersetBtn ? '' : 'mb-2'}>
+                      <ExerciseCard
+                        ex={ex}
+                        exerciseName={name}
+                        isEditing={isEditing}
+                        onEditClick={() => setEditingExIdx(i)}
+                      />
+                      {isEditing && i < arr.length - 1 && (
+                        <div className="relative flex items-center h-7 pl-4 mb-2">
+                          {isLinkedToNext && <div className="absolute left-4.5 top-0 bottom-0 w-0.5 bg-amber-500/60" />}
+                          <button
+                            onClick={() => {
+                              setEditExercises((prev) => {
+                                const next = prev.map((e) => ({ ...e }));
+                                const a = next[i], b = next[i + 1];
+                                if (a.blockId && a.blockId === b.blockId) {
+                                  const bid = a.blockId;
+                                  for (let j = i + 1; j < next.length; j++) {
+                                    if (next[j].blockId === bid) delete next[j].blockId; else break;
+                                  }
+                                  delete a.blockId;
+                                } else {
+                                  const id = a.blockId ?? crypto.randomUUID();
+                                  a.blockId = id; b.blockId = id;
+                                }
+                                return next;
+                              });
+                            }}
+                            className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-md transition-colors ${isLinkedToNext ? 'text-amber-400 bg-amber-500/10' : 'text-white/35 hover:text-amber-400 hover:bg-amber-500/10'}`}
+                          >
+                            <span>⚡</span>
+                            <span>{isLinkedToNext ? 'суперсет' : 'суперсет?'}</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>

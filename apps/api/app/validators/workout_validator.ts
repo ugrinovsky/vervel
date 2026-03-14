@@ -26,6 +26,7 @@ export const createWorkoutValidator = vine.compile(
         rounds: vine.number().min(1).max(100).optional(),
         duration: vine.number().min(1).max(86400).optional(),
         wodType: vine.enum(['amrap', 'emom', 'fortime', 'tabata']).optional(),
+        blockId: vine.string().trim().optional(),
       })
     ),
   })

@@ -24,6 +24,7 @@ export interface WorkoutExercise {
   timeCap?: number;
   duration?: number;
   rounds?: number;
+  blockId?: string;
 }
 
 export interface CreateWorkoutDTO {

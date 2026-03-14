@@ -32,6 +32,7 @@ function toWorkoutExercise(ex: ExerciseData, workoutType: WorkoutType): WorkoutE
       reps: s.reps ?? 0,
       weight: s.weight ?? 0,
     })),
+    blockId: ex.blockId,
   };
 }
 
