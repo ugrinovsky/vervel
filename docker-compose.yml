@@ -39,17 +39,11 @@ services:
       context: ./apps/web
       dockerfile: Dockerfile
     container_name: vervel_web
-    command: npm run dev
-    volumes:
-      - ./apps/web:/app
-      - ./packages:/packages
-      - node_modules_web:/app/node_modules
     ports:
-      - '5173:5173'
+      - '5173:80'
     depends_on:
       - api
 
 volumes:
   pgdata:
   node_modules_api:
-  node_modules_web:
