@@ -99,6 +99,7 @@ export default function YandexIdButton() {
         navigate('/');
       })
       .catch((error) => {
+        console.error('YaAuthSuggest error:', error);
         if (error?.type !== 'not_authorized') {
           toast.error('Ошибка авторизации через Яндекс');
         }
