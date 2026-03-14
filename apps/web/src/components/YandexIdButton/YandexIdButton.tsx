@@ -13,7 +13,7 @@ declare global {
         params: Record<string, string>,
         origin: string,
         options: Record<string, unknown>
-      ) => Promise<{ handler: () => Promise<{ access_token?: string }> }>;
+      ) => Promise<{ handler: () => Promise<unknown> }>;
     };
   }
 }
@@ -38,69 +38,69 @@ function loadScript(): Promise<void> {
   });
 }
 
-async function handleYandexToken(
-  accessToken: string,
-  login: (user: any, token: string) => void,
-  navigate: (path: string) => void
-) {
-  const res = await publicApi.post<{
-    user: { id: number; email: string; fullName: string; role: string };
-    token: any;
-    needsRole?: boolean;
-    tempToken?: string;
-    userId?: number;
-  }>('/oauth/yandex/sdk-login', { accessToken });
-
-  const resData = res.data;
-
-  if (resData.needsRole) {
-    navigate(`/select-role?token=${resData.tempToken}&userId=${resData.userId}`);
-    return;
-  }
-
-  login(resData.user as any, resData.token.token);
-  toast.success(`Добро пожаловать, ${resData.user.fullName}!`);
-  navigate('/');
-}
-
 export default function YandexIdButton() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Handle full-page redirect flow: /suggest/token redirects back with ?ya_token=...
+  async function handleToken(accessToken: string) {
+    try {
+      const res = await publicApi.post<{
+        user: { id: number; email: string; fullName: string; role: string };
+        token: any;
+        needsRole?: boolean;
+        tempToken?: string;
+        userId?: number;
+      }>('/oauth/yandex/sdk-login', { accessToken });
+
+      const data = res.data;
+
+      if (data.needsRole) {
+        navigate(`/select-role?token=${data.tempToken}&userId=${data.userId}`);
+        return;
+      }
+
+      login(data.user as any, data.token.token);
+      toast.success(`Добро пожаловать, ${data.user.fullName}!`);
+      navigate('/');
+    } catch {
+      toast.error('Ошибка авторизации через Яндекс');
+    }
+  }
+
+  // Handle full-page redirect fallback (?ya_token=...)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const yaToken = params.get('ya_token');
     if (!yaToken) return;
-
     window.history.replaceState({}, '', window.location.pathname);
-
-    handleYandexToken(yaToken, login, navigate).catch(() => {
-      toast.error('Ошибка авторизации через Яндекс');
-    });
+    handleToken(yaToken);
   }, []);
 
-  // Handle popup/iframe flow via SDK
   useEffect(() => {
     if (!containerRef.current || !YANDEX_CLIENT_ID) return;
+
+    // Listen for token from popup via BroadcastChannel
+    const channel = new BroadcastChannel('ya_oauth');
+    channel.onmessage = (event) => {
+      const token = event.data?.ya_access_token;
+      if (token) handleToken(token);
+    };
 
     const container = containerRef.current;
     const containerId = 'ya-auth-suggest-container';
     container.id = containerId;
 
     const origin = window.location.origin;
-    const redirectUri = `${origin}/suggest/token`;
 
     loadScript()
       .then(() => {
         if (!window.YaAuthSuggest) return;
-
         return window.YaAuthSuggest.init(
           {
             client_id: YANDEX_CLIENT_ID,
             response_type: 'token',
-            redirect_uri: redirectUri,
+            redirect_uri: `${origin}/suggest/token`,
           },
           origin,
           {
@@ -115,10 +115,6 @@ export default function YandexIdButton() {
         );
       })
       .then((result) => result?.handler())
-      .then(async (data) => {
-        if (!data?.access_token) return;
-        await handleYandexToken(data.access_token, login, navigate);
-      })
       .catch((error) => {
         console.error('YaAuthSuggest error:', error);
         if (error?.type !== 'not_authorized') {
@@ -127,6 +123,7 @@ export default function YandexIdButton() {
       });
 
     return () => {
+      channel.close();
       container.innerHTML = '';
       container.removeAttribute('id');
     };
