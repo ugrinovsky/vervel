@@ -40,7 +40,10 @@ export default function BottomSheet({ open, onClose, title, emoji, header, child
           className="bottom-sheet fixed inset-0 z-60 flex items-end"
           onClick={onClose}
         >
-          <div className="absolute inset-0 bg-black/60" />
+          <div
+            className="absolute inset-0 bg-black/60"
+            onTouchMove={(e) => e.preventDefault()}
+          />
 
           <motion.div
             initial={{ y: '100%' }}
