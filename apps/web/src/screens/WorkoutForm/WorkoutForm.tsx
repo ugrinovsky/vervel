@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router';
+import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
@@ -71,6 +72,13 @@ export default function WorkoutForm() {
           title="Новая тренировка"
           description="Добавьте упражнения, подходы и веса вручную — или воспользуйтесь AI-распознаванием по фото или описанию"
         />
+
+        <ScreenHint className="mb-4">
+          Выберите тип тренировки, добавьте упражнения и подходы.{' '}
+          <span className="text-white font-medium">AI-распознавание</span> — сфотографируйте
+          страницу дневника или опишите тренировку текстом, и AI заполнит форму автоматически.
+        </ScreenHint>
+
         <WorkoutFormBase
           initialDate={initialDate}
           notesLabel="Заметки (опционально)"

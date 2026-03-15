@@ -10,6 +10,7 @@ import { aiApi } from '@/api/ai';
 import { saveHue } from '@/util/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import ProfileTab from './tabs/ProfileTab';
+import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import WalletTab from './tabs/WalletTab';
 import SettingsTab from './tabs/SettingsTab';
 
@@ -92,6 +93,13 @@ export default function ProfileScreen() {
           title="Профиль"
           description="Ваш аккаунт, кошелек для оплаты AI-функций и настройки приложения"
         />
+
+        <ScreenHint className="mb-4">
+          <span className="text-white font-medium">Профиль</span> — данные и фото аккаунта.{' '}
+          <span className="text-white font-medium">Кошелек</span> — баланс для AI-функций,
+          история списаний и пополнение.{' '}
+          <span className="text-white font-medium">Настройки</span> — тема, уведомления и выход.
+        </ScreenHint>
 
         {/* Tabs */}
         <div className="flex gap-1 bg-(--color_bg_card) rounded-2xl p-1 border border-(--color_border) mb-6">

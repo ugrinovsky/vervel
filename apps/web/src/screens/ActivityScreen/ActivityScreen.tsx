@@ -7,6 +7,7 @@ import { useActivityData } from './useActivityData';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
+import ScreenHint from '@/components/ScreenHint/ScreenHint';
 
 export default function ActivityScreen() {
   const navigate = useNavigate();
@@ -103,6 +104,16 @@ export default function ActivityScreen() {
           title="Активность"
           description="Календарь тренировок — нажмите на день, чтобы посмотреть детали, добавить или изменить запись"
         />
+
+        <div className="border-t border-(--color_border) my-3" />
+
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
+          <ScreenHint>
+            Нажмите на день — откроются детали тренировок.{' '}
+            <span className="text-white font-medium">Насыщенность цвета</span> отражает интенсивность нагрузки.
+            Нет цвета — день без тренировок.
+          </ScreenHint>
+        </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}

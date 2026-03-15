@@ -17,6 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 import { AI_CHAT_MIN_BALANCE } from '@/constants/ai';
+import ScreenHint from '@/components/ScreenHint/ScreenHint';
 
 type ActiveChat = { chatId: number; title: string } | null;
 
@@ -154,6 +155,13 @@ export default function AthleteMyTeamScreen() {
           title="Моя команда"
           description="Тренеры и группы, с которыми вы работаете — покажите QR-код тренеру или введите код приглашения, чтобы присоединиться"
         />
+
+        <ScreenHint className="mb-4">
+          Здесь ваши персональные тренеры и группы. Нажмите{' '}
+          <span className="text-white font-medium">Чат</span> — чтобы написать тренеру напрямую.
+          Назначенные тренировки видны в блоке{' '}
+          <span className="text-white font-medium">Расписание</span> и в календаре активности.
+        </ScreenHint>
 
         {/* AI Assistant card */}
         <motion.button

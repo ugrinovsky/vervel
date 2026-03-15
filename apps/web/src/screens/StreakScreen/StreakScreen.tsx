@@ -7,6 +7,7 @@ import StreakCard from '@/components/StreakCard/StreakCard';
 import AchievementsList from '@/components/AchievementsList/AchievementsList';
 import { profileApi, type ProfileData } from '@/api/profile';
 import toast from 'react-hot-toast';
+import ScreenHint from '@/components/ScreenHint/ScreenHint';
 
 const MILESTONE_TIPS = [
   { days: 3,  emoji: '🥉', label: '3 дня' },
@@ -53,6 +54,12 @@ export default function StreakScreen() {
           title="Ударный режим"
           description="Ваша серия тренировочных дней и коллекция достижений — не пропускайте занятия, чтобы разблокировать новые"
         />
+
+        <ScreenHint className="mb-4">
+          Тренируйтесь каждый день — серия растёт. Пропустите день —{' '}
+          <span className="text-white font-medium">счётчик сбросится</span>, но рекорд останется.
+          Достигайте вех в 3, 7, 14, 30 и 90 дней, чтобы разблокировать достижения.
+        </ScreenHint>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <StreakCard

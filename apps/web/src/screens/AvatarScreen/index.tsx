@@ -8,6 +8,7 @@ import { athleteApi } from '@/api/athlete';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
+import ScreenHint from '@/components/ScreenHint/ScreenHint';
 
 
 interface TodayWorkout {
@@ -64,6 +65,12 @@ export default function AvatarScreen() {
           title="Карта нагрузки"
           description="Визуализация восстановления мышц — красный цвет значит активная нагрузка, зелёный — мышцы готовы к следующей тренировке"
         />
+
+        <ScreenHint className="mb-4">
+          Карта обновляется автоматически после каждой тренировки.{' '}
+          <span className="text-white font-medium">Нажмите на зону</span> — увидите детали нагрузки
+          и статус восстановления. Чем ярче цвет — тем свежее нагрузка на эту группу мышц.
+        </ScreenHint>
 
         {/* Тренировка от тренера сегодня */}
         <AnimatePresence>

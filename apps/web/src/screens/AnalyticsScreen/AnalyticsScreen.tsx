@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
+import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import AnalyticsCards from '@/components/analytics/AnalyticsCards';
@@ -34,6 +35,15 @@ export default function AnalyticsScreen() {
           description="Статистика нагрузок, топ мышц и баланс тела — выберите период, чтобы увидеть динамику"
         />
 
+        {/* Hint block */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
+          <ScreenHint>
+            <span className="text-white font-medium">Неделя</span> — оперативный контроль нагрузки.{' '}
+            <span className="text-white font-medium">Месяц</span> — видите тренды и объём работы.{' '}
+            <span className="text-white font-medium">Год</span> — оцениваете долгосрочный прогресс и периодизацию.
+          </ScreenHint>
+        </motion.div>
+
         {/* Period selector */}
         <div className="grid grid-cols-3 gap-3 mb-4">
           {(['week', 'month', 'year'] as const).map((p) => (
@@ -50,20 +60,6 @@ export default function AnalyticsScreen() {
             </button>
           ))}
         </div>
-
-        {/* Hint block */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-(--color_bg_card) rounded-xl px-4 py-3 border border-(--color_border) mb-6 flex items-start gap-3"
-        >
-          <span className="text-xl shrink-0">💡</span>
-          <p className="text-xs text-(--color_text_muted) leading-relaxed">
-            <span className="text-white font-medium">Неделя</span> — оперативный контроль нагрузки.{' '}
-            <span className="text-white font-medium">Месяц</span> — видите тренды и объём работы.{' '}
-            <span className="text-white font-medium">Год</span> — оцениваете долгосрочный прогресс и периодизацию.
-          </p>
-        </motion.div>
 
         <AnalyticsCards
           stats={stats}
