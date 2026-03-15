@@ -1,5 +1,13 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
+
+/** Returns "YYYY-MM-DD" using the LOCAL timezone of the Date object. */
+function toLocalDateKey(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
 import db from '@adonisjs/lucid/services/db'
 import Chat from '#models/chat'
 import Message from '#models/message'
@@ -243,7 +251,7 @@ export default class AthleteController {
     const tlByDay = new Map<string, number>()
     for (const w of workouts) {
       const dateObj = w.date.toJSDate ? w.date.toJSDate() : new Date(w.date.toString())
-      const key = dateObj.toISOString().slice(0, 10)
+      const key = toLocalDateKey(dateObj)
       const intensity = typeof w.totalIntensity === 'string' ? parseFloat(w.totalIntensity) : (w.totalIntensity || 0)
       const volume = Number(w.totalVolume) || 0
       const tl = (intensity * 0.7 + Math.min(volume / 5000, 1) * 0.3) * 100
@@ -258,7 +266,7 @@ export default class AthleteController {
     for (let d = 0; d < DAYS; d++) {
       const date = new Date(startDate)
       date.setDate(startDate.getDate() + d)
-      const key = date.toISOString().slice(0, 10)
+      const key = toLocalDateKey(date)
       const tl = tlByDay.get(key) ?? 0
 
       atl = atl * (6 / 7) + tl * (1 / 7)
@@ -277,7 +285,7 @@ export default class AthleteController {
       const dayOfWeek = date.getDay() === 0 ? 7 : date.getDay()
       const monday = new Date(date)
       monday.setDate(date.getDate() - (dayOfWeek - 1))
-      const weekKey = monday.toISOString().slice(0, 10)
+      const weekKey = toLocalDateKey(monday)
       if (tl > 0) {
         const prev = weeklyMap.get(weekKey) ?? { load: 0, workouts: 0 }
         weeklyMap.set(weekKey, { load: prev.load + tl, workouts: prev.workouts + 1 })

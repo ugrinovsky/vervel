@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
+import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import { trainerApi, type TodayOverview, type UnreadCounts } from '@/api/trainer';
 import {
@@ -214,24 +215,15 @@ export default function TrainerTodayScreen() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="grid grid-cols-2 gap-3"
         >
-          <button
-            onClick={() => navigate('/trainer/groups')}
-            className="p-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
-          >
-            <UserGroupIcon className="w-5 h-5 text-(--color_primary_icon) mb-2" />
-            <div className="text-sm font-medium text-white">Группы</div>
-            <div className="text-xs text-(--color_text_muted)">Управление группами</div>
-          </button>
-          <button
-            onClick={() => navigate('/trainer/athletes')}
-            className="p-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
-          >
-            <UsersIcon className="w-5 h-5 text-(--color_primary_icon) mb-2" />
-            <div className="text-sm font-medium text-white">Атлеты</div>
-            <div className="text-xs text-(--color_text_muted)">Управление атлетами</div>
-          </button>
+          <ScreenLinks
+            links={[
+              { emoji: '📅', bg: 'bg-emerald-500/20', label: 'Календарь', sub: 'Назначить тренировки', to: '/trainer/calendar' },
+              { emoji: '👥', bg: 'bg-blue-500/20',    label: 'Группы',    sub: 'Управление группами',  to: '/trainer/groups' },
+              { emoji: '🏃', bg: 'bg-violet-500/20',  label: 'Атлеты',    sub: 'Управление атлетами',  to: '/trainer/athletes' },
+              { emoji: '📋', bg: 'bg-amber-500/20',   label: 'Шаблоны',   sub: 'Готовые тренировки',   to: '/trainer/templates' },
+            ]}
+          />
         </motion.div>
       </div>
     </Screen>

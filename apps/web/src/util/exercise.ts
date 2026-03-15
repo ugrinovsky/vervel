@@ -1,14 +1,5 @@
 import type { ExerciseWithSets, ExerciseSet } from '@/types/Exercise';
-
-/**
- * Преобразует Date в строку в формате YYYY-MM-DD для API
- */
-export const getLocalDateISOString = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+export { toDateKey as getLocalDateISOString } from '@/utils/date';
 
 /**
  * Вычисляет суммарные метрики тренировки

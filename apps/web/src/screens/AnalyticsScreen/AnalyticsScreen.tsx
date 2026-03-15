@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import AnalyticsCards from '@/components/analytics/AnalyticsCards';
@@ -32,7 +34,8 @@ export default function AnalyticsScreen() {
           description="Статистика нагрузок, топ мышц и баланс тела — выберите период, чтобы увидеть динамику"
         />
 
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        {/* Period selector */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
           {(['week', 'month', 'year'] as const).map((p) => (
             <button
               key={p}
@@ -48,12 +51,41 @@ export default function AnalyticsScreen() {
           ))}
         </div>
 
+        {/* Hint block */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-(--color_bg_card) rounded-xl px-4 py-3 border border-(--color_border) mb-6 flex items-start gap-3"
+        >
+          <span className="text-xl shrink-0">💡</span>
+          <p className="text-xs text-(--color_text_muted) leading-relaxed">
+            <span className="text-white font-medium">Неделя</span> — оперативный контроль нагрузки.{' '}
+            <span className="text-white font-medium">Месяц</span> — видите тренды и объём работы.{' '}
+            <span className="text-white font-medium">Год</span> — оцениваете долгосрочный прогресс и периодизацию.
+          </p>
+        </motion.div>
+
         <AnalyticsCards
           stats={stats}
           monthStats={monthStats}
           periodization={periodization}
           timeRange={timeRange}
         />
+
+        {/* Quick links */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-6"
+        >
+          <ScreenLinks
+            links={[
+              { emoji: '📅', bg: 'bg-blue-500/20',   label: 'Календарь',  sub: 'История по дням',      to: '/calendar' },
+              { emoji: '🔥', bg: 'bg-orange-500/20', label: 'Серия дней', sub: 'Достижения и рекорды', to: '/streak' },
+            ]}
+          />
+        </motion.div>
       </div>
     </Screen>
   );

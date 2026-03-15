@@ -5,8 +5,11 @@ import MonthlyStats from './MonthlyStats';
 import DayDetails from './DayDetails';
 import { useActivityData } from './useActivityData';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router';
+import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 
 export default function ActivityScreen() {
+  const navigate = useNavigate();
   const {
     selectedDate,
     setSelectedDate,
@@ -31,13 +34,63 @@ export default function ActivityScreen() {
   if (!stats) {
     return (
       <Screen className="activity-screen">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-center text-(--color_text_muted) mt-12"
-        >
-          Нет данных
-        </motion.div>
+        <div className="p-4">
+          <ScreenHeader
+            icon="📅"
+            title="Активность"
+            description="Календарь тренировок — нажмите на день, чтобы посмотреть детали, добавить или изменить запись"
+          />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) space-y-4"
+          >
+            <div className="text-center">
+              <div className="text-4xl mb-2">📅</div>
+              <h3 className="font-semibold text-white mb-1">Ещё нет тренировок</h3>
+              <p className="text-sm text-(--color_text_muted)">
+                Залогируйте первую тренировку — и здесь появится ваш персональный календарь нагрузок
+              </p>
+            </div>
+            <div className="space-y-3">
+              {[
+                {
+                  emoji: '1️⃣',
+                  title: 'Добавьте тренировку',
+                  desc: 'Вручную или через AI-распознавание по фото/описанию',
+                  action: () => navigate('/workouts/new'),
+                  label: 'Добавить',
+                },
+                {
+                  emoji: '2️⃣',
+                  title: 'Выберите день на календаре',
+                  desc: 'Нажмите на любой день — откроются детали и список упражнений',
+                },
+                {
+                  emoji: '3️⃣',
+                  title: 'Следите за нагрузкой',
+                  desc: 'Зелёный цвет = нагрузка в этот день. Чем насыщеннее — тем выше интенсивность',
+                },
+              ].map(({ emoji, title, desc, action, label }) => (
+                <div key={title} className="flex items-start gap-3">
+                  <span className="text-xl shrink-0">{emoji}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-white">{title}</div>
+                    <div className="text-xs text-(--color_text_muted) mt-0.5">{desc}</div>
+                  </div>
+                  {action && (
+                    <button
+                      onClick={action}
+                      className="shrink-0 px-3 py-1.5 rounded-lg bg-(--color_primary_light) text-white text-xs font-medium hover:opacity-90 transition-opacity"
+                    >
+                      {label}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
       </Screen>
     );
   }
@@ -68,7 +121,12 @@ export default function ActivityScreen() {
         </motion.div>
 
         {monthlyStats && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="mb-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="mb-4"
+          >
             <MonthlyStats stats={monthlyStats} />
           </motion.div>
         )}
@@ -86,6 +144,40 @@ export default function ActivityScreen() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Tip: links to related screens */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-4 mt-4"
+        >
+          <ScreenLinks
+            links={[
+              {
+                emoji: '🏋️',
+                bg: 'bg-emerald-500/20',
+                label: 'Новая тренировка',
+                sub: 'вручную или AI',
+                to: '/workouts/new',
+              },
+              {
+                emoji: '📊',
+                bg: 'bg-blue-500/20',
+                label: 'Аналитика',
+                sub: 'графики и прогресс',
+                to: '/analytics',
+              },
+              {
+                emoji: '🔥',
+                bg: 'bg-orange-500/20',
+                label: 'Серия дней',
+                sub: 'ударный режим',
+                to: '/streak',
+              },
+            ]}
+          />
+        </motion.div>
       </div>
     </Screen>
   );

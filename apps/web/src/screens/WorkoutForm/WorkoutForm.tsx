@@ -1,10 +1,9 @@
 import { useNavigate, useLocation } from 'react-router';
 import toast from 'react-hot-toast';
-import { format } from 'date-fns';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import WorkoutFormBase, { type WorkoutFormData } from '@/components/WorkoutFormBase/WorkoutFormBase';
-import { getLocalDateISOString } from '@/util/exercise';
+import { parseLocalDate, toApiDateTime } from '@/utils/date';
 import { workoutsApi, type WorkoutExercise } from '@/api/workouts';
 import { checkForNewAchievements } from '@/hooks/useAchievementToast';
 import type { ExerciseData } from '@/api/trainer';
@@ -41,9 +40,7 @@ export default function WorkoutForm() {
   const location = useLocation();
   const prefillDate = (location.state as { date?: string } | null)?.date;
 
-  const initialDate = prefillDate
-    ? (() => { const [y, m, d] = prefillDate.split('-').map(Number); return new Date(y, m - 1, d); })()
-    : undefined;
+  const initialDate = prefillDate ? parseLocalDate(prefillDate) : undefined;
 
   const handleSubmit = async (data: WorkoutFormData) => {
     if (!data.exercises.length) {
@@ -52,7 +49,7 @@ export default function WorkoutForm() {
     }
     try {
       await workoutsApi.create({
-        date: `${getLocalDateISOString(data.date)}T${format(data.time, 'HH:mm')}:00`,
+        date: toApiDateTime(data.date, data.time),
         workoutType: data.workoutType,
         exercises: data.exercises.map((ex) => toWorkoutExercise(ex, data.workoutType)),
         notes: data.notes || undefined,

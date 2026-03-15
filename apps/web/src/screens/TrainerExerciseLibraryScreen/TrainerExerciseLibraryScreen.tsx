@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router';
 import { MagnifyingGlassIcon, BookOpenIcon } from '@heroicons/react/24/outline';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
@@ -126,6 +127,7 @@ function ExerciseCard({ exercise, onClick }: { exercise: Exercise; onClick: () =
 /* ------------------------------------------------------------------ */
 
 export default function TrainerExerciseLibraryScreen() {
+  const navigate = useNavigate();
   const { data: exercises, loading } = useExercises();
 
   const [search, setSearch] = useState('');
@@ -169,6 +171,19 @@ export default function TrainerExerciseLibraryScreen() {
           title="Библиотека упражнений"
           description="Готовые упражнения по категориям — добавляйте в тренировки и шаблоны"
         />
+
+        {/* Hint */}
+        <div className="px-4 pb-3">
+          <div className="bg-(--color_bg_card) rounded-xl px-4 py-3 border border-(--color_border) flex items-start gap-3">
+            <span className="text-xl shrink-0">💡</span>
+            <p className="text-xs text-(--color_text_muted) leading-relaxed">
+              Фильтруйте по <span className="text-white font-medium">категории</span> или{' '}
+              <span className="text-white font-medium">зоне мышц</span>, нажмите на карточку —
+              увидите технику и описание. Упражнения из библиотеки доступны при создании шаблонов и
+              тренировок.
+            </p>
+          </div>
+        </div>
 
         {/* Sticky filter area */}
         <div

@@ -426,14 +426,14 @@ export default function AvatarView({
                         : 'hover:bg-(--color_bg_card_hover)'
                     }`}
                   >
-                    <span className="text-sm text-white flex-1">{getZoneLabel(name)}</span>
+                    <span className="text-sm text-white flex-1 min-w-0 truncate">{getZoneLabel(name)}</span>
                     <div className="w-24 h-1.5 bg-(--color_border) rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full bg-gradient-to-r ${getBarColorByIntensity(zoneState.intensity)}`}
                         style={{ width: `${Math.max(Math.round(zoneState.intensity * 100), 2)}%` }}
                       />
                     </div>
-                    <span className={`text-xs w-28 text-right font-medium ${cfg.color}`}>
+                    <span className={`text-xs w-20 text-right font-medium ${cfg.color}`}>
                       {cfg.label}
                     </span>
                   </button>

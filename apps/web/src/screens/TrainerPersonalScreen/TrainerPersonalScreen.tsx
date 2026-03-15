@@ -151,6 +151,19 @@ export default function TrainerPersonalScreen() {
           description="Фото, специализации и образование — видно вашим атлетам"
         />
 
+        {/* Hint */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-(--color_bg_card) rounded-xl px-4 py-3 border border-(--color_border) mb-4 flex items-start gap-3"
+        >
+          <span className="text-xl shrink-0">💡</span>
+          <p className="text-xs text-(--color_text_muted) leading-relaxed">
+            Ваш профиль виден атлетам на странице команды и в ссылке-приглашении.{' '}
+            <span className="text-white">Заполненный профиль</span> повышает доверие — атлет видит ваше фото, специализации и опыт ещё до того, как примет приглашение.
+          </p>
+        </motion.div>
+
         {/* Photo */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -158,7 +171,7 @@ export default function TrainerPersonalScreen() {
           className="flex flex-col items-center mb-6"
         >
           <div className="relative">
-            <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-(--color_primary_light) to-(--color_primary) flex items-center justify-center">
+            <div className="w-24 h-24 rounded-full overflow-hidden bg-linear-to-br from-(--color_primary_light) to-(--color_primary) flex items-center justify-center">
               {photoPreview ? (
                 <img src={photoPreview} alt="photo" className="w-full h-full object-cover" />
               ) : (

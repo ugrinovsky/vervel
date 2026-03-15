@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
+import { toDateKey } from '@/utils/date';
 import { workoutsApi } from '@/api/workouts';
 import type { DayData } from '@/components/ActivityGraph/ActivityGraph';
 import type { WorkoutTimelineEntry, WorkoutStats } from '@/types/Analytics';
@@ -45,13 +46,6 @@ const EMPTY_DAY_STATS: DayStats = {
   fromTrainer: false,
 };
 
-const localDateStr = (d: Date) => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-};
-
 export function useActivityData() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
@@ -64,8 +58,8 @@ export function useActivityData() {
   useEffect(() => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    const from = localDateStr(new Date(year, month, 1));
-    const to = localDateStr(new Date(year, month + 1, 0)) + 'T23:59:59';
+    const from = toDateKey(new Date(year, month, 1));
+    const to = toDateKey(new Date(year, month + 1, 0)) + 'T23:59:59';
     setLoading(true);
     workoutsApi.stats(from, to)
       .then((res) => setStats(res.data))

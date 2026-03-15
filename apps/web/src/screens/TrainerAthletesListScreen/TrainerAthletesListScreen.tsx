@@ -177,9 +177,31 @@ export default function TrainerAthletesListScreen() {
           </div>
 
           {athletes.length === 0 ? (
-            <p className="text-sm text-(--color_text_muted) text-center py-8">
-              Пока нет привязанных атлетов
-            </p>
+            <div className="py-4 space-y-3">
+              <div className="text-center">
+                <div className="text-3xl mb-2">🏃</div>
+                <p className="text-sm font-medium text-white mb-1">Пока нет атлетов</p>
+                <p className="text-xs text-(--color_text_muted)">Пригласите атлета — он увидит ваш профиль, расписание и сможет писать вам в чат</p>
+              </div>
+              <div className="space-y-2 pt-1">
+                {[
+                  { emoji: '1️⃣', text: 'Нажмите «Добавить» и отправьте атлету ссылку-приглашение' },
+                  { emoji: '2️⃣', text: 'Атлет принимает приглашение — вы появляетесь в его «Моя команда»' },
+                  { emoji: '3️⃣', text: 'Назначайте персональные тренировки через Календарь' },
+                ].map(({ emoji, text }) => (
+                  <div key={emoji} className="flex items-start gap-2 text-xs text-(--color_text_muted)">
+                    <span className="shrink-0">{emoji}</span>
+                    <span>{text}</span>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowAddDrawer(true)}
+                className="w-full py-2.5 rounded-xl bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                Пригласить первого атлета
+              </button>
+            </div>
           ) : filteredAthletes.length === 0 ? (
             <p className="text-sm text-(--color_text_muted) text-center py-8">Ничего не найдено</p>
           ) : view === 'list' ? (

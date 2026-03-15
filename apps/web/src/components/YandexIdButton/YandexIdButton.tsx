@@ -116,6 +116,7 @@ export default function YandexIdButton() {
       })
       .then((result) => result?.handler())
       .catch((error) => {
+        if (error?.code === 'in_progress') return;
         console.error('YaAuthSuggest error:', error);
         if (error?.type !== 'not_authorized') {
           toast.error('Ошибка авторизации через Яндекс');

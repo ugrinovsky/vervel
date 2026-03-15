@@ -93,12 +93,13 @@ export default function RegisterScreen() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      className="h-full overflow-y-auto relative"
       style={{
         background:
           'radial-gradient(circle at 50% 52.5%, var(--color_primary) 0%, var(--color_primary_dark) 90%)',
       }}
     >
+      <div className="min-h-full flex flex-col items-center justify-center p-4 py-8">
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
@@ -282,6 +283,7 @@ export default function RegisterScreen() {
           </p>
         </div>
       </motion.div>
+      </div>
     </div>
   );
 }

@@ -147,9 +147,25 @@ export default function TrainerGroupsListScreen() {
           )}
 
           {groups.length === 0 && !showGroupInput ? (
-            <p className="text-sm text-[var(--color_text_muted)] text-center py-4">
-              Пока нет групп
-            </p>
+            <div className="py-4 space-y-3">
+              <div className="text-center">
+                <div className="text-3xl mb-2">👥</div>
+                <p className="text-sm font-medium text-white mb-1">Пока нет групп</p>
+                <p className="text-xs text-(--color_text_muted)">Создайте группу и добавьте атлетов — они получат расписание и доступ к чату</p>
+              </div>
+              <div className="space-y-2 pt-1">
+                {[
+                  { emoji: '1️⃣', text: 'Нажмите «Создать» и задайте название группы' },
+                  { emoji: '2️⃣', text: 'Зайдите в группу и пригласите атлетов по QR-коду или ссылке' },
+                  { emoji: '3️⃣', text: 'Назначайте тренировки сразу всей группе через Календарь' },
+                ].map(({ emoji, text }) => (
+                  <div key={emoji} className="flex items-start gap-2 text-xs text-(--color_text_muted)">
+                    <span className="shrink-0">{emoji}</span>
+                    <span>{text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : (
             <div className="space-y-2">
               {groups.map((group) => {

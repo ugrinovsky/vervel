@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { format } from 'date-fns';
+import { parseLocalDate, toApiDateTime, toDateKey, toTimeKey } from '@/utils/date';
 import toast from 'react-hot-toast';
 import WorkoutFormBase, { type WorkoutFormData } from '@/components/WorkoutFormBase/WorkoutFormBase';
 import SectionLabel from '@/components/SectionLabel';
@@ -25,8 +25,8 @@ function buildWorkoutPreviewMessage(
 ): string {
   return JSON.stringify({
     __type: 'workout_preview',
-    date: format(date, 'yyyy-MM-dd'),
-    time: format(time, 'HH:mm'),
+    date: toDateKey(date),
+    time: toTimeKey(time),
     workoutType: type,
     exercises,
     notes: notes || undefined,
@@ -125,10 +125,7 @@ export default function WorkoutInlineForm({
 
   const initialDate = (() => {
     if (editWorkout) return new Date(editWorkout.scheduledDate);
-    if (preselectedDate) {
-      const [y, m, d] = preselectedDate.split('-').map(Number);
-      return new Date(y, m - 1, d);
-    }
+    if (preselectedDate) return parseLocalDate(preselectedDate);
     return undefined;
   })();
 
@@ -153,7 +150,7 @@ export default function WorkoutInlineForm({
       return;
     }
 
-    const scheduledDate = `${format(data.date, 'yyyy-MM-dd')}T${format(data.time, 'HH:mm')}:00`;
+    const scheduledDate = toApiDateTime(data.date, data.time);
     const normalizedExercises = data.exercises.map((ex) => {
       if (data.workoutType !== 'bodybuilding' || ex.duration != null || !ex.setsDetail?.length) return ex;
       return {

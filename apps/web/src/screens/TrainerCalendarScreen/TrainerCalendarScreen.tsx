@@ -8,8 +8,11 @@ import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm'
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import TrainerCalendar, { type TrainerDayData } from '@/components/TrainerCalendar/TrainerCalendar';
 import { trainerApi, type ScheduledWorkout } from '@/api/trainer';
+import { toDateKey } from '@/utils/date';
+import { useNavigate } from 'react-router';
 
 import { PlusIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 
@@ -21,13 +24,6 @@ const WORKOUT_TYPE_COLORS: Record<string, string> = {
 
 // Hours shown on timeline (7:00 – 23:00)
 const TIMELINE_HOURS = Array.from({ length: 17 }, (_, i) => i + 7);
-
-function toDateKey(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
 
 function formatHour(h: number): string {
   return `${String(h).padStart(2, '0')}:00`;
@@ -45,6 +41,7 @@ function getWorkoutMinutes(scheduledDate: string): string {
 }
 
 export default function TrainerCalendarScreen() {
+  const navigate = useNavigate();
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState<Date>(startOfMonth(today));
   const [workouts, setWorkouts] = useState<ScheduledWorkout[]>([]);
@@ -126,7 +123,6 @@ export default function TrainerCalendarScreen() {
   const handleDelete = async (id: number) => {
     try {
       await trainerApi.deleteScheduledWorkout(id);
-      setConfirmDeleteId(null);
       toast.success('Тренировка удалена');
       loadWorkouts(currentMonth);
     } catch {
@@ -158,7 +154,7 @@ export default function TrainerCalendarScreen() {
           <ScreenHeader
             icon="📅"
             title="Календарь"
-            description="Планируйте тренировки для атлетов и групп по датам"
+            description="Планируйте тренировки для атлетов и групп по датам — нажмите на слот времени, чтобы назначить тренировку"
           />
         </div>
 
@@ -318,6 +314,14 @@ export default function TrainerCalendarScreen() {
             })}
           </div>
         </div>
+        <ScreenLinks
+          className="pb-4"
+          links={[
+            { emoji: '🏃', bg: 'bg-emerald-500/20', label: 'Атлеты',   sub: 'список атлетов',    to: '/trainer/athletes' },
+            { emoji: '👥', bg: 'bg-blue-500/20',    label: 'Группы',   sub: 'список групп',      to: '/trainer/groups' },
+            { emoji: '📋', bg: 'bg-violet-500/20',  label: 'Шаблоны',  sub: 'готовые тренировки', to: '/trainer/templates' },
+          ]}
+        />
       </div>
       <BottomSheet
         open={selectedTime !== null || editingWorkout !== null}
