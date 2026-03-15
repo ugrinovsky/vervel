@@ -43,6 +43,7 @@ interface FullWorkout {
 interface Props {
   workout: WorkoutTimelineEntry | null;
   onClose: () => void;
+  onUpdate?: (workoutId: number, intensity: number) => void;
 }
 
 /* ─── Константы ─────────────────────────────────────────────────────── */
@@ -233,7 +234,7 @@ function ZonesSection({ zonesLoad }: { zonesLoad: Record<string, number> }) {
 
 /* ─── Основной компонент ────────────────────────────────────────────── */
 
-export default function WorkoutDetailSheet({ workout, onClose }: Props) {
+export default function WorkoutDetailSheet({ workout, onClose, onUpdate }: Props) {
   const [fullWorkout, setFullWorkout] = useState<FullWorkout | null>(null);
   const [exerciseMap, setExerciseMap] = useState<Map<string, Exercise>>(new Map());
   const [loading, setLoading] = useState(false);
@@ -349,7 +350,9 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
     setSavingRpe(true);
     try {
       const res = await workoutsApi.update(fullWorkout.id, buildUpdatePayload({ rpe: newRpe }));
-      setFullWorkout(res.data as FullWorkout);
+      const updated = res.data as FullWorkout;
+      setFullWorkout(updated);
+      onUpdate?.(fullWorkout.id, updated.totalIntensity);
     } catch {
       setRpe(fullWorkout.rpe ?? null); // откат
       toast.error('Не удалось сохранить оценку');
@@ -431,6 +434,15 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
             )}
           </div>
 
+          {/* ── Интенсивность ──────────────────────────────────────── */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-(--color_text_muted)">Интенсивность</span>
+              <span className="text-xs text-(--color_text_muted) tabular-nums">{Math.round(fullWorkout.totalIntensity * 100)}%</span>
+            </div>
+            <IntensityBar value={fullWorkout.totalIntensity} />
+          </div>
+
           {/* ── RPE — оценка (только прошедшая, вне режима редактирования) ── */}
           {isPast && !isEditing && (
             <div className="bg-(--color_bg_card_hover) rounded-xl p-3 border border-(--color_border)">
@@ -496,13 +508,6 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
             </div>
           )}
 
-          {/* ── Интенсивность ──────────────────────────────────────── */}
-          {fullWorkout.totalIntensity > 0 && (
-            <div>
-              <span className="text-xs text-(--color_text_muted) mb-1 block">Интенсивность</span>
-              <IntensityBar value={fullWorkout.totalIntensity} />
-            </div>
-          )}
 
           {/* ── Упражнения ─────────────────────────────────────────── */}
           {fullWorkout.exercises.length > 0 && (
@@ -560,7 +565,7 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
           {!isEditing && <ZonesSection zonesLoad={fullWorkout.zonesLoad ?? {}} />}
 
           {/* ── Итого ──────────────────────────────────────────────── */}
-          {!isEditing && (
+          {!isEditing && fullWorkout.totalVolume > 0 && (
             <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border)">
               <SectionTitle>Итого</SectionTitle>
               <div className="grid grid-cols-2 gap-3">
@@ -570,10 +575,6 @@ export default function WorkoutDetailSheet({ workout, onClose }: Props) {
                     <div className="text-xs text-(--color_text_muted)">Объём</div>
                   </div>
                 )}
-                <div>
-                  <div className="text-lg font-bold text-emerald-400">{Math.round(fullWorkout.totalIntensity * 100)}%</div>
-                  <div className="text-xs text-(--color_text_muted)">Интенсивность</div>
-                </div>
                 <div>
                   <div className="text-lg font-bold text-white">{fullWorkout.exercises.length}</div>
                   <div className="text-xs text-(--color_text_muted)">Упражнений</div>

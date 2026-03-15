@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import VerveLogo from '@/components/VerveLogo/VerveLogo';
 import VkIdButton from '@/components/VkIdButton/VkIdButton';
 import YandexIdButton from '@/components/YandexIdButton/YandexIdButton';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 // Генерируем ВСЕ значения для звезд ОДИН РАЗ
 const STARS = [...Array(150)].map((_, i) => ({
@@ -117,7 +118,7 @@ export default function LoginScreen() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden overflow-y-auto"
       style={{
         background:
           'radial-gradient(circle at 50% 52.5%, var(--color_primary) 0%, var(--color_primary_dark) 90%)',
@@ -278,13 +279,13 @@ export default function LoginScreen() {
           />
 
           {/* Заголовок */}
-          <div className="text-center mb-8 relative z-10">
+          <div className="text-center mb-2 relative z-10">
             <VerveLogo className="h-14 w-auto mx-auto mb-2" />
             <p className="text-emerald-200/90 font-medium mb-3">
               Тренируйся умнее — с AI или с тренером
             </p>
             <div className="flex flex-wrap justify-center gap-2 text-xs mb-4">
-              {['AI-тренировки', 'Распознавание', 'AI-чат', 'Тренеры онлайн'].map((feat) => (
+              {['AI-тренировки', 'AI-чат', 'Тренеры онлайн'].map((feat) => (
                 <span
                   key={feat}
                   className="px-2.5 py-1 rounded-full border border-emerald-400/30 bg-white/5 text-emerald-200/70"
@@ -339,23 +340,20 @@ export default function LoginScreen() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-3.5 text-emerald-400 hover:text-emerald-300 transition"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-400 hover:text-emerald-300 transition"
                 >
-                  {showPassword ? '🌙' : '☀️'}
+                  {showPassword ? (
+                    <EyeSlashIcon className="w-5 h-5" />
+                  ) : (
+                    <EyeIcon className="w-5 h-5" />
+                  )}
                 </button>
               </div>
               {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password}</p>}
             </div>
 
             {/* Дополнительно */}
-            <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center space-x-2 text-emerald-100">
-                <input
-                  type="checkbox"
-                  className="rounded border-emerald-400 bg-emerald-900/20 text-emerald-400 focus:ring-emerald-400/20"
-                />
-                <span>Запомнить меня</span>
-              </label>
+            <div className="flex items-center justify-end text-sm">
               <a href="#" className="text-emerald-400 hover:text-emerald-300 transition">
                 Забыли пароль?
               </a>

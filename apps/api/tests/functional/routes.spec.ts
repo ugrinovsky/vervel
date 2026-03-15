@@ -4,17 +4,27 @@ import User from '#models/user'
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
 async function athleteUser() {
-  return User.firstOrCreate(
+  const user = await User.firstOrCreate(
     { email: 'test_athlete@test.ru' },
     { password: 'password', role: 'athlete' }
   )
+  if (user.role !== 'athlete') {
+    user.role = 'athlete'
+    await user.save()
+  }
+  return user
 }
 
 async function trainerUser() {
-  return User.firstOrCreate(
+  const user = await User.firstOrCreate(
     { email: 'test_trainer@test.ru' },
     { password: 'password', role: 'trainer' }
   )
+  if (user.role !== 'trainer') {
+    user.role = 'trainer'
+    await user.save()
+  }
+  return user
 }
 
 // ─── Публичные роуты ──────────────────────────────────────────────────────────
@@ -519,5 +529,339 @@ test.group('Trainer routes: доступ тренеру', () => {
     const response = await client.post('/trainer/athletes/invite').loginAs(trainer).json({})
     response.assertStatus(201)
     response.assertBodyContains({ success: true })
+  })
+})
+
+// ─── OAuth: защита и базовая логика ──────────────────────────────────────────
+
+test.group('OAuth: защита и базовая логика', () => {
+  // Редиректы: клиент следует за ними, поэтому проверяем только что нет 500
+  test('GET /oauth/vk/redirect → не 500 (редирект на VK)', async ({ client, assert }) => {
+    const response = await client.get('/oauth/vk/redirect')
+    assert.notEqual(response.status(), 500)
+  })
+
+  test('GET /oauth/yandex/redirect → не 500 (редирект на Yandex)', async ({ client, assert }) => {
+    const response = await client.get('/oauth/yandex/redirect')
+    assert.notEqual(response.status(), 500)
+  })
+
+  test('GET /oauth/invalid/redirect → 400', async ({ client }) => {
+    const response = await client.get('/oauth/invalid/redirect')
+    response.assertStatus(400)
+  })
+
+  test('GET /oauth/vk/callback с ?error=access_denied → не 500', async ({ client, assert }) => {
+    const response = await client.get('/oauth/vk/callback').qs({ error: 'access_denied' })
+    assert.notEqual(response.status(), 500)
+  })
+
+  test('GET /oauth/vk/callback без code → не 500', async ({ client, assert }) => {
+    const response = await client.get('/oauth/vk/callback')
+    assert.notEqual(response.status(), 500)
+  })
+
+  test('POST /oauth/vk/sdk-login без тела → 400', async ({ client }) => {
+    const response = await client.post('/oauth/vk/sdk-login').json({})
+    response.assertStatus(400)
+  })
+
+  test('POST /oauth/yandex/sdk-login без тела → 400', async ({ client }) => {
+    const response = await client.post('/oauth/yandex/sdk-login').json({})
+    response.assertStatus(400)
+  })
+
+  test('POST /oauth/set-role без параметров → 400', async ({ client }) => {
+    const response = await client.post('/oauth/set-role').json({})
+    response.assertStatus(400)
+  })
+})
+
+// ─── Exercises: детально ──────────────────────────────────────────────────────
+
+test.group('Exercises: детально', () => {
+  test('GET /exercises/999999 → 404 для несуществующего id', async ({ client }) => {
+    const response = await client.get('/exercises/999999')
+    response.assertStatus(404)
+  })
+})
+
+// ─── Invite: защита и логика ──────────────────────────────────────────────────
+
+test.group('Invite: защита и логика', () => {
+  test('GET /invite/info/:token → 404 для несуществующего токена', async ({ client }) => {
+    const response = await client.get('/invite/info/nonexistent-token-xyz')
+    response.assertStatus(404)
+  })
+
+  test('POST /invite/accept → 401 без авторизации', async ({ client }) => {
+    const response = await client.post('/invite/accept').json({ token: 'some-token' })
+    response.assertStatus(401)
+  })
+
+  test('GET /referral/stats → 401 без авторизации', async ({ client }) => {
+    const response = await client.get('/referral/stats')
+    response.assertStatus(401)
+  })
+
+  test('GET /referral/stats → 200 для атлета', async ({ client }) => {
+    const user = await athleteUser()
+    const response = await client.get('/referral/stats').loginAs(user)
+    response.assertStatus(200)
+  })
+})
+
+// ─── Profile: дополнительные кейсы ───────────────────────────────────────────
+
+test.group('Profile: дополнительные кейсы', () => {
+  // Используем уникальных пользователей чтобы не ломать изоляцию тестов роли
+  test('POST /profile/become-athlete → 200 для тренера', async ({ client }) => {
+    const user = await User.firstOrCreate(
+      { email: 'test_become_athlete@test.ru' },
+      { password: 'password', role: 'trainer' }
+    )
+    await user.merge({ role: 'trainer' }).save()
+    const response = await client.post('/profile/become-athlete').loginAs(user)
+    response.assertStatus(200)
+  })
+
+  test('POST /profile/become-trainer → 200 для атлета', async ({ client }) => {
+    const user = await User.firstOrCreate(
+      { email: 'test_become_trainer@test.ru' },
+      { password: 'password', role: 'athlete' }
+    )
+    await user.merge({ role: 'athlete' }).save()
+    const response = await client.post('/profile/become-trainer').loginAs(user)
+    response.assertStatus(200)
+  })
+
+  test('POST /achievements/check → 200 для атлета', async ({ client }) => {
+    const user = await athleteUser()
+    const response = await client.post('/achievements/check').loginAs(user).json({})
+    response.assertStatus(200)
+  })
+})
+
+// ─── Feedback: с авторизацией ─────────────────────────────────────────────────
+
+test.group('Feedback: с авторизацией', () => {
+  test('POST /feedback с авторизацией → 201', async ({ client }) => {
+    const user = await athleteUser()
+    const response = await client
+      .post('/feedback')
+      .loginAs(user)
+      .json({ type: 'general', message: 'Тестовый отзыв от пользователя' })
+    response.assertStatus(201)
+  })
+})
+
+// ─── Workouts: CRUD детально ──────────────────────────────────────────────────
+
+test.group('Workouts: CRUD детально', () => {
+  test('GET /workouts возвращает список с meta (авторизованный атлет)', async ({
+    client,
+    assert,
+  }) => {
+    const user = await athleteUser()
+    const response = await client.get('/workouts').loginAs(user)
+    response.assertStatus(200)
+    const body = response.body()
+    assert.property(body, 'data')
+    assert.property(body, 'meta')
+  })
+
+  test('POST /workouts создаёт тренировку', async ({ client }) => {
+    const user = await athleteUser()
+    const response = await client
+      .post('/workouts')
+      .loginAs(user)
+      .json({
+        date: '2026-03-01',
+        workoutType: 'crossfit',
+        exercises: [],
+      })
+    response.assertStatus(201)
+  })
+
+  test('GET /workouts/by-zone → 401 без авторизации', async ({ client }) => {
+    const response = await client.get('/workouts/by-zone')
+    response.assertStatus(401)
+  })
+
+  test('GET /workouts/by-zone → 200 с авторизацией и параметром zone', async ({ client }) => {
+    const user = await athleteUser()
+    const response = await client.get('/workouts/by-zone').qs({ zone: 'chest' }).loginAs(user)
+    response.assertStatus(200)
+  })
+
+  test('DELETE /workouts/999999 → 404 (несуществующая тренировка)', async ({ client }) => {
+    const user = await athleteUser()
+    const response = await client.delete('/workouts/999999').loginAs(user)
+    response.assertStatus(404)
+  })
+})
+
+// ─── Trainer CRUD: обновление и удаление ─────────────────────────────────────
+
+test.group('Trainer CRUD: обновление и удаление', () => {
+  test('PUT /trainer/groups/:id обновляет группу', async ({ client }) => {
+    const trainer = await trainerUser()
+    const created = await client
+      .post('/trainer/groups')
+      .loginAs(trainer)
+      .json({ name: 'Временная группа' })
+    const id = created.body().data.id
+    const response = await client
+      .put(`/trainer/groups/${id}`)
+      .loginAs(trainer)
+      .json({ name: 'Обновлённая группа' })
+    response.assertStatus(200)
+    response.assertBodyContains({ success: true })
+  })
+
+  test('GET /trainer/groups/:id/athletes возвращает список', async ({ client }) => {
+    const trainer = await trainerUser()
+    const created = await client
+      .post('/trainer/groups')
+      .loginAs(trainer)
+      .json({ name: 'Группа для атлетов' })
+    const id = created.body().data.id
+    const response = await client.get(`/trainer/groups/${id}/athletes`).loginAs(trainer)
+    response.assertStatus(200)
+  })
+
+  test('GET /trainer/groups/:id/leaderboard возвращает данные', async ({ client }) => {
+    const trainer = await trainerUser()
+    const created = await client
+      .post('/trainer/groups')
+      .loginAs(trainer)
+      .json({ name: 'Группа для лидерборда' })
+    const id = created.body().data.id
+    const response = await client.get(`/trainer/groups/${id}/leaderboard`).loginAs(trainer)
+    response.assertStatus(200)
+  })
+
+  test('DELETE /trainer/groups/:id удаляет группу', async ({ client }) => {
+    const trainer = await trainerUser()
+    const created = await client
+      .post('/trainer/groups')
+      .loginAs(trainer)
+      .json({ name: 'Группа для удаления' })
+    const id = created.body().data.id
+    const response = await client.delete(`/trainer/groups/${id}`).loginAs(trainer)
+    response.assertStatus(200)
+  })
+
+  test('PUT /trainer/scheduled-workouts/:id обновляет запланированную тренировку', async ({
+    client,
+  }) => {
+    const trainer = await trainerUser()
+    const created = await client
+      .post('/trainer/scheduled-workouts')
+      .loginAs(trainer)
+      .json({
+        scheduledDate: '2026-03-15',
+        workoutData: { type: 'crossfit', exercises: [] },
+        assignedTo: [],
+      })
+    const id = created.body().data.id
+    const response = await client
+      .put(`/trainer/scheduled-workouts/${id}`)
+      .loginAs(trainer)
+      .json({
+        scheduledDate: '2026-04-01',
+        workoutData: { type: 'crossfit', exercises: [] },
+        assignedTo: [],
+      })
+    response.assertStatus(200)
+  })
+
+  test('DELETE /trainer/scheduled-workouts/:id удаляет запланированную тренировку', async ({
+    client,
+  }) => {
+    const trainer = await trainerUser()
+    const created = await client
+      .post('/trainer/scheduled-workouts')
+      .loginAs(trainer)
+      .json({
+        scheduledDate: '2026-03-20',
+        workoutData: { type: 'crossfit', exercises: [] },
+        assignedTo: [],
+      })
+    const id = created.body().data.id
+    const response = await client.delete(`/trainer/scheduled-workouts/${id}`).loginAs(trainer)
+    response.assertStatus(200)
+  })
+
+  test('PUT /trainer/workout-templates/:id обновляет шаблон', async ({ client }) => {
+    const trainer = await trainerUser()
+    const created = await client
+      .post('/trainer/workout-templates')
+      .loginAs(trainer)
+      .json({ name: 'Шаблон для обновления', workoutType: 'crossfit', exercises: [] })
+    const id = created.body().data.id
+    const response = await client
+      .put(`/trainer/workout-templates/${id}`)
+      .loginAs(trainer)
+      .json({ name: 'Обновлённый шаблон', workoutType: 'crossfit', exercises: [] })
+    response.assertStatus(200)
+  })
+
+  test('DELETE /trainer/workout-templates/:id удаляет шаблон', async ({ client }) => {
+    const trainer = await trainerUser()
+    const created = await client
+      .post('/trainer/workout-templates')
+      .loginAs(trainer)
+      .json({ name: 'Шаблон для удаления', workoutType: 'crossfit', exercises: [] })
+    const id = created.body().data.id
+    const response = await client.delete(`/trainer/workout-templates/${id}`).loginAs(trainer)
+    response.assertStatus(200)
+  })
+})
+
+// ─── Trainer chats: доступ ────────────────────────────────────────────────────
+
+test.group('Trainer chats: доступ', () => {
+  test('GET /trainer/chats/group/999999 → 404 (несуществующая группа)', async ({ client }) => {
+    const trainer = await trainerUser()
+    const response = await client.get('/trainer/chats/group/999999').loginAs(trainer)
+    response.assertStatus(404)
+  })
+
+  test('GET /trainer/athletes/999999/stats → 403 или 404 (нет доступа)', async ({
+    client,
+    assert,
+  }) => {
+    const trainer = await trainerUser()
+    const response = await client.get('/trainer/athletes/999999/stats').loginAs(trainer)
+    assert.isTrue([403, 404].includes(response.status()))
+  })
+
+  test('GET /trainer/athletes/999999/workouts → 403 или 404 (нет доступа)', async ({
+    client,
+    assert,
+  }) => {
+    const trainer = await trainerUser()
+    const response = await client.get('/trainer/athletes/999999/workouts').loginAs(trainer)
+    assert.isTrue([403, 404].includes(response.status()))
+  })
+})
+
+// ─── Athlete routes: детально ─────────────────────────────────────────────────
+
+test.group('Athlete routes: детально', () => {
+  test('GET /athlete/my-trainers → 200 для атлета', async ({ client }) => {
+    const user = await athleteUser()
+    const response = await client.get('/athlete/my-trainers').loginAs(user)
+    response.assertStatus(200)
+  })
+
+  test('GET /athlete/chats/trainer/999999 → не 401 (авторизация работает)', async ({
+    client,
+    assert,
+  }) => {
+    const user = await athleteUser()
+    const response = await client.get('/athlete/chats/trainer/999999').loginAs(user)
+    assert.notEqual(response.status(), 401)
   })
 })

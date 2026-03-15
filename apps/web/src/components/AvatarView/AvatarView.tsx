@@ -1,12 +1,13 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Avatar from '@/components/Avatar/Avatar';
 import type { ZoneState } from '@/api/avatar';
 import type { BodyGender } from '@/components/Avatar/bodyZones';
 import { getZoneLabel } from '@/util/zones';
 import { workoutsApi, type ZoneWorkout } from '@/api/workouts';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
+import BottomSheet from '@/components/BottomSheet/BottomSheet';
 
 /**
  * Normalizes short API zone keys (from ExerciseCatalog) and legacy seeder keys
@@ -310,17 +311,17 @@ export default function AvatarView({
 
           <div className="grid grid-cols-3 gap-4">
             <div className="bg-(--color_bg_card) rounded-xl p-3">
-              <div className="text-2xl font-bold text-white">{totalWorkouts}</div>
+              <div className="text-lg font-bold text-white">{totalWorkouts}</div>
               <div className="text-xs text-(--color_text_muted)">За 14 дней</div>
             </div>
             <div className="bg-(--color_bg_card) rounded-xl p-3">
-              <div className="text-2xl font-bold text-white">
+              <div className="text-lg font-bold text-white">
                 {summary.loadedCount}/{summary.totalCount}
               </div>
               <div className="text-xs text-(--color_text_muted)">Зон нагружено</div>
             </div>
             <div className="bg-(--color_bg_card) rounded-xl p-3">
-              <div className="text-2xl font-bold text-white">
+              <div className="text-lg font-bold text-white">
                 {Math.round(summary.avgIntensity * 100)}%
               </div>
               <div className="text-xs text-(--color_text_muted)">Ср. усталость</div>
@@ -348,54 +349,6 @@ export default function AvatarView({
             </div>
           )}
         </div>
-
-        {/* Selected zone detail */}
-        <AnimatePresence mode="wait">
-          {selectedZone && zones[selectedZone] && (
-            <motion.div
-              key={selectedZone}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="glass rounded-2xl p-5"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-white">{getZoneLabel(selectedZone)}</h3>
-                <button
-                  onClick={() => setSelectedZone(null)}
-                  className="text-(--color_text_muted) hover:text-white transition-colors text-sm"
-                >
-                  Закрыть
-                </button>
-              </div>
-              <ZoneDetail zone={zones[selectedZone]} />
-
-              {/* Recent workouts for this zone */}
-              <div className="mt-4 pt-4 border-t border-white/10">
-                <h4 className="text-xs font-semibold text-(--color_text_secondary) uppercase tracking-wider mb-3">
-                  Последние тренировки
-                </h4>
-                {zoneWorkoutsLoading && (
-                  <div className="flex items-center gap-2 text-xs text-(--color_text_muted)">
-                    <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
-                    Загрузка...
-                  </div>
-                )}
-                {!zoneWorkoutsLoading && zoneWorkouts?.length === 0 && (
-                  <p className="text-xs text-(--color_text_muted)">Нет тренировок для этой зоны</p>
-                )}
-                {!zoneWorkoutsLoading && zoneWorkouts && zoneWorkouts.length > 0 && (
-                  <div className="space-y-2">
-                    {zoneWorkouts.map((w) => (
-                      <ZoneWorkoutCard key={w.id} workout={w} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* All zones */}
         <div className="glass rounded-2xl p-5">
@@ -489,6 +442,40 @@ export default function AvatarView({
           </div>
           )}
         </div>
+
+        {/* Zone detail BottomSheet */}
+        <BottomSheet
+          open={!!(selectedZone && zones[selectedZone])}
+          onClose={() => setSelectedZone(null)}
+          title={selectedZone ? getZoneLabel(selectedZone) : ''}
+        >
+          {selectedZone && zones[selectedZone] && (
+            <>
+              <ZoneDetail zone={zones[selectedZone]} />
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <h4 className="text-xs font-semibold text-(--color_text_secondary) uppercase tracking-wider mb-3">
+                  Последние тренировки
+                </h4>
+                {zoneWorkoutsLoading && (
+                  <div className="flex items-center gap-2 text-xs text-(--color_text_muted)">
+                    <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
+                    Загрузка...
+                  </div>
+                )}
+                {!zoneWorkoutsLoading && zoneWorkouts?.length === 0 && (
+                  <p className="text-xs text-(--color_text_muted)">Нет тренировок для этой зоны</p>
+                )}
+                {!zoneWorkoutsLoading && zoneWorkouts && zoneWorkouts.length > 0 && (
+                  <div className="space-y-2">
+                    {zoneWorkouts.map((w) => (
+                      <ZoneWorkoutCard key={w.id} workout={w} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </BottomSheet>
       </div>
     </motion.div>
   );

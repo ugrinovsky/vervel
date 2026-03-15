@@ -19,8 +19,8 @@ const WORKOUT_TYPE_COLORS: Record<string, string> = {
   cardio: 'bg-amber-500/15 ring-1 ring-inset ring-amber-500/30',
 };
 
-// Hours shown on timeline (7:00 – 22:00)
-const TIMELINE_HOURS = Array.from({ length: 16 }, (_, i) => i + 7);
+// Hours shown on timeline (7:00 – 23:00)
+const TIMELINE_HOURS = Array.from({ length: 17 }, (_, i) => i + 7);
 
 function toDateKey(date: Date): string {
   const y = date.getFullYear();
@@ -152,7 +152,7 @@ export default function TrainerCalendarScreen() {
 
   return (
     <Screen className="trainer-calendar-screen">
-      <div className="flex flex-col h-full px-4 w-full">
+      <div className="flex flex-col px-4 w-full">
         {/* ── Page header ── */}
         <div className="pt-4 pb-1 shrink-0">
           <ScreenHeader
@@ -184,7 +184,7 @@ export default function TrainerCalendarScreen() {
         <div className="border-t border-(--color_border) shrink-0 mt-3 mb-3" />
 
         {/* ── Selected day timeline (bottom) ── */}
-        <div className="flex-1 overflow-y-auto">
+        <div>
           {/* Day header */}
           <div className="flex items-center justify-between pt-3 pb-2 shrink-0">
             <div>

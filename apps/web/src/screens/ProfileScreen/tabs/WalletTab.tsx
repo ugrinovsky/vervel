@@ -84,17 +84,11 @@ export default function WalletTab({ balance, setBalance, inTrainerMode }: Props)
 
         {/* AI costs hint */}
         <div className="flex gap-2 mb-4 flex-wrap">
-          {(inTrainerMode
-            ? [
-                { label: 'Генерация', cost: '10₽' },
-                { label: 'Распознавание', cost: '9₽' },
-                { label: 'AI-чат', cost: 'от 0.5₽' },
-              ]
-            : [
-                { label: 'Распознавание', cost: '9₽' },
-                { label: 'AI-чат', cost: 'от 0.5₽' },
-              ]
-          ).map(({ label, cost }) => (
+          {[
+            ...(inTrainerMode ? [{ label: 'Генерация', cost: '10₽' }] : []),
+            { label: 'Распознавание', cost: '10₽' },
+            { label: 'AI-чат', cost: 'от 0.5₽' },
+          ].map(({ label, cost }) => (
             <div
               key={label}
               className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-xs text-(--color_text_muted)"

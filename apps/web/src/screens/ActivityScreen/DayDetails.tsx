@@ -138,6 +138,7 @@ function SectionDivider({ label }: { label: string }) {
 
 export default function DayDetails({ date, workouts, onDeleted }: DayDetailsProps) {
   const [activeWorkout, setActiveWorkout] = useState<WorkoutTimelineEntry | null>(null);
+  const [localIntensities, setLocalIntensities] = useState<Record<number, number>>({});
   const navigate = useNavigate();
   const hasWorkouts = workouts.length > 0;
 
@@ -166,7 +167,7 @@ export default function DayDetails({ date, workouts, onDeleted }: DayDetailsProp
     return (
       <WorkoutTile
         key={i}
-        workout={w}
+        workout={w.id && localIntensities[w.id] !== undefined ? { ...w, intensity: localIntensities[w.id] } : w}
         isUpcoming={isUpcoming}
         onClick={() => setActiveWorkout(w)}
         onDelete={canDelete ? () => handleDelete(w) : undefined}
@@ -234,6 +235,7 @@ export default function DayDetails({ date, workouts, onDeleted }: DayDetailsProp
       <WorkoutDetailSheet
         workout={activeWorkout}
         onClose={() => setActiveWorkout(null)}
+        onUpdate={(id, intensity) => setLocalIntensities((prev) => ({ ...prev, [id]: intensity }))}
       />
     </>
   );
