@@ -424,28 +424,42 @@ export default function LoginScreen() {
           </div>
 
           {/* Тестовые данные */}
-          <motion.div
-            className="mt-8 p-4 rounded-xl border relative overflow-hidden"
-            style={{
-              backgroundColor: 'rgba(14, 92, 77, 0.2)',
-              borderColor: 'rgba(16, 185, 129, 0.2)',
-            }}
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          >
-            <div className="flex items-center mb-2">
-              <span className="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-pulse"></span>
-              <span className="text-xs text-emerald-200/70">Тестовый доступ</span>
-            </div>
-            <div className="space-y-1 text-sm">
-              <p className="text-emerald-100">
-                <span className="text-emerald-300/50">Email:</span> test@example.com
-              </p>
-              <p className="text-emerald-100">
-                <span className="text-emerald-300/50">Пароль:</span> 123456
-              </p>
-            </div>
-          </motion.div>
+          <div className="mt-8 space-y-2">
+            {[
+              { label: 'Тестовый атлет', email: 'test@example.com', password: '123456' },
+              { label: 'Тестовый тренер', email: 'trainer@example.com', password: '123456' },
+            ].map((account) => (
+              <motion.button
+                key={account.email}
+                type="button"
+                className="w-full p-4 rounded-xl border relative overflow-hidden text-left cursor-pointer"
+                style={{
+                  backgroundColor: 'rgba(14, 92, 77, 0.2)',
+                  borderColor: 'rgba(16, 185, 129, 0.2)',
+                }}
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                onClick={() => {
+                  setEmail(account.email);
+                  setPassword(account.password);
+                  setErrors({});
+                }}
+              >
+                <div className="flex items-center mb-2">
+                  <span className="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-pulse"></span>
+                  <span className="text-xs text-emerald-200/70">{account.label}</span>
+                </div>
+                <div className="space-y-1 text-sm">
+                  <p className="text-emerald-100">
+                    <span className="text-emerald-300/50">Email:</span> {account.email}
+                  </p>
+                  <p className="text-emerald-100">
+                    <span className="text-emerald-300/50">Пароль:</span> {account.password}
+                  </p>
+                </div>
+              </motion.button>
+            ))}
+          </div>
 
           {/* Ссылка на регистрацию */}
           <p className="text-center mt-6 text-sm text-emerald-200/70">
