@@ -2,7 +2,7 @@
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--color_primary_light) transparent;
+  scrollbar-color: rgb(var(--color_primary_light_ch) / 0.3) transparent;
 }
 
 ::-webkit-scrollbar {
