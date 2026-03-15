@@ -118,12 +118,13 @@ export default function LoginScreen() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden overflow-y-auto"
+      className="h-full overflow-y-auto relative"
       style={{
         background:
           'radial-gradient(circle at 50% 52.5%, var(--color_primary) 0%, var(--color_primary_dark) 90%)',
       }}
     >
+    <div className="min-h-full flex items-center justify-center p-4 relative">
       {/* СЛОЙ 1: ДВИЖУЩИЕСЯ ЗВЕЗДЫ (z-0) */}
       <div className="absolute inset-0 overflow-hidden z-0">
         {STARS.map((star) => (
@@ -458,6 +459,7 @@ export default function LoginScreen() {
           </p>
         </div>
       </motion.div>
+    </div>
     </div>
   );
 }
