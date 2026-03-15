@@ -338,7 +338,7 @@ export default function DocsScreen() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--color_bg)' }}>
+    <div className="h-full overflow-y-auto" style={{ backgroundColor: 'var(--color_bg)' }}>
       <div className="p-4 w-full mx-auto pb-12">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6 pt-4">

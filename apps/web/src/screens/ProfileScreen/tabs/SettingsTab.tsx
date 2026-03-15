@@ -156,7 +156,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
       {/* Theme picker */}
       <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
         <h2 className="text-base font-semibold text-white mb-4">Цвет темы</h2>
-        <div className="flex flex-wrap gap-3">
+        <div className="grid grid-cols-6 gap-3">
           {THEME_PRESETS.map((preset) => (
             <button
               key={preset.hue}

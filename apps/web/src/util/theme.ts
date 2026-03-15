@@ -85,6 +85,14 @@ export function applyTheme(hue: number) {
     }
   }
 
+  // Update Safari/Chrome browser UI color
+  const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+  const [r, g, b] = primaryDark.split(' ').map(Number);
+  const hex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  if (themeColorMeta) {
+    themeColorMeta.setAttribute('content', hex);
+  }
+
   document.dispatchEvent(new CustomEvent('themechange'));
 }
 
