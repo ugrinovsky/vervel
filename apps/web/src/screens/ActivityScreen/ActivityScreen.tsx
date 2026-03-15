@@ -51,17 +51,11 @@ export default function ActivityScreen() {
           description="Календарь тренировок — нажмите на день, чтобы посмотреть детали, добавить или изменить запись"
         />
 
-        {monthlyStats && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <MonthlyStats stats={monthlyStats} />
-          </motion.div>
-        )}
-
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="mb-8"
+          className="mb-4"
         >
           <ActivityCalendar
             selectedDate={selectedDate}
@@ -72,6 +66,12 @@ export default function ActivityScreen() {
             days={days}
           />
         </motion.div>
+
+        {monthlyStats && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="mb-4">
+            <MonthlyStats stats={monthlyStats} />
+          </motion.div>
+        )}
 
         <AnimatePresence>
           {selectedDate && (

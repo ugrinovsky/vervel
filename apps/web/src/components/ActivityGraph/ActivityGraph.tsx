@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format, startOfMonth, isSameDay, isToday, getDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export type LoadType = 'none' | 'low' | 'medium' | 'high';
 
@@ -57,12 +58,14 @@ export default function ActivityCalendar({
   days,
 }: ActivityCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState<Date>(month);
+  const directionRef = useRef<1 | -1>(1);
 
   useEffect(() => {
     setCurrentMonth(month);
   }, [month]);
 
-  const navigate = (delta: number) => {
+  const navigate = (delta: 1 | -1) => {
+    directionRef.current = delta;
     const next = new Date(currentMonth);
     next.setMonth(currentMonth.getMonth() + delta);
     setCurrentMonth(next);
@@ -71,12 +74,15 @@ export default function ActivityCalendar({
 
   const goToToday = () => {
     const today = new Date();
+    directionRef.current = today >= currentMonth ? 1 : -1;
     setCurrentMonth(today);
     onMonthChange?.(today);
     onGoToToday?.(today);
   };
 
   const startDayIndex = getMondayIndex(startOfMonth(currentMonth));
+  const monthKey = format(currentMonth, 'yyyy-MM');
+  const x = directionRef.current * 40;
 
   return (
     <div className="glass p-6 rounded-xl">
@@ -117,52 +123,61 @@ export default function ActivityCalendar({
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-2">
-        {Array.from({ length: startDayIndex }, (_, i) => (
-          <div key={`empty-${i}`} className="h-12" />
-        ))}
+      <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={monthKey}
+            initial={{ opacity: 0, y: x > 0 ? 8 : -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: x > 0 ? -8 : 8 }}
+            transition={{ duration: 0.18, ease: 'easeInOut' }}
+            className="grid grid-cols-7 gap-2"
+          >
+            {Array.from({ length: startDayIndex }, (_, i) => (
+              <div key={`empty-${i}`} className="h-12" />
+            ))}
 
-        {days.map((day, i) => {
-          const isActive = selectedDate && isSameDay(day.date, selectedDate);
-          const isCurrentDay = isToday(day.date);
-          const hasLoad = day.load !== 'none';
+            {days.map((day, i) => {
+              const isActive = selectedDate && isSameDay(day.date, selectedDate);
+              const isCurrentDay = isToday(day.date);
+              const hasLoad = day.load !== 'none';
 
-          return (
-            <button
-              key={i}
-              onClick={() => onSelect(day)}
-              className={`
-                relative h-12 rounded-lg transition-all duration-200
-                flex items-center justify-center
-                ${loadColors[day.load]}
-                ${isActive
-                  ? 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-gray-900 scale-105'
-                  : 'hover:opacity-90 hover:scale-105'
-                }
-                ${isCurrentDay && !isActive ? 'ring-1 ring-white/40' : ''}
-                ${!hasLoad ? 'hover:bg-(--color_bg_card_hover)' : ''}
-              `}
-              title={`${format(day.date, 'd MMMM yyyy', { locale: ru })} — ${loadLabels[day.load]} нагрузка`}
-            >
-              <span
-                className={`
-                  text-sm font-bold
-                  ${hasLoad ? 'text-white' : 'text-(--color_text_muted)'}
-                  ${isCurrentDay ? 'text-emerald-300' : ''}
-                `}
-              >
-                {format(day.date, 'd')}
-              </span>
-              {isCurrentDay && (
-                <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full" />
-              )}
-              {day.fromTrainer && (
-                <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-violet-400 rounded-full border border-gray-900" title="Назначено тренером" />
-              )}
-            </button>
-          );
-        })}
-      </div>
+              return (
+                <button
+                  key={i}
+                  onClick={() => onSelect(day)}
+                  className={`
+                    relative h-12 rounded-lg transition-all duration-200
+                    flex items-center justify-center
+                    ${loadColors[day.load]}
+                    ${isActive
+                      ? 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-gray-900 scale-105'
+                      : 'hover:opacity-90 hover:scale-105'
+                    }
+                    ${isCurrentDay && !isActive ? 'ring-1 ring-white/40' : ''}
+                    ${!hasLoad ? 'hover:bg-(--color_bg_card_hover)' : ''}
+                  `}
+                  title={`${format(day.date, 'd MMMM yyyy', { locale: ru })} — ${loadLabels[day.load]} нагрузка`}
+                >
+                  <span
+                    className={`
+                      text-sm font-bold
+                      ${hasLoad ? 'text-white' : 'text-(--color_text_muted)'}
+                      ${isCurrentDay ? 'text-emerald-300' : ''}
+                    `}
+                  >
+                    {format(day.date, 'd')}
+                  </span>
+                  {isCurrentDay && (
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full" />
+                  )}
+                  {day.fromTrainer && (
+                    <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-violet-400 rounded-full border border-gray-900" title="Назначено тренером" />
+                  )}
+                </button>
+              );
+            })}
+          </motion.div>
+        </AnimatePresence>
 
       <div className="mt-6 pt-4 border-t border-(--color_border)">
         <div className="flex flex-wrap justify-between items-center gap-2">

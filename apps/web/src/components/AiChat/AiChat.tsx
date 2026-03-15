@@ -340,8 +340,8 @@ export default function AiChat({ open, onClose }: Props) {
 
             {/* Input area */}
             <div className="shrink-0 px-4 pb-4 pt-3 border-t border-(--color_border)">
-              <div className="flex items-end gap-2">
-                <div className="relative flex-1">
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1 flex items-center">
                   <textarea
                     ref={inputRef}
                     value={input}
