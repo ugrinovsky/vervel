@@ -12,15 +12,17 @@ import type { PeriodizationData } from '@/api/trainer';
 type TimeRange = 'week' | 'month' | 'year';
 
 export default function AnalyticsScreen() {
-  const [timeRange, setTimeRange]     = useState<TimeRange>('week');
-  const { data: stats }               = useWorkoutStats(timeRange);
-  const { data: monthStats }          = useWorkoutStats('month');
+  const [timeRange, setTimeRange] = useState<TimeRange>('week');
+  const { data: stats } = useWorkoutStats(timeRange);
+  const { data: monthStats } = useWorkoutStats('month');
   const [periodization, setPeriodization] = useState<PeriodizationData | null>(null);
 
   useEffect(() => {
     athleteApi
       .getMyPeriodization()
-      .then((res) => { if (res.data.success) setPeriodization(res.data.data); })
+      .then((res) => {
+        if (res.data.success) setPeriodization(res.data.data);
+      })
       .catch(() => {});
   }, []);
 
@@ -39,8 +41,11 @@ export default function AnalyticsScreen() {
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
           <ScreenHint>
             <span className="text-white font-medium">Неделя</span> — оперативный контроль нагрузки.{' '}
+            <br />
             <span className="text-white font-medium">Месяц</span> — видите тренды и объём работы.{' '}
-            <span className="text-white font-medium">Год</span> — оцениваете долгосрочный прогресс и периодизацию.
+            <br />
+            <span className="text-white font-medium">Год</span> — оцениваете долгосрочный прогресс и
+            периодизацию.
           </ScreenHint>
         </motion.div>
 
@@ -77,8 +82,20 @@ export default function AnalyticsScreen() {
         >
           <ScreenLinks
             links={[
-              { emoji: '📅', bg: 'bg-blue-500/20',   label: 'Календарь',  sub: 'История по дням',      to: '/calendar' },
-              { emoji: '🔥', bg: 'bg-orange-500/20', label: 'Серия дней', sub: 'Достижения и рекорды', to: '/streak' },
+              {
+                emoji: '📅',
+                bg: 'bg-blue-500/20',
+                label: 'Календарь',
+                sub: 'История по дням',
+                to: '/calendar',
+              },
+              {
+                emoji: '🔥',
+                bg: 'bg-orange-500/20',
+                label: 'Серия дней',
+                sub: 'Достижения и рекорды',
+                to: '/streak',
+              },
             ]}
           />
         </motion.div>

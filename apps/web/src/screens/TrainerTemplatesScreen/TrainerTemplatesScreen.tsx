@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
+import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import FormField from '@/components/FormField';
 import WorkoutTypeTabs, { type WorkoutType } from '@/components/WorkoutTypeTabs';
@@ -123,22 +124,13 @@ export default function TrainerTemplatesScreen() {
         />
 
         {/* Hint */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex gap-2 mb-4"
-        >
-          <div className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl bg-(--color_bg_card) border border-(--color_border) text-left">
-            <span className="text-base shrink-0">💡</span>
-            <p className="text-xs text-(--color_text_muted)">
-              Шаблон = готовая тренировка. Назначайте его атлетам и группам через{' '}
-              <button onClick={() => navigate('/trainer/calendar')} className="text-white underline underline-offset-2 hover:no-underline">
-                Календарь
-              </button>
-              {' '}— не нужно каждый раз вводить упражнения заново.
-            </p>
-          </div>
-        </motion.div>
+        <ScreenHint className="mb-4">
+          Шаблон — готовая тренировка. Создайте один раз и назначайте атлетам и группам через{' '}
+          <button onClick={() => navigate('/trainer/calendar')} className="text-white font-medium underline underline-offset-2 hover:no-underline">
+            Календарь
+          </button>
+          {' '}— не нужно каждый раз вводить упражнения заново.
+        </ScreenHint>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}

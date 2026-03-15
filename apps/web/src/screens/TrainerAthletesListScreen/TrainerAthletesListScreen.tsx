@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
+import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import AddAthleteDrawer from '@/components/AddAthleteDrawer/AddAthleteDrawer';
 import { trainerApi, type AthleteListItem, type UnreadCounts } from '@/api/trainer';
 import InlineAthleteAvatar from '@/components/MiniAvatar/InlineAthleteAvatar';
@@ -87,6 +88,13 @@ export default function TrainerAthletesListScreen() {
           title="Атлеты"
           description="Атлеты на индивидуальном ведении — смотрите аналитику, переписывайтесь и назначайте персональные тренировки"
         />
+
+        <ScreenHint className="mb-4">
+          Здесь атлеты на персональном ведении. Нажмите на карточку — увидите аналитику нагрузок,
+          историю тренировок и личный чат.{' '}
+          <span className="text-white font-medium">Назначить тренировку</span> можно через Календарь,
+          выбрав атлета при создании.
+        </ScreenHint>
 
         {/* Stats */}
         <motion.div

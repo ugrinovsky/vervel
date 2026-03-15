@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
+import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import { trainerApi, type TrainerGroupItem, type UnreadCounts } from '@/api/trainer';
 import {
   PlusIcon,
@@ -75,6 +76,12 @@ export default function TrainerGroupsListScreen() {
           title="Группы"
           description="Ваши тренировочные группы — создавайте группы, добавляйте атлетов, назначайте тренировки и ведите чат"
         />
+
+        <ScreenHint className="mb-4">
+          Создайте группу, добавьте атлетов по коду или QR и назначайте тренировки сразу всей группе через{' '}
+          <span className="text-white font-medium">Календарь</span>.
+          В каждой группе есть общий чат для общения с участниками.
+        </ScreenHint>
 
         {/* Stats */}
         <motion.div

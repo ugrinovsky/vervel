@@ -1,20 +1,15 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router';
-import { MagnifyingGlassIcon, BookOpenIcon } from '@heroicons/react/24/outline';
+import { useState, useEffect } from 'react';
+import { BookOpenIcon } from '@heroicons/react/24/outline';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
+import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import ExerciseDetailSheet from '@/components/ExerciseDetailSheet/ExerciseDetailSheet';
+import ExerciseFilterBar, { CATEGORY_LABELS } from '@/components/ExerciseFilterBar/ExerciseFilterBar';
 import { useExercises } from '@/hooks/useExercises';
-import type { Exercise, ExerciseCategory, MuscleZone } from '@/types/Exercise';
+import { useExerciseFilters } from '@/hooks/useExerciseFilters';
+import type { Exercise, ExerciseCategory } from '@/types/Exercise';
 import { getZoneLabel } from '@/util/zones';
-
-const CATEGORY_LABELS: Record<ExerciseCategory, string> = {
-  strength: 'Силовые',
-  olympic: 'Олимпийские',
-  gymnastics: 'Гимнастика',
-  functional: 'Функциональные',
-  cardio: 'Кардио',
-};
+import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 
 const CATEGORY_COLORS: Record<ExerciseCategory, string> = {
   strength: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
@@ -23,33 +18,6 @@ const CATEGORY_COLORS: Record<ExerciseCategory, string> = {
   functional: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
   cardio: 'bg-green-500/20 text-green-300 border-green-500/30',
 };
-
-/* ------------------------------------------------------------------ */
-/* Filter chip                                                          */
-/* ------------------------------------------------------------------ */
-
-function FilterChip({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
-        active
-          ? 'bg-(--color_primary_light) text-white border-transparent'
-          : 'bg-white/5 text-white/60 border-white/10 hover:text-white hover:border-white/30'
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /* Exercise card                                                        */
@@ -127,44 +95,27 @@ function ExerciseCard({ exercise, onClick }: { exercise: Exercise; onClick: () =
 /* ------------------------------------------------------------------ */
 
 export default function TrainerExerciseLibraryScreen() {
-  const navigate = useNavigate();
   const { data: exercises, loading } = useExercises();
+  const {
+    search, setSearch,
+    categoryFilter, setCategoryFilter,
+    zoneFilter, setZoneFilter,
+    availableCategories,
+    availableZones,
+    filtered,
+  } = useExerciseFilters(exercises);
 
-  const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<ExerciseCategory | null>(null);
-  const [zoneFilter, setZoneFilter] = useState<MuscleZone | null>(null);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
-
-  /* Available categories (present in data) */
-  const availableCategories = useMemo<ExerciseCategory[]>(() => {
-    const set = new Set(exercises.map((e) => e.category));
-    return (
-      ['strength', 'functional', 'olympic', 'cardio', 'gymnastics'] as ExerciseCategory[]
-    ).filter((c) => set.has(c));
-  }, [exercises]);
-
-  /* Available zones */
-  const availableZones = useMemo<MuscleZone[]>(() => {
-    const set = new Set(exercises.flatMap((e) => e.zones));
-    return [...set] as MuscleZone[];
-  }, [exercises]);
-
-  /* Filtered exercises */
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    return exercises.filter((ex) => {
-      if (categoryFilter && ex.category !== categoryFilter) return false;
-      if (zoneFilter && !ex.zones.includes(zoneFilter)) return false;
-      if (q) return ex.title.toLowerCase().includes(q);
-      return true;
-    });
-  }, [exercises, search, categoryFilter, zoneFilter]);
+  // Scroll to top when filter chip changes
+  useEffect(() => {
+    document.querySelector('.trainer-exercise-library-screen')?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [categoryFilter, zoneFilter]);
 
   const visible = filtered.slice(0, 80);
 
   return (
     <Screen className="trainer-exercise-library-screen">
-      <div className="flex flex-col h-full px-4 w-full">
+      <div className="flex flex-col w-full">
         <ScreenHeader
           className="px-4 pt-4"
           icon={<BookOpenIcon className="w-6 h-6 text-(--color_primary_light)" />}
@@ -174,63 +125,11 @@ export default function TrainerExerciseLibraryScreen() {
 
         {/* Hint */}
         <div className="px-4 pb-3">
-          <div className="bg-(--color_bg_card) rounded-xl px-4 py-3 border border-(--color_border) flex items-start gap-3">
-            <span className="text-xl shrink-0">💡</span>
-            <p className="text-xs text-(--color_text_muted) leading-relaxed">
-              Фильтруйте по <span className="text-white font-medium">категории</span> или{' '}
-              <span className="text-white font-medium">зоне мышц</span>, нажмите на карточку —
-              увидите технику и описание. Упражнения из библиотеки доступны при создании шаблонов и
-              тренировок.
-            </p>
-          </div>
-        </div>
-
-        {/* Sticky filter area */}
-        <div
-          className="px-4 pt-2 pb-3 space-y-2.5 sticky top-0 z-10"
-          style={{ backgroundColor: 'var(--color_bg_screen)' }}
-        >
-          {/* Search */}
-          <div className="relative">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={`Поиск среди ${exercises.length} упражнений...`}
-              className="w-full bg-(--color_bg_card) border border-(--color_border) rounded-xl pl-9 pr-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-white/30"
-            />
-          </div>
-
-          {/* Category filters */}
-          <div className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
-            <FilterChip
-              label="Все"
-              active={!categoryFilter}
-              onClick={() => setCategoryFilter(null)}
-            />
-            {availableCategories.map((cat) => (
-              <FilterChip
-                key={cat}
-                label={CATEGORY_LABELS[cat]}
-                active={categoryFilter === cat}
-                onClick={() => setCategoryFilter(categoryFilter === cat ? null : cat)}
-              />
-            ))}
-          </div>
-
-          {/* Zone filters */}
-          <div className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
-            <FilterChip label="Все зоны" active={!zoneFilter} onClick={() => setZoneFilter(null)} />
-            {availableZones.map((zone) => (
-              <FilterChip
-                key={zone}
-                label={getZoneLabel(zone)}
-                active={zoneFilter === zone}
-                onClick={() => setZoneFilter(zoneFilter === zone ? null : zone)}
-              />
-            ))}
-          </div>
+          <ScreenHint>
+            Фильтруйте по <span className="text-white font-medium">категории</span> или{' '}
+            <span className="text-white font-medium">зоне мышц</span>, нажмите на карточку —
+            увидите технику и описание. Упражнения доступны при создании шаблонов и тренировок.
+          </ScreenHint>
         </div>
 
         {/* Results count */}
@@ -245,7 +144,7 @@ export default function TrainerExerciseLibraryScreen() {
         </div>
 
         {/* Grid */}
-        <div className="px-4 pb-24">
+        <div className="px-4 pb-4">
           {loading ? (
             <div className="grid grid-cols-2 gap-3">
               {Array.from({ length: 8 }).map((_, i) => (
@@ -282,7 +181,39 @@ export default function TrainerExerciseLibraryScreen() {
           )}
         </div>
 
-        {/* Detail sheet (read-only, no "add to workout" button) */}
+        {/* Filter bar — sticky above nav */}
+        <div
+          className="px-4 pt-4 pb-3 sticky z-10 border-t border-(--color_border)"
+          style={{
+            bottom: 'calc(var(--spacing) * -9)',
+            background: 'linear-gradient(to top, rgb(var(--color_primary_ch) / 0.4) 0%, rgb(var(--color_primary_dark_ch) / 0.3) 50%, rgb(var(--color_primary_dark_ch) / 0.1) 100%)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+          }}
+        >
+          <ExerciseFilterBar
+            exerciseCount={exercises.length}
+            search={search}
+            onSearchChange={setSearch}
+            categoryFilter={categoryFilter}
+            onCategoryChange={setCategoryFilter}
+            availableCategories={availableCategories}
+            zoneFilter={zoneFilter}
+            onZoneChange={setZoneFilter}
+            availableZones={availableZones}
+          />
+        </div>
+
+
+        <ScreenLinks
+          className="px-4 pb-4"
+          links={[
+            { emoji: '📋', bg: 'bg-violet-500/20', label: 'Шаблоны', sub: 'готовые тренировки', to: '/trainer/templates' },
+            { emoji: '📅', bg: 'bg-blue-500/20', label: 'Календарь', sub: 'расписание тренировок', to: '/trainer/calendar' },
+          ]}
+        />
+
+        {/* Detail sheet */}
         <ExerciseDetailSheet
           exercise={selectedExercise}
           open={!!selectedExercise}

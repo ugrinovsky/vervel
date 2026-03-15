@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
+import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import { trainerApi, type TodayOverview, type UnreadCounts } from '@/api/trainer';
 import {
@@ -55,6 +56,12 @@ export default function TrainerTodayScreen() {
           title="Сегодня"
           description="Что происходит сегодня — запланированные тренировки, непрочитанные сообщения и активность атлетов"
         />
+
+        <ScreenHint className="mb-4">
+          Дашборд тренера на текущий день. Красные бейджи — непрочитанные сообщения от атлетов и групп.{' '}
+          <span className="text-white font-medium">Тренировки на сегодня</span> — все запланированные
+          занятия; нажмите, чтобы перейти в Календарь.
+        </ScreenHint>
 
         {/* Unread messages banners */}
         {unreadCounts && (

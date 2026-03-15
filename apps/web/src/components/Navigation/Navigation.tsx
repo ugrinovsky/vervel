@@ -76,7 +76,7 @@ export default function Navigation() {
     <nav className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-md nav-background">
       <div className="max-w-md mx-auto px-3 h-16">
         <div className="grid grid-cols-[1fr_auto_1fr] items-center h-full">
-          <div className="flex justify-around items-center mr-2">
+          <div className="flex justify-around items-center mr-3">
             {leftItems.map((route) =>
               route.isButton ? (
                 <ActionButton key={route.path} route={route} navigate={navigate} />
@@ -90,7 +90,7 @@ export default function Navigation() {
             {centerItem && <ActionButtonCenter route={centerItem} navigate={navigate} />}
           </div>
 
-          <div className="flex justify-around items-center ml-2">
+          <div className="flex justify-around items-center ml-3">
             {rightItems.map((route) =>
               route.isButton ? (
                 <ActionButton key={route.path} route={route} navigate={navigate} />

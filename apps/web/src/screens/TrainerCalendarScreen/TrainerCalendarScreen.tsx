@@ -12,6 +12,7 @@ import { toDateKey } from '@/utils/date';
 
 import { PlusIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
+import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 
@@ -154,6 +155,12 @@ export default function TrainerCalendarScreen() {
             title="Календарь"
             description="Планируйте тренировки для атлетов и групп по датам — нажмите на слот времени, чтобы назначить тренировку"
           />
+          <ScreenHint className="mb-2">
+            Выберите день в календаре, нажмите на слот времени — откроется форма тренировки.
+            Можно назначить{' '}
+            <span className="text-white font-medium">сразу нескольким атлетам или группам</span>.
+            Используйте шаблоны, чтобы не вводить упражнения заново.
+          </ScreenHint>
         </div>
 
         {/* ── Calendar (top) ── */}
