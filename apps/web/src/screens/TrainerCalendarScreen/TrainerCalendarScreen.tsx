@@ -9,7 +9,6 @@ import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import TrainerCalendar, { type TrainerDayData } from '@/components/TrainerCalendar/TrainerCalendar';
 import { trainerApi, type ScheduledWorkout } from '@/api/trainer';
 import { toDateKey } from '@/utils/date';
-import { useNavigate } from 'react-router';
 
 import { PlusIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
@@ -41,7 +40,6 @@ function getWorkoutMinutes(scheduledDate: string): string {
 }
 
 export default function TrainerCalendarScreen() {
-  const navigate = useNavigate();
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState<Date>(startOfMonth(today));
   const [workouts, setWorkouts] = useState<ScheduledWorkout[]>([]);
