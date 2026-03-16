@@ -231,10 +231,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
                     color: genderField === val ? 'white' : 'var(--color_text_muted)',
                   }}
                 >
-                  <span className="flex items-center justify-center gap-1.5">
-                    <span className="leading-none">{val === 'male' ? '♂' : '♀'}</span>
-                    <span>{val === 'male' ? 'Мужской' : 'Женский'}</span>
-                  </span>
+                  {val === 'male' ? '👨 Мужской' : '👩 Женский'}
                 </button>
               ))}
             </div>
