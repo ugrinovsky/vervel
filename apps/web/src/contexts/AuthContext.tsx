@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
 import type { UserRole } from '@/api/auth';
+import { applyTheme, DEFAULT_HUE } from '@/util/theme';
 
 interface AuthUser {
   id: number;
@@ -8,6 +9,7 @@ interface AuthUser {
   role: UserRole;
   gender?: 'male' | 'female' | null;
   balance?: number;
+  themeHue?: number | null;
 }
 
 interface AuthContextValue {
@@ -52,12 +54,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [activeMode, setActiveMode] = useState<'trainer' | 'athlete'>(() => getStoredMode(storedUser));
   const [balance, setBalance] = useState<number | null>(storedUser?.balance ?? null);
 
+  // Apply stored user's theme on mount (session restore)
+  useState(() => {
+    if (storedUser?.themeHue != null) applyTheme(storedUser.themeHue);
+  });
+
   const login = useCallback((u: AuthUser, t: string) => {
     localStorage.setItem('user', JSON.stringify(u));
     localStorage.setItem('token', t);
     setUser(u);
     setToken(t);
     if (u.balance !== undefined) setBalance(u.balance);
+    applyTheme(u.themeHue ?? DEFAULT_HUE);
     // Reset mode to match role on login
     const mode = u.role === 'athlete' ? 'athlete' : 'trainer';
     localStorage.setItem('activeMode', mode);
@@ -72,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setBalance(null);
     setActiveMode('trainer');
+    applyTheme(DEFAULT_HUE);
   }, []);
 
   const switchMode = useCallback(() => {

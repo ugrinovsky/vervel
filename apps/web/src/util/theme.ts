@@ -1,5 +1,4 @@
-const THEME_KEY = 'themeHue';
-const DEFAULT_HUE = 168;
+export const DEFAULT_HUE = 168;
 
 function hslToRgb(h: number, s: number, l: number): string {
   s /= 100;
@@ -96,18 +95,8 @@ export function applyTheme(hue: number) {
   document.dispatchEvent(new CustomEvent('themechange'));
 }
 
-export function getStoredHue(): number {
-  const stored = localStorage.getItem(THEME_KEY);
-  return stored ? Number(stored) : DEFAULT_HUE;
-}
-
-export function saveHue(hue: number) {
-  localStorage.setItem(THEME_KEY, String(hue));
-  applyTheme(hue);
-}
-
 export function initTheme() {
-  applyTheme(getStoredHue());
+  applyTheme(DEFAULT_HUE);
 }
 
 export const THEME_PRESETS = [

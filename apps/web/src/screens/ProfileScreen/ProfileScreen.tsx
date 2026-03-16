@@ -7,7 +7,7 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import { profileApi, type ProfileData } from '@/api/profile';
 import { trainerApi, type TrainerProfileStats } from '@/api/trainer';
 import { aiApi } from '@/api/ai';
-import { saveHue } from '@/util/theme';
+import { applyTheme } from '@/util/theme';
 import { useAuth } from '@/contexts/AuthContext';
 import ProfileTab from './tabs/ProfileTab';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
@@ -74,7 +74,7 @@ export default function ProfileScreen() {
         const profileData = response.data.data;
         setData(profileData);
         if (profileData.user.balance !== undefined) setBalance(profileData.user.balance);
-        if (profileData.user.themeHue != null) saveHue(profileData.user.themeHue);
+        if (profileData.user.themeHue != null) applyTheme(profileData.user.themeHue);
       }
     } catch {
       toast.error('Не удалось загрузить профиль');

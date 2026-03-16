@@ -305,6 +305,7 @@ export default class OAuthController {
           email: user.email,
           fullName: user.fullName,
           role: user.role,
+          themeHue: user.themeHue,
         },
         token,
       })
@@ -398,6 +399,7 @@ export default class OAuthController {
           email: user.email,
           fullName: user.fullName,
           role: user.role,
+          themeHue: user.themeHue,
         },
         token,
       })
@@ -438,6 +440,7 @@ export default class OAuthController {
         email: user.email,
         fullName: user.fullName,
         role: user.role,
+        themeHue: user.themeHue,
       },
     })
   }

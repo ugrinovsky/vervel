@@ -108,40 +108,23 @@ export default function ProfileTab({ data, trainerStats }: Props) {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
-        {inTrainerMode ? (
-          <>
-            <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
-              <div className="text-2xl font-bold text-white">{trainerStats?.athleteCount ?? '—'}</div>
-              <div className="text-xs text-(--color_text_muted) mt-1">Атлетов</div>
-            </div>
-            <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
-              <div className="text-2xl font-bold text-white">{trainerStats?.groupCount ?? '—'}</div>
-              <div className="text-xs text-(--color_text_muted) mt-1">Групп</div>
-            </div>
-            <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
-              <div className="text-2xl font-bold text-white">{trainerStats?.totalScheduledWorkouts ?? '—'}</div>
-              <div className="text-xs text-(--color_text_muted) mt-1">Тренировок</div>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
-              <div className="text-2xl font-bold text-white">{data.stats.totalWorkouts}</div>
-              <div className="text-xs text-(--color_text_muted) mt-1">Тренировок</div>
-            </div>
-            <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
-              <div className="text-2xl font-bold text-white">{data.stats.streak}</div>
-              <div className="text-xs text-(--color_text_muted) mt-1">Дней подряд</div>
-            </div>
-            <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
-              <div className="text-2xl font-bold text-white">{data.stats.longestStreak}</div>
-              <div className="text-xs text-(--color_text_muted) mt-1">Рекорд дней</div>
-            </div>
-          </>
-        )}
-      </div>
+      {/* Stats — trainer only */}
+      {inTrainerMode && (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+            <div className="text-2xl font-bold text-white">{trainerStats?.athleteCount ?? '—'}</div>
+            <div className="text-xs text-(--color_text_muted) mt-1">Атлетов</div>
+          </div>
+          <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+            <div className="text-2xl font-bold text-white">{trainerStats?.groupCount ?? '—'}</div>
+            <div className="text-xs text-(--color_text_muted) mt-1">Групп</div>
+          </div>
+          <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+            <div className="text-2xl font-bold text-white">{trainerStats?.totalScheduledWorkouts ?? '—'}</div>
+            <div className="text-xs text-(--color_text_muted) mt-1">Тренировок</div>
+          </div>
+        </div>
+      )}
 
       {/* Achievements + QR (athletes) */}
       {inAthleteMode && (

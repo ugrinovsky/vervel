@@ -47,6 +47,7 @@ export default class AuthController {
           fullName: user.fullName,
           role: user.role,
           gender: user.gender,
+          themeHue: user.themeHue,
         },
         token,
       });
@@ -113,6 +114,7 @@ export default class AuthController {
             fullName: existing.fullName,
             role: existing.role,
             gender: existing.gender,
+            themeHue: existing.themeHue,
           },
           token,
           upgraded: true,
@@ -170,6 +172,7 @@ export default class AuthController {
         fullName: user.fullName,
         role: user.role,
         gender: user.gender,
+        themeHue: user.themeHue,
       },
       token,
     });

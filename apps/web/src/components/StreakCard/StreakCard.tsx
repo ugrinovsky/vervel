@@ -1,5 +1,13 @@
 import { motion } from 'framer-motion';
 
+const MILESTONES = [
+  { days: 3,  emoji: '🥉', label: '3 дня' },
+  { days: 7,  emoji: '🥈', label: '7 дней' },
+  { days: 14, emoji: '🥇', label: '14 дней' },
+  { days: 30, emoji: '🏆', label: '30 дней' },
+  { days: 90, emoji: '💎', label: '90 дней' },
+];
+
 interface StreakCardProps {
   currentStreak: number;
   longestStreak: number;
@@ -99,8 +107,31 @@ export default function StreakCard({
           </div>
         )}
 
+        {/* Milestones */}
+        <div className="mt-4 pt-4 border-t border-(--color_border) flex gap-2 flex-wrap">
+          {MILESTONES.map((m) => {
+            const active = currentStreak >= m.days;
+            const lost = !active && longestStreak >= m.days;
+            return (
+              <div
+                key={m.days}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${
+                  active
+                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+                    : lost
+                      ? 'bg-white/5 border-white/10 text-(--color_text_muted) opacity-50'
+                      : 'bg-white/5 border-white/10 text-(--color_text_muted)'
+                }`}
+              >
+                <span className={lost ? 'grayscale' : ''}>{m.emoji}</span>
+                <span className={lost ? 'line-through' : ''}>{m.label}</span>
+              </div>
+            );
+          })}
+        </div>
+
         {/* Motivational message */}
-        <div className="mt-4 pt-4 border-t border-[var(--color_border)] text-xs text-[var(--color_text_muted)]">
+        <div className="mt-3 text-xs text-(--color_text_muted)">
           {getMotivationalMessage()}
         </div>
       </div>

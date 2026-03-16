@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { profileApi, type ProfileData } from '@/api/profile';
 import { useAuth } from '@/contexts/AuthContext';
-import { THEME_PRESETS, getStoredHue, saveHue } from '@/util/theme';
+import { THEME_PRESETS, applyTheme, DEFAULT_HUE } from '@/util/theme';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 
 interface Props {
@@ -26,7 +26,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
 
-  const [activeHue, setActiveHue] = useState(getStoredHue);
+  const [activeHue, setActiveHue] = useState(() => data.user.themeHue ?? DEFAULT_HUE);
   const themeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -43,7 +43,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
 
   const handleThemeChange = (hue: number) => {
     setActiveHue(hue);
-    saveHue(hue);
+    applyTheme(hue);
     if (themeDebounceRef.current) clearTimeout(themeDebounceRef.current);
     themeDebounceRef.current = setTimeout(() => {
       profileApi.updateProfile({ themeHue: hue }).catch(() => {});
