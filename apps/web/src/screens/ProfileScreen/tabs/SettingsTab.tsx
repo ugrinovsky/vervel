@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { profileApi, type ProfileData } from '@/api/profile';
+import type { UserRole } from '@/api/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import { THEME_PRESETS, applyTheme, DEFAULT_HUE } from '@/util/theme';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
@@ -58,7 +59,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
         const updatedUser = response.data.data.user;
         const stored = JSON.parse(localStorage.getItem('user') || '{}');
         localStorage.setItem('user', JSON.stringify({ ...stored, ...updatedUser }));
-        if (user && token) login({ ...user, ...updatedUser }, token);
+        if (user && token) login({ ...user, ...updatedUser, fullName: updatedUser.fullName ?? '', role: updatedUser.role as UserRole }, token);
         onProfileUpdate(updatedUser);
         toast.success('Профиль обновлён');
       }
@@ -230,7 +231,10 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
                     color: genderField === val ? 'white' : 'var(--color_text_muted)',
                   }}
                 >
-                  {val === 'male' ? '♂ Мужской' : '♀ Женский'}
+                  <span className="flex items-center justify-center gap-1.5">
+                    <span className="leading-none">{val === 'male' ? '♂' : '♀'}</span>
+                    <span>{val === 'male' ? 'Мужской' : 'Женский'}</span>
+                  </span>
                 </button>
               ))}
             </div>
