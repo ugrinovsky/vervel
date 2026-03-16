@@ -162,7 +162,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
               key={preset.hue}
               onClick={() => handleThemeChange(preset.hue)}
               title={preset.label}
-              className="relative w-10 h-10 rounded-full border-2 transition-all"
+              className="relative aspect-square w-full rounded-full border-2 transition-all"
               style={{
                 background: `hsl(${preset.hue}, 74%, 30%)`,
                 borderColor: activeHue === preset.hue ? 'white' : 'rgba(255,255,255,0.15)',

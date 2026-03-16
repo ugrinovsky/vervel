@@ -390,7 +390,7 @@ export default function LoginScreen() {
                     Вход...
                   </>
                 ) : (
-                  'Войти в космос'
+                  'Войти'
                 )}
               </span>
               <div
