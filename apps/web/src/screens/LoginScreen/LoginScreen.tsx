@@ -419,7 +419,7 @@ export default function LoginScreen() {
           </div>
 
           <div className="relative z-10 flex flex-col gap-3">
-            <VkIdButton />
+            {/* <VkIdButton /> */}
             <YandexIdButton />
           </div>
 
