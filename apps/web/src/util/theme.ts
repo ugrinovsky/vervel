@@ -1,4 +1,4 @@
-export const DEFAULT_HUE = 168;
+export const DEFAULT_HUE = 175;
 
 function hslToRgb(h: number, s: number, l: number): string {
   s /= 100;
