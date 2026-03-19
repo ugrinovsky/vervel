@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -16,6 +17,7 @@ interface Props {
 export default function SettingsTab({ data, onProfileUpdate }: Props) {
   const navigate = useNavigate();
   const { logout, login, user, token } = useAuth();
+  const { permission: pushPermission, loading: pushLoading, enable: enablePush, supported: pushSupported } = usePushNotifications();
 
   const [nameField, setNameField] = useState(data.user.fullName || '');
   const [emailField, setEmailField] = useState(data.user.email);
@@ -280,6 +282,35 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Push notifications */}
+      {pushSupported && (
+        <div className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-white">Уведомления</p>
+              <p className="text-xs text-(--color_text_muted) mt-0.5">
+                {pushPermission === 'granted' && 'Включены'}
+                {pushPermission === 'default' && 'Получайте уведомления о сообщениях и тренировках'}
+                {pushPermission === 'denied' && 'Заблокированы — разрешите в настройках браузера'}
+              </p>
+            </div>
+            {pushPermission !== 'denied' && (
+              <button
+                onClick={enablePush}
+                disabled={pushLoading || pushPermission === 'granted'}
+                className="shrink-0 px-4 py-2 rounded-xl text-xs font-medium transition-all disabled:opacity-50"
+                style={{
+                  background: pushPermission === 'granted' ? 'var(--color_bg_card_hover)' : 'var(--color_primary_light)',
+                  color: 'white',
+                }}
+              >
+                {pushLoading ? '...' : pushPermission === 'granted' ? 'Включены' : 'Включить'}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Feedback */}
       <button

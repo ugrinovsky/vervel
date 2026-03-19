@@ -27,7 +27,7 @@ export default function OAuthCallbackScreen() {
 
         login(response.data.data.user, token);
         toast.success('Успешный вход!');
-        navigate('/');
+        navigate('/home');
       } catch (error) {
         toast.error('Ошибка загрузки профиля');
         navigate('/login');

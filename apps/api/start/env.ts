@@ -78,4 +78,13 @@ export default await Env.create(new URL('../', import.meta.url), {
   YOOKASSA_SKIP_IP_CHECK: Env.schema.string.optional(),
   // Base URL of the app — used as return_url after payment
   APP_URL: Env.schema.string.optional(),
+
+  /*
+  |----------------------------------------------------------
+  | Web Push Notifications (VAPID)
+  |----------------------------------------------------------
+  */
+  VAPID_PUBLIC_KEY: Env.schema.string.optional(),
+  VAPID_PRIVATE_KEY: Env.schema.string.optional(),
+  VAPID_SUBJECT: Env.schema.string.optional(),
 });

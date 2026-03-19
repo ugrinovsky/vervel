@@ -36,6 +36,13 @@ router.get('/', async () => {
   };
 });
 
+// Web Push — public VAPID key
+router.get('/push/vapid-key', '#controllers/push_controller.vapidKey');
+
+// Web Push — subscribe / unsubscribe (auth required)
+router.post('/push/subscribe', '#controllers/push_controller.subscribe').use(middleware.auth());
+router.delete('/push/unsubscribe', '#controllers/push_controller.unsubscribe').use(middleware.auth());
+
 router.get('/exercises', '#controllers/exercises_controller.index');
 router.get('/exercises/:id', '#controllers/exercises_controller.show');
 

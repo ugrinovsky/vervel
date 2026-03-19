@@ -54,7 +54,7 @@ export default function SelectRoleScreen() {
 
       login(response.data.user, token);
       toast.success('Добро пожаловать в Vervel!');
-      navigate('/');
+      navigate('/home');
     } catch {
       toast.error('Ошибка сохранения роли');
     } finally {

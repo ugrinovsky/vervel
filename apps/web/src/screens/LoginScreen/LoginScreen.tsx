@@ -108,7 +108,7 @@ export default function LoginScreen() {
       login(user, tokenValue);
 
       toast.success(`Добро пожаловать, ${user.fullName}!`);
-      navigate(inviteToken ? `/invite/${inviteToken}` : '/');
+      navigate(inviteToken ? `/invite/${inviteToken}` : '/home');
     } catch (error) {
       toast.error('Неверный email или пароль');
     } finally {

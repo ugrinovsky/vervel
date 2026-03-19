@@ -3,38 +3,27 @@ import { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router';
 import { athleteRoutes, trainerRoutes, RouteItem } from '@/constants/routes';
 import { useAuth } from '@/contexts/AuthContext';
-import { trainerApi, type UnreadCounts } from '@/api/trainer';
 import { athleteApi } from '@/api/athlete';
+import { useTrainerUnreadCounts } from '@/hooks/useTrainerUnreadCounts';
 
 export default function Navigation() {
   const navigate = useNavigate();
   const { isTrainer, isAthlete, activeMode } = useAuth();
   const showTrainerNav = isTrainer && (!isAthlete || activeMode === 'trainer');
 
-  // Unread counts state
-  const [trainerUnread, setTrainerUnread] = useState<UnreadCounts | null>(null);
+  const { data: trainerUnread } = useTrainerUnreadCounts(showTrainerNav ? 30_000 : undefined);
   const [athleteUnread, setAthleteUnread] = useState(0);
 
   useEffect(() => {
-    if (showTrainerNav) {
-      const fetch = () =>
-        trainerApi
-          .getUnreadCounts()
-          .then((r) => setTrainerUnread(r.data.data))
-          .catch(() => {});
-      fetch();
-      const interval = setInterval(fetch, 30_000);
-      return () => clearInterval(interval);
-    } else {
-      const fetch = () =>
-        athleteApi
-          .getUnreadCounts()
-          .then((r) => setAthleteUnread(r.data.data.total))
-          .catch(() => {});
-      fetch();
-      const interval = setInterval(fetch, 30_000);
-      return () => clearInterval(interval);
-    }
+    if (showTrainerNav) return;
+    const fetch = () =>
+      athleteApi
+        .getUnreadCounts()
+        .then((r: any) => setAthleteUnread(r.data.data.total))
+        .catch(() => {});
+    fetch();
+    const interval = setInterval(fetch, 30_000);
+    return () => clearInterval(interval);
   }, [showTrainerNav]);
 
   const trainerGroupsUnread = trainerUnread?.groups.reduce((s, g) => s + g.unread, 0) ?? 0;

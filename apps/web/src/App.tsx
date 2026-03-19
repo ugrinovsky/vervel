@@ -14,6 +14,7 @@ import TrainerPublicProfileScreen from '@/screens/TrainerPublicProfileScreen/Tra
 import InviteScreen from '@/screens/InviteScreen/InviteScreen';
 import DocsScreen from '@/screens/DocsScreen/DocsScreen';
 import AvatarScreen from '@/screens/AvatarScreen';
+import LandingScreen from '@/screens/LandingScreen/LandingScreen';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { useAchievementToast } from '@/hooks/useAchievementToast';
 
@@ -45,6 +46,7 @@ function AppContent(): JSX.Element {
   const location = useLocation();
   useAchievementToast();
   const isAuthPage =
+    location.pathname === '/' ||
     location.pathname === '/login' ||
     location.pathname === '/register' ||
     location.pathname === '/auth/callback' ||
@@ -80,8 +82,9 @@ function AppContent(): JSX.Element {
         <Route path="/docs/privacy" element={<DocsScreen />} />
         <Route path="/docs/offer" element={<DocsScreen />} />
         <Route path="/docs/seller" element={<DocsScreen />} />
+        <Route path="/" element={<LandingScreen />} />
         <Route
-          path="/"
+          path="/home"
           element={<ProtectedRoute><HomeScreen /></ProtectedRoute>}
         />
         {uniqueRoutes.map((rout) => (

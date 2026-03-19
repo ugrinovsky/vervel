@@ -6,7 +6,8 @@ import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import AddAthleteDrawer from '@/components/AddAthleteDrawer/AddAthleteDrawer';
-import { trainerApi, type AthleteListItem, type UnreadCounts } from '@/api/trainer';
+import { trainerApi, type AthleteListItem } from '@/api/trainer';
+import { useTrainerUnreadCounts } from '@/hooks/useTrainerUnreadCounts';
 import InlineAthleteAvatar from '@/components/MiniAvatar/InlineAthleteAvatar';
 import {
   PlusIcon,
@@ -23,7 +24,7 @@ import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 export default function TrainerAthletesListScreen() {
   const navigate = useNavigate();
   const [athletes, setAthletes] = useState<AthleteListItem[]>([]);
-  const [unreadCounts, setUnreadCounts] = useState<UnreadCounts | null>(null);
+  const { data: unreadCounts, refresh: refreshUnread } = useTrainerUnreadCounts();
   const [loading, setLoading] = useState(true);
   const [showAddDrawer, setShowAddDrawer] = useState(false);
   const [search, setSearch] = useState('');
@@ -41,12 +42,9 @@ export default function TrainerAthletesListScreen() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [athletesRes, unreadRes] = await Promise.all([
-        trainerApi.listAthletes(),
-        trainerApi.getUnreadCounts(),
-      ]);
+      const athletesRes = await trainerApi.listAthletes();
       setAthletes(athletesRes.data.data);
-      setUnreadCounts(unreadRes.data.data);
+      refreshUnread();
     } catch {
       toast.error('Ошибка загрузки данных');
     } finally {
