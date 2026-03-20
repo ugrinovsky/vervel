@@ -19,6 +19,9 @@ export default class TrainerAthlete extends BaseModel {
   @column()
   declare inviteToken: string | null
 
+  @column()
+  declare nickname: string | null
+
   @belongsTo(() => User, { foreignKey: 'trainerId' })
   declare trainer: BelongsTo<typeof User>
 

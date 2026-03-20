@@ -42,3 +42,18 @@ export function toApiDateTime(date: Date, time: Date): string {
   const min = String(time.getMinutes()).padStart(2, '0');
   return `${dateKey}T${h}:${min}:00`;
 }
+
+/**
+ * Parses an API datetime string back as LOCAL (wall-clock) time.
+ * The server stores wall-clock time but Lucid serialises DateTime with a "+00:00"
+ * suffix, which would cause the browser to apply UTC→local conversion.
+ * We strip any timezone offset and parse the bare "YYYY-MM-DDTHH:mm:ss" part
+ * as a local date so no conversion happens.
+ */
+export function parseApiDateTime(dateStr: string): Date {
+  const local = dateStr.slice(0, 19); // "YYYY-MM-DDTHH:mm:ss"
+  const [datePart, timePart] = local.split('T');
+  const [y, mo, d] = datePart.split('-').map(Number);
+  const [h, min, s] = timePart.split(':').map(Number);
+  return new Date(y, mo - 1, d, h, min, s ?? 0);
+}

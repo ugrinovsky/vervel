@@ -131,7 +131,8 @@ router
     router.post('athletes/by-email', '#controllers/trainer_controller.addAthleteByEmail');
     router.post('athletes/invite', '#controllers/trainer_controller.generateInviteLink');
     router.post('athletes/by-qr', '#controllers/trainer_controller.addAthleteByQr');
-    router.delete('athletes/:athleteId', '#controllers/trainer_controller.removeAthlete');
+    router.delete('athletes/:athleteId', '#controllers/trainer_controller.removeAthlete')
+    router.patch('athletes/:athleteId/nickname', '#controllers/trainer_controller.updateAthleteNickname');
 
     // Athlete data
     router.get('athletes/:athleteId/stats', '#controllers/trainer_controller.getAthleteStats');

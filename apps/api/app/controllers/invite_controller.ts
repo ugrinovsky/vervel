@@ -3,6 +3,7 @@ import db from '@adonisjs/lucid/services/db'
 import TrainerAthlete from '#models/trainer_athlete'
 import AchievementService from '#services/AchievementService'
 import { AiBalanceService } from '#services/AiBalanceService'
+import emitter from '@adonisjs/core/services/emitter'
 
 export default class InviteController {
   async acceptInvite({ auth, request, response }: HttpContext) {
@@ -44,6 +45,10 @@ export default class InviteController {
       existing.status = 'active'
       await existing.save()
       AchievementService.checkAndUnlockAchievements(user.id).catch(() => {})
+      emitter.emit('push:invite_accepted', {
+        trainerId: invite.trainerId,
+        athleteName: user.fullName ?? user.email,
+      })
       return response.ok({ success: true, message: 'Вы привязаны к тренеру' })
     }
 
@@ -54,6 +59,10 @@ export default class InviteController {
     await invite.save()
 
     AchievementService.checkAndUnlockAchievements(user.id).catch(() => {})
+    emitter.emit('push:invite_accepted', {
+      trainerId: invite.trainerId,
+      athleteName: user.fullName ?? user.email,
+    })
     return response.ok({ success: true, message: 'Вы привязаны к тренеру' })
   }
 

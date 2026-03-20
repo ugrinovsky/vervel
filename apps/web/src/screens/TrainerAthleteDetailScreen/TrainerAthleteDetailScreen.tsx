@@ -16,7 +16,8 @@ import DayDetails from '@/screens/ActivityScreen/DayDetails';
 import { useAthleteStats, type StatsPeriod } from '@/hooks/useAthleteStats';
 import { useAthleteAvatar } from '@/hooks/useAthleteAvatar';
 import { trainerApi, type PeriodizationData } from '@/api/trainer';
-import { ChatBubbleLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { ZONE_NORMALIZE } from '@/components/AvatarView/AvatarView';
+import { ChatBubbleLeftIcon, PlusIcon, PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import BackButton from '@/components/BackButton/BackButton';
 import type { MonthlyStatsData } from '@/screens/ActivityScreen/useActivityData';
 
@@ -47,6 +48,10 @@ export default function TrainerAthleteDetailScreen() {
   const [chatId, setChatId] = useState<number | null>(null);
   const [athleteName, setAthleteName] = useState('Атлет');
   const [athleteEmail, setAthleteEmail] = useState('');
+  const [nickname, setNickname] = useState<string | null>(null);
+  const [editingNickname, setEditingNickname] = useState(false);
+  const [nicknameInput, setNicknameInput] = useState('');
+  const [savingNickname, setSavingNickname] = useState(false);
   const [periodization, setPeriodization] = useState<PeriodizationData | null>(null);
 
   // Activity calendar state
@@ -71,6 +76,8 @@ export default function TrainerAthleteDetailScreen() {
         if (found) {
           setAthleteName(found.fullName || found.email);
           setAthleteEmail(found.fullName ? found.email : '');
+          setNickname(found.nickname ?? null);
+          setNicknameInput(found.nickname ?? '');
         }
         if (periodizationRes.data.success) setPeriodization(periodizationRes.data.data);
       } catch {
@@ -80,11 +87,28 @@ export default function TrainerAthleteDetailScreen() {
     load();
   }, [id]);
 
+  const handleSaveNickname = async () => {
+    setSavingNickname(true);
+    try {
+      const value = nicknameInput.trim() || null;
+      await trainerApi.updateAthleteNickname(id, value);
+      setNickname(value);
+      setEditingNickname(false);
+    } catch {
+      toast.error('Ошибка сохранения никнейма');
+    } finally {
+      setSavingNickname(false);
+    }
+  };
+
   const zoneIntensities = useMemo(() => {
     if (!avatarData?.zones) return {};
     const result: Record<string, number> = {};
     for (const [name, state] of Object.entries(avatarData.zones)) {
-      result[name] = state.intensity;
+      const canonical = ZONE_NORMALIZE[name] ?? name;
+      if (result[canonical] === undefined || state.intensity > result[canonical]) {
+        result[canonical] = state.intensity;
+      }
     }
     return result;
   }, [avatarData]);
@@ -159,19 +183,52 @@ export default function TrainerAthleteDetailScreen() {
       <div className="p-4 w-full mx-auto">
         <BackButton onClick={() => navigate('/trainer/athletes')} />
 
-        {/* ── Hero: FIO + MiniAvatar ────────────────────────────────────── */}
+        {/* ── Hero ─────────────────────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-4 mb-5"
+          className="flex flex-col items-center text-center mb-5 pt-2 pb-5 px-4 rounded-2xl bg-(--color_bg_card) border border-(--color_border)"
         >
-          <MiniAvatar zoneIntensities={zoneIntensities} size="lg" />
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-white leading-tight truncate">{athleteName}</h1>
-            {athleteEmail && (
-              <p className="text-sm text-(--color_text_muted) mt-0.5 truncate">{athleteEmail}</p>
+          {/* Никнейм */}
+          <div className="flex items-center justify-center gap-1.5 mt-3 min-h-7 w-full">
+            {editingNickname ? (
+              <>
+                <input
+                  autoFocus
+                  value={nicknameInput}
+                  onChange={(e) => setNicknameInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSaveNickname(); if (e.key === 'Escape') { setEditingNickname(false); setNicknameInput(nickname ?? ''); } }}
+                  maxLength={100}
+                  placeholder="Никнейм…"
+                  className="w-48 text-center bg-transparent border-b border-(--color_primary_light)/60 text-lg font-bold text-white focus:outline-none leading-tight"
+                />
+                <button onClick={handleSaveNickname} disabled={savingNickname} className="p-0.5 text-emerald-400 hover:text-emerald-300 transition-colors shrink-0">
+                  <CheckIcon className="w-4 h-4" />
+                </button>
+                <button onClick={() => { setEditingNickname(false); setNicknameInput(nickname ?? ''); }} className="p-0.5 text-(--color_text_muted) hover:text-white transition-colors shrink-0">
+                  <XMarkIcon className="w-4 h-4" />
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => { setNicknameInput(nickname ?? ''); setEditingNickname(true); }}
+                className="flex items-center gap-1.5 group"
+              >
+                <span className={`text-lg font-bold leading-tight ${nickname ? 'text-white' : 'text-(--color_text_muted) font-normal italic'}`}>
+                  {nickname || 'Никнейм…'}
+                </span>
+                <PencilIcon className="w-3.5 h-3.5 text-(--color_text_muted) opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+              </button>
             )}
           </div>
+
+          {/* Имя */}
+          <h1 className="text-base font-semibold text-white/70 leading-tight mt-0.5 truncate max-w-full">{athleteName}</h1>
+
+          {/* Email */}
+          {athleteEmail && (
+            <p className="text-xs text-(--color_text_muted) mt-0.5 truncate max-w-full">{athleteEmail}</p>
+          )}
         </motion.div>
 
         {/* ── Action buttons ────────────────────────────────────────────── */}
@@ -293,7 +350,7 @@ export default function TrainerAthleteDetailScreen() {
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <DayDetails date={selectedDate} workouts={dayWorkouts} />
+                  <DayDetails date={selectedDate} workouts={dayWorkouts} onDeleted={() => {}} />
                 </motion.div>
               )}
             </AnimatePresence>

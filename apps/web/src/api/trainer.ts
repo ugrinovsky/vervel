@@ -6,6 +6,7 @@ export interface AthleteListItem {
   email: string;
   status: 'active' | 'pending';
   linkedAt: string;
+  nickname: string | null;
 }
 
 export interface TrainerGroupItem {
@@ -163,6 +164,11 @@ export const trainerApi = {
   generateInvite: () =>
     privateApi.post<{ success: boolean; data: InviteData }>('/trainer/athletes/invite'),
   removeAthlete: (athleteId: number) => privateApi.delete(`/trainer/athletes/${athleteId}`),
+  updateAthleteNickname: (athleteId: number, nickname: string | null) =>
+    privateApi.patch<{ success: boolean; data: { nickname: string | null } }>(
+      `/trainer/athletes/${athleteId}/nickname`,
+      { nickname }
+    ),
 
   // Athlete data
   getAthleteStats: (athleteId: number, from: string, to: string) =>

@@ -2,6 +2,7 @@ import DatePicker, { registerLocale } from 'react-datepicker';
 import { ru } from 'date-fns/locale';
 import 'react-datepicker/dist/react-datepicker.css';
 import '@/styles/datepicker.css';
+import { toTimeKey } from '@/utils/date';
 
 registerLocale('ru', ru);
 
@@ -16,6 +17,14 @@ interface Props {
 }
 
 export default function WorkoutDateTimeRow({ date, time, onDateChange, onTimeChange }: Props) {
+  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const [h, m] = e.target.value.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) return;
+    const next = new Date(time);
+    next.setHours(h, m, 0, 0);
+    onTimeChange(next);
+  };
+
   return (
     <div className="grid grid-cols-2 gap-2">
       <DatePicker
@@ -29,21 +38,11 @@ export default function WorkoutDateTimeRow({ date, time, onDateChange, onTimeCha
         popperPlacement="bottom-start"
         portalId="datepicker-portal"
       />
-      <DatePicker
-        selected={time}
-        onChange={(t: Date | null) => t && onTimeChange(t)}
-        showTimeSelect
-        showTimeSelectOnly
-        timeIntervals={15}
-        timeCaption="Время"
-        dateFormat="HH:mm"
-        timeFormat="HH:mm"
-        locale="ru"
-        wrapperClassName="w-full"
-        className={INPUT_CLS}
-        calendarClassName="dark-datepicker"
-        popperPlacement="bottom-start"
-        portalId="datepicker-portal"
+      <input
+        type="time"
+        value={toTimeKey(time)}
+        onChange={handleTimeChange}
+        className={`${INPUT_CLS} [&::-webkit-calendar-picker-indicator]:invert`}
       />
     </div>
   );

@@ -18,6 +18,9 @@ import {
   ViewColumnsIcon,
   Bars3Icon,
   MagnifyingGlassIcon,
+  PencilIcon,
+  CheckIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 
@@ -28,6 +31,8 @@ export default function TrainerAthletesListScreen() {
   const [loading, setLoading] = useState(true);
   const [showAddDrawer, setShowAddDrawer] = useState(false);
   const [search, setSearch] = useState('');
+  const [editingNickname, setEditingNickname] = useState<{ athleteId: number; value: string } | null>(null);
+  const [savingNickname, setSavingNickname] = useState(false);
   type ViewMode = '2' | '3' | 'list';
   const [view, setView] = useState<ViewMode>(() => {
     const stored = localStorage.getItem('athletes_view_mode');
@@ -61,7 +66,9 @@ export default function TrainerAthletesListScreen() {
     const q = search.toLowerCase();
     return athletes.filter(
       (a) =>
-        (a.fullName ?? '').toLowerCase().includes(q) || (a.email ?? '').toLowerCase().includes(q)
+        (a.fullName ?? '').toLowerCase().includes(q) ||
+        (a.email ?? '').toLowerCase().includes(q) ||
+        (a.nickname ?? '').toLowerCase().includes(q)
     );
   }, [athletes, search]);
 
@@ -75,6 +82,23 @@ export default function TrainerAthletesListScreen() {
       loadData();
     } catch {
       toast.error('Ошибка при отвязке атлета');
+    }
+  };
+
+  const handleSaveNickname = async () => {
+    if (!editingNickname) return;
+    setSavingNickname(true);
+    try {
+      const nickname = editingNickname.value.trim() || null;
+      await trainerApi.updateAthleteNickname(editingNickname.athleteId, nickname);
+      setAthletes((prev) =>
+        prev.map((a) => (a.id === editingNickname.athleteId ? { ...a, nickname } : a))
+      );
+      setEditingNickname(null);
+    } catch {
+      toast.error('Ошибка сохранения никнейма');
+    } finally {
+      setSavingNickname(false);
     }
   };
 
@@ -218,8 +242,7 @@ export default function TrainerAthletesListScreen() {
                   <motion.div
                     key={athlete.id}
                     whileTap={{ scale: 0.99 }}
-                    className="relative flex items-center gap-3 px-4 py-3 rounded-xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors cursor-pointer"
-                    onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}
+                    className="relative flex items-start gap-3 px-4 py-3 rounded-xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors"
                   >
                     <ConfirmDeleteButton
                       variant="overlay"
@@ -229,11 +252,19 @@ export default function TrainerAthletesListScreen() {
                       onConfirm={() => handleRemoveAthlete(athlete.id)}
                       className="absolute top-2 left-2 z-10 p-0.5"
                     />
-                    <div className="flex-1 min-w-0 pl-6">
-                      <div className="font-semibold text-white text-sm truncate">
-                        {athlete.fullName || 'Без имени'}
+                    <div className="flex-1 min-w-0 pl-6" onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}>
+                      {/* Никнейм */}
+                      <div className="text-sm font-semibold text-white truncate leading-snug">
+                        {athlete.nickname || athlete.fullName || 'Без имени'}
                       </div>
-                      <div className="text-[11px] text-(--color_text_muted) truncate">
+                      {/* Имя (если задан никнейм) */}
+                      {athlete.nickname && (
+                        <div className="text-[11px] text-(--color_text_muted) truncate leading-snug">
+                          {athlete.fullName || ''}
+                        </div>
+                      )}
+                      {/* Email — всегда */}
+                      <div className="text-[11px] text-(--color_text_muted)/70 truncate leading-snug">
                         {athlete.status === 'pending' ? '⏳ Ожидает' : athlete.email}
                       </div>
                     </div>
@@ -254,8 +285,7 @@ export default function TrainerAthletesListScreen() {
                   <motion.div
                     key={athlete.id}
                     whileTap={{ scale: 0.97 }}
-                    className="relative flex flex-col items-center gap-3 p-4 rounded-2xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors cursor-pointer"
-                    onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}
+                    className="relative flex flex-col items-center gap-2 p-4 rounded-2xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors"
                   >
                     {unread > 0 && (
                       <div className="absolute top-2.5 right-2.5 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center z-10">
@@ -270,15 +300,44 @@ export default function TrainerAthletesListScreen() {
                       onConfirm={() => handleRemoveAthlete(athlete.id)}
                       className="absolute top-2.5 left-2.5 z-10 p-0.5"
                     />
-                    <InlineAthleteAvatar athleteId={athlete.id} size={view === '2' ? 'lg' : 'md'} />
-                    <div className="w-full text-center">
+                    <div className="cursor-pointer w-full flex flex-col items-center gap-2" onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}>
+                      <InlineAthleteAvatar athleteId={athlete.id} size={view === '2' ? 'lg' : 'md'} />
+                    </div>
+                    <div className="w-full text-center mt-0.5">
+                      {/* Nickname row — одинаковая высота в обоих режимах */}
+                      {editingNickname?.athleteId === athlete.id ? (
+                        <input
+                          autoFocus
+                          value={editingNickname.value}
+                          onChange={(e) => setEditingNickname({ ...editingNickname, value: e.target.value })}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleSaveNickname(); if (e.key === 'Escape') setEditingNickname(null); }}
+                          onBlur={handleSaveNickname}
+                          maxLength={100}
+                          placeholder="Никнейм…"
+                          onClick={(e) => e.stopPropagation()}
+                          className={`w-full text-center bg-transparent border-b border-(--color_primary_light)/60 text-white focus:outline-none leading-tight font-semibold ${view === '2' ? 'text-sm' : 'text-xs'}`}
+                        />
+                      ) : athlete.nickname ? (
+                        <div
+                          className={`leading-tight truncate font-semibold text-white cursor-pointer ${view === '2' ? 'text-sm' : 'text-xs'}`}
+                          onClick={(e) => { e.stopPropagation(); setEditingNickname({ athleteId: athlete.id, value: athlete.nickname }); }}
+                        >
+                          {athlete.nickname}
+                        </div>
+                      ) : null}
+                      {/* Имя — всегда видно */}
                       <div
-                        className={`font-semibold text-white leading-tight line-clamp-2 ${view === '2' ? 'text-sm' : 'text-xs'}`}
+                        className={`text-(--color_text_muted) truncate mt-0.5 cursor-pointer ${view === '2' ? 'text-xs' : 'text-[10px]'}`}
+                        onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}
                       >
                         {athlete.fullName || 'Без имени'}
                       </div>
+                      {/* Email — только в 2-кол */}
                       {view === '2' && (
-                        <div className="text-[11px] text-(--color_text_muted) truncate mt-0.5">
+                        <div
+                          className="text-[10px] text-(--color_text_muted)/60 truncate cursor-pointer"
+                          onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}
+                        >
                           {athlete.status === 'pending' ? '⏳ Ожидает' : athlete.email}
                         </div>
                       )}

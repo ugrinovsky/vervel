@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
@@ -9,6 +9,53 @@ import { useAuth } from '@/contexts/AuthContext';
 import { THEME_PRESETS, applyTheme, DEFAULT_HUE } from '@/util/theme';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 
+const PWA_STEPS: Record<'ios' | 'android' | 'desktop', { hint: string; steps: React.ReactNode[] }> = {
+  ios: {
+    hint: 'На iPhone уведомления работают только когда приложение добавлено на главный экран.',
+    steps: [
+      <>Нажмите <span className="text-white">Поделиться</span> внизу Safari</>,
+      <>Выберите <span className="text-white">«На экран «Домой»»</span></>,
+      <>Откройте приложение с главного экрана</>,
+      <>Включите уведомления в настройках профиля</>,
+    ],
+  },
+  android: {
+    hint: 'Установите приложение для получения уведомлений.',
+    steps: [
+      <>Нажмите <span className="text-white">⋮</span> в правом верхнем углу Chrome</>,
+      <>Выберите <span className="text-white">«Добавить на главный экран»</span></>,
+      <>Откройте приложение с главного экрана</>,
+      <>Включите уведомления в настройках профиля</>,
+    ],
+  },
+  desktop: {
+    hint: 'Установите приложение для получения уведомлений.',
+    steps: [
+      <>Нажмите значок <span className="text-white">установки</span> в адресной строке браузера</>,
+      <>Или откройте меню браузера → <span className="text-white">«Установить приложение»</span></>,
+      <>Откройте установленное приложение</>,
+      <>Включите уведомления в настройках профиля</>,
+    ],
+  },
+}
+
+function PwaInstructions({ platform }: { platform: 'ios' | 'android' | 'desktop' }) {
+  const { hint, steps } = PWA_STEPS[platform]
+  return (
+    <div className="space-y-3 mt-1">
+      <p className="text-xs text-(--color_text_muted)">{hint}</p>
+      <ol className="space-y-1.5">
+        {steps.map((step, i) => (
+          <li key={i} className="flex items-start gap-2 text-xs text-(--color_text_muted)">
+            <span className="shrink-0 w-4 h-4 rounded-full bg-(--color_bg_card_hover) text-white flex items-center justify-center text-[10px] mt-0.5">{i + 1}</span>
+            <span>{step}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  )
+}
+
 interface Props {
   data: ProfileData;
   onProfileUpdate: (updatedUser: ProfileData['user']) => void;
@@ -18,6 +65,11 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
   const navigate = useNavigate();
   const { logout, login, user, token } = useAuth();
   const { permission: pushPermission, loading: pushLoading, enable: enablePush, supported: pushSupported } = usePushNotifications();
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
+  const isAndroid = /android/i.test(navigator.userAgent)
+  const isStandalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (('standalone' in navigator) && (navigator as Navigator & { standalone: boolean }).standalone)
 
   const [nameField, setNameField] = useState(data.user.fullName || '');
   const [emailField, setEmailField] = useState(data.user.email);
@@ -284,17 +336,17 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
       </div>
 
       {/* Push notifications */}
-      {pushSupported && (
-        <div className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)">
+      <div className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)">
+        <p className="text-sm font-semibold text-white mb-1">Уведомления</p>
+        {!isStandalone && (isIos || isAndroid || !pushSupported) ? (
+          <PwaInstructions platform={isIos ? 'ios' : isAndroid ? 'android' : 'desktop'} />
+        ) : pushSupported ? (
           <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-white">Уведомления</p>
-              <p className="text-xs text-(--color_text_muted) mt-0.5">
-                {pushPermission === 'granted' && 'Включены'}
-                {pushPermission === 'default' && 'Получайте уведомления о сообщениях и тренировках'}
-                {pushPermission === 'denied' && 'Заблокированы — разрешите в настройках браузера'}
-              </p>
-            </div>
+            <p className="text-xs text-(--color_text_muted)">
+              {pushPermission === 'granted' && 'Включены'}
+              {pushPermission === 'default' && 'Получайте уведомления о сообщениях и тренировках'}
+              {pushPermission === 'denied' && 'Заблокированы — разрешите в настройках браузера'}
+            </p>
             {pushPermission !== 'denied' && (
               <button
                 onClick={enablePush}
@@ -309,8 +361,10 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
               </button>
             )}
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-xs text-(--color_text_muted)">Не поддерживаются в этом браузере</p>
+        )}
+      </div>
 
       {/* Feedback */}
       <button

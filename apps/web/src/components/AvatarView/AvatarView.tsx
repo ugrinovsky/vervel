@@ -14,7 +14,7 @@ import BottomSheet from '@/components/BottomSheet/BottomSheet';
  * to the canonical camelCase keys that match BODY_ZONE_TO_API.
  * Zones that map to the same canonical key are merged (highest intensity wins).
  */
-const ZONE_NORMALIZE: Record<string, string> = {
+export const ZONE_NORMALIZE: Record<string, string> = {
   back: 'backMuscles',
   trapezoids: 'backMuscles', // seeder stores 'trapezoids' directly
   traps: 'backMuscles',

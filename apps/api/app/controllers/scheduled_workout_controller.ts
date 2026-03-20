@@ -1,6 +1,7 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
 import db from '@adonisjs/lucid/services/db'
+import emitter from '@adonisjs/core/services/emitter'
 import ScheduledWorkout from '#models/scheduled_workout'
 import Workout from '#models/workout'
 import { WorkoutCalculator } from '#services/WorkoutCalculator'
@@ -198,11 +199,18 @@ export default class ScheduledWorkoutController {
       templateId: templateId || null,
     })
 
-    // Create Workout entries for each assigned athlete
+    // Create Workout entries for each assigned athlete + send push notifications
     if (Array.isArray(assignedTo) && assignedTo.length > 0) {
-      await createAthleteWorkouts(workout.id, parsedDate, workoutData, assignedTo).catch(() => {
-        // Do not fail the request if workout creation fails
-      })
+      await createAthleteWorkouts(workout.id, parsedDate, workoutData, assignedTo).catch(() => {})
+      resolveAthleteIds(assignedTo).then((athleteIds) => {
+        if (athleteIds.length > 0) {
+          emitter.emit('push:workout_scheduled', {
+            athleteIds,
+            scheduledDate: parsedDate.toFormat('d MMM', { locale: 'ru' }),
+            trainerName: trainer.fullName ?? trainer.email,
+          })
+        }
+      }).catch(() => {})
     }
 
     return response.created({

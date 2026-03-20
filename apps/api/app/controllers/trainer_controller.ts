@@ -1,6 +1,7 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import { randomUUID } from 'node:crypto'
 import { DateTime } from 'luxon'
+import emitter from '@adonisjs/core/services/emitter'
 
 /** Returns "YYYY-MM-DD" using the LOCAL timezone of the Date object. */
 function toLocalDateKey(date: Date): string {
@@ -82,6 +83,7 @@ export default class TrainerController {
       email: b.athlete.email,
       status: b.status,
       linkedAt: b.createdAt,
+      nickname: b.nickname,
     }))
 
     return response.ok({ success: true, data: athletes })
@@ -119,6 +121,11 @@ export default class TrainerController {
         status: 'active',
       })
     }
+
+    emitter.emit('push:athlete_added', {
+      athleteId: athlete.id,
+      trainerName: trainer.fullName ?? trainer.email,
+    })
 
     return response.created({
       success: true,
@@ -185,6 +192,11 @@ export default class TrainerController {
       })
     }
 
+    emitter.emit('push:athlete_added', {
+      athleteId: athlete.id,
+      trainerName: trainer.fullName ?? trainer.email,
+    })
+
     return response.created({
       success: true,
       data: {
@@ -213,6 +225,26 @@ export default class TrainerController {
     await binding.save()
 
     return response.ok({ success: true, message: 'Атлет отвязан' })
+  }
+
+  async updateAthleteNickname({ auth, params, request, response }: HttpContext) {
+    const trainer = auth.user!
+    const nickname: string | null = request.input('nickname', null)
+
+    const binding = await TrainerAthlete.query()
+      .where('trainerId', trainer.id)
+      .where('athleteId', params.athleteId)
+      .where('status', 'active')
+      .first()
+
+    if (!binding) {
+      return response.notFound({ message: 'Связь не найдена' })
+    }
+
+    binding.nickname = nickname && nickname.trim() ? nickname.trim().slice(0, 100) : null
+    await binding.save()
+
+    return response.ok({ success: true, data: { nickname: binding.nickname } })
   }
 
   // ─── Athlete data viewing ───

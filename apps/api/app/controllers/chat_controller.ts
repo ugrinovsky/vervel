@@ -7,6 +7,7 @@ import ChatRead from '#models/chat_read'
 import TrainerGroup from '#models/trainer_group'
 import TrainerAthlete from '#models/trainer_athlete'
 import AchievementService from '#services/AchievementService'
+import emitter from '@adonisjs/core/services/emitter'
 
 export default class ChatController {
   /**
@@ -152,6 +153,23 @@ export default class ChatController {
     await message.load('sender', (query) => {
       query.select('id', 'fullName', 'email')
     })
+
+    // Notify recipients via push
+    let recipientIds: number[] = []
+    if (chat.type === 'personal' && chat.athleteId) {
+      recipientIds = [chat.athleteId]
+    } else if (chat.type === 'group' && chat.groupId) {
+      const rows = await db.from('group_athletes').where('group_id', chat.groupId)
+      recipientIds = rows.map((r: any) => r.athlete_id as number)
+    }
+    if (recipientIds.length > 0) {
+      emitter.emit('push:message', {
+        senderName: `Тренер ${message.sender.fullName}`,
+        content: content.trim(),
+        recipientIds,
+        url: '/my-team',
+      })
+    }
 
     return response.created({
       success: true,
@@ -385,6 +403,36 @@ export default class ChatController {
     // Проверяем ачивки на сообщения тренеру (не блокирует ответ)
     if (chat.type === 'personal' && user.id !== chat.trainerId) {
       AchievementService.checkAndUnlockAchievements(user.id).catch(() => {})
+    }
+
+    // Notify recipients via push
+    const isTrainer = user.id === chat.trainerId
+    let recipientIds: number[] = []
+    let senderLabel: string
+    let url: string
+
+    if (isTrainer) {
+      senderLabel = `Тренер ${message.sender.fullName}`
+      url = '/my-team'
+      if (chat.type === 'personal' && chat.athleteId) {
+        recipientIds = [chat.athleteId]
+      } else if (chat.type === 'group' && chat.groupId) {
+        const rows = await db.from('group_athletes').where('group_id', chat.groupId)
+        recipientIds = rows.map((r: any) => r.athlete_id as number)
+      }
+    } else {
+      senderLabel = message.sender.fullName ?? message.sender.email
+      url = '/trainer/personal'
+      recipientIds = [chat.trainerId]
+    }
+
+    if (recipientIds.length > 0) {
+      emitter.emit('push:message', {
+        senderName: senderLabel,
+        content: content.trim(),
+        recipientIds,
+        url,
+      })
     }
 
     return response.created({

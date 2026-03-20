@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { getDaysInMonth, startOfMonth } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -7,8 +7,8 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import TrainerCalendar, { type TrainerDayData } from '@/components/TrainerCalendar/TrainerCalendar';
-import { trainerApi, type ScheduledWorkout } from '@/api/trainer';
-import { toDateKey } from '@/utils/date';
+import { trainerApi, type ScheduledWorkout, type AthleteListItem } from '@/api/trainer';
+import { toDateKey, parseApiDateTime, toApiDateTime } from '@/utils/date';
 
 import { PlusIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
@@ -30,14 +30,33 @@ function formatHour(h: number): string {
 }
 
 function getWorkoutHour(scheduledDate: string): number {
-  return new Date(scheduledDate).getHours();
+  return parseApiDateTime(scheduledDate).getHours();
 }
 
 function getWorkoutMinutes(scheduledDate: string): string {
-  return new Date(scheduledDate).toLocaleTimeString('ru-RU', {
+  return parseApiDateTime(scheduledDate).toLocaleTimeString('ru-RU', {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function formatAssignedTo(
+  assignedTo: ScheduledWorkout['assignedTo'],
+  nicknames: Map<number, string>
+): string {
+  if (assignedTo.length === 0) return ''
+  if (assignedTo.length === 1) {
+    const a = assignedTo[0]
+    const icon = a.type === 'group' ? '👥' : '🏃'
+    const name = a.type === 'athlete' ? (nicknames.get(a.id) ?? a.name) : a.name
+    return `${icon} ${name}`
+  }
+  const groups = assignedTo.filter((a) => a.type === 'group').length
+  const athletes = assignedTo.filter((a) => a.type === 'athlete').length
+  const parts: string[] = []
+  if (groups > 0) parts.push(`👥 ${groups}`)
+  if (athletes > 0) parts.push(`🏃 ${athletes}`)
+  return parts.join(' · ')
 }
 
 export default function TrainerCalendarScreen() {
@@ -50,6 +69,7 @@ export default function TrainerCalendarScreen() {
   // selectedTime: null = form hidden, string = form open with that time pre-filled
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [editingWorkout, setEditingWorkout] = useState<ScheduledWorkout | null>(null);
+  const [athletes, setAthletes] = useState<AthleteListItem[]>([]);
 
   const loadWorkouts = async (month: Date) => {
     try {
@@ -71,6 +91,18 @@ export default function TrainerCalendarScreen() {
   }, [currentMonth]);
 
   useEffect(() => {
+    trainerApi.listAthletes().then((res) => setAthletes(res.data.data)).catch(() => {});
+  }, []);
+
+  const nicknames = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const a of athletes) {
+      if (a.nickname) map.set(a.id, a.nickname);
+    }
+    return map;
+  }, [athletes]);
+
+  useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(id);
   }, []);
@@ -88,7 +120,7 @@ export default function TrainerCalendarScreen() {
 
     const countByKey: Record<string, number> = {};
     for (const w of workouts) {
-      const key = toDateKey(new Date(w.scheduledDate));
+      const key = toDateKey(parseApiDateTime(w.scheduledDate));
       countByKey[key] = (countByKey[key] || 0) + 1;
     }
 
@@ -103,8 +135,8 @@ export default function TrainerCalendarScreen() {
   const selectedWorkouts = useMemo(
     () =>
       workouts
-        .filter((w) => toDateKey(new Date(w.scheduledDate)) === selectedKey)
-        .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime()),
+        .filter((w) => toDateKey(parseApiDateTime(w.scheduledDate)) === selectedKey)
+        .sort((a, b) => parseApiDateTime(a.scheduledDate).getTime() - parseApiDateTime(b.scheduledDate).getTime()),
     [workouts, selectedKey]
   );
 
@@ -260,7 +292,7 @@ export default function TrainerCalendarScreen() {
                             initial={{ opacity: 0, x: -8 }}
                             animate={{ opacity: 1, x: 0 }}
                             onClick={() => openEditForm(workout)}
-                            className={`rounded-xl px-3 py-2 flex items-center justify-between gap-2 cursor-pointer hover:opacity-90 transition-opacity ${
+                            className={`rounded-xl px-3 py-2 flex items-center justify-between gap-2 cursor-pointer hover:opacity-90 transition-opacity overflow-hidden ${
                               editingWorkout?.id === workout.id ? 'ring-2 ring-white/40' : ''
                             } ${
                               WORKOUT_TYPE_COLORS[workout.workoutData.type] ??
@@ -277,9 +309,7 @@ export default function TrainerCalendarScreen() {
                               </span>
                               {workout.assignedTo.length > 0 && (
                                 <span className="text-xs text-white/60 truncate">
-                                  {workout.assignedTo
-                                    .map((a) => `${a.type === 'group' ? '👥' : '🏃'} ${a.name}`)
-                                    .join(', ')}
+                                  {formatAssignedTo(workout.assignedTo, nicknames)}
                                 </span>
                               )}
                             </div>
