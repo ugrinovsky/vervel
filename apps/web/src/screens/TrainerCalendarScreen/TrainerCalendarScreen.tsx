@@ -32,9 +32,9 @@ const WORKOUT_TYPE_COLORS: Record<string, string> = {
 };
 
 const INTRO_STRIPE_STYLE = {
-  backgroundColor: 'rgba(109,40,217,0.18)',
+  backgroundColor: 'rgba(14,165,233,0.12)',
   backgroundImage:
-    'repeating-linear-gradient(45deg, rgba(139,92,246,0.18) 0px, rgba(139,92,246,0.18) 3px, transparent 3px, transparent 11px)',
+    'repeating-linear-gradient(45deg, rgba(56,189,248,0.18) 0px, rgba(56,189,248,0.18) 3px, transparent 3px, transparent 11px)',
 } as const;
 
 // Hours shown on timeline (7:00 – 23:00)
@@ -88,12 +88,12 @@ function WorkoutCardInner({
   if (isIntro) {
     return (
       <div className="flex items-center gap-2 min-w-0">
-        <UserPlusIcon className="w-3.5 h-3.5 text-violet-300 shrink-0" />
-        <span className="text-sm font-medium text-violet-200 truncate">
+        <UserPlusIcon className="w-3.5 h-3.5 text-sky-300 shrink-0" />
+        <span className="text-sm font-medium text-sky-100 truncate">
           {workout.workoutData.clientName || 'Вводная'}
         </span>
         {workout.workoutData.clientPhone && (
-          <span className="text-xs text-violet-300/70 font-mono truncate">
+          <span className="text-xs text-sky-300/70 font-mono truncate">
             {workout.workoutData.clientPhone}
           </span>
         )}
@@ -149,7 +149,7 @@ function DraggableWorkout({
       style={isIntro ? INTRO_STRIPE_STYLE : undefined}
       className={`rounded-xl px-3 py-2 flex items-center justify-between gap-2 touch-none select-none cursor-grab active:cursor-grabbing overflow-hidden ${
         isEditing ? 'ring-2 ring-white/40' : ''
-      } ${isIntro ? 'ring-1 ring-inset ring-violet-500/40' : (WORKOUT_TYPE_COLORS[workout.workoutData.type] ?? 'bg-(--color_bg_card)')}`}
+      } ${isIntro ? 'ring-1 ring-inset ring-sky-400/40' : (WORKOUT_TYPE_COLORS[workout.workoutData.type] ?? 'bg-(--color_bg_card)')}`}
     >
       <WorkoutCardInner workout={workout} nicknames={nicknames} />
       <div onPointerDown={(e) => e.stopPropagation()}>
@@ -276,14 +276,14 @@ function IntroSessionForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Badge */}
       <div
-        className="rounded-xl p-3 flex items-center gap-3 ring-1 ring-violet-500/30"
+        className="rounded-xl p-3 flex items-center gap-3 ring-1 ring-sky-400/30"
         style={INTRO_STRIPE_STYLE}
       >
-        <div className="w-9 h-9 rounded-lg bg-violet-500/30 flex items-center justify-center shrink-0">
-          <UserPlusIcon className="w-5 h-5 text-violet-300" />
+        <div className="w-9 h-9 rounded-lg bg-sky-400/20 flex items-center justify-center shrink-0">
+          <UserPlusIcon className="w-5 h-5 text-sky-300" />
         </div>
         <div>
-          <div className="text-sm font-semibold text-violet-200">Вводная тренировка</div>
+          <div className="text-sm font-semibold text-sky-100">Вводная тренировка</div>
           <div className="text-xs text-(--color_text_muted)">Слот занят — клиент без аккаунта</div>
         </div>
       </div>
@@ -298,7 +298,7 @@ function IntroSessionForm({
           placeholder="Иван Иванов"
           required
           autoFocus
-          className="w-full rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) px-3 py-2.5 text-sm text-white placeholder:text-(--color_text_muted) focus:outline-none focus:ring-1 focus:ring-violet-500/50"
+          className="w-full rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) px-3 py-2.5 text-sm text-white placeholder:text-(--color_text_muted) focus:outline-none focus:ring-1 focus:ring-sky-400/50"
         />
       </div>
 
@@ -319,7 +319,7 @@ function IntroSessionForm({
           className={`w-full rounded-xl bg-(--color_bg_card_hover) border px-3 py-2.5 text-sm text-white placeholder:text-(--color_text_muted) focus:outline-none focus:ring-1 font-mono tracking-wide ${
             phoneError
               ? 'border-red-500/60 focus:ring-red-500/40'
-              : 'border-(--color_border) focus:ring-violet-500/50'
+              : 'border-(--color_border) focus:ring-sky-400/50'
           }`}
         />
         {phoneError && (
@@ -339,8 +339,8 @@ function IntroSessionForm({
         <button
           type="submit"
           disabled={saving || !clientName.trim()}
-          className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-40 transition-opacity ring-1 ring-violet-500/50"
-          style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.85), rgba(109,40,217,0.85))' }}
+          className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-40 transition-opacity ring-1 ring-sky-400/40"
+          style={{ background: 'linear-gradient(135deg, rgba(14,165,233,0.75), rgba(2,132,199,0.75))' }}
         >
           {saving ? 'Сохранение…' : 'Добавить вводную'}
         </button>
@@ -688,7 +688,7 @@ export default function TrainerCalendarScreen() {
                   }}
                   className={`rounded-xl px-3 py-2 flex items-center justify-between gap-2 cursor-grabbing overflow-hidden ring-2 shadow-[0_0_20px_rgba(255,255,255,0.15)] ${
                     activeWorkout.workoutData.type === 'intro'
-                      ? 'ring-violet-400/60'
+                      ? 'ring-sky-400/60'
                       : `ring-white/60 ${WORKOUT_TYPE_COLORS[activeWorkout.workoutData.type] ?? 'bg-(--color_bg_card)'}`
                   }`}
                 >
@@ -757,7 +757,7 @@ export default function TrainerCalendarScreen() {
                 onClick={() => setSheetTab('intro')}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ring-1 ${
                   sheetTab === 'intro'
-                    ? 'ring-violet-500/50 text-violet-200'
+                    ? 'ring-sky-400/50 text-sky-100'
                     : 'ring-transparent text-(--color_text_muted) hover:text-white bg-(--color_bg_card_hover)'
                 }`}
                 style={sheetTab === 'intro' ? INTRO_STRIPE_STYLE : undefined}
