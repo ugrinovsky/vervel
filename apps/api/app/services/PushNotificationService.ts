@@ -11,7 +11,7 @@ function ensureVapid() {
   const privateKey = env.get('VAPID_PRIVATE_KEY')
   if (!publicKey || !privateKey) return
   webpush.setVapidDetails(
-    env.get('VAPID_SUBJECT') || 'mailto:admin@vervel.ru',
+    env.get('VAPID_SUBJECT') || 'mailto:nazar9505@yandex.ru',
     publicKey,
     privateKey
   )

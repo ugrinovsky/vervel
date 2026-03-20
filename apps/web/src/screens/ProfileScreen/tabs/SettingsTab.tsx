@@ -394,7 +394,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
           ))}
         </div>
         <p className="text-[10px] text-(--color_text_muted) mt-3 leading-relaxed">
-          Vervel · ИП/Самозанятый · По вопросам: support@vervel.app
+          Vervel · ИП/Самозанятый · По вопросам: nazar9505@yandex.ru
         </p>
       </div>
 
