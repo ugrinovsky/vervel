@@ -7,7 +7,7 @@ import { toTimeKey } from '@/utils/date';
 registerLocale('ru', ru);
 
 const INPUT_CLS =
-  'w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors';
+  'w-full min-w-0 h-10 bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors';
 
 interface Props {
   date: Date;
@@ -26,24 +26,26 @@ export default function WorkoutDateTimeRow({ date, time, onDateChange, onTimeCha
   };
 
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-2 gap-2 min-w-0">
       <DatePicker
         selected={date}
         onChange={(d: Date | null) => d && onDateChange(d)}
         dateFormat="d MMM yyyy"
         locale="ru"
-        wrapperClassName="w-full"
+        wrapperClassName="w-full min-w-0"
         className={INPUT_CLS}
         calendarClassName="dark-datepicker"
         popperPlacement="bottom-start"
         portalId="datepicker-portal"
       />
-      <input
-        type="time"
-        value={toTimeKey(time)}
-        onChange={handleTimeChange}
-        className={`${INPUT_CLS} [&::-webkit-calendar-picker-indicator]:invert`}
-      />
+      <div className="min-w-0">
+        <input
+          type="time"
+          value={toTimeKey(time)}
+          onChange={handleTimeChange}
+          className={`${INPUT_CLS} [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-datetime-edit]:text-sm`}
+        />
+      </div>
     </div>
   );
 }
