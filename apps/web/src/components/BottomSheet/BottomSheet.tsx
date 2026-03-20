@@ -1,4 +1,4 @@
-import { type PropsWithChildren, type ReactNode, useEffect } from 'react';
+import { type PropsWithChildren, type ReactNode, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import CloseButton from '@/components/ui/CloseButton';
@@ -11,6 +11,31 @@ interface Props extends PropsWithChildren {
   emoji?: string;
   /** Custom header content rendered to the left of the ✕ button. */
   header?: ReactNode;
+}
+
+function AnimatedHeight({ children }: { children: ReactNode }) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setHeight(entry.contentRect.height);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <motion.div
+      animate={{ height: height ?? 'auto' }}
+      transition={{ type: 'spring', damping: 30, stiffness: 250 }}
+      style={{ overflow: 'hidden' }}
+    >
+      <div ref={contentRef} className="px-px pb-px">{children}</div>
+    </motion.div>
+  );
 }
 
 export default function BottomSheet({ open, onClose, title, emoji, header, children }: Props) {
@@ -64,7 +89,7 @@ export default function BottomSheet({ open, onClose, title, emoji, header, child
                 <CloseButton onClick={onClose} className="ml-2" />
               </div>
 
-              {children}
+              <AnimatedHeight>{children}</AnimatedHeight>
             </div>
           </motion.div>
         </motion.div>
