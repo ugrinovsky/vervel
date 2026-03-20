@@ -7,6 +7,7 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import FullScreenChat from '@/components/FullScreenChat/FullScreenChat';
 import AiChat from '@/components/AiChat/AiChat';
 import { athleteApi, type AthleteGroup, type AthleteTrainer } from '@/api/athlete';
+import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import {
   ChatBubbleLeftIcon,
   UserGroupIcon,
@@ -222,17 +223,7 @@ export default function AthleteMyTeamScreen() {
                       >
                         {/* Top row: photo + name/specs */}
                         <div className="flex items-start gap-3 mb-3">
-                          <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-(--color_primary_light) to-(--color_primary) flex items-center justify-center text-base font-bold text-white shrink-0">
-                            {trainer.photoUrl ? (
-                              <img
-                                src={trainer.photoUrl}
-                                alt={trainer.fullName || 'trainer'}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              initials
-                            )}
-                          </div>
+                          <UserAvatar photoUrl={trainer.photoUrl} name={trainer.fullName} size={48} />
                           <div className="min-w-0 flex-1">
                             <div className="text-sm font-semibold text-white">
                               {trainer.fullName || 'Без имени'}

@@ -7,6 +7,7 @@ import FullScreenChat from '@/components/FullScreenChat/FullScreenChat';
 import { profileApi, type TrainerPublicProfile } from '@/api/profile';
 import { athleteApi } from '@/api/athlete';
 import { ChatBubbleLeftIcon, ClipboardDocumentIcon, CheckIcon } from '@heroicons/react/24/outline';
+import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import BackButton from '@/components/BackButton/BackButton';
 
 const DONATION_AMOUNTS = [100, 300, 500, 1000];
@@ -92,17 +93,7 @@ export default function TrainerPublicProfileScreen() {
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-center mb-6"
         >
-          <div className="w-28 h-28 rounded-full overflow-hidden bg-gradient-to-br from-(--color_primary_light) to-(--color_primary) flex items-center justify-center mb-3 shadow-lg">
-            {profile.photoUrl ? (
-              <img
-                src={profile.photoUrl}
-                alt={profile.fullName || 'trainer'}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-4xl font-bold text-white">{initials}</span>
-            )}
-          </div>
+          <UserAvatar photoUrl={profile.photoUrl} name={profile.fullName} size={112} className="mb-3 shadow-lg" />
           <h1 className="text-xl font-bold text-white mb-1">{profile.fullName || 'Тренер'}</h1>
           {profile.specializations && profile.specializations.length > 0 && (
             <div className="flex flex-wrap justify-center gap-1.5 mt-2">

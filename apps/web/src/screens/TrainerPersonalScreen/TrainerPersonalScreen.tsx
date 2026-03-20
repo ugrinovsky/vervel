@@ -8,6 +8,8 @@ import { profileApi, type ProfileUser } from '@/api/profile';
 import { CameraIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import BackButton from '@/components/BackButton/BackButton';
 import FormField from '@/components/FormField';
+import AvatarCropModal from '@/components/AvatarCropModal/AvatarCropModal';
+import UserAvatar from '@/components/UserAvatar/UserAvatar';
 
 export default function TrainerPersonalScreen() {
   const navigate = useNavigate();
@@ -49,13 +51,22 @@ export default function TrainerPersonalScreen() {
       .catch(() => toast.error('Ошибка загрузки профиля'));
   }, []);
 
-  const handlePhotoChange = async (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => setPhotoPreview(e.target?.result as string);
-    reader.readAsDataURL(file);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setCropSrc(ev.target?.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleCropConfirm = async (blob: Blob) => {
+    setCropSrc(null);
     setUploadingPhoto(true);
     try {
+      const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
       const res = await profileApi.uploadPhoto(file);
       setPhotoPreview(res.data.data.photoUrl);
       toast.success('Фото обновлено');
@@ -131,14 +142,6 @@ export default function TrainerPersonalScreen() {
     }
   };
 
-  const initials = user?.fullName
-    ? user.fullName
-        .split(' ')
-        .map((w) => w[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-    : user?.email?.[0]?.toUpperCase() || '?';
 
   return (
     <Screen className="trainer-personal-screen">
@@ -164,6 +167,14 @@ export default function TrainerPersonalScreen() {
           </p>
         </motion.div>
 
+        {cropSrc && (
+          <AvatarCropModal
+            src={cropSrc}
+            onConfirm={handleCropConfirm}
+            onClose={() => setCropSrc(null)}
+          />
+        )}
+
         {/* Photo */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -171,22 +182,20 @@ export default function TrainerPersonalScreen() {
           className="flex flex-col items-center mb-6"
         >
           <div className="relative">
-            <div className="w-24 h-24 rounded-full overflow-hidden bg-linear-to-br from-(--color_primary_light) to-(--color_primary) flex items-center justify-center">
-              {photoPreview ? (
-                <img src={photoPreview} alt="photo" className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-3xl font-bold text-white">{initials}</span>
-              )}
-            </div>
             <button
               onClick={() => fileRef.current?.click()}
               disabled={uploadingPhoto}
-              className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-(--color_primary_light) flex items-center justify-center border-2 border-(--color_bg_card) hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="relative block"
             >
-              {uploadingPhoto ? (
-                <div className="w-3 h-3 border border-white/50 border-t-white rounded-full animate-spin" />
-              ) : (
-                <CameraIcon className="w-4 h-4 text-white" />
+              <UserAvatar photoUrl={photoPreview} name={user?.fullName || user?.email} size={96} />
+              <div className="absolute inset-0 rounded-full bg-black/30 flex flex-col items-center justify-center gap-1">
+                <CameraIcon className="w-6 h-6 text-white" />
+                <span className="text-[10px] text-white/80 font-medium leading-none">Фото</span>
+              </div>
+              {uploadingPhoto && (
+                <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                </div>
               )}
             </button>
           </div>
@@ -195,12 +204,9 @@ export default function TrainerPersonalScreen() {
             type="file"
             accept="image/*"
             className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handlePhotoChange(file);
-            }}
+            onChange={handleFileSelect}
           />
-          <p className="text-xs text-(--color_text_muted) mt-2">Нажмите на камеру для смены фото</p>
+          <p className="text-xs text-(--color_text_muted) mt-2">Нажмите для смены фото</p>
         </motion.div>
 
         {/* Bio */}

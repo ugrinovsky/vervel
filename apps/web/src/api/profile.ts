@@ -71,7 +71,9 @@ export const profileApi = {
   uploadPhoto: (file: File) => {
     const form = new FormData();
     form.append('photo', file);
-    return privateApi.post<{ success: boolean; data: { photoUrl: string } }>('/profile/photo', form);
+    return privateApi.post<{ success: boolean; data: { photoUrl: string } }>('/profile/photo', form, {
+      headers: { 'Content-Type': undefined },
+    });
   },
 
   getTrainerPublicProfile: (trainerId: number) =>

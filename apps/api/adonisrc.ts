@@ -49,6 +49,7 @@ export default defineConfig({
     () => import('@adonisjs/auth/auth_provider'),
     () => import('adonis-lucid-soft-deletes/provider'),
     () => import('@adonisjs/limiter/limiter_provider'),
+    () => import('@adonisjs/static/static_provider'),
   ],
 
   /*

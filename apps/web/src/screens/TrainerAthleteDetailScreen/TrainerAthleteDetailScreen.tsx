@@ -16,8 +16,10 @@ import DayDetails from '@/screens/ActivityScreen/DayDetails';
 import { useAthleteStats, type StatsPeriod } from '@/hooks/useAthleteStats';
 import { useAthleteAvatar } from '@/hooks/useAthleteAvatar';
 import { trainerApi, type PeriodizationData } from '@/api/trainer';
+import { useTrainerUnreadCounts } from '@/hooks/useTrainerUnreadCounts';
 import { ZONE_NORMALIZE } from '@/components/AvatarView/AvatarView';
 import { ChatBubbleLeftIcon, PlusIcon, PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import BackButton from '@/components/BackButton/BackButton';
 import type { MonthlyStatsData } from '@/screens/ActivityScreen/useActivityData';
 
@@ -48,6 +50,7 @@ export default function TrainerAthleteDetailScreen() {
   const [chatId, setChatId] = useState<number | null>(null);
   const [athleteName, setAthleteName] = useState('Атлет');
   const [athleteEmail, setAthleteEmail] = useState('');
+  const [athletePhotoUrl, setAthletePhotoUrl] = useState<string | null>(null);
   const [nickname, setNickname] = useState<string | null>(null);
   const [editingNickname, setEditingNickname] = useState(false);
   const [nicknameInput, setNicknameInput] = useState('');
@@ -57,6 +60,9 @@ export default function TrainerAthleteDetailScreen() {
   // Activity calendar state
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+
+  const { data: unreadData } = useTrainerUnreadCounts(15_000);
+  const unread = unreadData?.athletes.find((a) => a.athleteId === id)?.unread ?? 0;
 
   const { data: stats } = useAthleteStats(id, timeRange);
   const { data: monthStats } = useAthleteStats(id, 'month');
@@ -78,6 +84,7 @@ export default function TrainerAthleteDetailScreen() {
           setAthleteEmail(found.fullName ? found.email : '');
           setNickname(found.nickname ?? null);
           setNicknameInput(found.nickname ?? '');
+          setAthletePhotoUrl(found.photoUrl ?? null);
         }
         if (periodizationRes.data.success) setPeriodization(periodizationRes.data.data);
       } catch {
@@ -187,10 +194,12 @@ export default function TrainerAthleteDetailScreen() {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center text-center mb-5 pt-2 pb-5 px-4 rounded-2xl bg-(--color_bg_card) border border-(--color_border)"
+          className="flex items-center gap-4 mb-5 pt-4 pb-5 px-4 rounded-2xl bg-(--color_bg_card) border border-(--color_border)"
         >
+          <UserAvatar photoUrl={athletePhotoUrl} name={athleteName} size={64} className="shrink-0" />
+          <div className="flex-1 min-w-0">
           {/* Никнейм */}
-          <div className="flex items-center justify-center gap-1.5 mt-3 min-h-7 w-full">
+          <div className="flex items-center gap-1.5 min-h-7 w-full">
             {editingNickname ? (
               <>
                 <input
@@ -200,7 +209,7 @@ export default function TrainerAthleteDetailScreen() {
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSaveNickname(); if (e.key === 'Escape') { setEditingNickname(false); setNicknameInput(nickname ?? ''); } }}
                   maxLength={100}
                   placeholder="Никнейм…"
-                  className="w-48 text-center bg-transparent border-b border-(--color_primary_light)/60 text-lg font-bold text-white focus:outline-none leading-tight"
+                  className="flex-1 text-left bg-transparent border-b border-(--color_primary_light)/60 text-lg font-bold text-white focus:outline-none leading-tight"
                 />
                 <button onClick={handleSaveNickname} disabled={savingNickname} className="p-0.5 text-emerald-400 hover:text-emerald-300 transition-colors shrink-0">
                   <CheckIcon className="w-4 h-4" />
@@ -229,6 +238,7 @@ export default function TrainerAthleteDetailScreen() {
           {athleteEmail && (
             <p className="text-xs text-(--color_text_muted) mt-0.5 truncate max-w-full">{athleteEmail}</p>
           )}
+          </div>
         </motion.div>
 
         {/* ── Action buttons ────────────────────────────────────────────── */}
@@ -247,10 +257,15 @@ export default function TrainerAthleteDetailScreen() {
           </button>
           <button
             onClick={() => setShowChat(true)}
-            className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) text-white font-medium text-sm hover:border-(--color_primary_light)/50 transition-colors"
+            className="relative flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) text-white font-medium text-sm hover:border-(--color_primary_light)/50 transition-colors"
           >
             <ChatBubbleLeftIcon className="w-4 h-4" />
-            Написать
+            Чат
+            {unread > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center leading-none">
+                {unread > 99 ? '99+' : unread}
+              </span>
+            )}
           </button>
         </motion.div>
 

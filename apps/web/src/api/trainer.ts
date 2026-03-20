@@ -7,6 +7,7 @@ export interface AthleteListItem {
   status: 'active' | 'pending';
   linkedAt: string;
   nickname: string | null;
+  photoUrl: string | null;
 }
 
 export interface TrainerGroupItem {
@@ -62,10 +63,13 @@ export interface ExerciseData {
 }
 
 export interface WorkoutData {
-  type: 'crossfit' | 'bodybuilding' | 'cardio';
+  type: 'crossfit' | 'bodybuilding' | 'cardio' | 'intro';
   exercises: ExerciseData[];
   duration?: number;
   notes?: string;
+  // For intro sessions only:
+  clientName?: string;
+  clientPhone?: string;
 }
 
 export interface ScheduledWorkout {

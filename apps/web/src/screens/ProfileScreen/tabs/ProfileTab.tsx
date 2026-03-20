@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -8,6 +8,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import AthleteQrCode from '@/components/AthleteQrCode/AthleteQrCode';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import type { TrainerProfileStats } from '@/api/trainer';
+import AvatarCropModal from '@/components/AvatarCropModal/AvatarCropModal';
+import UserAvatar from '@/components/UserAvatar/UserAvatar';
+import { CameraIcon } from '@heroicons/react/24/outline';
 
 interface Props {
   data: ProfileData;
@@ -25,6 +28,34 @@ export default function ProfileTab({ data, trainerStats }: Props) {
   const [becomingTrainer, setBecomingTrainer] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
   const [referralStats, setReferralStats] = useState<{ count: number; totalEarned: number; bonusPerReferral: number } | null>(null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(data.user.photoUrl ?? null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setCropSrc(ev.target?.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleCropConfirm = async (blob: Blob) => {
+    setCropSrc(null);
+    setUploadingPhoto(true);
+    try {
+      const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+      const res = await profileApi.uploadPhoto(file);
+      setPhotoUrl(res.data.data.photoUrl);
+      toast.success('Фото обновлено');
+    } catch {
+      toast.error('Ошибка загрузки фото');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   useEffect(() => {
     if (!inAthleteMode) return;
@@ -94,12 +125,48 @@ export default function ProfileTab({ data, trainerStats }: Props) {
         </div>
       </BottomSheet>
 
+      {cropSrc && (
+        <AvatarCropModal
+          src={cropSrc}
+          onConfirm={handleCropConfirm}
+          onClose={() => setCropSrc(null)}
+        />
+      )}
+
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+
       {/* User Info */}
       <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-linear-to-br from-(--color_primary_light) to-(--color_primary) flex items-center justify-center text-2xl font-bold text-white shrink-0">
-            {getInitials()}
-          </div>
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={uploadingPhoto}
+            className="relative shrink-0"
+          >
+            <UserAvatar photoUrl={photoUrl} size={80} />
+            {!photoUrl && !uploadingPhoto && (
+              <div className="absolute inset-0 rounded-full bg-black/50 flex flex-col items-center justify-center gap-0.5">
+                <CameraIcon className="w-6 h-6 text-white" />
+                <span className="text-[9px] text-white/80 font-medium leading-none">Фото</span>
+              </div>
+            )}
+            {photoUrl && !uploadingPhoto && (
+              <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-(--color_primary_light) flex items-center justify-center border-2 border-(--color_bg_card)">
+                <CameraIcon className="w-3 h-3 text-white" />
+              </div>
+            )}
+            {uploadingPhoto && (
+              <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              </div>
+            )}
+          </button>
           <div className="min-w-0">
             <div className="text-xl font-bold text-white truncate">{data.user.fullName || 'Без имени'}</div>
             <div className="text-sm text-(--color_text_muted) truncate">{data.user.email}</div>

@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, unlink } from 'node:fs/promises'
 import { cuid } from '@adonisjs/core/helpers'
 import Workout from '#models/workout';
 import hash from '@adonisjs/core/services/hash';
@@ -125,6 +125,12 @@ export default class ProfileController {
 
     const uploadsDir = join(process.cwd(), 'public', 'uploads', 'avatars')
     await mkdir(uploadsDir, { recursive: true })
+
+    // Удаляем старое фото
+    if (user.photoUrl) {
+      const oldPath = join(process.cwd(), 'public', user.photoUrl)
+      await unlink(oldPath).catch(() => {})
+    }
 
     const fileName = `${cuid()}.${photo.extname}`
     await photo.move(uploadsDir, { name: fileName, overwrite: true })

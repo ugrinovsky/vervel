@@ -153,7 +153,7 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
       const msg = res.data.data;
       setMessages((prev) => [...prev, msg]);
       newestIdRef.current = msg.id;
-      scrollToBottom('smooth');
+      setTimeout(() => scrollToBottom('smooth'), 50);
       checkForNewAchievements();
     } catch {
       toast.error('Ошибка отправки сообщения');

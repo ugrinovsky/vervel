@@ -2,6 +2,16 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { getDaysInMonth, startOfMonth } from 'date-fns';
 import toast from 'react-hot-toast';
+import {
+  DndContext,
+  DragOverlay,
+  useDraggable,
+  useDroppable,
+  useSensors,
+  useSensor,
+  PointerSensor,
+} from '@dnd-kit/core';
+import type { DragEndEvent, DragStartEvent, Modifier } from '@dnd-kit/core';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
@@ -9,8 +19,7 @@ import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import TrainerCalendar, { type TrainerDayData } from '@/components/TrainerCalendar/TrainerCalendar';
 import { trainerApi, type ScheduledWorkout, type AthleteListItem } from '@/api/trainer';
 import { toDateKey, parseApiDateTime, toApiDateTime } from '@/utils/date';
-
-import { PlusIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, CalendarDaysIcon, UserPlusIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
@@ -21,6 +30,12 @@ const WORKOUT_TYPE_COLORS: Record<string, string> = {
   bodybuilding: 'bg-emerald-500/15 ring-1 ring-inset ring-emerald-500/30',
   cardio: 'bg-amber-500/15 ring-1 ring-inset ring-amber-500/30',
 };
+
+const INTRO_STRIPE_STYLE = {
+  backgroundColor: 'rgba(109,40,217,0.18)',
+  backgroundImage:
+    'repeating-linear-gradient(45deg, rgba(139,92,246,0.18) 0px, rgba(139,92,246,0.18) 3px, transparent 3px, transparent 11px)',
+} as const;
 
 // Hours shown on timeline (7:00 – 23:00)
 const TIMELINE_HOURS = Array.from({ length: 17 }, (_, i) => i + 7);
@@ -59,6 +74,283 @@ function formatAssignedTo(
   return parts.join(' · ')
 }
 
+// ── Drag sub-components ───────────────────────────────────────────────────────
+
+function WorkoutCardInner({
+  workout,
+  nicknames,
+}: {
+  workout: ScheduledWorkout;
+  nicknames: Map<number, string>;
+}) {
+  const isIntro = workout.workoutData.type === 'intro';
+
+  if (isIntro) {
+    return (
+      <div className="flex items-center gap-2 min-w-0">
+        <UserPlusIcon className="w-3.5 h-3.5 text-violet-300 shrink-0" />
+        <span className="text-sm font-medium text-violet-200 truncate">
+          {workout.workoutData.clientName || 'Вводная'}
+        </span>
+        {workout.workoutData.clientPhone && (
+          <span className="text-xs text-violet-300/70 font-mono truncate">
+            {workout.workoutData.clientPhone}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 min-w-0">
+      <span className="text-xs font-mono text-white/70 shrink-0">
+        {getWorkoutMinutes(workout.scheduledDate)}
+      </span>
+      <span className="text-sm font-medium text-white truncate">
+        {WORKOUT_TYPE_CONFIG[workout.workoutData.type] ?? workout.workoutData.type}
+      </span>
+      {workout.assignedTo.length > 0 && (
+        <span className="text-xs text-white/60 truncate">
+          {formatAssignedTo(workout.assignedTo, nicknames)}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function DraggableWorkout({
+  workout,
+  nicknames,
+  isEditing,
+  onEdit,
+  onDelete,
+}: {
+  workout: ScheduledWorkout;
+  nicknames: Map<number, string>;
+  isEditing: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: workout.id,
+    data: { workout },
+  });
+
+  const isIntro = workout.workoutData.type === 'intro';
+
+  return (
+    <motion.div
+      ref={setNodeRef}
+      initial={{ opacity: 0, x: -8 }}
+      animate={{ opacity: isDragging ? 0 : 1, x: 0 }}
+      onClick={onEdit}
+      {...listeners}
+      {...attributes}
+      style={isIntro ? INTRO_STRIPE_STYLE : undefined}
+      className={`rounded-xl px-3 py-2 flex items-center justify-between gap-2 touch-none select-none cursor-grab active:cursor-grabbing overflow-hidden ${
+        isEditing ? 'ring-2 ring-white/40' : ''
+      } ${isIntro ? 'ring-1 ring-inset ring-violet-500/40' : (WORKOUT_TYPE_COLORS[workout.workoutData.type] ?? 'bg-(--color_bg_card)')}`}
+    >
+      <WorkoutCardInner workout={workout} nicknames={nicknames} />
+      <div onPointerDown={(e) => e.stopPropagation()}>
+        <ConfirmDeleteButton onConfirm={onDelete} />
+      </div>
+    </motion.div>
+  );
+}
+
+function DroppableHour({
+  hour,
+  children,
+  isCurrentHour,
+  nowHour,
+  nowMinutes,
+}: {
+  hour: number;
+  children: React.ReactNode;
+  isCurrentHour: boolean;
+  nowHour: number;
+  nowMinutes: number;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: `hour-${hour}` });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`flex-1 border-l border-(--color_border) pl-3 py-1 mb-0.5 relative transition-colors duration-100 ${
+        isOver ? 'bg-white/5' : ''
+      }`}
+    >
+      {isCurrentHour && (
+        <div
+          className="absolute left-0 right-0 flex items-center pointer-events-none z-10"
+          style={{ top: `${(nowMinutes / 60) * 100}%` }}
+        >
+          <div className="w-2 h-2 rounded-full bg-red-400 shrink-0 -ml-1" />
+          <div className="flex-1 h-px bg-red-400/70" />
+          <span className="text-[10px] text-red-400 font-mono shrink-0 ml-1">
+            {String(nowHour).padStart(2, '0')}:{String(nowMinutes).padStart(2, '0')}
+          </span>
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+// ── Intro session form ────────────────────────────────────────────────────────
+
+function IntroSessionForm({
+  selectedDate,
+  selectedTime,
+  onSuccess,
+  onCancel,
+}: {
+  selectedDate: string;
+  selectedTime: string;
+  onSuccess: () => void;
+  onCancel: () => void;
+}) {
+  const [clientName, setClientName] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const formatPhone = (raw: string): string => {
+    // Keep only digits and leading +
+    const digits = raw.replace(/[^\d]/g, '');
+    if (!digits) return raw.startsWith('+') ? '+' : '';
+
+    // Russian format: +7 (999) 000-00-00
+    const d = digits.startsWith('7') || digits.startsWith('8') ? digits.slice(1) : digits;
+    const parts = [d.slice(0, 3), d.slice(3, 6), d.slice(6, 8), d.slice(8, 10)].filter(Boolean);
+    let formatted = '+7';
+    if (parts[0]) formatted += ` (${parts[0]}`;
+    if (parts[0]?.length === 3) formatted += ')';
+    if (parts[1]) formatted += ` ${parts[1]}`;
+    if (parts[2]) formatted += `-${parts[2]}`;
+    if (parts[3]) formatted += `-${parts[3]}`;
+    return formatted;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    // Allow only: digits, +, space, (, ), -
+    if (raw && /[^\d\s\+\(\)\-]/.test(raw)) return;
+    const formatted = raw === '' ? '' : formatPhone(raw);
+    setClientPhone(formatted);
+    setPhoneError('');
+  };
+
+  const validatePhone = (): boolean => {
+    if (!clientPhone) return true; // optional
+    const digits = clientPhone.replace(/\D/g, '');
+    if (digits.length < 11) {
+      setPhoneError('Введите полный номер телефона');
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!clientName.trim()) return;
+    if (!validatePhone()) return;
+    setSaving(true);
+    try {
+      await trainerApi.createScheduledWorkout({
+        scheduledDate: `${selectedDate}T${selectedTime}:00`,
+        workoutData: { type: 'intro', clientName: clientName.trim(), clientPhone: clientPhone.trim() || undefined, exercises: [] },
+        assignedTo: [],
+      });
+      toast.success('Вводная добавлена');
+      onSuccess();
+    } catch {
+      toast.error('Ошибка сохранения');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Badge */}
+      <div
+        className="rounded-xl p-3 flex items-center gap-3 ring-1 ring-violet-500/30"
+        style={INTRO_STRIPE_STYLE}
+      >
+        <div className="w-9 h-9 rounded-lg bg-violet-500/30 flex items-center justify-center shrink-0">
+          <UserPlusIcon className="w-5 h-5 text-violet-300" />
+        </div>
+        <div>
+          <div className="text-sm font-semibold text-violet-200">Вводная тренировка</div>
+          <div className="text-xs text-(--color_text_muted)">Слот занят — клиент без аккаунта</div>
+        </div>
+      </div>
+
+      {/* Name */}
+      <div>
+        <label className="block text-xs text-(--color_text_muted) mb-1.5">Имя клиента *</label>
+        <input
+          type="text"
+          value={clientName}
+          onChange={(e) => setClientName(e.target.value)}
+          placeholder="Иван Иванов"
+          required
+          autoFocus
+          className="w-full rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) px-3 py-2.5 text-sm text-white placeholder:text-(--color_text_muted) focus:outline-none focus:ring-1 focus:ring-violet-500/50"
+        />
+      </div>
+
+      {/* Phone */}
+      <div>
+        <label className="block text-xs text-(--color_text_muted) mb-1.5">
+          <PhoneIcon className="w-3.5 h-3.5 inline mr-1 -mt-0.5" />
+          Телефон
+        </label>
+        <input
+          type="tel"
+          inputMode="numeric"
+          value={clientPhone}
+          onChange={handlePhoneChange}
+          onBlur={validatePhone}
+          placeholder="+7 (999) 000-00-00"
+          maxLength={18}
+          className={`w-full rounded-xl bg-(--color_bg_card_hover) border px-3 py-2.5 text-sm text-white placeholder:text-(--color_text_muted) focus:outline-none focus:ring-1 font-mono tracking-wide ${
+            phoneError
+              ? 'border-red-500/60 focus:ring-red-500/40'
+              : 'border-(--color_border) focus:ring-violet-500/50'
+          }`}
+        />
+        {phoneError && (
+          <p className="mt-1 text-xs text-red-400">{phoneError}</p>
+        )}
+      </div>
+
+      {/* Buttons */}
+      <div className="flex gap-2 pt-1">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 py-2.5 rounded-xl bg-(--color_bg_card_hover) text-(--color_text_muted) text-sm font-medium"
+        >
+          Отмена
+        </button>
+        <button
+          type="submit"
+          disabled={saving || !clientName.trim()}
+          className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-40 transition-opacity ring-1 ring-violet-500/50"
+          style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.85), rgba(109,40,217,0.85))' }}
+        >
+          {saving ? 'Сохранение…' : 'Добавить вводную'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
 export default function TrainerCalendarScreen() {
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState<Date>(startOfMonth(today));
@@ -66,10 +358,36 @@ export default function TrainerCalendarScreen() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date>(today);
   const [now, setNow] = useState(() => new Date());
-  // selectedTime: null = form hidden, string = form open with that time pre-filled
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [editingWorkout, setEditingWorkout] = useState<ScheduledWorkout | null>(null);
   const [athletes, setAthletes] = useState<AthleteListItem[]>([]);
+  const [activeWorkout, setActiveWorkout] = useState<ScheduledWorkout | null>(null);
+  const [draggedWidth, setDraggedWidth] = useState<number | undefined>(undefined);
+  const [sheetTab, setSheetTab] = useState<'workout' | 'intro'>('workout');
+  const timelineRef = useRef<HTMLDivElement>(null);
+
+  const restrictToTimeline = useMemo<Modifier>(
+    () =>
+      ({ transform, draggingNodeRect }) => {
+        const container = timelineRef.current;
+        if (!container || !draggingNodeRect) return { ...transform, x: 0 };
+        const containerRect = container.getBoundingClientRect();
+        const minY = containerRect.top - draggingNodeRect.top;
+        const maxY = containerRect.bottom - draggingNodeRect.bottom;
+        return {
+          ...transform,
+          x: 0,
+          y: Math.min(Math.max(transform.y, minY), maxY),
+        };
+      },
+    []
+  );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { delay: 300, tolerance: 5 },
+    })
+  );
 
   const loadWorkouts = async (month: Date) => {
     try {
@@ -112,7 +430,6 @@ export default function TrainerCalendarScreen() {
     setSelectedTime(null);
   };
 
-  // Build DayData array for the calendar
   const calendarDays: TrainerDayData[] = useMemo(() => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
@@ -130,7 +447,6 @@ export default function TrainerCalendarScreen() {
     });
   }, [currentMonth, workouts]);
 
-  // Workouts for selected day
   const selectedKey = toDateKey(selectedDate);
   const selectedWorkouts = useMemo(
     () =>
@@ -140,7 +456,6 @@ export default function TrainerCalendarScreen() {
     [workouts, selectedKey]
   );
 
-  // Group workouts by hour
   const workoutsByHour = useMemo(() => {
     const map: Record<number, ScheduledWorkout[]> = {};
     for (const w of selectedWorkouts) {
@@ -161,6 +476,48 @@ export default function TrainerCalendarScreen() {
     }
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    const { workout } = event.active.data.current as { workout: ScheduledWorkout };
+    setActiveWorkout(workout);
+    const rect = event.active.rect.current.initial;
+    if (rect) setDraggedWidth(rect.width);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveWorkout(null);
+    const { active, over } = event;
+    if (!over) return;
+
+    const workoutId = active.id as number;
+    const targetHour = parseInt((over.id as string).replace('hour-', ''));
+    const workout = workouts.find((w) => w.id === workoutId);
+    if (!workout) return;
+
+    const originalHour = getWorkoutHour(workout.scheduledDate);
+    if (targetHour === originalHour) return;
+
+    const originalDate = parseApiDateTime(workout.scheduledDate);
+    const newDate = new Date(originalDate);
+    newDate.setHours(targetHour, originalDate.getMinutes(), 0, 0);
+    const newScheduledDate = toApiDateTime(newDate, newDate);
+
+    // Optimistic update
+    setWorkouts((prev) =>
+      prev.map((w) => w.id === workoutId ? { ...w, scheduledDate: newScheduledDate } : w)
+    );
+
+    try {
+      await trainerApi.updateScheduledWorkout(workoutId, {
+        scheduledDate: newScheduledDate,
+        workoutData: workout.workoutData,
+        assignedTo: workout.assignedTo,
+      });
+    } catch {
+      toast.error('Ошибка перемещения');
+      loadWorkouts(currentMonth);
+    }
+  };
+
   const isToday = toDateKey(selectedDate) === toDateKey(now);
   const nowHour = now.getHours();
   const nowMinutes = now.getMinutes();
@@ -169,6 +526,7 @@ export default function TrainerCalendarScreen() {
 
   const openFormAt = (time: string) => {
     setEditingWorkout(null);
+    setSheetTab('workout');
     setSelectedTime(time);
   };
 
@@ -249,106 +607,101 @@ export default function TrainerCalendarScreen() {
           </div>
 
           {/* Timeline */}
-          <div className="pb-4">
-            {TIMELINE_HOURS.map((hour) => {
-              const hourWorkouts = workoutsByHour[hour] ?? [];
-              const hasWorkouts = hourWorkouts.length > 0;
-              const timeStr = formatHour(hour);
-              const isActive = selectedTime === timeStr;
+          <DndContext sensors={sensors} modifiers={[restrictToTimeline]} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            <div ref={timelineRef} className="pb-4">
+              {TIMELINE_HOURS.map((hour) => {
+                const hourWorkouts = workoutsByHour[hour] ?? [];
+                const hasWorkouts = hourWorkouts.length > 0;
+                const timeStr = formatHour(hour);
+                const isActive = selectedTime === timeStr;
+                const isCurrentHour = isToday && hour === nowHour;
 
-              const isCurrentHour = isToday && hour === nowHour;
-
-              return (
-                <div key={hour} className="flex gap-2 min-h-10 border-t border-white/4">
-                  {/* Hour label */}
-                  <div className="w-10 shrink-0 pt-1.5">
-                    <span
-                      className={`text-xs font-mono ${isCurrentHour ? 'text-red-400 font-semibold' : 'text-(--color_text_muted)'}`}
-                    >
-                      {timeStr}
-                    </span>
-                  </div>
-
-                  {/* Content area */}
-                  <div className="flex-1 border-l border-(--color_border) pl-3 py-1 mb-0.5 relative">
-                    {/* Current time indicator */}
-                    {isCurrentHour && (
-                      <div
-                        className="absolute left-0 right-0 flex items-center pointer-events-none z-10"
-                        style={{ top: `${(nowMinutes / 60) * 100}%` }}
+                return (
+                  <div key={hour} className="flex gap-2 min-h-10 border-t border-white/4">
+                    {/* Hour label */}
+                    <div className="w-10 shrink-0 pt-1.5">
+                      <span
+                        className={`text-xs font-mono ${isCurrentHour ? 'text-red-400 font-semibold' : 'text-(--color_text_muted)'}`}
                       >
-                        <div className="w-2 h-2 rounded-full bg-red-400 shrink-0 -ml-1" />
-                        <div className="flex-1 h-px bg-red-400/70" />
-                        <span className="text-[10px] text-red-400 font-mono shrink-0 ml-1">
-                          {String(nowHour).padStart(2, '0')}:{String(nowMinutes).padStart(2, '0')}
-                        </span>
-                      </div>
-                    )}
-                    {hasWorkouts ? (
-                      <div className="space-y-1.5">
-                        {hourWorkouts.map((workout) => (
-                          <motion.div
-                            key={workout.id}
-                            initial={{ opacity: 0, x: -8 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            onClick={() => openEditForm(workout)}
-                            className={`rounded-xl px-3 py-2 flex items-center justify-between gap-2 cursor-pointer hover:opacity-90 transition-opacity overflow-hidden ${
-                              editingWorkout?.id === workout.id ? 'ring-2 ring-white/40' : ''
-                            } ${
-                              WORKOUT_TYPE_COLORS[workout.workoutData.type] ??
-                              'bg-(--color_bg_card)'
+                        {timeStr}
+                      </span>
+                    </div>
+
+                    {/* Droppable content area */}
+                    <DroppableHour
+                      hour={hour}
+                      isCurrentHour={isCurrentHour}
+                      nowHour={nowHour}
+                      nowMinutes={nowMinutes}
+                    >
+                      {hasWorkouts ? (
+                        <div className="space-y-1.5">
+                          {hourWorkouts.map((workout) => (
+                            <DraggableWorkout
+                              key={workout.id}
+                              workout={workout}
+                              nicknames={nicknames}
+                              isEditing={editingWorkout?.id === workout.id}
+                              onEdit={() => openEditForm(workout)}
+                              onDelete={() => handleDelete(workout.id)}
+                            />
+                          ))}
+
+                          {/* Add another at this hour */}
+                          <button
+                            onClick={() => openFormAt(timeStr)}
+                            className={`w-full text-left text-xs text-(--color_text_muted) hover:text-white transition-colors py-0.5 ${
+                              isActive ? 'text-emerald-400' : ''
                             }`}
                           >
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="text-xs font-mono text-white/70 shrink-0">
-                                {getWorkoutMinutes(workout.scheduledDate)}
-                              </span>
-                              <span className="text-sm font-medium text-white truncate">
-                                {WORKOUT_TYPE_CONFIG[workout.workoutData.type] ??
-                                  workout.workoutData.type}
-                              </span>
-                              {workout.assignedTo.length > 0 && (
-                                <span className="text-xs text-white/60 truncate">
-                                  {formatAssignedTo(workout.assignedTo, nicknames)}
-                                </span>
-                              )}
-                            </div>
-                            <ConfirmDeleteButton onConfirm={() => handleDelete(workout.id)} />
-                          </motion.div>
-                        ))}
-
-                        {/* Add another at this hour */}
+                            + ещё в {timeStr}
+                          </button>
+                        </div>
+                      ) : (
+                        /* Empty slot — click to add */
                         <button
                           onClick={() => openFormAt(timeStr)}
-                          className={`w-full text-left text-xs text-(--color_text_muted) hover:text-white transition-colors py-0.5 ${
-                            isActive ? 'text-emerald-400' : ''
-                          }`}
+                          className={`
+                            w-full h-8 rounded-lg text-xs transition-all duration-150 text-left px-2
+                            ${
+                              isActive
+                                ? 'bg-emerald-900/60 text-emerald-300 ring-1 ring-emerald-600'
+                                : 'text-transparent hover:bg-(--color_bg_card_hover) hover:text-(--color_text_muted)'
+                            }
+                          `}
                         >
-                          + ещё в {timeStr}
+                          + добавить в {timeStr}
                         </button>
-                      </div>
-                    ) : (
-                      /* Empty slot — click to add */
-                      <button
-                        onClick={() => openFormAt(timeStr)}
-                        className={`
-                          w-full h-8 rounded-lg text-xs transition-all duration-150 text-left px-2
-                          ${
-                            isActive
-                              ? 'bg-emerald-900/60 text-emerald-300 ring-1 ring-emerald-600'
-                              : 'text-transparent hover:bg-(--color_bg_card_hover) hover:text-(--color_text_muted)'
-                          }
-                        `}
-                      >
-                        + добавить в {timeStr}
-                      </button>
-                    )}
+                      )}
+                    </DroppableHour>
+                  </div>
+                );
+              })}
+            </div>
+
+            <DragOverlay dropAnimation={null}>
+              {activeWorkout && (
+                <div
+                  style={{
+                    width: draggedWidth,
+                    ...(activeWorkout.workoutData.type === 'intro' ? INTRO_STRIPE_STYLE : {}),
+                  }}
+                  className={`rounded-xl px-3 py-2 flex items-center justify-between gap-2 cursor-grabbing overflow-hidden ring-2 shadow-[0_0_20px_rgba(255,255,255,0.15)] ${
+                    activeWorkout.workoutData.type === 'intro'
+                      ? 'ring-violet-400/60'
+                      : `ring-white/60 ${WORKOUT_TYPE_COLORS[activeWorkout.workoutData.type] ?? 'bg-(--color_bg_card)'}`
+                  }`}
+                >
+                  <WorkoutCardInner workout={activeWorkout} nicknames={nicknames} />
+                  <div className="invisible pointer-events-none">
+                    <ConfirmDeleteButton onConfirm={() => {}} />
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              )}
+            </DragOverlay>
+          </DndContext>
         </div>
+
         <ScreenLinks
           className="pb-4"
           links={[
@@ -358,6 +711,7 @@ export default function TrainerCalendarScreen() {
           ]}
         />
       </div>
+
       <BottomSheet
         open={selectedTime !== null || editingWorkout !== null}
         onClose={() => {
@@ -365,31 +719,73 @@ export default function TrainerCalendarScreen() {
           setEditingWorkout(null);
         }}
         title={editingWorkout ? 'Редактировать тренировку' : 'Создать тренировку'}
-        emoji="💪"
+        emoji={editingWorkout?.workoutData.type === 'intro' ? '🎯' : '💪'}
       >
         {editingWorkout ? (
-          <WorkoutInlineForm
-            key={editingWorkout.id}
-            editWorkout={editingWorkout}
-            noCard
-            onSuccess={() => {
-              setEditingWorkout(null);
-              loadWorkouts(currentMonth);
-            }}
-            onCancel={() => setEditingWorkout(null)}
-          />
+          editingWorkout.workoutData.type === 'intro' ? (
+            <IntroSessionForm
+              key={editingWorkout.id}
+              selectedDate={selectedDateStr}
+              selectedTime={selectedTime ?? getWorkoutMinutes(editingWorkout.scheduledDate).replace(':', ':')}
+              onSuccess={() => { setEditingWorkout(null); loadWorkouts(currentMonth); }}
+              onCancel={() => setEditingWorkout(null)}
+            />
+          ) : (
+            <WorkoutInlineForm
+              key={editingWorkout.id}
+              editWorkout={editingWorkout}
+              noCard
+              onSuccess={() => { setEditingWorkout(null); loadWorkouts(currentMonth); }}
+              onCancel={() => setEditingWorkout(null)}
+            />
+          )
         ) : selectedTime !== null ? (
-          <WorkoutInlineForm
-            key={`${selectedDateStr}-${selectedTime}`}
-            preselectedDate={selectedDateStr}
-            preselectedTime={selectedTime}
-            noCard
-            onSuccess={() => {
-              setSelectedTime(null);
-              loadWorkouts(currentMonth);
-            }}
-            onCancel={() => setSelectedTime(null)}
-          />
+          <>
+            {/* Tabs */}
+            <div className="flex gap-2 mb-5">
+              <button
+                onClick={() => setSheetTab('workout')}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  sheetTab === 'workout'
+                    ? 'bg-(--color_primary_light) text-white'
+                    : 'bg-(--color_bg_card_hover) text-(--color_text_muted) hover:text-white'
+                }`}
+              >
+                💪 Тренировка
+              </button>
+              <button
+                onClick={() => setSheetTab('intro')}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ring-1 ${
+                  sheetTab === 'intro'
+                    ? 'ring-violet-500/50 text-violet-200'
+                    : 'ring-transparent text-(--color_text_muted) hover:text-white bg-(--color_bg_card_hover)'
+                }`}
+                style={sheetTab === 'intro' ? INTRO_STRIPE_STYLE : undefined}
+              >
+                <UserPlusIcon className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+                Вводная
+              </button>
+            </div>
+
+            {sheetTab === 'workout' ? (
+              <WorkoutInlineForm
+                key={`${selectedDateStr}-${selectedTime}`}
+                preselectedDate={selectedDateStr}
+                preselectedTime={selectedTime}
+                noCard
+                onSuccess={() => { setSelectedTime(null); loadWorkouts(currentMonth); }}
+                onCancel={() => setSelectedTime(null)}
+              />
+            ) : (
+              <IntroSessionForm
+                key={`intro-${selectedDateStr}-${selectedTime}`}
+                selectedDate={selectedDateStr}
+                selectedTime={selectedTime}
+                onSuccess={() => { setSelectedTime(null); loadWorkouts(currentMonth); }}
+                onCancel={() => setSelectedTime(null)}
+              />
+            )}
+          </>
         ) : null}
       </BottomSheet>
     </Screen>

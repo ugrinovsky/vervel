@@ -8,7 +8,7 @@ import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import AddAthleteDrawer from '@/components/AddAthleteDrawer/AddAthleteDrawer';
 import { trainerApi, type AthleteListItem } from '@/api/trainer';
 import { useTrainerUnreadCounts } from '@/hooks/useTrainerUnreadCounts';
-import InlineAthleteAvatar from '@/components/MiniAvatar/InlineAthleteAvatar';
+import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import {
   PlusIcon,
   UsersIcon,
@@ -18,9 +18,6 @@ import {
   ViewColumnsIcon,
   Bars3Icon,
   MagnifyingGlassIcon,
-  PencilIcon,
-  CheckIcon,
-  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 
@@ -31,8 +28,6 @@ export default function TrainerAthletesListScreen() {
   const [loading, setLoading] = useState(true);
   const [showAddDrawer, setShowAddDrawer] = useState(false);
   const [search, setSearch] = useState('');
-  const [editingNickname, setEditingNickname] = useState<{ athleteId: number; value: string } | null>(null);
-  const [savingNickname, setSavingNickname] = useState(false);
   type ViewMode = '2' | '3' | 'list';
   const [view, setView] = useState<ViewMode>(() => {
     const stored = localStorage.getItem('athletes_view_mode');
@@ -85,22 +80,6 @@ export default function TrainerAthletesListScreen() {
     }
   };
 
-  const handleSaveNickname = async () => {
-    if (!editingNickname) return;
-    setSavingNickname(true);
-    try {
-      const nickname = editingNickname.value.trim() || null;
-      await trainerApi.updateAthleteNickname(editingNickname.athleteId, nickname);
-      setAthletes((prev) =>
-        prev.map((a) => (a.id === editingNickname.athleteId ? { ...a, nickname } : a))
-      );
-      setEditingNickname(null);
-    } catch {
-      toast.error('Ошибка сохранения никнейма');
-    } finally {
-      setSavingNickname(false);
-    }
-  };
 
   return (
     <Screen loading={loading} className="trainer-athletes-list-screen">
@@ -301,46 +280,22 @@ export default function TrainerAthletesListScreen() {
                       className="absolute top-2.5 left-2.5 z-10 p-0.5"
                     />
                     <div className="cursor-pointer w-full flex flex-col items-center gap-2" onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}>
-                      <InlineAthleteAvatar athleteId={athlete.id} size={view === '2' ? 'lg' : 'md'} />
-                    </div>
-                    <div className="w-full text-center mt-0.5">
-                      {/* Nickname row — одинаковая высота в обоих режимах */}
-                      {editingNickname?.athleteId === athlete.id ? (
-                        <input
-                          autoFocus
-                          value={editingNickname.value}
-                          onChange={(e) => setEditingNickname({ ...editingNickname, value: e.target.value })}
-                          onKeyDown={(e) => { if (e.key === 'Enter') handleSaveNickname(); if (e.key === 'Escape') setEditingNickname(null); }}
-                          onBlur={handleSaveNickname}
-                          maxLength={100}
-                          placeholder="Никнейм…"
-                          onClick={(e) => e.stopPropagation()}
-                          className={`w-full text-center bg-transparent border-b border-(--color_primary_light)/60 text-white focus:outline-none leading-tight font-semibold ${view === '2' ? 'text-sm' : 'text-xs'}`}
-                        />
-                      ) : athlete.nickname ? (
-                        <div
-                          className={`leading-tight truncate font-semibold text-white cursor-pointer ${view === '2' ? 'text-sm' : 'text-xs'}`}
-                          onClick={(e) => { e.stopPropagation(); setEditingNickname({ athleteId: athlete.id, value: athlete.nickname }); }}
-                        >
-                          {athlete.nickname}
+                      <UserAvatar photoUrl={athlete.photoUrl} name={athlete.fullName} size={view === '2' ? 56 : 40} />
+                      <div className="w-full text-center">
+                        {athlete.nickname && (
+                          <div className={`leading-tight truncate font-semibold text-white ${view === '2' ? 'text-sm' : 'text-xs'}`}>
+                            {athlete.nickname}
+                          </div>
+                        )}
+                        <div className={`text-(--color_text_muted) truncate ${view === '2' ? 'text-xs' : 'text-[10px]'}`}>
+                          {athlete.fullName || 'Без имени'}
                         </div>
-                      ) : null}
-                      {/* Имя — всегда видно */}
-                      <div
-                        className={`text-(--color_text_muted) truncate mt-0.5 cursor-pointer ${view === '2' ? 'text-xs' : 'text-[10px]'}`}
-                        onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}
-                      >
-                        {athlete.fullName || 'Без имени'}
+                        {view === '2' && (
+                          <div className="text-[10px] text-(--color_text_muted)/60 truncate">
+                            {athlete.status === 'pending' ? '⏳ Ожидает' : athlete.email}
+                          </div>
+                        )}
                       </div>
-                      {/* Email — только в 2-кол */}
-                      {view === '2' && (
-                        <div
-                          className="text-[10px] text-(--color_text_muted)/60 truncate cursor-pointer"
-                          onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}
-                        >
-                          {athlete.status === 'pending' ? '⏳ Ожидает' : athlete.email}
-                        </div>
-                      )}
                     </div>
                   </motion.div>
                 );

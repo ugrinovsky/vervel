@@ -11,8 +11,6 @@ services:
       - '5174:5173'
     environment:
       NODE_ENV: development
-    depends_on:
-      - api
 
 volumes:
   node_modules_web:

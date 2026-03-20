@@ -84,6 +84,7 @@ export default class TrainerController {
       status: b.status,
       linkedAt: b.createdAt,
       nickname: b.nickname,
+      photoUrl: b.athlete.photoUrl ?? null,
     }))
 
     return response.ok({ success: true, data: athletes })

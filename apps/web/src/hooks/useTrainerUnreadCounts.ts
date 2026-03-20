@@ -15,10 +15,12 @@ async function fetchAndNotify() {
   } catch {}
 }
 
-export function useTrainerUnreadCounts(pollInterval = 30_000) {
+export function useTrainerUnreadCounts(pollInterval?: number) {
   const [data, setData] = useState<UnreadCounts | null>(cachedData)
 
   useEffect(() => {
+    if (pollInterval === undefined) return
+
     listeners.add(setData)
 
     // Fetch immediately if cache is stale (older than 5s)

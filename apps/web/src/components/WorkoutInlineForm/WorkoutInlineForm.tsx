@@ -306,7 +306,7 @@ export default function WorkoutInlineForm({
     <WorkoutFormBase
       initialDate={initialDate}
       initialTime={initialTime}
-      initialType={editWorkout?.workoutData.type}
+      initialType={editWorkout?.workoutData.type !== 'intro' ? editWorkout?.workoutData.type : undefined}
       initialNotes={editWorkout?.notes ?? ''}
       initialExercises={editWorkout?.workoutData.exercises ?? []}
       templates={templates}
