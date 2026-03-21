@@ -14,6 +14,75 @@
     />
     <title>vervel</title>
     <meta name="theme-color" content="#0e3a48" />
+    <script>
+      (function () {
+        function hslToRgb(h, s, l) {
+          s /= 100; l /= 100;
+          var k = function (n) { return (n + h / 30) % 12; };
+          var a = s * Math.min(l, 1 - l);
+          var f = function (n) { return l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1)); };
+          return Math.round(f(0) * 255) + ' ' + Math.round(f(8) * 255) + ' ' + Math.round(f(4) * 255);
+        }
+        var r = document.documentElement;
+        var sp = localStorage.getItem('themeSpecial');
+        if (sp === 'dark') {
+          r.style.setProperty('--color_primary', 'rgb(22, 22, 28)');
+          r.style.setProperty('--color_primary_dark', 'rgb(12, 12, 16)');
+          r.style.setProperty('--color_primary_light', 'rgb(42, 168, 152)');
+          r.style.setProperty('--color_primary_icon', 'rgb(72, 198, 182)');
+          r.style.setProperty('--color_primary_ch', '22 22 28');
+          r.style.setProperty('--color_primary_dark_ch', '12 12 16');
+          r.style.setProperty('--color_primary_light_ch', '42 168 152');
+          r.style.setProperty('--color_bg_screen', 'radial-gradient(circle at 50% 52.5%, rgb(22, 22, 28) 0%, rgb(12, 12, 16) 90%)');
+          r.style.setProperty('--color_bg_card', 'rgba(255,255,255,0.07)');
+          r.style.setProperty('--color_bg_card_hover', 'rgba(255,255,255,0.11)');
+          r.style.setProperty('--color_bg_input', 'rgba(255,255,255,0.08)');
+          r.style.setProperty('--color_border', 'rgba(255,255,255,0.12)');
+          r.style.setProperty('--color_border_light', 'rgba(255,255,255,0.08)');
+          r.style.setProperty('--color_text_primary', 'rgba(255,255,255,1)');
+          r.style.setProperty('--color_text_secondary', 'rgba(255,255,255,0.9)');
+          r.style.setProperty('--color_text_muted', 'rgba(255,255,255,0.7)');
+        } else if (sp === 'light') {
+          r.setAttribute('data-theme', 'light');
+          r.style.setProperty('--color_primary', 'rgb(246, 246, 246)');
+          r.style.setProperty('--color_primary_dark', 'rgb(236, 236, 236)');
+          r.style.setProperty('--color_primary_light', 'rgb(75, 120, 175)');
+          r.style.setProperty('--color_primary_icon', 'rgb(58, 100, 155)');
+          r.style.setProperty('--color_primary_ch', '246 246 246');
+          r.style.setProperty('--color_primary_dark_ch', '236 236 236');
+          r.style.setProperty('--color_primary_light_ch', '75 120 175');
+          r.style.setProperty('--color_bg_screen', 'rgb(244, 243, 241)');
+          r.style.setProperty('--color_bg_card', 'rgb(255,255,255)');
+          r.style.setProperty('--color_bg_card_hover', 'rgb(248,248,248)');
+          r.style.setProperty('--color_bg_input', 'rgb(255,255,255)');
+          r.style.setProperty('--color_border', 'rgba(0,0,0,0.1)');
+          r.style.setProperty('--color_border_light', 'rgba(0,0,0,0.07)');
+          r.style.setProperty('--color_text_primary', 'rgba(0,0,0,0.88)');
+          r.style.setProperty('--color_text_secondary', 'rgba(0,0,0,0.72)');
+          r.style.setProperty('--color_text_muted', 'rgba(0,0,0,0.48)');
+        } else {
+          var hue = 175;
+          try { var u = JSON.parse(localStorage.getItem('user') || '{}'); if (typeof u.themeHue === 'number') hue = u.themeHue; } catch (e) {}
+          if (hue !== 175) {
+            var h = hue, hLight = ((h - 8) + 360) % 360, hDark = (h + 26) % 360;
+            var primary = hslToRgb(h, 74, 21), primaryDark = hslToRgb(hDark, 67, 17);
+            var hN = ((hLight % 360) + 360) % 360;
+            var lightL = hN >= 30 && hN <= 100 ? 38 : hN >= 100 && hN <= 170 ? 38 : hN >= 200 && hN <= 290 ? 50 : 44;
+            var primaryLight = hslToRgb(hLight, 75, lightL);
+            var iconL = hN >= 30 && hN <= 100 ? 58 : hN >= 100 && hN <= 170 ? 60 : hN >= 200 && hN <= 290 ? 70 : 63;
+            var primaryIcon = hslToRgb(hLight, 72, iconL);
+            r.style.setProperty('--color_primary', 'rgb(' + primary + ')');
+            r.style.setProperty('--color_primary_dark', 'rgb(' + primaryDark + ')');
+            r.style.setProperty('--color_primary_light', 'rgb(' + primaryLight + ')');
+            r.style.setProperty('--color_primary_icon', 'rgb(' + primaryIcon + ')');
+            r.style.setProperty('--color_primary_ch', primary);
+            r.style.setProperty('--color_primary_dark_ch', primaryDark);
+            r.style.setProperty('--color_primary_light_ch', primaryLight);
+            r.style.setProperty('--color_bg_screen', 'radial-gradient(circle at 50% 52.5%, rgb(' + primary + ') 0%, rgb(' + primaryDark + ') 90%)');
+          }
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

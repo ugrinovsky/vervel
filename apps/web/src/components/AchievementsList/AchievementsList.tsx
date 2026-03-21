@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PillButton from '@/components/ui/PillButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LockClosedIcon, CheckBadgeIcon } from '@heroicons/react/24/outline';
 import { streakApi, type AchievementsData } from '@/api/streak';
@@ -126,17 +127,14 @@ export default function AchievementsList() {
           { key: 'unlocked', label: 'Получено' },
           { key: 'locked', label: 'Не получено' },
         ] as { key: Filter; label: string }[]).map(({ key, label }) => (
-          <button
+          <PillButton
             key={key}
+            active={filter === key}
             onClick={() => setFilter(key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              filter === key
-                ? 'bg-(--color_primary) text-white'
-                : 'bg-(--color_bg_input) text-(--color_text_muted) hover:text-white'
-            }`}
+            className={filter !== key ? 'bg-(--color_bg_input)' : ''}
           >
             {label}
-          </button>
+          </PillButton>
         ))}
       </div>
 

@@ -33,7 +33,7 @@ function ArcGauge({ pct, color }: { pct: number; color: string }) {
 
   return (
     <svg width="52" height="44" viewBox="0 0 52 44">
-      <path d={trackD} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="5" strokeLinecap="round" />
+      <path d={trackD} fill="none" className="stroke-white/8" strokeWidth="5" strokeLinecap="round" />
       {fillD && (
         <path d={fillD} fill="none" stroke={color} strokeWidth="5" strokeLinecap="round" />
       )}
@@ -214,7 +214,7 @@ export function MetricsOverview({ stats }: MetricOverviewProps) {
       >
         <div className="relative w-16 h-16 shrink-0 flex items-center justify-center">
           <svg className="absolute inset-0" width="64" height="64" viewBox="0 0 64 64">
-            <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" />
+            <circle cx="32" cy="32" r="26" fill="none" className="stroke-white/6" strokeWidth="6" />
             <circle
               cx="32" cy="32" r="26"
               fill="none"

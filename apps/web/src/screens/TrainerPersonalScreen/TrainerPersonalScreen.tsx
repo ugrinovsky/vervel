@@ -11,6 +11,7 @@ import FormField from '@/components/FormField';
 import AvatarCropModal from '@/components/AvatarCropModal/AvatarCropModal';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import AccentButton from '@/components/ui/AccentButton';
+import AppInput from '@/components/ui/AppInput';
 
 export default function TrainerPersonalScreen() {
   const navigate = useNavigate();
@@ -237,12 +238,11 @@ export default function TrainerPersonalScreen() {
           className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) mb-4"
         >
           <FormField label="Образование">
-            <input
+            <AppInput
               type="text"
               value={education}
               onChange={(e) => setEducation(e.target.value)}
               placeholder="ВУЗ, специальность, курсы…"
-              className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-(--color_text_muted)"
             />
           </FormField>
         </motion.div>
@@ -275,7 +275,7 @@ export default function TrainerPersonalScreen() {
                 </div>
               )}
               <div className="flex gap-2">
-                <input
+                <AppInput
                   type="text"
                   value={specInput}
                   onChange={(e) => setSpecInput(e.target.value)}
@@ -286,7 +286,6 @@ export default function TrainerPersonalScreen() {
                     }
                   }}
                   placeholder="Кроссфит, Силовые, HIIT…"
-                  className="flex-1 bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-(--color_text_muted)"
                 />
                 <AccentButton size="sm" onClick={addSpec} className="px-4 py-3 rounded-xl">
                   +
@@ -309,13 +308,12 @@ export default function TrainerPersonalScreen() {
             </p>
             <div className="space-y-3">
               <FormField label="Телефон для СБП">
-                <input
+                <AppInput
                   type="tel"
                   value={donatePhone}
                   onChange={(e) => {
                     setDonateErrors((prev) => ({ ...prev, phone: undefined }));
                     const raw = e.target.value.replace(/[^\d+]/g, '');
-                    // Normalize prefix
                     let digits = raw.startsWith('+')
                       ? '+' + raw.slice(1).replace(/\D/g, '')
                       : raw.replace(/\D/g, '');
@@ -323,9 +321,7 @@ export default function TrainerPersonalScreen() {
                     else if (digits.startsWith('7') && !digits.startsWith('+7'))
                       digits = '+7' + digits.slice(1);
                     else if (!digits.startsWith('+')) digits = '+7' + digits;
-                    // Keep only +7 + 10 digits
                     const num = digits.replace(/^\+7/, '').replace(/\D/g, '').slice(0, 10);
-                    // Format: +7 XXX XXX-XX-XX
                     let formatted = '+7';
                     if (num.length > 0) formatted += ' ' + num.slice(0, 3);
                     if (num.length > 3) formatted += ' ' + num.slice(3, 6);
@@ -334,15 +330,12 @@ export default function TrainerPersonalScreen() {
                     setDonatePhone(formatted);
                   }}
                   placeholder="+7 900 123-45-67"
-                  className={`w-full bg-(--color_bg_input) border rounded-xl px-4 py-3 text-white text-sm outline-none transition-colors placeholder:text-(--color_text_muted) ${donateErrors.phone ? 'border-red-500/60 focus:border-red-400' : 'border-(--color_border) focus:border-(--color_primary_light)'}`}
+                  error={donateErrors.phone}
                 />
-                {donateErrors.phone && (
-                  <p className="text-xs text-red-400 mt-1">{donateErrors.phone}</p>
-                )}
               </FormField>
 
               <FormField label="Номер карты">
-                <input
+                <AppInput
                   type="text"
                   inputMode="numeric"
                   value={donateCard}
@@ -354,11 +347,8 @@ export default function TrainerPersonalScreen() {
                   }}
                   placeholder="0000 0000 0000 0000"
                   maxLength={19}
-                  className={`w-full bg-(--color_bg_input) border rounded-xl px-4 py-3 text-white text-sm outline-none transition-colors placeholder:text-(--color_text_muted) ${donateErrors.card ? 'border-red-500/60 focus:border-red-400' : 'border-(--color_border) focus:border-(--color_primary_light)'}`}
+                  error={donateErrors.card}
                 />
-                {donateErrors.card && (
-                  <p className="text-xs text-red-400 mt-1">{donateErrors.card}</p>
-                )}
               </FormField>
 
               <FormField
@@ -369,7 +359,7 @@ export default function TrainerPersonalScreen() {
                   </>
                 }
               >
-                <input
+                <AppInput
                   type="url"
                   value={donateYookassaLink}
                   onChange={(e) => {
@@ -377,11 +367,8 @@ export default function TrainerPersonalScreen() {
                     setDonateYookassaLink(e.target.value);
                   }}
                   placeholder="https://yoomoney.ru/to/..."
-                  className={`w-full bg-(--color_bg_input) border rounded-xl px-4 py-3 text-white text-sm outline-none transition-colors placeholder:text-(--color_text_muted) ${donateErrors.link ? 'border-red-500/60 focus:border-red-400' : 'border-(--color_border) focus:border-(--color_primary_light)'}`}
+                  error={donateErrors.link}
                 />
-                {donateErrors.link && (
-                  <p className="text-xs text-red-400 mt-1">{donateErrors.link}</p>
-                )}
                 <p className="text-xs text-(--color_text_muted) mt-1">
                   Создайте ссылку в личном кабинете ЮКасса → Приём платежей → Форма оплаты
                 </p>

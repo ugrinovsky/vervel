@@ -14,6 +14,7 @@ import {
 import type { DragEndEvent, DragStartEvent, Modifier } from '@dnd-kit/core';
 import Screen from '@/components/Screen/Screen';
 import AccentButton from '@/components/ui/AccentButton';
+import AppInput from '@/components/ui/AppInput';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
@@ -292,13 +293,13 @@ function IntroSessionForm({
       {/* Name */}
       <div>
         <label className="block text-xs text-(--color_text_muted) mb-1.5">Имя клиента *</label>
-        <input
+        <AppInput
           type="text"
           value={clientName}
           onChange={(e) => setClientName(e.target.value)}
           placeholder="Иван Иванов"
           required
-          className="w-full rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) px-3 py-2.5 text-sm text-white placeholder:text-(--color_text_muted) focus:outline-none focus:ring-1 focus:ring-sky-400/50"
+          className="py-2.5 px-3 rounded-xl bg-(--color_bg_card_hover) focus:ring-1 focus:ring-sky-400/50 focus:border-transparent"
         />
       </div>
 
@@ -308,7 +309,7 @@ function IntroSessionForm({
           <PhoneIcon className="w-3.5 h-3.5 inline mr-1 -mt-0.5" />
           Телефон
         </label>
-        <input
+        <AppInput
           type="tel"
           inputMode="numeric"
           value={clientPhone}
@@ -316,15 +317,9 @@ function IntroSessionForm({
           onBlur={validatePhone}
           placeholder="+7 (999) 000-00-00"
           maxLength={18}
-          className={`w-full rounded-xl bg-(--color_bg_card_hover) border px-3 py-2.5 text-sm text-white placeholder:text-(--color_text_muted) focus:outline-none focus:ring-1 font-mono tracking-wide ${
-            phoneError
-              ? 'border-red-500/60 focus:ring-red-500/40'
-              : 'border-(--color_border) focus:ring-sky-400/50'
-          }`}
+          className="py-2.5 px-3 rounded-xl bg-(--color_bg_card_hover) font-mono tracking-wide focus:ring-1 focus:ring-sky-400/50 focus:border-transparent"
+          error={phoneError || undefined}
         />
-        {phoneError && (
-          <p className="mt-1 text-xs text-red-400">{phoneError}</p>
-        )}
       </div>
 
       {/* Buttons */}
@@ -689,7 +684,7 @@ export default function TrainerCalendarScreen() {
                     width: draggedWidth,
                     ...(activeWorkout.workoutData.type === 'intro' ? INTRO_STRIPE_STYLE : {}),
                   }}
-                  className={`rounded-xl px-3 h-9 flex items-center justify-between gap-2 cursor-grabbing overflow-hidden ring-2 shadow-[0_0_20px_rgba(255,255,255,0.15)] ${
+                  className={`rounded-xl px-3 h-9 flex items-center justify-between gap-2 cursor-grabbing overflow-hidden ring-2 shadow-[0_0_20px_var(--color_primary_light)]/20 ${
                     activeWorkout.workoutData.type === 'intro'
                       ? 'ring-sky-400/60'
                       : `ring-white/60 ${WORKOUT_TYPE_COLORS[activeWorkout.workoutData.type] ?? 'bg-(--color_bg_card)'}`

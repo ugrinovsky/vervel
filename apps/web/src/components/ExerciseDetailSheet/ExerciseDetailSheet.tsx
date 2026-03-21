@@ -5,6 +5,7 @@ import type { Exercise, ExerciseFull, ExerciseWithSets } from '@/types/Exercise'
 import { exercisesApi } from '@/api/exercises';
 import { getZoneLabel } from '@/util/zones';
 import AccentButton from '@/components/ui/AccentButton';
+import AppInput from '@/components/ui/AppInput';
 
 const CATEGORY_LABELS: Record<string, string> = {
   strength: 'Силовые',
@@ -190,55 +191,45 @@ export function ExerciseDetailContent({
       {onAdd && (
         <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
           {workoutType === 'cardio' ? (
-            <div>
-              <label className="text-xs text-(--color_text_muted) mb-1 block">
-                Длительность (мин)
-              </label>
-              <input
-                type="number"
-                value={duration}
-                min={1}
-                onChange={(e) => setDuration(+e.target.value)}
-                onClick={(e) => e.currentTarget.select()}
-                className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2 text-white text-sm outline-none"
-              />
-            </div>
+            <AppInput
+              type="number"
+              label="Длительность (мин)"
+              value={duration}
+              min={1}
+              onChange={(e) => setDuration(+e.target.value)}
+              onClick={(e) => e.currentTarget.select()}
+              className="py-2 px-3"
+            />
           ) : (
             <div className="grid grid-cols-3 gap-2">
-              <div>
-                <label className="text-xs text-(--color_text_muted) mb-1 block">Подходы</label>
-                <input
-                  type="number"
-                  value={sets}
-                  min={1}
-                  onChange={(e) => setSets(+e.target.value)}
-                  onClick={(e) => e.currentTarget.select()}
-                  className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2 text-white text-sm outline-none text-center"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-(--color_text_muted) mb-1 block">Подходы</label>
-                <input
-                  type="number"
-                  value={reps}
-                  min={1}
-                  onChange={(e) => setReps(+e.target.value)}
-                  onClick={(e) => e.currentTarget.select()}
-                  className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2 text-white text-sm outline-none text-center"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-(--color_text_muted) mb-1 block">Вес кг</label>
-                <input
-                  type="number"
-                  value={weight}
-                  min={0}
-                  step={2.5}
-                  onChange={(e) => setWeight(+e.target.value)}
-                  onClick={(e) => e.currentTarget.select()}
-                  className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2 text-white text-sm outline-none text-center"
-                />
-              </div>
+              <AppInput
+                type="number"
+                label="Подходы"
+                value={sets}
+                min={1}
+                onChange={(e) => setSets(+e.target.value)}
+                onClick={(e) => e.currentTarget.select()}
+                className="py-2 px-3 text-center"
+              />
+              <AppInput
+                type="number"
+                label="Повторения"
+                value={reps}
+                min={1}
+                onChange={(e) => setReps(+e.target.value)}
+                onClick={(e) => e.currentTarget.select()}
+                className="py-2 px-3 text-center"
+              />
+              <AppInput
+                type="number"
+                label="Вес кг"
+                value={weight}
+                min={0}
+                step={2.5}
+                onChange={(e) => setWeight(+e.target.value)}
+                onClick={(e) => e.currentTarget.select()}
+                className="py-2 px-3 text-center"
+              />
             </div>
           )}
           <AccentButton onClick={handleAdd} className="font-semibold">

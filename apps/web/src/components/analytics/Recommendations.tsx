@@ -137,11 +137,7 @@ export default function Recommendations({ stats }: RecommendationsProps) {
                   {rec.muscleGroups.map((m) => (
                     <span
                       key={m}
-                      className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-                      style={{
-                        backgroundColor: 'rgba(255,255,255,0.08)',
-                        color: 'rgba(255,255,255,0.6)',
-                      }}
+                      className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-white/8 text-white/60"
                     >
                       {getZoneLabel(m)}
                     </span>

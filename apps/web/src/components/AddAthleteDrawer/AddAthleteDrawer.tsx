@@ -5,6 +5,7 @@ import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import QrScanner from '@/components/QrScanner/QrScanner';
 import { trainerApi } from '@/api/trainer';
 import AccentButton from '@/components/ui/AccentButton';
+import AppInput from '@/components/ui/AppInput';
 
 interface Props {
   open: boolean;
@@ -164,12 +165,11 @@ export default function AddAthleteDrawer({ open, onClose, onAdded }: Props) {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-3"
           >
-            <input
+            <AppInput
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="email@example.com"
-              className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors"
               onKeyDown={(e) => e.key === 'Enter' && handleAddByEmail()}
             />
             <AccentButton

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PillButton from '@/components/ui/PillButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   maleBody,
@@ -89,48 +90,20 @@ const BodySVG: React.FC<BodySVGProps> = ({
     zoneColor(getZoneIntensity(appZone), 0.42);
 
   const getOutlineStroke = (appZone: string) => {
-    if (isSelected(appZone)) return 'rgba(255,255,255,0.75)';
+    if (isSelected(appZone)) return 'var(--color_text_primary)';
     const intensity = getZoneIntensity(appZone);
     if (intensity > 0) return zoneColor(intensity, 0.15 + intensity * 0.25);
-    return 'rgba(255,255,255,0.10)';
+    return 'var(--color_border)';
   };
 
   return (
     <div className="avatar-wrapper glass relative" style={{ paddingBottom: 0 }}>
       {/* ── Front / Back toggle ─────────────────────────────────────────── */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 8,
-          right: 8,
-          zIndex: 10,
-          display: 'flex',
-          gap: 2,
-          background: 'var(--color_bg_card)',
-          borderRadius: 8,
-          padding: '3px',
-          border: '1px solid var(--color_border)',
-        }}
-      >
+      <div className="absolute top-2 right-2 z-10 flex gap-0.5 bg-(--color_bg_card) rounded-lg p-0.75 border border-(--color_border)">
         {(['front', 'back'] as BodySide[]).map((s) => (
-          <button
-            key={s}
-            onClick={() => setSide(s)}
-            style={{
-              padding: '2px 8px',
-              borderRadius: 5,
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: 11,
-              fontWeight: 600,
-              background: side === s ? 'var(--color_primary)' : 'transparent',
-              color: side === s ? 'white' : 'var(--color_text_muted)',
-              transition: 'all 0.18s',
-              lineHeight: 1.4,
-            }}
-          >
+          <PillButton key={s} active={side === s} onClick={() => setSide(s)}>
             {s === 'front' ? 'Перед' : 'Зад'}
-          </button>
+          </PillButton>
         ))}
       </div>
 
@@ -196,7 +169,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
           <motion.path
             d={outline}
             fill="none"
-            stroke="rgba(176,200,210,0.45)"
+            className="stroke-white/45"
             strokeWidth={2}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -212,8 +185,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
                 <path
                   key={`s-${p.slug}-${i}`}
                   d={d}
-                  fill="rgba(176,200,210,0.06)"
-                  stroke="rgba(176,200,210,0.13)"
+                  className="fill-white/6 stroke-white/13"
                   strokeWidth={0.5}
                 />
               ))
@@ -316,7 +288,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
                           key={`zs-${p.slug}-${i}`}
                           d={d}
                           fill="none"
-                          stroke="rgba(255,255,255,0.65)"
+                          className="stroke-white/65"
                           strokeWidth={2.0}
                           strokeLinecap="round"
                           strokeLinejoin="round"

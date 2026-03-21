@@ -10,6 +10,7 @@ import { ChatBubbleLeftIcon, ClipboardDocumentIcon, CheckIcon } from '@heroicons
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import BackButton from '@/components/BackButton/BackButton';
 import AccentButton from '@/components/ui/AccentButton';
+import AppInput from '@/components/ui/AppInput';
 
 const DONATION_AMOUNTS = [100, 300, 500, 1000];
 
@@ -194,7 +195,7 @@ export default function TrainerPublicProfileScreen() {
                   </button>
                 ))}
               </div>
-              <input
+              <AppInput
                 type="number"
                 value={customAmount}
                 onChange={(e) => {
@@ -202,7 +203,7 @@ export default function TrainerPublicProfileScreen() {
                   setSelectedAmount(null);
                 }}
                 placeholder="Другая сумма, ₽"
-                className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-(--color_text_muted) mb-4"
+                className="mb-4"
               />
 
               <div className="space-y-2">

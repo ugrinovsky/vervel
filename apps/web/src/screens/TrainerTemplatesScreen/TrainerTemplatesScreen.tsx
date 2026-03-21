@@ -14,6 +14,7 @@ import { trainerApi, type WorkoutTemplate, type ExerciseData } from '@/api/train
 import { useNavigate } from 'react-router';
 import { PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
+import AppInput from '@/components/ui/AppInput';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 import { WORKOUT_TYPE_CONFIG, exerciseBrief } from '@/constants/workoutTypes';
 
@@ -253,12 +254,12 @@ export default function TrainerTemplatesScreen() {
       >
         <div className="space-y-4">
           <FormField label="Название">
-            <input
+            <AppInput
               type="text"
               value={templateName}
               onChange={(e) => setTemplateName(e.target.value)}
               placeholder="Название шаблона..."
-              className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors"
+              className="py-2 px-3 rounded-lg"
             />
           </FormField>
 

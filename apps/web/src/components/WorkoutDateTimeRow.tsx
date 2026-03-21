@@ -3,6 +3,7 @@ import { ru } from 'date-fns/locale';
 import 'react-datepicker/dist/react-datepicker.css';
 import '@/styles/datepicker.css';
 import { toTimeKey } from '@/utils/date';
+import TimeInput from '@/components/ui/TimeInput';
 
 registerLocale('ru', ru);
 
@@ -39,12 +40,7 @@ export default function WorkoutDateTimeRow({ date, time, onDateChange, onTimeCha
         portalId="datepicker-portal"
       />
       <div className="min-w-0">
-        <input
-          type="time"
-          value={toTimeKey(time)}
-          onChange={handleTimeChange}
-          className={`${INPUT_CLS} [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-datetime-edit]:text-sm`}
-        />
+        <TimeInput value={toTimeKey(time)} onChange={handleTimeChange} />
       </div>
     </div>
   );

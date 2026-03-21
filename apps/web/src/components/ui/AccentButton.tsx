@@ -30,7 +30,8 @@ export default function AccentButton({
   return (
     <button
       disabled={disabled || loading}
-      className={`${base} bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50 ${className}`}
+      style={{ color: 'white' }}
+      className={`${base} bg-(--color_primary_light) hover:opacity-90 transition-opacity disabled:opacity-50 ${className}`}
       {...props}
     >
       {loading && loadingText ? loadingText : children}

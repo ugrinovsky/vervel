@@ -67,7 +67,7 @@ export default function MiniAvatar({
           <path
             d={outline}
             fill="none"
-            stroke="rgba(176,200,210,0.45)"
+            className="stroke-white/45"
             strokeWidth={3}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -79,8 +79,7 @@ export default function MiniAvatar({
               <path
                 key={`s-${p.slug}-${i}`}
                 d={d}
-                fill="rgba(176,200,210,0.06)"
-                stroke="rgba(176,200,210,0.12)"
+                className="fill-white/6 stroke-white/12"
                 strokeWidth={0.5}
               />
             ))
@@ -93,7 +92,7 @@ export default function MiniAvatar({
                 key={`zo-${p.slug}-${i}`}
                 d={d}
                 fill="none"
-                stroke="rgba(255,255,255,0.08)"
+                className="stroke-white/8"
                 strokeWidth={0.5}
                 strokeLinecap="round"
                 strokeLinejoin="round"

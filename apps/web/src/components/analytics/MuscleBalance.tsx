@@ -99,7 +99,7 @@ export default function MuscleBalance({ period, data }: MuscleBalanceProps) {
               <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                 <path
                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="3"
+                  fill="none" className="stroke-white/7" strokeWidth="3"
                 />
                 <path
                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"

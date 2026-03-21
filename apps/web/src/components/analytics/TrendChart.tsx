@@ -125,7 +125,7 @@ export default function TrendChart({ period, data }: Props) {
         </p>
         <ResponsiveContainer width="100%" height={170}>
           <ComposedChart data={chartData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color_border_light)" vertical={false} />
             <XAxis
               dataKey="label"
               tick={{ fontSize: 11, fill: 'var(--color_text_muted)' }}
@@ -144,7 +144,7 @@ export default function TrendChart({ period, data }: Props) {
               tickFormatter={(v) => `${v}%`}
               width={32}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--color_bg_card)' }} />
             <Bar yAxisId="vol" dataKey="volume" radius={[3, 3, 0, 0]} maxBarSize={32}>
               {chartData.map((entry, i) => {
                 const ratio = maxVol > 0 ? entry.volume / maxVol : 0;

@@ -6,6 +6,7 @@ import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import AccentButton from '@/components/ui/AccentButton';
+import AppInput from '@/components/ui/AppInput';
 import { trainerApi, type TrainerGroupItem, type UnreadCounts } from '@/api/trainer';
 import {
   PlusIcon,
@@ -135,12 +136,12 @@ export default function TrainerGroupsListScreen() {
 
           {showGroupInput && (
             <div className="flex gap-2 mb-4">
-              <input
+              <AppInput
                 type="text"
                 value={newGroupName}
                 onChange={(e) => setNewGroupName(e.target.value)}
                 placeholder="Название группы"
-                className="flex-1 bg-[var(--color_bg_input)] border border-[var(--color_border)] rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-[var(--color_primary_light)] transition-colors"
+                className="py-2 px-3"
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateGroup()}
                 autoFocus
               />

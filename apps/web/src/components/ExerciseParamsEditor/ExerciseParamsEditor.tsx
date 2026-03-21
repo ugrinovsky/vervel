@@ -9,6 +9,7 @@
 import { WOD_CONFIG, type WodType } from '@/constants/workoutTypes';
 import { DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
+import NumberInput from '@/components/ui/NumberInput';
 
 export interface SetDetail {
   reps?: number;
@@ -63,13 +64,11 @@ export default function ExerciseParamsEditor({
     return (
       <div className="flex items-center gap-2">
         <label className="text-[10px] text-white/35 shrink-0">мин</label>
-        <input
-          type="number"
+        <NumberInput
           min={1}
           value={duration ?? ''}
           onChange={(e) => onPatch({ duration: e.target.value ? +e.target.value : undefined })}
-          onClick={(e) => e.currentTarget.select()}
-          className="w-16 bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white text-sm text-center outline-none focus:border-white/25 transition-colors"
+          className="w-16"
         />
       </div>
     );
@@ -108,32 +107,28 @@ export default function ExerciseParamsEditor({
                 <label className="text-[10px] text-white/35 shrink-0 whitespace-nowrap">
                   {wodType === 'fortime' ? 'cap мин' : 'мин'}
                 </label>
-                <input
-                  type="number"
+                <NumberInput
                   min={1}
                   value={timeCap ?? ''}
                   onChange={(e) =>
                     onPatch({ timeCap: e.target.value ? +e.target.value : undefined })
                   }
-                  onClick={(e) => e.currentTarget.select()}
                   placeholder="20"
-                  className="w-14 w-full bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white text-sm text-center outline-none focus:border-white/25 transition-colors"
+                  className="w-14"
                 />
               </div>
             )}
             {(wodType === 'fortime' || wodType === 'tabata') && (
               <div className="flex items-center gap-1.5">
                 <label className="text-[10px] text-white/35 shrink-0">раунды</label>
-                <input
-                  type="number"
+                <NumberInput
                   min={1}
                   value={rounds ?? (wodType === 'tabata' ? 8 : '')}
                   onChange={(e) =>
                     onPatch({ rounds: e.target.value ? +e.target.value : undefined })
                   }
-                  onClick={(e) => e.currentTarget.select()}
                   placeholder={wodType === 'tabata' ? '8' : '3'}
-                  className="w-14 w-full bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white text-sm text-center outline-none focus:border-white/25 transition-colors"
+                  className="w-14"
                 />
               </div>
             )}
@@ -147,33 +142,27 @@ export default function ExerciseParamsEditor({
           <span className="flex-1 text-center">м</span>
         </div>
         <div className="grid grid-cols-3 gap-1">
-          <input
-            type="number"
+          <NumberInput
             min={1}
             value={reps ?? ''}
             onChange={(e) => onPatch({ reps: e.target.value ? +e.target.value : undefined })}
-            onClick={(e) => e.currentTarget.select()}
             placeholder="10"
-            className="flex-1 min-w-0 w-full bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white text-sm text-center outline-none focus:border-white/30 transition-colors"
+            className="flex-1"
           />
-          <input
-            type="number"
+          <NumberInput
             min={0}
             step={2.5}
             value={weight ?? ''}
             onChange={(e) => onPatch({ weight: e.target.value ? +e.target.value : undefined })}
-            onClick={(e) => e.currentTarget.select()}
             placeholder="—"
-            className="flex-1 min-w-0 w-full bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white/80 text-sm text-center outline-none focus:border-white/30 transition-colors placeholder:text-white/20"
+            className="flex-1 text-white/80"
           />
-          <input
-            type="number"
+          <NumberInput
             min={0}
             value={distance ?? ''}
             onChange={(e) => onPatch({ distance: e.target.value ? +e.target.value : undefined })}
-            onClick={(e) => e.currentTarget.select()}
             placeholder="—"
-            className="flex-1 min-w-0 w-full bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white/80 text-sm text-center outline-none focus:border-white/30 transition-colors placeholder:text-white/20"
+            className="flex-1 text-white/80"
           />
         </div>
       </div>
@@ -195,25 +184,21 @@ export default function ExerciseParamsEditor({
           <span className="text-[11px] font-mono font-semibold text-white/50 w-5 text-right shrink-0">
             {si + 1}
           </span>
-          <input
-            type="number"
+          <NumberInput
             min={1}
             value={set.reps ?? ''}
             onChange={(e) => onUpdateSet?.(si, 'reps', e.target.value)}
-            onClick={(e) => e.currentTarget.select()}
             placeholder="10"
-            className="flex-1 min-w-0 w-full bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white text-sm text-center outline-none focus:border-white/30 transition-colors"
+            className="flex-1"
           />
           <span className="text-[10px] text-white/20 shrink-0">×</span>
-          <input
-            type="number"
+          <NumberInput
             min={0}
             step={2.5}
             value={set.weight ?? ''}
             onChange={(e) => onUpdateSet?.(si, 'weight', e.target.value)}
-            onClick={(e) => e.currentTarget.select()}
             placeholder="— кг"
-            className="flex-1 min-w-0 w-full bg-black/20 border border-white/10 rounded-lg px-2 py-1.5 text-white/80 text-sm text-center outline-none focus:border-white/30 transition-colors placeholder:text-white/20"
+            className="flex-1 text-white/80"
           />
           <div className="flex gap-1 shrink-0 w-14 justify-end">
             <button

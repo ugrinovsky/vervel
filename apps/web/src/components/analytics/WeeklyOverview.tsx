@@ -148,14 +148,14 @@ export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
               interval={period === 'month' ? 4 : 0}
             />
             <YAxis tick={{ fontSize: 11, fill: 'var(--color_text_muted)' }} domain={[0, 100]} />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--color_bg_card)' }} />
             <Bar dataKey="intensity" radius={[3, 3, 0, 0]}>
               {chartData.map((entry, i) => (
                 <Cell
                   key={i}
                   fill={
                     entry.intensity === 0
-                      ? 'rgba(255,255,255,0.06)'
+                      ? 'var(--color_bg_card_hover)'
                       : (TYPE_COLORS[entry.type] ?? '#10b981')
                   }
                   fillOpacity={entry.intensity > 0 ? 0.85 : 1}

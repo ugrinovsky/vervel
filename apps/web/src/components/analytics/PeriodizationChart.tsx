@@ -124,14 +124,14 @@ function ReadinessGauge({ pct, color }: { pct: number; color: string }) {
       <path
         d={trackD}
         fill="none"
-        stroke="rgba(255,255,255,0.06)"
+        className="stroke-white/6"
         strokeWidth="20"
         strokeLinecap="round"
       />
       <path
         d={trackD}
         fill="none"
-        stroke="rgba(255,255,255,0.03)"
+        className="stroke-white/3"
         strokeWidth="11"
         strokeLinecap="round"
       />
@@ -163,7 +163,7 @@ function ReadinessGauge({ pct, color }: { pct: number; color: string }) {
             opacity="0.3"
             filter="url(#pg-glow)"
           />
-          <circle cx={f.x.toFixed(2)} cy={f.y.toFixed(2)} r="6" fill="white" />
+          <circle cx={f.x.toFixed(2)} cy={f.y.toFixed(2)} r="6" className="fill-white" />
           <circle cx={f.x.toFixed(2)} cy={f.y.toFixed(2)} r="3" fill={color} />
         </>
       )}
@@ -173,7 +173,7 @@ function ReadinessGauge({ pct, color }: { pct: number; color: string }) {
         x={cx}
         y={cy - 10}
         textAnchor="middle"
-        fill="white"
+        className="fill-white"
         fontSize="30"
         fontWeight="bold"
         fontFamily="system-ui"
@@ -184,7 +184,7 @@ function ReadinessGauge({ pct, color }: { pct: number; color: string }) {
         x={cx}
         y={cy + 10}
         textAnchor="middle"
-        fill="rgba(255,255,255,0.4)"
+        className="fill-white/40"
         fontSize="11"
         fontFamily="system-ui"
       >
@@ -196,7 +196,7 @@ function ReadinessGauge({ pct, color }: { pct: number; color: string }) {
         x={(s.x - 8).toFixed(1)}
         y={(s.y + 14).toFixed(1)}
         textAnchor="end"
-        fill="rgba(255,255,255,0.2)"
+        className="fill-white/20"
         fontSize="9"
         fontFamily="system-ui"
       >
@@ -206,7 +206,7 @@ function ReadinessGauge({ pct, color }: { pct: number; color: string }) {
         x={(e.x + 8).toFixed(1)}
         y={(e.y + 14).toFixed(1)}
         textAnchor="start"
-        fill="rgba(255,255,255,0.2)"
+        className="fill-white/20"
         fontSize="9"
         fontFamily="system-ui"
       >
@@ -251,10 +251,7 @@ function MetricCard({
         {value.toFixed(1)}
       </div>
       <div className="text-[10px] text-(--color_text_muted)">{label}</div>
-      <div
-        className="relative h-1.5 rounded-full my-1"
-        style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}
-      >
+      <div className="relative h-1.5 rounded-full my-1 bg-white/8">
         <div
           className="h-full rounded-full transition-all duration-700"
           style={{
@@ -265,14 +262,15 @@ function MetricCard({
         {zeroAt !== undefined && (
           <div
             className="absolute top-0 bottom-0 w-px"
-            style={{ left: `${zeroAt * 100}%`, backgroundColor: 'rgba(255,255,255,0.35)' }}
+            className="bg-white/35"
+            style={{ left: `${zeroAt * 100}%` }}
           />
         )}
       </div>
       <div className="text-[10px] font-semibold leading-tight" style={{ color: hintColor }}>
         {hint}
       </div>
-      <div className="text-[9px] leading-tight" style={{ color: 'rgba(255,255,255,0.28)' }}>
+      <div className="text-[9px] leading-tight text-white/30">
         {staticDesc}
       </div>
     </div>
@@ -457,8 +455,7 @@ export default function PeriodizationChart({ data }: Props) {
             return (
               <div
                 key={range}
-                className="flex gap-3 px-4 py-2.5 transition-colors"
-                style={isActive ? { backgroundColor: 'rgba(255,255,255,0.04)' } : {}}
+                className={`flex gap-3 px-4 py-2.5 transition-colors ${isActive ? 'bg-white/4' : ''}`}
               >
                 {/* Active indicator bar */}
                 <div
@@ -472,8 +469,8 @@ export default function PeriodizationChart({ data }: Props) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div
-                    className="text-xs font-semibold leading-tight mb-0.5"
-                    style={{ color: isActive ? color : 'rgba(255,255,255,0.7)' }}
+                    className={`text-xs font-semibold leading-tight mb-0.5 ${!isActive ? 'text-white/70' : ''}`}
+                    style={isActive ? { color } : {}}
                   >
                     {label}
                     {isActive && ' ←'}
@@ -624,7 +621,7 @@ export default function PeriodizationChart({ data }: Props) {
               />
               <YAxis tick={{ fontSize: 10, fill: 'var(--color_text_muted)' }} />
               <Tooltip content={<CustomTooltip />} />
-              <ReferenceLine y={0} stroke="rgba(255,255,255,0.15)" strokeDasharray="3 3" />
+              <ReferenceLine y={0} stroke="var(--color_border)" strokeDasharray="3 3" />
               <Line
                 type="monotone"
                 dataKey="ctl"

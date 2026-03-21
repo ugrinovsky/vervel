@@ -10,6 +10,7 @@ import { THEME_PRESETS, DEFAULT_HUE, type SpecialTheme } from '@/util/theme';
 import { ThemeController } from '@/util/ThemeController';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import AccentButton from '@/components/ui/AccentButton';
+import AppInput from '@/components/ui/AppInput';
 
 const PWA_STEPS: Record<'ios' | 'android' | 'desktop', { hint: string; steps: React.ReactNode[] }> = {
   ios: {
@@ -193,12 +194,11 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
             rows={5}
             className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm resize-none outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-white/30"
           />
-          <input
+          <AppInput
             type="text"
             value={feedbackContact}
             onChange={(e) => setFeedbackContact(e.target.value)}
             placeholder="Email или телефон для ответа (необязательно)"
-            className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-white/30"
           />
           <AccentButton
             onClick={handleSendFeedback}
@@ -241,7 +241,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
               className="relative aspect-square w-full rounded-full border-2 transition-all"
               style={{
                 background: `hsl(${preset.hue}, 74%, 30%)`,
-                borderColor: activeSpecial === null && activeHue === preset.hue ? 'white' : 'rgba(255,255,255,0.15)',
+                borderColor: activeSpecial === null && activeHue === preset.hue ? 'var(--color_text_primary)' : 'var(--color_border)',
                 transform: activeSpecial === null && activeHue === preset.hue ? 'scale(1.15)' : 'scale(1)',
               }}
             />
@@ -271,26 +271,20 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
       <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
         <h2 className="text-base font-semibold text-white mb-4">Личные данные</h2>
         <div className="space-y-4">
-          <div>
-            <label className="text-xs text-(--color_text_muted) mb-1 block">Имя</label>
-            <input
-              type="text"
-              value={nameField}
-              onChange={(e) => setNameField(e.target.value)}
-              className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors"
-              placeholder="Ваше имя"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-(--color_text_muted) mb-1 block">Email</label>
-            <input
-              type="email"
-              value={emailField}
-              onChange={(e) => setEmailField(e.target.value)}
-              className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors"
-              placeholder="email@example.com"
-            />
-          </div>
+          <AppInput
+            type="text"
+            label="Имя"
+            value={nameField}
+            onChange={(e) => setNameField(e.target.value)}
+            placeholder="Ваше имя"
+          />
+          <AppInput
+            type="email"
+            label="Email"
+            value={emailField}
+            onChange={(e) => setEmailField(e.target.value)}
+            placeholder="email@example.com"
+          />
           <div>
             <label className="text-xs text-(--color_text_muted) mb-2 block">Пол</label>
             <div className="grid grid-cols-2 gap-2">
@@ -325,25 +319,22 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
         <div className="mt-6 pt-6 border-t border-(--color_border)">
           <h3 className="text-sm font-semibold text-white mb-3">Сменить пароль</h3>
           <div className="space-y-3">
-            <input
+            <AppInput
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors"
               placeholder="Текущий пароль"
             />
-            <input
+            <AppInput
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors"
               placeholder="Новый пароль"
             />
-            <input
+            <AppInput
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors"
               placeholder="Подтвердите пароль"
             />
             <button

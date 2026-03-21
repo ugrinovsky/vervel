@@ -182,10 +182,10 @@ export default function StreakBlock({ data, period }: Props) {
                     className="aspect-square rounded-[4px] transition-all"
                     style={{
                       backgroundColor: cell.future
-                        ? 'rgba(255,255,255,0.03)'
+                        ? 'var(--color_bg_card)'
                         : cell.trained
                           ? 'var(--color_primary_light)'
-                          : 'rgba(255,255,255,0.06)',
+                          : 'var(--color_bg_card_hover)',
                       opacity: cell.future ? 0.4 : 1,
                     }}
                   />
@@ -199,7 +199,7 @@ export default function StreakBlock({ data, period }: Props) {
               <span className="text-[11px] text-(--color_text_muted)">Тренировка</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-[3px]" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
+              <div className="w-3 h-3 rounded-[3px] bg-white/6" />
               <span className="text-[11px] text-(--color_text_muted)">Отдых</span>
             </div>
           </div>

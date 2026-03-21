@@ -331,7 +331,7 @@ export default function TrainerGroupDetailScreen() {
                         </span>
                         <span className="text-sm font-bold text-white">{valueLabel}</span>
                       </div>
-                      <div className="h-1.5 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
+                      <div className="h-1.5 rounded-full bg-white/8">
                         <div
                           className="h-full rounded-full transition-all duration-700"
                           style={{ width: `${pct}%`, backgroundColor: 'var(--color_primary_light)' }}
