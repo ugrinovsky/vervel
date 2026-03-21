@@ -66,8 +66,8 @@ function ExerciseCard({ exercise, onClick }: { exercise: Exercise; onClick: () =
             )}
           </div>
           <div className="flex items-end gap-px shrink-0">
-            {[1, 2, 3, 4, 5].map((bar) => {
-              const filled = bar <= Math.round(exercise.intensity * 5);
+            {[1, 2, 3, 4, 5, 6].map((bar) => {
+              const filled = bar <= Math.round(exercise.intensity * 6);
               return (
                 <div
                   key={bar}

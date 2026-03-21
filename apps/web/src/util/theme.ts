@@ -82,6 +82,11 @@ export function applySpecialTheme(type: SpecialTheme) {
     root.style.setProperty('--color_text_muted', 'rgba(0, 0, 0, 0.48)');
   }
 
+  const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+  if (themeColorMeta) {
+    themeColorMeta.setAttribute('content', type === 'dark' ? '#0c0c10' : '#f4f3f1');
+  }
+
   document.dispatchEvent(new CustomEvent('themechange'));
 }
 
