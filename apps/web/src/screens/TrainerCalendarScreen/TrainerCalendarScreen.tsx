@@ -147,7 +147,7 @@ function DraggableWorkout({
       {...listeners}
       {...attributes}
       style={isIntro ? INTRO_STRIPE_STYLE : undefined}
-      className={`rounded-xl px-3 py-2 flex items-center justify-between gap-2 touch-none select-none cursor-grab active:cursor-grabbing overflow-hidden ${
+      className={`rounded-xl px-3 h-9 flex items-center justify-between gap-2 touch-none select-none cursor-grab active:cursor-grabbing overflow-hidden ${
         isEditing ? 'ring-2 ring-white/40' : ''
       } ${isIntro ? 'ring-1 ring-inset ring-sky-400/40' : (WORKOUT_TYPE_COLORS[workout.workoutData.type] ?? 'bg-(--color_bg_card)')}`}
     >
@@ -635,33 +635,50 @@ export default function TrainerCalendarScreen() {
                     >
                       {hasWorkouts ? (
                         <div className="space-y-1.5">
-                          {hourWorkouts.map((workout) => (
-                            <DraggableWorkout
-                              key={workout.id}
-                              workout={workout}
-                              nicknames={nicknames}
-                              isEditing={editingWorkout?.id === workout.id}
-                              onEdit={() => openEditForm(workout)}
-                              onDelete={() => handleDelete(workout.id)}
-                            />
-                          ))}
-
-                          {/* Add another at this hour */}
-                          <button
-                            onClick={() => openFormAt(timeStr)}
-                            className={`w-full text-left text-xs text-(--color_text_muted) hover:text-white transition-colors py-0.5 ${
-                              isActive ? 'text-emerald-400' : ''
-                            }`}
-                          >
-                            + ещё в {timeStr}
-                          </button>
+                          {hourWorkouts.map((workout, idx) => {
+                            const isLast = idx === hourWorkouts.length - 1;
+                            if (isLast) {
+                              return (
+                                <div key={workout.id} className="flex items-center gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <DraggableWorkout
+                                      workout={workout}
+                                      nicknames={nicknames}
+                                      isEditing={editingWorkout?.id === workout.id}
+                                      onEdit={() => openEditForm(workout)}
+                                      onDelete={() => handleDelete(workout.id)}
+                                    />
+                                  </div>
+                                  <button
+                                    onClick={() => openFormAt(timeStr)}
+                                    className={`shrink-0 text-xs transition-colors px-1 ${
+                                      isActive ? 'text-emerald-400 hover:text-emerald-300' : 'text-(--color_text_muted) hover:text-white'
+                                    }`}
+                                    title={`+ ещё в ${timeStr}`}
+                                  >
+                                    + ещё
+                                  </button>
+                                </div>
+                              );
+                            }
+                            return (
+                              <DraggableWorkout
+                                key={workout.id}
+                                workout={workout}
+                                nicknames={nicknames}
+                                isEditing={editingWorkout?.id === workout.id}
+                                onEdit={() => openEditForm(workout)}
+                                onDelete={() => handleDelete(workout.id)}
+                              />
+                            );
+                          })}
                         </div>
                       ) : (
                         /* Empty slot — click to add */
                         <button
                           onClick={() => openFormAt(timeStr)}
                           className={`
-                            w-full h-8 rounded-lg text-xs transition-all duration-150 text-left px-2
+                            w-full h-9 rounded-lg text-xs transition-all duration-150 text-left px-2
                             ${
                               isActive
                                 ? 'bg-emerald-900/60 text-emerald-300 ring-1 ring-emerald-600'
@@ -685,7 +702,7 @@ export default function TrainerCalendarScreen() {
                     width: draggedWidth,
                     ...(activeWorkout.workoutData.type === 'intro' ? INTRO_STRIPE_STYLE : {}),
                   }}
-                  className={`rounded-xl px-3 py-2 flex items-center justify-between gap-2 cursor-grabbing overflow-hidden ring-2 shadow-[0_0_20px_rgba(255,255,255,0.15)] ${
+                  className={`rounded-xl px-3 h-9 flex items-center justify-between gap-2 cursor-grabbing overflow-hidden ring-2 shadow-[0_0_20px_rgba(255,255,255,0.15)] ${
                     activeWorkout.workoutData.type === 'intro'
                       ? 'ring-sky-400/60'
                       : `ring-white/60 ${WORKOUT_TYPE_COLORS[activeWorkout.workoutData.type] ?? 'bg-(--color_bg_card)'}`
