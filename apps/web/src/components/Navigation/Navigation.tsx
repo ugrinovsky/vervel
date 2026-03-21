@@ -44,7 +44,7 @@ export default function Navigation() {
   if (showTrainerNav) {
     const navItems = trainerRoutes.filter((r) => r.toolbarPosition);
     return (
-      <nav className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-md nav-background">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-md nav-background" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <div className="max-w-md mx-auto px-3 h-16">
           <div className="flex items-center justify-around h-full">
             {navItems.map((route) => (
@@ -62,7 +62,7 @@ export default function Navigation() {
   const centerItem = athleteRoutes.find((r) => r.toolbarPosition === 'center');
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-md nav-background">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-md nav-background" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
       <div className="max-w-md mx-auto px-3 h-16">
         <div className="grid grid-cols-[1fr_auto_1fr] items-center h-full gap-x-3">
           <div className="flex justify-around items-center min-w-0">

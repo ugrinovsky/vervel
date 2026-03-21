@@ -10,7 +10,7 @@
   overflow-x: hidden;
   overscroll-behavior: none;
   justify-content: flex-start;
-  padding-bottom: var(--nav-height);
+  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
   scrollbar-gutter: stable;
 }

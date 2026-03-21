@@ -32,6 +32,8 @@ html, body {
 #root {
   height: 100%;
   overflow: hidden;
+  padding-top: env(safe-area-inset-top, 0px);
+  box-sizing: border-box;
 }
 
 /* ─── AI chat markdown ───────────────────────────────────────────────────── */
