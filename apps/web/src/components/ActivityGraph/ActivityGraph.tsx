@@ -20,6 +20,7 @@ interface ActivityCalendarProps {
   onGoToToday?: (today: Date) => void;
   month?: Date;
   days: DayData[];
+  hideTrainerBadge?: boolean;
 }
 
 const loadColors: Record<LoadType, string> = {
@@ -56,6 +57,7 @@ export default function ActivityCalendar({
   onGoToToday,
   month = new Date(),
   days,
+  hideTrainerBadge = false,
 }: ActivityCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState<Date>(month);
   const directionRef = useRef<1 | -1>(1);
@@ -170,7 +172,7 @@ export default function ActivityCalendar({
                   {isCurrentDay && (
                     <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full" />
                   )}
-                  {day.fromTrainer && (
+                  {day.fromTrainer && !hideTrainerBadge && (
                     <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-violet-400 rounded-full border border-gray-900" title="Назначено тренером" />
                   )}
                 </button>
@@ -189,10 +191,12 @@ export default function ActivityCalendar({
                 <span className="text-xs text-(--color_text_secondary)">{label}</span>
               </div>
             ))}
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-violet-400" />
-              <span className="text-xs text-(--color_text_secondary)">От тренера</span>
-            </div>
+            {!hideTrainerBadge && (
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-violet-400" />
+                <span className="text-xs text-(--color_text_secondary)">От тренера</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

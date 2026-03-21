@@ -229,20 +229,20 @@ export default function TrainerAthletesListScreen() {
                       onConfirm={() => handleRemoveAthlete(athlete.id)}
                       className="absolute top-2 left-2 z-10 p-0.5"
                     />
-                    <div className="flex-1 min-w-0 pl-6" onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}>
-                      {/* Никнейм */}
-                      <div className="text-sm font-semibold text-white truncate leading-snug">
-                        {athlete.nickname || athlete.fullName || 'Без имени'}
-                      </div>
-                      {/* Имя (если задан никнейм) */}
-                      {athlete.nickname && (
-                        <div className="text-[11px] text-(--color_text_muted) truncate leading-snug">
-                          {athlete.fullName || ''}
+                    <div className="flex items-center gap-3 flex-1 min-w-0 pl-6 cursor-pointer" onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}>
+                      <UserAvatar photoUrl={athlete.photoUrl} name={athlete.fullName} size={44} />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold text-white truncate leading-snug">
+                          {athlete.nickname || athlete.fullName || 'Без имени'}
                         </div>
-                      )}
-                      {/* Email — всегда */}
-                      <div className="text-[11px] text-(--color_text_muted)/70 truncate leading-snug">
-                        {athlete.status === 'pending' ? '⏳ Ожидает' : athlete.email}
+                        {athlete.nickname && (
+                          <div className="text-[11px] text-(--color_text_muted) truncate leading-snug">
+                            {athlete.fullName || ''}
+                          </div>
+                        )}
+                        <div className="text-[11px] text-(--color_text_muted)/70 truncate leading-snug">
+                          {athlete.status === 'pending' ? '⏳ Ожидает' : athlete.email}
+                        </div>
                       </div>
                     </div>
                     {unread > 0 && (
@@ -278,7 +278,7 @@ export default function TrainerAthletesListScreen() {
                       className="absolute top-2.5 left-2.5 z-10 p-0.5"
                     />
                     <div className="cursor-pointer w-full flex flex-col items-center gap-2" onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}>
-                      <UserAvatar photoUrl={athlete.photoUrl} name={athlete.fullName} size={view === '2' ? 56 : 40} />
+                      <UserAvatar photoUrl={athlete.photoUrl} name={athlete.fullName} size={view === '2' ? 68 : 52} />
                       <div className="w-full text-center">
                         {athlete.nickname && (
                           <div className={`leading-tight truncate font-semibold text-white ${view === '2' ? 'text-sm' : 'text-xs'}`}>

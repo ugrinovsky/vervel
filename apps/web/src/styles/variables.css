@@ -64,7 +64,7 @@ html[data-theme="light"] [class*="bg-green-"] {
 /* Nav CSS classes use hardcoded colors (not Tailwind utilities) — override explicitly */
 html[data-theme="light"] .nav-background {
   background: rgba(244, 243, 241, 0.95) !important;
-  border-top-color: rgba(0, 0, 0, 0.08) !important;
+  border-top-color: rgba(0, 0, 0, 0.18) !important;
 }
 html[data-theme="light"] .nav-item-active {
   color: rgba(0, 0, 0, 0.85) !important;

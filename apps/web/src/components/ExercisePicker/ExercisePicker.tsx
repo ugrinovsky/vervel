@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
-import AccentButton from '@/components/ui/AccentButton';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { ExerciseDetailContent } from '@/components/ExerciseDetailSheet/ExerciseDetailSheet';
 import ExerciseFilterBar, { CATEGORY_LABELS_SHORT } from '@/components/ExerciseFilterBar/ExerciseFilterBar';
@@ -26,7 +25,7 @@ function ExerciseCard({
   const [imgError, setImgError] = useState(false);
 
   return (
-    <div className="flex flex-col rounded-xl overflow-hidden border border-white/10 bg-white/5 hover:bg-white/10 transition-all text-left relative">
+    <div className="flex flex-col rounded-xl overflow-hidden border border-(--color_border) bg-(--color_bg_card) hover:bg-(--color_bg_card_hover) transition-all text-left">
       <button onClick={onClick} className="w-full aspect-video bg-black/30 overflow-hidden focus:outline-none">
         {exercise.imageUrl && !imgError ? (
           <img
@@ -43,31 +42,23 @@ function ExerciseCard({
         )}
       </button>
 
-      <div className="p-2 flex-1 flex items-start gap-1.5">
-        <div className="flex-1 min-w-0" onClick={onClick}>
-          <p className="text-xs font-medium text-white leading-snug line-clamp-2 mb-1.5 cursor-pointer">
-            {exercise.title}
-          </p>
-          <div className="flex flex-wrap gap-1">
-            {exercise.zones.slice(0, 2).map((zone) => (
-              <span
-                key={zone}
-                className="text-[10px] px-1.5 py-0.5 rounded-full bg-(--color_primary_light)/15 text-(--color_primary_light)"
-              >
-                {getZoneLabel(zone)}
-              </span>
-            ))}
-          </div>
-        </div>
-        <AccentButton
-          size="sm"
-          onClick={(e) => { e.stopPropagation(); onQuickAdd(); }}
-          className="shrink-0 w-6 h-6 p-0 rounded-lg hover:opacity-80 active:scale-90"
-          title="Добавить"
-        >
-          <PlusIcon className="w-3.5 h-3.5" />
-        </AccentButton>
+      <div className="px-2 pt-1.5 pb-1 cursor-pointer flex-1" onClick={onClick}>
+        <p className="text-xs font-medium text-(--color_text_secondary) leading-snug line-clamp-2">
+          {exercise.title}
+        </p>
+        {exercise.zones.length > 0 && (
+          <span className="text-[9px] text-(--color_primary_light) opacity-80 mt-0.5 block">
+            {getZoneLabel(exercise.zones[0])}
+          </span>
+        )}
       </div>
+
+      <button
+        onClick={(e) => { e.stopPropagation(); onQuickAdd(); }}
+        className="mx-2 mb-2 py-1 rounded-lg text-xs font-semibold transition-all active:scale-95 bg-(--color_primary_light)/15 hover:bg-(--color_primary_light)/25 text-(--color_primary_light)"
+      >
+        + Добавить
+      </button>
     </div>
   );
 }

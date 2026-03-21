@@ -12,12 +12,12 @@ import type { Exercise, ExerciseCategory } from '@/types/Exercise';
 import { getZoneLabel } from '@/util/zones';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 
-const CATEGORY_COLORS: Record<ExerciseCategory, string> = {
-  strength: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-  olympic: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-  gymnastics: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-  functional: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
-  cardio: 'bg-green-500/20 text-green-300 border-green-500/30',
+const CATEGORY_TEXT_COLORS: Record<ExerciseCategory, string> = {
+  strength:   'text-blue-400',
+  olympic:    'text-yellow-400',
+  gymnastics: 'text-purple-400',
+  functional: 'text-orange-400',
+  cardio:     'text-green-400',
 };
 
 /* ------------------------------------------------------------------ */
@@ -33,7 +33,7 @@ function ExerciseCard({ exercise, onClick }: { exercise: Exercise; onClick: () =
       className="flex flex-col rounded-2xl overflow-hidden border border-white/10 bg-white/5 hover:bg-white/10 active:scale-[0.98] transition-all text-left w-full"
     >
       {/* Image */}
-      <div className="w-full aspect-video bg-black/20 overflow-hidden relative">
+      <div className="w-full aspect-3/2 bg-black/20 overflow-hidden">
         {exercise.imageUrl && !imgError ? (
           <img
             src={exercise.imageUrl}
@@ -47,44 +47,36 @@ function ExerciseCard({ exercise, onClick }: { exercise: Exercise; onClick: () =
             <span className="text-3xl font-black text-white/15">{exercise.title[0]}</span>
           </div>
         )}
-        {/* Category badge */}
-        <div className="absolute top-1.5 left-1.5">
-          <span
-            className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full border ${
-              CATEGORY_COLORS[exercise.category] ?? 'bg-white/10 text-white/50 border-white/10'
-            }`}
-          >
-            {CATEGORY_LABELS[exercise.category] ?? exercise.category}
-          </span>
-        </div>
       </div>
 
       {/* Info */}
-      <div className="p-2.5 flex-1">
-        <p className="text-sm font-medium text-white leading-snug mb-1.5 line-clamp-2">
+      <div className="px-2.5 py-2 flex flex-col gap-1 flex-1">
+        <p className="text-sm font-medium text-(--color_text_secondary) leading-snug line-clamp-2">
           {exercise.title}
         </p>
-        <div className="flex flex-wrap gap-1">
-          {exercise.zones.slice(0, 3).map((zone) => (
-            <span
-              key={zone}
-              className="text-[10px] px-1.5 py-0.5 rounded-full bg-(--color_primary_light)/15 text-(--color_primary_light)"
-            >
-              {getZoneLabel(zone)}
-            </span>
-          ))}
-        </div>
-        {/* Intensity bar */}
-        <div className="mt-2 flex items-center gap-1.5">
-          <div className="flex-1 h-1 rounded-full bg-white/10">
-            <div
-              className="h-1 rounded-full bg-(--color_primary_light)"
-              style={{ width: `${exercise.intensity * 100}%` }}
-            />
+        <div className="mt-auto flex items-end justify-between gap-1">
+          <div className="flex flex-col gap-1 min-w-0">
+            <p className={`text-[10px] leading-none truncate ${CATEGORY_TEXT_COLORS[exercise.category] ?? 'text-(--color_text_muted)'}`}>
+              {CATEGORY_LABELS[exercise.category] ?? exercise.category}
+            </p>
+            {exercise.zones.length > 0 && (
+              <p className="text-[10px] leading-none truncate text-(--color_text_muted)">
+                {exercise.zones.slice(0, 2).map(getZoneLabel).join(' · ')}
+              </p>
+            )}
           </div>
-          <span className="text-[10px] text-white/30 shrink-0">
-            {Math.round(exercise.intensity * 100)}%
-          </span>
+          <div className="flex items-end gap-px shrink-0">
+            {[1, 2, 3, 4, 5].map((bar) => {
+              const filled = bar <= Math.round(exercise.intensity * 5);
+              return (
+                <div
+                  key={bar}
+                  style={{ height: bar * 3 + 2 }}
+                  className={`w-1 rounded-sm transition-colors ${filled ? 'bg-(--color_primary_light)' : 'bg-white/15'}`}
+                />
+              );
+            })}
+          </div>
         </div>
       </div>
     </button>

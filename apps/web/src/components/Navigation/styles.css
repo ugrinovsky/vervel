@@ -16,7 +16,7 @@
     rgb(var(--color_primary_dark_ch) / 0.3) 50%,
     rgb(var(--color_primary_dark_ch) / 0.1) 100%
   );
-  border-top: 1px solid rgb(var(--color_primary_ch) / 0.5);
+  border-top: 1px solid var(--color_border);
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
 }
 

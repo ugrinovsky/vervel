@@ -150,7 +150,7 @@ export default function ProfileTab({ data, trainerStats }: Props) {
             disabled={uploadingPhoto}
             className="relative shrink-0"
           >
-            <UserAvatar photoUrl={photoUrl} size={80} />
+            <UserAvatar photoUrl={photoUrl} size={96} />
             {!photoUrl && !uploadingPhoto && (
               <div className="absolute inset-0 rounded-full bg-black/50 flex flex-col items-center justify-center gap-0.5">
                 <CameraIcon className="w-6 h-6 text-white" />

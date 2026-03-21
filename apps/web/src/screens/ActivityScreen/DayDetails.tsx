@@ -15,6 +15,7 @@ interface DayDetailsProps {
   date: Date;
   workouts: WorkoutTimelineEntry[];
   onDeleted: () => void;
+  readOnly?: boolean;
 }
 
 function pluralWorkouts(n: number): string {
@@ -137,7 +138,7 @@ function SectionDivider({ label }: { label: string }) {
   );
 }
 
-export default function DayDetails({ date, workouts, onDeleted }: DayDetailsProps) {
+export default function DayDetails({ date, workouts, onDeleted, readOnly = false }: DayDetailsProps) {
   const [activeWorkout, setActiveWorkout] = useState<WorkoutTimelineEntry | null>(null);
   const [localIntensities, setLocalIntensities] = useState<Record<number, number>>({});
   const navigate = useNavigate();
@@ -191,10 +192,12 @@ export default function DayDetails({ date, workouts, onDeleted }: DayDetailsProp
                 </p>
               )}
             </div>
-            <AccentButton size="sm" onClick={handleAddWorkout} className="shrink-0">
-              <PlusIcon className="w-4 h-4" />
-              Добавить
-            </AccentButton>
+            {!readOnly && (
+              <AccentButton size="sm" onClick={handleAddWorkout} className="shrink-0">
+                <PlusIcon className="w-4 h-4" />
+                Добавить
+              </AccentButton>
+            )}
           </div>
 
           {hasWorkouts ? (

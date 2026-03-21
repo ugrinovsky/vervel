@@ -9,7 +9,6 @@ import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm'
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import AnalyticsCards from '@/components/analytics/AnalyticsCards';
 import AvatarView from '@/components/AvatarView/AvatarView';
-import MiniAvatar from '@/components/MiniAvatar/MiniAvatar';
 import ActivityCalendar, { type DayData } from '@/components/ActivityGraph/ActivityGraph';
 import MonthlyStats from '@/screens/ActivityScreen/MonthlyStats';
 import DayDetails from '@/screens/ActivityScreen/DayDetails';
@@ -18,7 +17,6 @@ import { useAthleteStats, type StatsPeriod } from '@/hooks/useAthleteStats';
 import { useAthleteAvatar } from '@/hooks/useAthleteAvatar';
 import { trainerApi, type PeriodizationData } from '@/api/trainer';
 import { useTrainerUnreadCounts } from '@/hooks/useTrainerUnreadCounts';
-import { ZONE_NORMALIZE } from '@/components/AvatarView/AvatarView';
 import { ChatBubbleLeftIcon, PlusIcon, PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import BackButton from '@/components/BackButton/BackButton';
@@ -109,48 +107,42 @@ export default function TrainerAthleteDetailScreen() {
     }
   };
 
-  const zoneIntensities = useMemo(() => {
-    if (!avatarData?.zones) return {};
-    const result: Record<string, number> = {};
-    for (const [name, state] of Object.entries(avatarData.zones)) {
-      const canonical = ZONE_NORMALIZE[name] ?? name;
-      if (result[canonical] === undefined || state.intensity > result[canonical]) {
-        result[canonical] = state.intensity;
-      }
-    }
-    return result;
-  }, [avatarData]);
+  // Only show trainer-assigned workouts in coach view
+  const trainerTimeline = useMemo(
+    () => monthStats?.timeline.filter((e) => e.scheduledWorkoutId != null) ?? [],
+    [monthStats],
+  );
 
-  // Calendar days derived from monthStats
+  // Calendar days derived from monthStats (trainer workouts only)
   const days: DayData[] = useMemo(() => {
-    if (!monthStats?.timeline) return [];
+    if (!trainerTimeline.length && !monthStats?.timeline) return [];
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     return Array.from({ length: daysInMonth }, (_, i) => {
       const date = new Date(year, month, i + 1);
       const dateStr = format(date, 'yyyy-MM-dd');
-      const w = monthStats.timeline.find((e) => format(new Date(e.date), 'yyyy-MM-dd') === dateStr);
+      const w = trainerTimeline.find((e) => format(new Date(e.date), 'yyyy-MM-dd') === dateStr);
       return {
         date,
         load: getLoadLevel(w?.volume, w?.intensity),
         workoutType: w?.type as any,
         intensity: w?.intensity,
-        fromTrainer: w?.scheduledWorkoutId != null,
+        fromTrainer: true,
       };
     });
-  }, [monthStats, currentMonth]);
+  }, [trainerTimeline, monthStats, currentMonth]);
 
   const dayWorkouts = useMemo(() => {
-    if (!selectedDate || !monthStats?.timeline) return [];
+    if (!selectedDate) return [];
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
-    return monthStats.timeline.filter((e) => format(new Date(e.date), 'yyyy-MM-dd') === dateStr);
-  }, [selectedDate, monthStats]);
+    return trainerTimeline.filter((e) => format(new Date(e.date), 'yyyy-MM-dd') === dateStr);
+  }, [selectedDate, trainerTimeline]);
 
   const monthlyStatsData = useMemo<MonthlyStatsData | null>(() => {
-    if (!monthStats?.timeline?.length) return null;
-    const tl = monthStats.timeline;
-    const totalVolume = monthStats.totalVolume || tl.reduce((s, w) => s + (w.volume || 0), 0);
+    if (!trainerTimeline.length) return null;
+    const tl = trainerTimeline;
+    const totalVolume = tl.reduce((s, w) => s + (w.volume || 0), 0);
     const count = tl.length;
     return {
       workouts: count,
@@ -159,9 +151,9 @@ export default function TrainerAthleteDetailScreen() {
       avgVolume: Math.round(totalVolume / count),
       avgDuration: 60,
       totalCalories: tl.reduce((s, w) => s + Math.round((w.volume || 0) * 0.05), 0),
-      streak: (monthStats as any).streak || 0,
+      streak: (monthStats as any)?.streak || 0,
     };
-  }, [monthStats]);
+  }, [trainerTimeline, monthStats]);
 
   return (
     <Screen className="trainer-athlete-detail-screen">
@@ -197,7 +189,7 @@ export default function TrainerAthleteDetailScreen() {
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-4 mb-5 pt-4 pb-5 px-4 rounded-2xl bg-(--color_bg_card) border border-(--color_border)"
         >
-          <UserAvatar photoUrl={athletePhotoUrl} name={athleteName} size={64} className="shrink-0" />
+          <UserAvatar photoUrl={athletePhotoUrl} name={athleteName} size={76} className="shrink-0" />
           <div className="flex-1 min-w-0">
           {/* Никнейм */}
           <div className="flex items-center gap-1.5 min-h-7 w-full">
@@ -351,6 +343,7 @@ export default function TrainerAthleteDetailScreen() {
                 onMonthChange={setCurrentMonth}
                 month={currentMonth}
                 days={days}
+                hideTrainerBadge
               />
             </div>
 
@@ -363,7 +356,7 @@ export default function TrainerAthleteDetailScreen() {
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <DayDetails date={selectedDate} workouts={dayWorkouts} onDeleted={() => {}} />
+                  <DayDetails date={selectedDate} workouts={dayWorkouts} onDeleted={() => {}} readOnly />
                 </motion.div>
               )}
             </AnimatePresence>

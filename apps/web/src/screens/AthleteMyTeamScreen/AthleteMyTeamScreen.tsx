@@ -224,7 +224,7 @@ export default function AthleteMyTeamScreen() {
                       >
                         {/* Top row: photo + name/specs */}
                         <div className="flex items-start gap-3 mb-3">
-                          <UserAvatar photoUrl={trainer.photoUrl} name={trainer.fullName} size={48} />
+                          <UserAvatar photoUrl={trainer.photoUrl} name={trainer.fullName} size={60} />
                           <div className="min-w-0 flex-1">
                             <div className="text-sm font-semibold text-white">
                               {trainer.fullName || 'Без имени'}

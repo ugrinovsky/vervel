@@ -28,7 +28,7 @@ export default function UserAvatar({ photoUrl, name, size, className = '' }: Pro
         src={src}
         alt={name || 'avatar'}
         style={{ width: size, height: size }}
-        className={`rounded-full object-cover shrink-0 ${className}`}
+        className={`rounded-full object-cover shrink-0 border border-(--color_primary_light)/30 ${className}`}
       />
     );
   }
@@ -36,7 +36,7 @@ export default function UserAvatar({ photoUrl, name, size, className = '' }: Pro
   return (
     <div
       style={{ width: size, height: size, fontSize }}
-      className={`rounded-full bg-linear-to-br from-(--color_primary_light) to-(--color_primary) flex items-center justify-center text-white font-bold shrink-0 ${className}`}
+      className={`rounded-full bg-(--color_primary_light)/25 border border-(--color_primary_light)/30 flex items-center justify-center font-bold shrink-0 text-(--color_primary_light) ${className}`}
     >
       {initials}
     </div>
