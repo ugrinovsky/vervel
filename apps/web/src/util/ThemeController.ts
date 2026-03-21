@@ -7,27 +7,32 @@
  *  - External code calls ThemeController methods only.
  *
  * Two independent dimensions:
- *  1. Special theme: 'dark' | 'light' | null (null = use hue-based)
+ *  1. Special theme: 'dark' | 'light' | 'auto' | null (null = use hue-based)
  *  2. Hue: number (accent color, used when specialTheme is null)
+ *
+ * 'auto' resolves to 'light' (07:00–19:59) or 'dark' (20:00–06:59)
+ * and re-evaluates on visibilitychange.
  */
 import { profileApi } from '@/api/profile';
+import { getCurrentHour } from '@/utils/date';
 
 export const DEFAULT_HUE = 175;
-export type SpecialTheme = 'dark' | 'light';
+export type SpecialTheme = 'dark' | 'light' | 'auto';
 
 export const THEME_PRESETS = [
+  { label: 'Коралловый', hue: 8 },
+  { label: 'Янтарный', hue: 38 },
   { label: 'Зелёный', hue: 140 },
   { label: 'Мятный', hue: 163 },
   { label: 'Бирюзовый', hue: 175 },
   { label: 'Лазурный', hue: 195 },
   { label: 'Синий', hue: 218 },
+  { label: 'Сапфировый', hue: 232 },
   { label: 'Индиго', hue: 248 },
   { label: 'Фиолетовый', hue: 270 },
   { label: 'Сиреневый', hue: 285 },
   { label: 'Розовый', hue: 318 },
   { label: 'Малиновый', hue: 345 },
-  { label: 'Коралловый', hue: 8 },
-  { label: 'Янтарный', hue: 38 },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -122,7 +127,7 @@ function applyHueTheme(root: HTMLElement, hue: number) {
   root.style.setProperty('--safe_area_bg', `rgb(${primaryDark})`);
 }
 
-function applySpecialTheme(root: HTMLElement, type: SpecialTheme) {
+function applySpecialTheme(root: HTMLElement, type: 'dark' | 'light') {
   if (type === 'light') {
     applyAccentTailwindColors(root, LIGHT_ACCENT_HUE, 12, 0.6);
     root.setAttribute('data-theme', 'light');
@@ -188,7 +193,13 @@ export const ThemeController = {
   /** Read stored special theme from localStorage. */
   getStoredSpecial(): SpecialTheme | null {
     const v = localStorage.getItem('themeSpecial');
-    return v === 'dark' || v === 'light' ? v : null;
+    return v === 'dark' || v === 'light' || v === 'auto' ? v : null;
+  },
+
+  /** Resolve 'auto' to the actual theme based on current hour. */
+  _getAutoResolved(): 'dark' | 'light' {
+    const h = getCurrentHour();
+    return h >= 7 && h < 20 ? 'light' : 'dark';
   },
 
   /**
@@ -198,11 +209,33 @@ export const ThemeController = {
   init(): void {
     const root = document.documentElement;
     const special = this.getStoredSpecial();
-    if (special) {
+    if (special === 'auto') {
+      applySpecialTheme(root, this._getAutoResolved());
+    } else if (special) {
       applySpecialTheme(root, special);
     } else {
       applyHueTheme(root, this.getStored());
     }
+  },
+
+  /**
+   * Register visibilitychange listener for 'auto' theme.
+   * When tab becomes visible, re-evaluate and smoothly switch if needed.
+   * Call once from main.tsx after init().
+   */
+  initAutoListener(): void {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') return;
+      if (this.getStoredSpecial() !== 'auto') return;
+      const resolved = this._getAutoResolved();
+      const isCurrentlyLight = document.documentElement.hasAttribute('data-theme');
+      if ((resolved === 'light') === isCurrentlyLight) return; // already correct
+      const root = document.documentElement;
+      root.classList.add('theme-transition');
+      applySpecialTheme(root, resolved);
+      document.dispatchEvent(new CustomEvent('themechange'));
+      setTimeout(() => root.classList.remove('theme-transition'), 600);
+    });
   },
 
   /**
@@ -212,7 +245,9 @@ export const ThemeController = {
   apply(hue: number): void {
     const root = document.documentElement;
     const special = this.getStoredSpecial();
-    if (special) {
+    if (special === 'auto') {
+      applySpecialTheme(root, this._getAutoResolved());
+    } else if (special) {
       applySpecialTheme(root, special);
     } else {
       applyHueTheme(root, hue);
@@ -238,12 +273,13 @@ export const ThemeController = {
   },
 
   /**
-   * Apply a special standalone theme (near-black or ivory).
+   * Apply a special standalone theme (dark / light / auto).
    * Saves to localStorage immediately.
    */
   changeSpecial(type: SpecialTheme): void {
     localStorage.setItem('themeSpecial', type);
-    applySpecialTheme(document.documentElement, type);
+    const toApply = type === 'auto' ? this._getAutoResolved() : type;
+    applySpecialTheme(document.documentElement, toApply);
     document.dispatchEvent(new CustomEvent('themechange'));
   },
 

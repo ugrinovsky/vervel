@@ -213,11 +213,24 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
       {/* Theme picker */}
       <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
         <h2 className="text-base font-semibold text-white mb-4">Цвет темы</h2>
-        <div className="grid grid-cols-7 gap-3">
-          {/* Standalone dark / light themes */}
+        <div className="grid grid-cols-8 gap-3">
+          {/* Standalone dark / light / auto themes */}
+          {/* Auto theme — CSS diagonal half-dark / half-light */}
+          <button
+            onClick={() => handleSpecialThemeChange('auto')}
+            title="Авто"
+            className="relative aspect-square w-full rounded-full border-2 transition-all overflow-hidden"
+            style={{
+              borderColor: activeSpecial === 'auto' ? 'rgba(128,128,128,0.8)' : 'rgba(128,128,128,0.3)',
+              transform: activeSpecial === 'auto' ? 'scale(1.15)' : 'scale(1)',
+            }}
+          >
+            <span className="absolute inset-0" style={{ background: '#F0EFED', clipPath: 'polygon(0 0, 100% 0, 0 100%)' }} />
+            <span className="absolute inset-0" style={{ background: '#22222A', clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }} />
+          </button>
           {([
-            { id: 'dark' as const, title: 'Тёмная', bg: 'linear-gradient(135deg, #22222A 0%, #0D0D11 100%)', border: 'rgba(255,255,255,0.15)' },
-            { id: 'light' as const, title: 'Светлая', bg: 'linear-gradient(135deg, #F6F6F6 0%, #ECECEC 100%)', border: 'rgba(0,0,0,0.15)' },
+            { id: 'dark' as const, title: 'Тёмная', bg: 'linear-gradient(135deg, #22222A 0%, #0D0D11 100%)', border: 'rgba(255,255,255,0.15)', activeBorder: 'white' },
+            { id: 'light' as const, title: 'Светлая', bg: 'linear-gradient(135deg, #F6F6F6 0%, #ECECEC 100%)', border: 'rgba(0,0,0,0.15)', activeBorder: 'rgba(0,0,0,0.5)' },
           ] as const).map((t) => (
             <button
               key={t.id}
@@ -226,7 +239,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
               className="relative aspect-square w-full rounded-full border-2 transition-all"
               style={{
                 background: t.bg,
-                borderColor: activeSpecial === t.id ? (t.id === 'light' ? 'rgba(0,0,0,0.5)' : 'white') : t.border,
+                borderColor: activeSpecial === t.id ? t.activeBorder : t.border,
                 transform: activeSpecial === t.id ? 'scale(1.15)' : 'scale(1)',
               }}
             />

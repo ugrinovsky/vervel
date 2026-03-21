@@ -8,6 +8,7 @@ import './styles/variables.css';
 import './styles/datepicker.css';
 
 ThemeController.init();
+ThemeController.initAutoListener();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -27,6 +27,11 @@ export function parseLocalDate(dateStr: string): Date {
   return new Date(y, m - 1, d);
 }
 
+/** Returns the current local hour (0–23). */
+export function getCurrentHour(): number {
+  return new Date().getHours();
+}
+
 /** Formats a Date to "HH:mm" using LOCAL timezone components. */
 export function toTimeKey(date: Date): string {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
