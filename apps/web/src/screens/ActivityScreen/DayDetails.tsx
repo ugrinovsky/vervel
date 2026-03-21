@@ -9,6 +9,7 @@ import type { WorkoutTimelineEntry } from '@/types/Analytics';
 import { workoutsApi } from '@/api/workouts';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 import toast from 'react-hot-toast';
+import AccentButton from '@/components/ui/AccentButton';
 
 interface DayDetailsProps {
   date: Date;
@@ -190,13 +191,10 @@ export default function DayDetails({ date, workouts, onDeleted }: DayDetailsProp
                 </p>
               )}
             </div>
-            <button
-              onClick={handleAddWorkout}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity shrink-0"
-            >
+            <AccentButton size="sm" onClick={handleAddWorkout} className="shrink-0">
               <PlusIcon className="w-4 h-4" />
               Добавить
-            </button>
+            </AccentButton>
           </div>
 
           {hasWorkouts ? (

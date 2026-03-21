@@ -13,6 +13,7 @@ import InlineAthleteAvatar from '@/components/MiniAvatar/InlineAthleteAvatar';
 import { PlusIcon, UsersIcon, ChatBubbleLeftIcon, TrophyIcon } from '@heroicons/react/24/outline';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 import BackButton from '@/components/BackButton/BackButton';
+import AccentButton from '@/components/ui/AccentButton';
 
 type Tab = 'members' | 'chat';
 
@@ -168,13 +169,10 @@ export default function TrainerGroupDetailScreen() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-white">Участники</h2>
               {availableAthletes.length > 0 && (
-                <button
-                  onClick={() => setShowAddPicker(!showAddPicker)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity"
-                >
+                <AccentButton size="sm" onClick={() => setShowAddPicker(!showAddPicker)}>
                   <PlusIcon className="w-4 h-4" />
                   Добавить
-                </button>
+                </AccentButton>
               )}
             </div>
 

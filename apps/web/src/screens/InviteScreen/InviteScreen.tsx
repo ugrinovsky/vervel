@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { athleteApi } from '@/api/athlete';
 import { useAuth } from '@/contexts/AuthContext';
+import AccentButton from '@/components/ui/AccentButton';
 
 interface InviteInfo {
   trainerName: string;
@@ -135,13 +136,15 @@ export default function InviteScreen() {
               )}
 
               {isLoggedIn ? (
-                <button
+                <AccentButton
                   onClick={handleAccept}
                   disabled={accepting}
-                  className="w-full py-3.5 rounded-2xl bg-(--color_primary_light) text-white font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+                  loading={accepting}
+                  loadingText="Принимаем..."
+                  className="font-semibold rounded-2xl"
                 >
-                  {accepting ? 'Принимаем...' : 'Принять приглашение'}
-                </button>
+                  Принять приглашение
+                </AccentButton>
               ) : (
                 <div className="space-y-2">
                   <p className="text-xs text-(--color_text_muted) mb-3">

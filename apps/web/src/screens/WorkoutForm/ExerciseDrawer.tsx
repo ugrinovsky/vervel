@@ -4,6 +4,7 @@ import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
 import type { ExerciseWithSets } from '@/types/Exercise';
 import { useEffect, useState } from 'react';
 import { ArrowUpIcon, ArrowDownIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
+import AccentButton from '@/components/ui/AccentButton';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
 
 interface Props {
@@ -224,14 +225,11 @@ export default function ExerciseDrawer({ open, exercise, workoutType = 'bodybuil
         >
           Отмена
         </button>
-        <button
-          onClick={handleSave}
-          className="flex-1 py-3 rounded-xl bg-(--color_primary_light) text-white text-sm font-semibold hover:opacity-90 transition-opacity"
-        >
+        <AccentButton onClick={handleSave} className="flex-1 font-semibold">
           {workoutType === 'bodybuilding'
             ? `Сохранить${setsDetail.length > 0 ? ` (${setsDetail.length})` : ''}`
             : 'Сохранить'}
-        </button>
+        </AccentButton>
       </div>
     </BottomSheet>
   );

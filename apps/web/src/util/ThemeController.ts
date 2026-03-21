@@ -2,11 +2,15 @@
  * ThemeController — single source of truth for theme management.
  *
  * Rules:
- *  - Only this module reads/writes themeHue in localStorage.
- *  - Only this module calls applyTheme().
+ *  - Only this module reads/writes themeHue / themeSpecial in localStorage.
+ *  - Only this module calls applyTheme() / applySpecialTheme().
  *  - External code calls ThemeController methods only.
+ *
+ * Two independent dimensions:
+ *  1. Special theme: 'dark' | 'light' | null (null = use hue-based)
+ *  2. Hue: number (accent color, used when specialTheme is null)
  */
-import { applyTheme, DEFAULT_HUE } from './theme';
+import { applyTheme, applySpecialTheme, DEFAULT_HUE, type SpecialTheme } from './theme';
 import { profileApi } from '@/api/profile';
 
 let _debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -22,25 +26,47 @@ export const ThemeController = {
     }
   },
 
-  /** Called once before React renders — apply stored theme immediately. */
-  init(): void {
-    applyTheme(this.getStored());
+  /** Read stored special theme from localStorage. */
+  getStoredSpecial(): SpecialTheme | null {
+    const v = localStorage.getItem('themeSpecial');
+    return v === 'dark' || v === 'light' ? v : null;
   },
 
   /**
-   * Apply theme + sync localStorage.
-   * Used by AuthContext on login/restore (no API call needed — server already knows).
+   * Called once before React renders — apply stored theme immediately.
+   * Special theme takes priority over hue-based theme.
+   */
+  init(): void {
+    const special = this.getStoredSpecial();
+    if (special) {
+      applySpecialTheme(special);
+    } else {
+      applyTheme(this.getStored());
+    }
+  },
+
+  /**
+   * Apply hue theme + sync localStorage.
+   * Also clears any active special theme.
+   * Used by AuthContext on login/restore.
    */
   apply(hue: number): void {
-    applyTheme(hue);
+    const special = this.getStoredSpecial();
+    if (special) {
+      applySpecialTheme(special);
+    } else {
+      applyTheme(hue);
+    }
     this._syncLocalStorage(hue);
   },
 
   /**
-   * Apply theme + sync localStorage + debounced API save.
+   * Apply hue theme + sync localStorage + debounced API save.
+   * Clears special theme — user explicitly picked a hue color.
    * Used when the user picks a color in SettingsTab.
    */
   change(hue: number): void {
+    localStorage.removeItem('themeSpecial');
     applyTheme(hue);
     this._syncLocalStorage(hue);
     if (_debounceTimer) clearTimeout(_debounceTimer);
@@ -49,8 +75,18 @@ export const ThemeController = {
     }, 500);
   },
 
-  /** Reset to default and clear stored hue. Used on logout. */
+  /**
+   * Apply a special standalone theme (near-black or ivory).
+   * Saves to localStorage immediately.
+   */
+  changeSpecial(type: SpecialTheme): void {
+    localStorage.setItem('themeSpecial', type);
+    applySpecialTheme(type);
+  },
+
+  /** Reset to default hue theme and clear special theme. Used on logout. */
   reset(): void {
+    localStorage.removeItem('themeSpecial');
     applyTheme(DEFAULT_HUE);
     this._syncLocalStorage(DEFAULT_HUE);
   },

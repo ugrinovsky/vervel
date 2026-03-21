@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
+import AccentButton from '@/components/ui/AccentButton';
 import { trainerApi, type TrainerGroupItem, type UnreadCounts } from '@/api/trainer';
 import {
   PlusIcon,
@@ -123,13 +124,13 @@ export default function TrainerGroupsListScreen() {
         >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-white">Все группы</h2>
-            <button
+            <AccentButton
               onClick={() => setShowGroupInput(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color_primary_light)] text-white text-sm font-medium hover:opacity-90 transition-opacity"
+              size="sm"
             >
               <PlusIcon className="w-4 h-4" />
               Создать
-            </button>
+            </AccentButton>
           </div>
 
           {showGroupInput && (
@@ -143,13 +144,14 @@ export default function TrainerGroupsListScreen() {
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateGroup()}
                 autoFocus
               />
-              <button
+              <AccentButton
                 onClick={handleCreateGroup}
                 disabled={!newGroupName.trim()}
-                className="px-4 py-2 rounded-xl bg-[var(--color_primary_light)] text-white text-sm font-medium disabled:opacity-50"
+                size="sm"
+                className="px-4 py-2 rounded-xl"
               >
                 OK
-              </button>
+              </AccentButton>
             </div>
           )}
 

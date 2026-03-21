@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
+import AccentButton from '@/components/ui/AccentButton';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { ExerciseDetailContent } from '@/components/ExerciseDetailSheet/ExerciseDetailSheet';
 import ExerciseFilterBar, { CATEGORY_LABELS_SHORT } from '@/components/ExerciseFilterBar/ExerciseFilterBar';
@@ -58,13 +59,14 @@ function ExerciseCard({
             ))}
           </div>
         </div>
-        <button
+        <AccentButton
+          size="sm"
           onClick={(e) => { e.stopPropagation(); onQuickAdd(); }}
-          className="shrink-0 w-6 h-6 flex items-center justify-center rounded-lg bg-(--color_primary_light) hover:opacity-80 active:scale-90 transition-all"
+          className="shrink-0 w-6 h-6 p-0 rounded-lg hover:opacity-80 active:scale-90"
           title="Добавить"
         >
-          <PlusIcon className="w-3.5 h-3.5 text-white" />
-        </button>
+          <PlusIcon className="w-3.5 h-3.5" />
+        </AccentButton>
       </div>
     </div>
   );

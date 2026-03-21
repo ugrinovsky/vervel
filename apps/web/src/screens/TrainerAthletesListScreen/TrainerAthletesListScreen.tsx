@@ -9,6 +9,7 @@ import AddAthleteDrawer from '@/components/AddAthleteDrawer/AddAthleteDrawer';
 import { trainerApi, type AthleteListItem } from '@/api/trainer';
 import { useTrainerUnreadCounts } from '@/hooks/useTrainerUnreadCounts';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
+import AccentButton from '@/components/ui/AccentButton';
 import {
   PlusIcon,
   UsersIcon,
@@ -175,13 +176,10 @@ export default function TrainerAthletesListScreen() {
                   </button>
                 ))}
               </div>
-              <button
-                onClick={() => setShowAddDrawer(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity"
-              >
+              <AccentButton size="sm" onClick={() => setShowAddDrawer(true)}>
                 <PlusIcon className="w-4 h-4" />
                 Добавить
-              </button>
+              </AccentButton>
             </div>
           </div>
 

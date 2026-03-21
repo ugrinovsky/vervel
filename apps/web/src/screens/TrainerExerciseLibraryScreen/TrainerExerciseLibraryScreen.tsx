@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { BookOpenIcon } from '@heroicons/react/24/outline';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
@@ -116,24 +117,26 @@ export default function TrainerExerciseLibraryScreen() {
   return (
     <Screen className="trainer-exercise-library-screen">
       <div className="flex flex-col w-full">
-        <ScreenHeader
-          className="px-4 pt-4"
-          icon={<BookOpenIcon className="w-6 h-6 text-(--color_primary_light)" />}
-          title="Библиотека упражнений"
-          description="Готовые упражнения по категориям — добавляйте в тренировки и шаблоны"
-        />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <ScreenHeader
+            className="px-4 pt-4"
+            icon={<BookOpenIcon className="w-6 h-6 text-(--color_primary_light)" />}
+            title="Библиотека упражнений"
+            description="Готовые упражнения по категориям — добавляйте в тренировки и шаблоны"
+          />
+        </motion.div>
 
         {/* Hint */}
-        <div className="px-4 pb-3">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="px-4 pb-3">
           <ScreenHint>
             Фильтруйте по <span className="text-white font-medium">категории</span> или{' '}
             <span className="text-white font-medium">зоне мышц</span>, нажмите на карточку —
             увидите технику и описание. Упражнения доступны при создании шаблонов и тренировок.
           </ScreenHint>
-        </div>
+        </motion.div>
 
         {/* Results count */}
-        <div className="px-4 mb-3">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="px-4 mb-3">
           <p className="text-xs text-(--color_text_muted)">
             {loading
               ? '…'
@@ -141,10 +144,10 @@ export default function TrainerExerciseLibraryScreen() {
                 ? `Показано 80 из ${filtered.length} — уточните поиск`
                 : `${filtered.length} упражнений`}
           </p>
-        </div>
+        </motion.div>
 
         {/* Grid */}
-        <div className="px-4 pb-4">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="px-4 pb-4">
           {loading ? (
             <div className="grid grid-cols-2 gap-3">
               {Array.from({ length: 8 }).map((_, i) => (
@@ -179,7 +182,7 @@ export default function TrainerExerciseLibraryScreen() {
               Уточните поиск или выберите категорию / зону мышц
             </p>
           )}
-        </div>
+        </motion.div>
 
         {/* Filter bar — sticky above nav */}
         <div
@@ -205,13 +208,15 @@ export default function TrainerExerciseLibraryScreen() {
         </div>
 
 
-        <ScreenLinks
-          className="px-4 pb-4"
-          links={[
-            { emoji: '📋', bg: 'bg-violet-500/20', label: 'Шаблоны', sub: 'готовые тренировки', to: '/trainer/templates' },
-            { emoji: '📅', bg: 'bg-blue-500/20', label: 'Календарь', sub: 'расписание тренировок', to: '/trainer/calendar' },
-          ]}
-        />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <ScreenLinks
+            className="px-4 pb-4"
+            links={[
+              { emoji: '📋', bg: 'bg-violet-500/20', label: 'Шаблоны', sub: 'готовые тренировки', to: '/trainer/templates' },
+              { emoji: '📅', bg: 'bg-blue-500/20', label: 'Календарь', sub: 'расписание тренировок', to: '/trainer/calendar' },
+            ]}
+          />
+        </motion.div>
 
         {/* Detail sheet */}
         <ExerciseDetailSheet

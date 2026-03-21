@@ -13,6 +13,7 @@ import WorkoutExercisesEditor, {
 import { trainerApi, type WorkoutTemplate, type ExerciseData } from '@/api/trainer';
 import { useNavigate } from 'react-router';
 import { PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
+import AccentButton from '@/components/ui/AccentButton';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 import { WORKOUT_TYPE_CONFIG, exerciseBrief } from '@/constants/workoutTypes';
 
@@ -139,13 +140,10 @@ export default function TrainerTemplatesScreen() {
         >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-white">Все шаблоны</h2>
-            <button
-              onClick={openCreate}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity"
-            >
+            <AccentButton size="sm" onClick={openCreate}>
               <PlusIcon className="w-4 h-4" />
               Создать
-            </button>
+            </AccentButton>
           </div>
 
           {loading ? (
@@ -296,13 +294,14 @@ export default function TrainerTemplatesScreen() {
             />
           </FormField>
 
-          <button
+          <AccentButton
             onClick={handleSave}
             disabled={saving}
-            className="w-full py-3 rounded-xl bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+            loading={saving}
+            loadingText="Сохранение..."
           >
-            {saving ? 'Сохранение...' : editingTemplate ? 'Сохранить изменения' : 'Создать шаблон'}
-          </button>
+            {editingTemplate ? 'Сохранить изменения' : 'Создать шаблон'}
+          </AccentButton>
         </div>
       </BottomSheet>
     </Screen>

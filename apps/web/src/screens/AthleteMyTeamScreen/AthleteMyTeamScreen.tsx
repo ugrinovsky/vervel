@@ -8,6 +8,7 @@ import FullScreenChat from '@/components/FullScreenChat/FullScreenChat';
 import AiChat from '@/components/AiChat/AiChat';
 import { athleteApi, type AthleteGroup, type AthleteTrainer } from '@/api/athlete';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
+import AccentButton from '@/components/ui/AccentButton';
 import {
   ChatBubbleLeftIcon,
   UserGroupIcon,
@@ -262,10 +263,11 @@ export default function AthleteMyTeamScreen() {
                             <UserCircleIcon className="w-3.5 h-3.5" />
                             Профиль
                           </button>
-                          <button
+                          <AccentButton
+                            size="sm"
                             onClick={() => openTrainerChat(trainer)}
                             disabled={openingChatFor === trainer.id}
-                            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--color_primary_light) text-white text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                            className="relative text-xs"
                           >
                             {trainerUnread > 0 && (
                               <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
@@ -274,7 +276,7 @@ export default function AthleteMyTeamScreen() {
                             )}
                             <ChatBubbleLeftIcon className="w-3.5 h-3.5" />
                             Чат
-                          </button>
+                          </AccentButton>
                         </div>
                       </div>
                     );

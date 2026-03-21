@@ -17,6 +17,7 @@ import WorkoutExercisesEditor from '@/components/WorkoutExercisesEditor/WorkoutE
 import AiWorkoutGenerator from '@/components/AiWorkoutGenerator/AiWorkoutGenerator';
 import AiWorkoutRecognizer from '@/components/AiWorkoutRecognizer/AiWorkoutRecognizer';
 import { ChevronDownIcon, ChevronUpIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import AccentButton from '@/components/ui/AccentButton';
 import type { ExerciseData, WorkoutTemplate } from '@/api/trainer';
 import type { AiWorkoutResult } from '@/api/ai';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
@@ -296,13 +297,15 @@ export default function WorkoutFormBase({
 
       {/* Actions */}
       <div className="flex gap-2 pt-1">
-        <button
+        <AccentButton
           onClick={handleSubmit}
           disabled={saving}
-          className="flex-1 py-3 rounded-xl bg-(--color_primary_light) text-white font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+          loading={saving}
+          loadingText="Сохранение..."
+          className="flex-1 font-semibold"
         >
-          {saving ? 'Сохранение...' : submitLabel}
-        </button>
+          {submitLabel}
+        </AccentButton>
         {onCancel && (
           <button
             onClick={onCancel}

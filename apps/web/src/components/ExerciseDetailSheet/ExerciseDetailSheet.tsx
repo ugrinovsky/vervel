@@ -4,6 +4,7 @@ import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import type { Exercise, ExerciseFull, ExerciseWithSets } from '@/types/Exercise';
 import { exercisesApi } from '@/api/exercises';
 import { getZoneLabel } from '@/util/zones';
+import AccentButton from '@/components/ui/AccentButton';
 
 const CATEGORY_LABELS: Record<string, string> = {
   strength: 'Силовые',
@@ -240,12 +241,9 @@ export function ExerciseDetailContent({
               </div>
             </div>
           )}
-          <button
-            onClick={handleAdd}
-            className="w-full py-3 rounded-xl bg-(--color_primary_light) text-white font-semibold hover:opacity-90 transition-opacity"
-          >
+          <AccentButton onClick={handleAdd} className="font-semibold">
             Добавить в тренировку
-          </button>
+          </AccentButton>
         </div>
       )}
     </div>

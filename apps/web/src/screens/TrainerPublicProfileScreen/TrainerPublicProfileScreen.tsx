@@ -9,6 +9,7 @@ import { athleteApi } from '@/api/athlete';
 import { ChatBubbleLeftIcon, ClipboardDocumentIcon, CheckIcon } from '@heroicons/react/24/outline';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import BackButton from '@/components/BackButton/BackButton';
+import AccentButton from '@/components/ui/AccentButton';
 
 const DONATION_AMOUNTS = [100, 300, 500, 1000];
 
@@ -110,17 +111,23 @@ export default function TrainerPublicProfileScreen() {
         </motion.div>
 
         {/* Write button */}
-        <motion.button
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          onClick={handleOpenChat}
-          disabled={openingChat}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-(--color_primary_light) text-white font-medium text-sm hover:opacity-90 transition-opacity mb-6 disabled:opacity-50"
+          className="mb-6"
         >
-          <ChatBubbleLeftIcon className="w-4 h-4" />
-          {openingChat ? 'Открытие...' : 'Написать тренеру'}
-        </motion.button>
+          <AccentButton
+            onClick={handleOpenChat}
+            disabled={openingChat}
+            loading={openingChat}
+            loadingText="Открытие..."
+            className="font-medium rounded-2xl"
+          >
+            <ChatBubbleLeftIcon className="w-4 h-4" />
+            Написать тренеру
+          </AccentButton>
+        </motion.div>
 
         {/* About */}
         {profile.bio && (

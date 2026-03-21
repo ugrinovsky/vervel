@@ -11,6 +11,7 @@ import type { TrainerProfileStats } from '@/api/trainer';
 import AvatarCropModal from '@/components/AvatarCropModal/AvatarCropModal';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import { CameraIcon } from '@heroicons/react/24/outline';
+import AccentButton from '@/components/ui/AccentButton';
 
 interface Props {
   data: ProfileData;
@@ -294,13 +295,16 @@ export default function ProfileTab({ data, trainerStats }: Props) {
               <p className="text-sm text-(--color_text_muted) mb-4">
                 Активируйте режим атлета, чтобы вести собственные тренировки и статистику.
               </p>
-              <button
+              <AccentButton
+                size="sm"
                 onClick={handleBecomeAthlete}
                 disabled={becomingAthlete}
-                className="px-5 py-2.5 rounded-xl text-sm font-medium bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+                loading={becomingAthlete}
+                loadingText="Активация..."
+                className="px-5 py-2.5 rounded-xl"
               >
-                {becomingAthlete ? 'Активация...' : 'Стать атлетом'}
-              </button>
+                Стать атлетом
+              </AccentButton>
             </div>
           </div>
         </div>
@@ -316,13 +320,16 @@ export default function ProfileTab({ data, trainerStats }: Props) {
               <p className="text-sm text-(--color_text_muted) mb-4">
                 Активируйте режим тренера, чтобы вести группы, атлетов и расписание тренировок.
               </p>
-              <button
+              <AccentButton
+                size="sm"
                 onClick={handleBecomeTrainer}
                 disabled={becomingTrainer}
-                className="px-5 py-2.5 rounded-xl text-sm font-medium bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+                loading={becomingTrainer}
+                loadingText="Активация..."
+                className="px-5 py-2.5 rounded-xl"
               >
-                {becomingTrainer ? 'Активация...' : 'Стать тренером'}
-              </button>
+                Стать тренером
+              </AccentButton>
             </div>
           </div>
         </div>

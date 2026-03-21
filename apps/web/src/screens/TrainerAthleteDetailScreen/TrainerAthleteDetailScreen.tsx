@@ -13,6 +13,7 @@ import MiniAvatar from '@/components/MiniAvatar/MiniAvatar';
 import ActivityCalendar, { type DayData } from '@/components/ActivityGraph/ActivityGraph';
 import MonthlyStats from '@/screens/ActivityScreen/MonthlyStats';
 import DayDetails from '@/screens/ActivityScreen/DayDetails';
+import AccentButton from '@/components/ui/AccentButton';
 import { useAthleteStats, type StatsPeriod } from '@/hooks/useAthleteStats';
 import { useAthleteAvatar } from '@/hooks/useAthleteAvatar';
 import { trainerApi, type PeriodizationData } from '@/api/trainer';
@@ -248,13 +249,10 @@ export default function TrainerAthleteDetailScreen() {
           transition={{ delay: 0.05 }}
           className="grid grid-cols-2 gap-3 mb-5"
         >
-          <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-(--color_primary_light) text-white font-medium text-sm hover:opacity-90 transition-opacity"
-          >
+          <AccentButton onClick={() => setShowCreate(true)} className="font-medium">
             <PlusIcon className="w-4 h-4" />
             Тренировка
-          </button>
+          </AccentButton>
           <button
             onClick={() => setShowChat(true)}
             className="relative flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) text-white font-medium text-sm hover:border-(--color_primary_light)/50 transition-colors"

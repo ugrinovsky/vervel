@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
+import AccentButton from '@/components/ui/AccentButton';
 
 export default function ActivityScreen() {
   const navigate = useNavigate();
@@ -80,12 +81,9 @@ export default function ActivityScreen() {
                     <div className="text-xs text-(--color_text_muted) mt-0.5">{desc}</div>
                   </div>
                   {action && (
-                    <button
-                      onClick={action}
-                      className="shrink-0 px-3 py-1.5 rounded-lg bg-(--color_primary_light) text-white text-xs font-medium hover:opacity-90 transition-opacity"
-                    >
+                    <AccentButton size="sm" onClick={action} className="shrink-0 text-xs">
                       {label}
-                    </button>
+                    </AccentButton>
                   )}
                 </div>
               ))}

@@ -13,6 +13,7 @@ import {
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent, Modifier } from '@dnd-kit/core';
 import Screen from '@/components/Screen/Screen';
+import AccentButton from '@/components/ui/AccentButton';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
@@ -538,7 +539,7 @@ export default function TrainerCalendarScreen() {
     <Screen className="trainer-calendar-screen">
       <div className="flex flex-col px-4 w-full">
         {/* ── Page header ── */}
-        <div className="pt-4 pb-1 shrink-0">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="pt-4 pb-1 shrink-0">
           <ScreenHeader
             icon="📅"
             title="Календарь"
@@ -550,10 +551,10 @@ export default function TrainerCalendarScreen() {
             <span className="text-white font-medium">сразу нескольким атлетам или группам</span>.
             Используйте шаблоны, чтобы не вводить упражнения заново.
           </ScreenHint>
-        </div>
+        </motion.div>
 
         {/* ── Calendar (top) ── */}
-        <div className="pt-1 pb-1 shrink-0">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="pt-1 pb-1 shrink-0">
           <TrainerCalendar
             days={calendarDays}
             selectedDate={selectedDate}
@@ -568,13 +569,13 @@ export default function TrainerCalendarScreen() {
             }}
             onMonthChange={handleMonthChange}
           />
-        </div>
+        </motion.div>
 
         {/* ── Divider ── */}
-        <div className="border-t border-(--color_border) shrink-0 mt-3 mb-3" />
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="border-t border-(--color_border) shrink-0 mt-3 mb-3" />
 
         {/* ── Selected day timeline (bottom) ── */}
-        <div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           {/* Day header */}
           <div className="flex items-center justify-between pt-3 pb-2 shrink-0">
             <div>
@@ -595,13 +596,10 @@ export default function TrainerCalendarScreen() {
               </div>
             </div>
             {selectedTime === null && (
-              <button
-                onClick={() => openFormAt('09:00')}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity"
-              >
+              <AccentButton size="sm" onClick={() => openFormAt('09:00')}>
                 <PlusIcon className="w-4 h-4" />
                 Добавить
-              </button>
+              </AccentButton>
             )}
           </div>
 
@@ -637,39 +635,28 @@ export default function TrainerCalendarScreen() {
                         <div className="space-y-1.5">
                           {hourWorkouts.map((workout, idx) => {
                             const isLast = idx === hourWorkouts.length - 1;
-                            if (isLast) {
-                              return (
-                                <div key={workout.id} className="flex items-center gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    <DraggableWorkout
-                                      workout={workout}
-                                      nicknames={nicknames}
-                                      isEditing={editingWorkout?.id === workout.id}
-                                      onEdit={() => openEditForm(workout)}
-                                      onDelete={() => handleDelete(workout.id)}
-                                    />
-                                  </div>
+                            return (
+                              <div key={workout.id} className="h-9 flex items-center gap-2">
+                                <div className="flex-1 min-w-0 h-full">
+                                  <DraggableWorkout
+                                    workout={workout}
+                                    nicknames={nicknames}
+                                    isEditing={editingWorkout?.id === workout.id}
+                                    onEdit={() => openEditForm(workout)}
+                                    onDelete={() => handleDelete(workout.id)}
+                                  />
+                                </div>
+                                {isLast && (
                                   <button
-                                    onClick={() => openFormAt(timeStr)}
+                                    onClick={(e) => { e.stopPropagation(); openFormAt(timeStr); }}
                                     className={`shrink-0 text-xs transition-colors px-1 ${
                                       isActive ? 'text-emerald-400 hover:text-emerald-300' : 'text-(--color_text_muted) hover:text-white'
                                     }`}
-                                    title={`+ ещё в ${timeStr}`}
                                   >
                                     + ещё
                                   </button>
-                                </div>
-                              );
-                            }
-                            return (
-                              <DraggableWorkout
-                                key={workout.id}
-                                workout={workout}
-                                nicknames={nicknames}
-                                isEditing={editingWorkout?.id === workout.id}
-                                onEdit={() => openEditForm(workout)}
-                                onDelete={() => handleDelete(workout.id)}
-                              />
+                                )}
+                              </div>
                             );
                           })}
                         </div>
@@ -716,16 +703,18 @@ export default function TrainerCalendarScreen() {
               )}
             </DragOverlay>
           </DndContext>
-        </div>
+        </motion.div>
 
-        <ScreenLinks
-          className="pb-4"
-          links={[
-            { emoji: '🏃', bg: 'bg-emerald-500/20', label: 'Атлеты',   sub: 'список атлетов',    to: '/trainer/athletes' },
-            { emoji: '👥', bg: 'bg-blue-500/20',    label: 'Группы',   sub: 'список групп',      to: '/trainer/groups' },
-            { emoji: '📋', bg: 'bg-violet-500/20',  label: 'Шаблоны',  sub: 'готовые тренировки', to: '/trainer/templates' },
-          ]}
-        />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <ScreenLinks
+            className="pb-4"
+            links={[
+              { emoji: '🏃', bg: 'bg-emerald-500/20', label: 'Атлеты',   sub: 'список атлетов',    to: '/trainer/athletes' },
+              { emoji: '👥', bg: 'bg-blue-500/20',    label: 'Группы',   sub: 'список групп',      to: '/trainer/groups' },
+              { emoji: '📋', bg: 'bg-violet-500/20',  label: 'Шаблоны',  sub: 'готовые тренировки', to: '/trainer/templates' },
+            ]}
+          />
+        </motion.div>
       </div>
 
       <BottomSheet

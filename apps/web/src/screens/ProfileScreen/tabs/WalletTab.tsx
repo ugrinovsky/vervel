@@ -7,6 +7,7 @@ import type { AiBalance } from '@/api/ai';
 import { paymentsApi } from '@/api/payments';
 import { useScrollPagination } from '@/hooks/useScrollPagination';
 import AiChat from '@/components/AiChat/AiChat';
+import AccentButton from '@/components/ui/AccentButton';
 
 const TOP_UP_AMOUNTS = [100, 250, 500, 1000];
 
@@ -114,17 +115,17 @@ export default function WalletTab({ balance, setBalance, inTrainerMode }: Props)
             </button>
           ))}
         </div>
-        <button
+        <AccentButton
           onClick={handleTopup}
           disabled={!selectedAmount || topping}
-          className="w-full py-3 rounded-xl bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+          className="disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {topping
             ? 'Переход к оплате…'
             : selectedAmount
               ? `Пополнить на ${selectedAmount}₽`
               : 'Выберите сумму'}
-        </button>
+        </AccentButton>
       </div>
 
       {/* AI Chat button */}

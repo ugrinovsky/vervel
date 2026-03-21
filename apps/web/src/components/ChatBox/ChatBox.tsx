@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { chatApi } from '@/api/chat';
 import type { ChatMessage } from '@/api/trainer';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
+import AccentButton from '@/components/ui/AccentButton';
 import { useAuth } from '@/contexts/AuthContext';
 import { checkForNewAchievements } from '@/hooks/useAchievementToast';
 import { WorkoutPreviewCard, parseWorkoutPreview } from './WorkoutPreviewCard';
@@ -270,13 +271,14 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
             disabled={sending}
             className="flex-1 bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-2 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors disabled:opacity-50"
           />
-          <button
+          <AccentButton
+            size="sm"
             onClick={handleSend}
             disabled={!newMessage.trim() || sending}
-            className="px-4 py-2 rounded-xl bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 rounded-xl disabled:cursor-not-allowed"
           >
             <PaperAirplaneIcon className="w-5 h-5" />
-          </button>
+          </AccentButton>
         </div>
       </div>
 

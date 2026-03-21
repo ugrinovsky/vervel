@@ -12,8 +12,90 @@ function hslToRgb(h: number, s: number, l: number): string {
   return `${r} ${g} ${b}`;
 }
 
+export type SpecialTheme = 'dark' | 'light';
+
+const TAILWIND_FAMILIES = ['emerald', 'teal', 'green', 'amber', 'orange'];
+
+const ACCENT_SHADES: Record<string, [number, number]> = {
+  '100': [65, 92], '200': [70, 82], '300': [68, 72], '400': [68, 55],
+  '500': [78, 40], '600': [82, 31], '700': [84, 23], '800': [80, 17], '900': [75, 13],
+};
+
+/** Apply a single accent hue to all Tailwind color families.
+ *  lightnessBoost / satMult adjust the scale — use for light theme to avoid vivid/heavy shades. */
+function applyAccentTailwindColors(root: HTMLElement, accentHue: number, lightnessBoost = 0, satMult = 1) {
+  for (const [shade, [sat, light]] of Object.entries(ACCENT_SHADES)) {
+    const rgb = `rgb(${hslToRgb(accentHue, sat * satMult, Math.min(light + lightnessBoost, 94))})`;
+    for (const family of TAILWIND_FAMILIES) {
+      root.style.setProperty(`--color-${family}-${shade}`, rgb);
+    }
+  }
+}
+
+const DARK_ACCENT_HUE = 172;  // matches --color_primary_light teal in dark theme
+const LIGHT_ACCENT_HUE = 215; // dusty blue accent for light theme
+
+export function applySpecialTheme(type: SpecialTheme) {
+  const root = document.documentElement;
+  if (type === 'light') {
+    // Boost lightness + reduce saturation so shades aren't too vivid on white background
+    applyAccentTailwindColors(root, LIGHT_ACCENT_HUE, 12, 0.6);
+  } else {
+    applyAccentTailwindColors(root, DARK_ACCENT_HUE, 0, 1);
+  }
+
+  if (type === 'dark') {
+    root.removeAttribute('data-theme');
+    root.style.setProperty('--color_primary', 'rgb(22, 22, 28)');
+    root.style.setProperty('--color_primary_dark', 'rgb(12, 12, 16)');
+    root.style.setProperty('--color_primary_light', 'rgb(42, 168, 152)');
+    root.style.setProperty('--color_primary_icon', 'rgb(72, 198, 182)');
+    root.style.setProperty('--color_primary_ch', '22 22 28');
+    root.style.setProperty('--color_primary_dark_ch', '12 12 16');
+    root.style.setProperty('--color_primary_light_ch', '42 168 152');
+    root.style.setProperty('--color_bg_screen', 'radial-gradient(circle at 50% 52.5%, rgb(22, 22, 28) 0%, rgb(12, 12, 16) 90%)');
+    root.style.setProperty('--color_bg_card', 'rgba(255, 255, 255, 0.07)');
+    root.style.setProperty('--color_bg_card_hover', 'rgba(255, 255, 255, 0.11)');
+    root.style.setProperty('--color_bg_input', 'rgba(255, 255, 255, 0.08)');
+    root.style.setProperty('--color_border', 'rgba(255, 255, 255, 0.12)');
+    root.style.setProperty('--color_border_light', 'rgba(255, 255, 255, 0.08)');
+    root.style.setProperty('--color_text_primary', 'rgba(255, 255, 255, 1)');
+    root.style.setProperty('--color_text_secondary', 'rgba(255, 255, 255, 0.9)');
+    root.style.setProperty('--color_text_muted', 'rgba(255, 255, 255, 0.7)');
+  } else {
+    root.setAttribute('data-theme', 'light');
+    root.style.setProperty('--color_primary', 'rgb(246, 246, 246)');
+    root.style.setProperty('--color_primary_dark', 'rgb(236, 236, 236)');
+    root.style.setProperty('--color_primary_light', 'rgb(75, 120, 175)');
+    root.style.setProperty('--color_primary_icon', 'rgb(58, 100, 155)');
+    root.style.setProperty('--color_primary_ch', '246 246 246');
+    root.style.setProperty('--color_primary_dark_ch', '236 236 236');
+    root.style.setProperty('--color_primary_light_ch', '75 120 175');
+    root.style.setProperty('--color_bg_screen', 'rgb(244, 243, 241)');
+    root.style.setProperty('--color_bg_card', 'rgb(255, 255, 255)');
+    root.style.setProperty('--color_bg_card_hover', 'rgb(248, 248, 248)');
+    root.style.setProperty('--color_bg_input', 'rgb(255, 255, 255)');
+    root.style.setProperty('--color_border', 'rgba(0, 0, 0, 0.1)');
+    root.style.setProperty('--color_border_light', 'rgba(0, 0, 0, 0.07)');
+    root.style.setProperty('--color_text_primary', 'rgba(0, 0, 0, 0.88)');
+    root.style.setProperty('--color_text_secondary', 'rgba(0, 0, 0, 0.72)');
+    root.style.setProperty('--color_text_muted', 'rgba(0, 0, 0, 0.48)');
+  }
+
+  document.dispatchEvent(new CustomEvent('themechange'));
+}
+
+const SPECIAL_THEME_PROPS = [
+  '--color_bg_card', '--color_bg_card_hover', '--color_bg_input',
+  '--color_border', '--color_border_light',
+  '--color_text_primary', '--color_text_secondary', '--color_text_muted',
+] as const;
+
 export function applyTheme(hue: number) {
   const root = document.documentElement;
+  // Clear any special-theme overrides so :root CSS fallbacks take effect
+  root.removeAttribute('data-theme');
+  for (const prop of SPECIAL_THEME_PROPS) root.style.removeProperty(prop);
   const h = hue;
   const hLight = ((h - 8) + 360) % 360;
   const hDark = (h + 26) % 360;

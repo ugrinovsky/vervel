@@ -10,6 +10,7 @@ import BackButton from '@/components/BackButton/BackButton';
 import FormField from '@/components/FormField';
 import AvatarCropModal from '@/components/AvatarCropModal/AvatarCropModal';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
+import AccentButton from '@/components/ui/AccentButton';
 
 export default function TrainerPersonalScreen() {
   const navigate = useNavigate();
@@ -287,12 +288,9 @@ export default function TrainerPersonalScreen() {
                   placeholder="Кроссфит, Силовые, HIIT…"
                   className="flex-1 bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-(--color_text_muted)"
                 />
-                <button
-                  onClick={addSpec}
-                  className="px-4 py-3 rounded-xl bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity"
-                >
+                <AccentButton size="sm" onClick={addSpec} className="px-4 py-3 rounded-xl">
                   +
-                </button>
+                </AccentButton>
               </div>
             </>
           </FormField>
@@ -393,16 +391,21 @@ export default function TrainerPersonalScreen() {
         </motion.div>
 
         {/* Save */}
-        <motion.button
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          onClick={handleSave}
-          disabled={saving}
-          className="w-full py-3.5 rounded-2xl text-sm font-semibold bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50"
         >
-          {saving ? 'Сохранение...' : 'Сохранить профиль'}
-        </motion.button>
+          <AccentButton
+            onClick={handleSave}
+            disabled={saving}
+            loading={saving}
+            loadingText="Сохранение..."
+            className="font-semibold"
+          >
+            Сохранить профиль
+          </AccentButton>
+        </motion.div>
       </div>
     </Screen>
   );

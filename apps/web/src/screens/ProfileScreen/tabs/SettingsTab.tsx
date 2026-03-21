@@ -6,9 +6,10 @@ import toast from 'react-hot-toast';
 import { profileApi, type ProfileData } from '@/api/profile';
 import type { UserRole } from '@/api/auth';
 import { useAuth } from '@/contexts/AuthContext';
-import { THEME_PRESETS, DEFAULT_HUE } from '@/util/theme';
+import { THEME_PRESETS, DEFAULT_HUE, type SpecialTheme } from '@/util/theme';
 import { ThemeController } from '@/util/ThemeController';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
+import AccentButton from '@/components/ui/AccentButton';
 
 const PWA_STEPS: Record<'ios' | 'android' | 'desktop', { hint: string; steps: React.ReactNode[] }> = {
   ios: {
@@ -83,7 +84,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
   const [savingPassword, setSavingPassword] = useState(false);
 
   const [activeHue, setActiveHue] = useState(() => data.user.themeHue ?? DEFAULT_HUE);
-
+  const [activeSpecial, setActiveSpecial] = useState<SpecialTheme | null>(() => ThemeController.getStoredSpecial());
 
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState<'general' | 'bug' | 'feature' | 'other'>('general');
@@ -98,8 +99,14 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
   }, [data.user]);
 
   const handleThemeChange = (hue: number) => {
+    setActiveSpecial(null);
     setActiveHue(hue);
     ThemeController.change(hue);
+  };
+
+  const handleSpecialThemeChange = (type: SpecialTheme) => {
+    setActiveSpecial(type);
+    ThemeController.changeSpecial(type);
   };
 
   const handleSaveProfile = async () => {
@@ -193,20 +200,39 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
             placeholder="Email или телефон для ответа (необязательно)"
             className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-white/30"
           />
-          <button
+          <AccentButton
             onClick={handleSendFeedback}
             disabled={!feedbackMessage.trim() || sendingFeedback}
-            className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+            loading={sendingFeedback}
+            loadingText="Отправляем…"
           >
-            {sendingFeedback ? 'Отправляем…' : 'Отправить'}
-          </button>
+            Отправить
+          </AccentButton>
         </div>
       </BottomSheet>
 
       {/* Theme picker */}
       <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
         <h2 className="text-base font-semibold text-white mb-4">Цвет темы</h2>
-        <div className="grid grid-cols-6 gap-3">
+        <div className="grid grid-cols-7 gap-3">
+          {/* Standalone dark / light themes */}
+          {([
+            { id: 'dark' as const, title: 'Тёмная', bg: 'linear-gradient(135deg, #22222A 0%, #0D0D11 100%)', border: 'rgba(255,255,255,0.15)' },
+            { id: 'light' as const, title: 'Светлая', bg: 'linear-gradient(135deg, #F6F6F6 0%, #ECECEC 100%)', border: 'rgba(0,0,0,0.15)' },
+          ] as const).map((t) => (
+            <button
+              key={t.id}
+              onClick={() => handleSpecialThemeChange(t.id)}
+              title={t.title}
+              className="relative aspect-square w-full rounded-full border-2 transition-all"
+              style={{
+                background: t.bg,
+                borderColor: activeSpecial === t.id ? (t.id === 'light' ? 'rgba(0,0,0,0.5)' : 'white') : t.border,
+                transform: activeSpecial === t.id ? 'scale(1.15)' : 'scale(1)',
+              }}
+            />
+          ))}
+          {/* Hue presets */}
           {THEME_PRESETS.map((preset) => (
             <button
               key={preset.hue}
@@ -215,8 +241,8 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
               className="relative aspect-square w-full rounded-full border-2 transition-all"
               style={{
                 background: `hsl(${preset.hue}, 74%, 30%)`,
-                borderColor: activeHue === preset.hue ? 'white' : 'rgba(255,255,255,0.15)',
-                transform: activeHue === preset.hue ? 'scale(1.15)' : 'scale(1)',
+                borderColor: activeSpecial === null && activeHue === preset.hue ? 'white' : 'rgba(255,255,255,0.15)',
+                transform: activeSpecial === null && activeHue === preset.hue ? 'scale(1.15)' : 'scale(1)',
               }}
             />
           ))}
@@ -285,13 +311,14 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
               ))}
             </div>
           </div>
-          <button
+          <AccentButton
             onClick={handleSaveProfile}
             disabled={saving}
-            className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+            loading={saving}
+            loadingText="Сохранение..."
           >
-            {saving ? 'Сохранение...' : 'Сохранить'}
-          </button>
+            Сохранить
+          </AccentButton>
         </div>
 
         {/* Password change */}

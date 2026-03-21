@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import QrScanner from '@/components/QrScanner/QrScanner';
 import { trainerApi } from '@/api/trainer';
+import AccentButton from '@/components/ui/AccentButton';
 
 interface Props {
   open: boolean;
@@ -58,12 +59,9 @@ function QrScanTab({ active, onAdded }: { active: boolean; onAdded: () => void }
         className="flex flex-col items-center gap-4 py-6"
       >
         <p className="text-sm text-red-400 text-center">{errorMsg}</p>
-        <button
-          onClick={reset}
-          className="px-6 py-2.5 rounded-xl text-sm font-medium bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity"
-        >
+        <AccentButton size="sm" onClick={reset} className="px-6 py-2.5 rounded-xl">
           Попробовать снова
-        </button>
+        </AccentButton>
       </motion.div>
     );
   }
@@ -174,13 +172,14 @@ export default function AddAthleteDrawer({ open, onClose, onAdded }: Props) {
               className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors"
               onKeyDown={(e) => e.key === 'Enter' && handleAddByEmail()}
             />
-            <button
+            <AccentButton
               onClick={handleAddByEmail}
               disabled={loading || !email.trim()}
-              className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+              loading={loading}
+              loadingText="Добавляем..."
             >
-              {loading ? 'Добавляем...' : 'Добавить'}
-            </button>
+              Добавить
+            </AccentButton>
           </motion.div>
         )}
 
