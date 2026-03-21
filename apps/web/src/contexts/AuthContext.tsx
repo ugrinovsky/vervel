@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
 import type { UserRole } from '@/api/auth';
-import { applyTheme, DEFAULT_HUE } from '@/util/theme';
+import { ThemeController } from '@/util/ThemeController';
 
 interface AuthUser {
   id: number;
@@ -54,9 +54,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [activeMode, setActiveMode] = useState<'trainer' | 'athlete'>(() => getStoredMode(storedUser));
   const [balance, setBalance] = useState<number | null>(storedUser?.balance ?? null);
 
-  // Apply stored user's theme on mount (session restore)
+  // Apply stored user's theme on mount (session restore).
+  // ThemeController.init() already runs in main.tsx before React renders,
+  // so this is a no-op in most cases — kept as a safety net.
   useState(() => {
-    if (storedUser?.themeHue != null) applyTheme(storedUser.themeHue);
+    if (storedUser?.themeHue != null) ThemeController.apply(storedUser.themeHue);
   });
 
   const login = useCallback((u: AuthUser, t: string) => {
@@ -65,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(u);
     setToken(t);
     if (u.balance !== undefined) setBalance(u.balance);
-    applyTheme(u.themeHue ?? DEFAULT_HUE);
+    ThemeController.apply(u.themeHue ?? ThemeController.getStored());
     // Reset mode to match role on login
     const mode = u.role === 'athlete' ? 'athlete' : 'trainer';
     localStorage.setItem('activeMode', mode);
@@ -80,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setBalance(null);
     setActiveMode('trainer');
-    applyTheme(DEFAULT_HUE);
+    ThemeController.reset();
   }, []);
 
   const switchMode = useCallback(() => {

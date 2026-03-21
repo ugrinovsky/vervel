@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
@@ -6,7 +6,8 @@ import toast from 'react-hot-toast';
 import { profileApi, type ProfileData } from '@/api/profile';
 import type { UserRole } from '@/api/auth';
 import { useAuth } from '@/contexts/AuthContext';
-import { THEME_PRESETS, applyTheme, DEFAULT_HUE } from '@/util/theme';
+import { THEME_PRESETS, DEFAULT_HUE } from '@/util/theme';
+import { ThemeController } from '@/util/ThemeController';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 
 const PWA_STEPS: Record<'ios' | 'android' | 'desktop', { hint: string; steps: React.ReactNode[] }> = {
@@ -82,7 +83,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
   const [savingPassword, setSavingPassword] = useState(false);
 
   const [activeHue, setActiveHue] = useState(() => data.user.themeHue ?? DEFAULT_HUE);
-  const themeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
 
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState<'general' | 'bug' | 'feature' | 'other'>('general');
@@ -98,11 +99,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
 
   const handleThemeChange = (hue: number) => {
     setActiveHue(hue);
-    applyTheme(hue);
-    if (themeDebounceRef.current) clearTimeout(themeDebounceRef.current);
-    themeDebounceRef.current = setTimeout(() => {
-      profileApi.updateProfile({ themeHue: hue }).catch(() => {});
-    }, 500);
+    ThemeController.change(hue);
   };
 
   const handleSaveProfile = async () => {
@@ -111,9 +108,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
       const response = await profileApi.updateProfile({ fullName: nameField, email: emailField, gender: genderField });
       if (response.data.success) {
         const updatedUser = response.data.data.user;
-        const stored = JSON.parse(localStorage.getItem('user') || '{}');
-        localStorage.setItem('user', JSON.stringify({ ...stored, ...updatedUser }));
-        if (user && token) login({ ...user, ...updatedUser, fullName: updatedUser.fullName ?? '', role: updatedUser.role as UserRole }, token);
+        if (user && token) login({ ...user, ...updatedUser, fullName: updatedUser.fullName ?? '', role: updatedUser.role as UserRole, themeHue: activeHue }, token);
         onProfileUpdate(updatedUser);
         toast.success('Профиль обновлён');
       }
