@@ -20,6 +20,21 @@
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
 }
 
+.nav-background::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: env(safe-area-inset-bottom, 0px);
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--safe_area_bg)
+  );
+  pointer-events: none;
+}
+
 .nav-item-active {
   display: flex;
   align-items: center;

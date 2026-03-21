@@ -29,6 +29,18 @@ html, body {
   overflow: hidden;
 }
 
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background: linear-gradient(to bottom, var(--safe_area_bg), transparent);
+  pointer-events: none;
+  z-index: 9999;
+}
+
 #root {
   height: 100%;
   overflow: hidden;

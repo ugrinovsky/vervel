@@ -143,8 +143,8 @@ export default function ProfileTab({ data, trainerStats }: Props) {
       />
 
       {/* User Info */}
-      <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
-        <div className="flex items-center gap-4">
+      <div className="bg-(--color_bg_card) rounded-2xl border border-(--color_border) overflow-hidden">
+        <div className="flex items-center gap-4 p-6">
           <button
             onClick={() => fileRef.current?.click()}
             disabled={uploadingPhoto}
@@ -174,6 +174,19 @@ export default function ProfileTab({ data, trainerStats }: Props) {
             <div className="text-xs text-(--color_text_muted) mt-1">Участник с {formatDate(data.user.createdAt)}</div>
           </div>
         </div>
+        {inTrainerMode && (
+          <button
+            onClick={() => navigate('/trainer/personal')}
+            className="w-full flex items-center gap-3 px-6 py-4 border-t border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
+          >
+            <span className="text-xl">🪪</span>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-white">Профессиональный профиль</div>
+              <div className="text-xs text-(--color_text_muted) mt-0.5">Фото, специализации, образование — видно атлетам</div>
+            </div>
+            <span className="text-(--color_text_muted) text-sm shrink-0">→</span>
+          </button>
+        )}
       </div>
 
       {/* Stats — trainer only */}
@@ -248,20 +261,6 @@ export default function ProfileTab({ data, trainerStats }: Props) {
         </>
       )}
 
-      {/* Professional profile (trainers) */}
-      {inTrainerMode && (
-        <button
-          onClick={() => navigate('/trainer/personal')}
-          className="w-full flex items-center gap-4 p-5 bg-(--color_bg_card) rounded-2xl border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
-        >
-          <div className="text-3xl">🪪</div>
-          <div className="flex-1">
-            <div className="text-sm font-medium text-white">Профессиональный профиль</div>
-            <div className="text-xs text-(--color_text_muted) mt-0.5">Фото, специализации, образование — видно атлетам</div>
-          </div>
-          <div className="text-(--color_text_muted) text-sm">→</div>
-        </button>
-      )}
 
       {/* Cabinet switcher */}
       {isBoth && (

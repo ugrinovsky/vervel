@@ -26,6 +26,7 @@
         var r = document.documentElement;
         var sp = localStorage.getItem('themeSpecial');
         if (sp === 'dark') {
+          r.style.setProperty('--safe_area_bg', 'rgb(12, 12, 16)');
           r.style.setProperty('--color_primary', 'rgb(22, 22, 28)');
           r.style.setProperty('--color_primary_dark', 'rgb(12, 12, 16)');
           r.style.setProperty('--color_primary_light', 'rgb(42, 168, 152)');
@@ -43,6 +44,7 @@
           r.style.setProperty('--color_text_secondary', 'rgba(255,255,255,0.9)');
           r.style.setProperty('--color_text_muted', 'rgba(255,255,255,0.7)');
         } else if (sp === 'light') {
+          r.style.setProperty('--safe_area_bg', 'rgb(244, 243, 241)');
           r.setAttribute('data-theme', 'light');
           r.style.setProperty('--color_primary', 'rgb(246, 246, 246)');
           r.style.setProperty('--color_primary_dark', 'rgb(236, 236, 236)');
@@ -73,6 +75,7 @@
             var primaryIcon = hslToRgb(hLight, 72, iconL);
             r.style.setProperty('--color_primary', 'rgb(' + primary + ')');
             r.style.setProperty('--color_primary_dark', 'rgb(' + primaryDark + ')');
+            r.style.setProperty('--safe_area_bg', 'rgb(' + primaryDark + ')');
             r.style.setProperty('--color_primary_light', 'rgb(' + primaryLight + ')');
             r.style.setProperty('--color_primary_icon', 'rgb(' + primaryIcon + ')');
             r.style.setProperty('--color_primary_ch', primary);
