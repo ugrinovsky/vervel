@@ -297,7 +297,6 @@ function IntroSessionForm({
           onChange={(e) => setClientName(e.target.value)}
           placeholder="Иван Иванов"
           required
-          autoFocus
           className="w-full rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) px-3 py-2.5 text-sm text-white placeholder:text-(--color_text_muted) focus:outline-none focus:ring-1 focus:ring-sky-400/50"
         />
       </div>

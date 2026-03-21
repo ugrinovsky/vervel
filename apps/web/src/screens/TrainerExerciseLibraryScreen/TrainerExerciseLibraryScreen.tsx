@@ -185,7 +185,7 @@ export default function TrainerExerciseLibraryScreen() {
         <div
           className="px-4 pt-4 pb-3 sticky z-10 border-t border-(--color_border)"
           style={{
-            bottom: 'calc(var(--spacing) * -9)',
+            bottom: 0,
             background: 'linear-gradient(to top, rgb(var(--color_primary_ch) / 0.4) 0%, rgb(var(--color_primary_dark_ch) / 0.3) 50%, rgb(var(--color_primary_dark_ch) / 0.1) 100%)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',

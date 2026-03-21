@@ -3,6 +3,12 @@ import { PushNotificationService } from '#services/PushNotificationService'
 
 export default class PushListener {
   async onMessage(data: EventsList['push:message']) {
+    try {
+      const parsed = JSON.parse(data.content)
+      if (parsed.__type) return // skip structured internal messages (e.g. workout_preview)
+    } catch {
+      // not JSON — proceed normally
+    }
     await PushNotificationService.sendToUsers(data.recipientIds, {
       title: data.senderName,
       body: data.content.slice(0, 100),
