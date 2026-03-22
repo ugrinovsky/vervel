@@ -4,8 +4,8 @@
   "description": "Fitness app for athletes and trainers",
   "start_url": "/home",
   "display": "standalone",
-  "background_color": "#0e3a48",
-  "theme_color": "#0e3a48",
+  "background_color": "#0e3448",
+  "theme_color": "#0e3448",
   "orientation": "portrait",
   "icons": [
     {

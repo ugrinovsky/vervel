@@ -64,6 +64,7 @@ function AppContent(): JSX.Element {
     <>
       <Toaster
         position="top-center"
+        containerStyle={{ top: 'env(safe-area-inset-top, 0px)' }}
         toastOptions={{
           style: {
             background: 'rgba(0,0,0,0.8)',
