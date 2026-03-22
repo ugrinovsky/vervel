@@ -62,8 +62,20 @@ html[data-theme="light"] [class*="bg-green-"] {
 }
 
 /* Nav CSS classes use hardcoded colors (not Tailwind utilities) — override explicitly */
+.modal-fullscreen-panel {
+  background-color: var(--color_bg_card);
+}
+
+html[data-theme="light"] .modal-overlay {
+  background-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+html[data-theme="light"] .modal-fullscreen-panel {
+  background-color: rgba(244, 243, 241, 0.72);
+}
+
 html[data-theme="light"] .nav-background {
-  background: rgba(244, 243, 241, 0.95) !important;
+  background: rgba(244, 243, 241, 0.75) !important;
   border-top-color: rgba(0, 0, 0, 0.18) !important;
 }
 html[data-theme="light"] .nav-item-active {

@@ -27,8 +27,9 @@ export default function Tabs<T extends string>({ tabs, active, onChange, classNa
         <button
           key={tab.id}
           onClick={() => onChange(tab.id)}
+          style={active === tab.id ? { color: 'white' } : undefined}
           className={`relative flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium transition-colors outline-none ${
-            active === tab.id ? 'text-white' : 'text-(--color_text_muted) hover:text-white'
+            active === tab.id ? '' : 'text-(--color_text_muted) hover:text-white'
           }`}
         >
           {active === tab.id && (

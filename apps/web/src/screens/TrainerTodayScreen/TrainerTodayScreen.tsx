@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
+import AnimatedBlock from '@/components/ui/AnimatedBlock';
+import Badge from '@/components/ui/Badge';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
@@ -72,23 +74,20 @@ export default function TrainerTodayScreen() {
         />
 
         {/* Greeting block */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full rounded-2xl p-4 mb-4 border border-(--color_primary_light)/30 bg-(--color_primary_light)/10"
+        <AnimatedBlock className="w-full rounded-2xl p-4 mb-4 border border-(--color_primary_light)/30 bg-(--color_primary_light)/10"
         >
           <div className="flex items-center gap-3">
             <div className="text-2xl">
               {getCurrentHour() < 12 ? '☀️' : getCurrentHour() < 18 ? '🌤️' : '🌙'}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-base font-bold text-white">{getGreeting(user?.fullName)}</div>
+              <div className="text-base font-bold text-(--color_text_primary)">{getGreeting(user?.fullName)}</div>
               <div className="text-xs text-(--color_text_secondary) mt-0.5 min-h-[1rem]">
                 {overview ? getTrainerSubtitle(overview.stats.todayWorkoutsCount) : ''}
               </div>
             </div>
           </div>
-        </motion.div>
+        </AnimatedBlock>
 
         <ScreenHint className="mb-4">
           Дашборд тренера на текущий день. Красные бейджи — непрочитанные сообщения от атлетов и групп.{' '}
@@ -119,9 +118,7 @@ export default function TrainerTodayScreen() {
                       с непрочитанными
                     </div>
                   </div>
-                  <div className="min-w-6 h-6 px-1.5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
-                    {groupsTotal > 99 ? '99+' : groupsTotal}
-                  </div>
+                  <Badge count={groupsTotal} size="md" />
                 </motion.button>
               );
             })()}
@@ -146,9 +143,7 @@ export default function TrainerTodayScreen() {
                       {athletesWithUnread.length === 1 ? 'атлет' : 'атлетов'} с непрочитанными
                     </div>
                   </div>
-                  <div className="min-w-6 h-6 px-1.5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
-                    {athletesTotal > 99 ? '99+' : athletesTotal}
-                  </div>
+                  <Badge count={athletesTotal} size="md" />
                 </motion.button>
               );
             })()}
@@ -157,11 +152,7 @@ export default function TrainerTodayScreen() {
 
         {overview && <>
         {/* Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-3 gap-3 mb-6"
-        >
+        <AnimatedBlock className="grid grid-cols-3 gap-3 mb-6">
           <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
             <ClockIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
             <div className="text-2xl font-bold text-white">{overview.stats.todayWorkoutsCount}</div>
@@ -177,15 +168,10 @@ export default function TrainerTodayScreen() {
             <div className="text-2xl font-bold text-white">{overview.stats.groupCount}</div>
             <div className="text-xs text-(--color_text_muted) mt-1">Групп</div>
           </div>
-        </motion.div>
+        </AnimatedBlock>
 
         {/* Today's Workouts */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) mb-6"
-        >
+        <AnimatedBlock delay={0.1} className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) mb-6">
           <h2 className="text-lg font-semibold text-white mb-4">Тренировки на сегодня</h2>
 
           {overview.todayWorkouts.length === 0 ? (
@@ -249,15 +235,11 @@ export default function TrainerTodayScreen() {
               ))}
             </div>
           )}
-        </motion.div>
+        </AnimatedBlock>
         </>}
 
         {/* Quick Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
+        <AnimatedBlock delay={0.2}>
           <ScreenLinks
             links={[
               { emoji: '📅', bg: 'bg-emerald-500/20', label: 'Календарь', sub: 'Назначить тренировки', to: '/trainer/calendar' },
@@ -266,7 +248,7 @@ export default function TrainerTodayScreen() {
               { emoji: '📋', bg: 'bg-amber-500/20',   label: 'Шаблоны',   sub: 'Готовые тренировки',   to: '/trainer/templates' },
             ]}
           />
-        </motion.div>
+        </AnimatedBlock>
       </div>
     </Screen>
   );

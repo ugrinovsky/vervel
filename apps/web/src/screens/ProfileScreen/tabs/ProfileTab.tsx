@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import { motion } from 'framer-motion';
+import AnimatedBlock from '@/components/ui/AnimatedBlock';
 import toast from 'react-hot-toast';
 import { profileApi, type ProfileData } from '@/api/profile';
 import { privateApi } from '@/api/http/privateApi';
@@ -103,12 +103,8 @@ export default function ProfileTab({ data, trainerStats }: Props) {
   };
 
   return (
-    <motion.div
+    <AnimatedBlock
       key="profile"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.15 }}
       className="space-y-4"
     >
       <BottomSheet open={qrOpen} onClose={() => setQrOpen(false)} emoji="📲" title="QR-код для тренера">
@@ -327,6 +323,6 @@ export default function ProfileTab({ data, trainerStats }: Props) {
           </div>
         </div>
       )}
-    </motion.div>
+    </AnimatedBlock>
   );
 }

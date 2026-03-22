@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
+import Badge from '@/components/ui/Badge';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import AddAthleteDrawer from '@/components/AddAthleteDrawer/AddAthleteDrawer';
@@ -245,11 +246,7 @@ export default function TrainerAthletesListScreen() {
                         </div>
                       </div>
                     </div>
-                    {unread > 0 && (
-                      <div className="min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
-                        {unread > 99 ? '99+' : unread}
-                      </div>
-                    )}
+                    {unread > 0 && <Badge count={unread} />}
                   </motion.div>
                 );
               })}
@@ -264,11 +261,7 @@ export default function TrainerAthletesListScreen() {
                     whileTap={{ scale: 0.97 }}
                     className="relative flex flex-col items-center gap-2 p-4 rounded-2xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors"
                   >
-                    {unread > 0 && (
-                      <div className="absolute top-2.5 right-2.5 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center z-10">
-                        {unread > 99 ? '99+' : unread}
-                      </div>
-                    )}
+                    {unread > 0 && <Badge count={unread} className="absolute top-2.5 right-2.5 z-10" />}
                     <ConfirmDeleteButton
                       variant="overlay"
                       label="Отвязать?"

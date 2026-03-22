@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useNavigate } from 'react-router';
-import { motion } from 'framer-motion';
+import AnimatedBlock from '@/components/ui/AnimatedBlock';
 import toast from 'react-hot-toast';
 import { profileApi, type ProfileData } from '@/api/profile';
 import type { UserRole } from '@/api/auth';
@@ -164,14 +164,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
   };
 
   return (
-    <motion.div
-      key="settings"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.15 }}
-      className="space-y-4"
-    >
+    <AnimatedBlock key="settings" className="space-y-4">
       <BottomSheet open={feedbackOpen} onClose={() => setFeedbackOpen(false)} emoji="💬" title="Написать нам">
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
@@ -309,7 +302,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
                   style={{
                     borderColor: genderField === val ? 'var(--color_primary_light)' : 'var(--color_border)',
                     background: genderField === val ? 'rgb(var(--color_primary_light_ch) / 0.15)' : 'var(--color_bg_input)',
-                    color: genderField === val ? 'white' : 'var(--color_text_muted)',
+                    color: genderField === val ? 'var(--color_primary_light)' : 'var(--color_text_muted)',
                   }}
                 >
                   {val === 'male' ? '👨 Мужской' : '👩 Женский'}
@@ -430,6 +423,6 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
       >
         Выйти из аккаунта
       </button>
-    </motion.div>
+    </AnimatedBlock>
   );
 }

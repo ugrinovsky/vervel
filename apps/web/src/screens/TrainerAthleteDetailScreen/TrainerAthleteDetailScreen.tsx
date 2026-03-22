@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
+import Badge from '@/components/ui/Badge';
 import FullScreenChat from '@/components/FullScreenChat/FullScreenChat';
 import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
@@ -251,11 +252,7 @@ export default function TrainerAthleteDetailScreen() {
           >
             <ChatBubbleLeftIcon className="w-4 h-4" />
             Чат
-            {unread > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center leading-none">
-                {unread > 99 ? '99+' : unread}
-              </span>
-            )}
+            {unread > 0 && <Badge count={unread} className="absolute -top-1.5 -right-1.5" />}
           </button>
         </motion.div>
 

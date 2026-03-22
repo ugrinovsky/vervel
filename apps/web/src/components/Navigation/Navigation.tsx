@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router';
 import { athleteRoutes, trainerRoutes, RouteItem } from '@/constants/routes';
 import { useAuth } from '@/contexts/AuthContext';
+import Badge from '@/components/ui/Badge';
 import { athleteApi } from '@/api/athlete';
 import { useTrainerUnreadCounts } from '@/hooks/useTrainerUnreadCounts';
 
@@ -104,9 +105,7 @@ function NavItem({ route, unread = 0 }: { route: RouteItem; unread?: number }) {
       <div className="relative">
         <route.icon className="w-6 h-6" strokeWidth={2} />
         {unread > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
-            {unread > 99 ? '99+' : unread}
-          </span>
+          <Badge count={unread} size="xs" className="absolute -top-1.5 -right-1.5" />
         )}
       </div>
     </NavLink>

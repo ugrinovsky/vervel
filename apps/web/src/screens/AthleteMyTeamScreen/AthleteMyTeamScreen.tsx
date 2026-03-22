@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
+import Badge from '@/components/ui/Badge';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import FullScreenChat from '@/components/FullScreenChat/FullScreenChat';
 import AiChat from '@/components/AiChat/AiChat';
@@ -269,11 +270,7 @@ export default function AthleteMyTeamScreen() {
                             disabled={openingChatFor === trainer.id}
                             className="relative text-xs"
                           >
-                            {trainerUnread > 0 && (
-                              <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
-                                {trainerUnread > 99 ? '99+' : trainerUnread}
-                              </span>
-                            )}
+                            {trainerUnread > 0 && <Badge count={trainerUnread} size="xs" className="absolute -top-1.5 -right-1.5" />}
                             <ChatBubbleLeftIcon className="w-3.5 h-3.5" />
                             Чат
                           </AccentButton>
@@ -323,11 +320,7 @@ export default function AthleteMyTeamScreen() {
                             disabled={openingChatFor === group.id}
                             className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--color_primary_light) text-white text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0"
                           >
-                            {groupUnread > 0 && (
-                              <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
-                                {groupUnread > 99 ? '99+' : groupUnread}
-                              </span>
-                            )}
+                            {groupUnread > 0 && <Badge count={groupUnread} size="xs" className="absolute -top-1.5 -right-1.5" />}
                             <ChatBubbleLeftIcon className="w-3.5 h-3.5" />
                             Чат
                           </button>

@@ -74,7 +74,9 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
       }
     };
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [chatId]);
 
   // Load older messages on scroll-up (cursor-based)
@@ -87,7 +89,10 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
     restoringScrollRef.current = true;
 
     try {
-      const res = await chatApi.getMessages(chatId, { limit: PAGE_SIZE, before_id: oldestIdRef.current });
+      const res = await chatApi.getMessages(chatId, {
+        limit: PAGE_SIZE,
+        before_id: oldestIdRef.current,
+      });
       const data = res.data.data;
       if (data.length === 0) {
         setHasOlder(false);
@@ -111,7 +116,9 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
     const sentinel = topSentinelRef.current;
     if (!sentinel || initialLoading) return;
     const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) loadOlderMessages(); },
+      ([entry]) => {
+        if (entry.isIntersecting) loadOlderMessages();
+      },
       { threshold: 0.1 }
     );
     observer.observe(sentinel);
@@ -239,7 +246,9 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
                 >
                   <div
                     className={`max-w-[75%] ${
-                      isCurrentUser ? 'bg-(--color_primary_light) text-white' : 'bg-(--color_bg_card_hover) text-white'
+                      isCurrentUser
+                        ? 'bg-(--color_primary_light) text-white'
+                        : 'bg-(--color_bg_card_hover) text-white'
                     } rounded-2xl px-4 py-2`}
                   >
                     {showSender && !isCurrentUser && (
@@ -248,7 +257,9 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
                       </div>
                     )}
                     <div className="text-sm break-words">{message.content}</div>
-                    <div className={`text-xs mt-1 ${isCurrentUser ? 'text-white/70' : 'text-(--color_text_muted)'}`}>
+                    <div
+                      className={`text-xs mt-1 ${isCurrentUser ? 'text-white/70' : 'text-(--color_text_muted)'}`}
+                    >
                       {formatTime(message.createdAt)}
                     </div>
                   </div>
@@ -261,7 +272,7 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-(--color_border) mb-4">
+      <div className="p-4 border-t border-(--color_border)">
         <div className="flex gap-2">
           <AppInput
             type="text"
@@ -283,7 +294,11 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
         </div>
       </div>
 
-      <WorkoutDetailSheet data={openPreview} open={!!openPreview} onClose={() => setOpenPreview(null)} />
+      <WorkoutDetailSheet
+        data={openPreview}
+        open={!!openPreview}
+        onClose={() => setOpenPreview(null)}
+      />
     </div>
   );
 }

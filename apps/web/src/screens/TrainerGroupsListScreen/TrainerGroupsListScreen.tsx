@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
+import Badge from '@/components/ui/Badge';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import AccentButton from '@/components/ui/AccentButton';
@@ -197,9 +198,7 @@ export default function TrainerGroupsListScreen() {
                     </div>
                     <div className="flex items-center gap-2 shrink-0 ml-2">
                       {unread > 0 && (
-                        <div className="min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center">
-                          {unread > 99 ? '99+' : unread}
-                        </div>
+                        <Badge count={unread} />
                       )}
                       <ConfirmDeleteButton
                         variant="overlay"

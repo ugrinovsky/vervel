@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import AnimatedBlock from '@/components/ui/AnimatedBlock';
 import toast from 'react-hot-toast';
 import { SparklesIcon } from '@heroicons/react/24/outline';
 import { aiApi } from '@/api/ai';
@@ -57,12 +57,8 @@ export default function WalletTab({ balance, inTrainerMode }: Props) {
   };
 
   return (
-    <motion.div
+    <AnimatedBlock
       key="wallet"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.15 }}
       className="space-y-4"
     >
       <AiChat open={aiChatOpen} onClose={() => setAiChatOpen(false)} />
@@ -197,6 +193,6 @@ export default function WalletTab({ balance, inTrainerMode }: Props) {
           )}
         </div>
       )}
-    </motion.div>
+    </AnimatedBlock>
   );
 }

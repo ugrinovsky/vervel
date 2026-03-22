@@ -6,6 +6,7 @@ import AvatarView from '@/components/AvatarView/AvatarView';
 import { avatarApi, type ZoneState } from '@/api/avatar';
 import { athleteApi } from '@/api/athlete';
 import { motion, AnimatePresence } from 'framer-motion';
+import AnimatedBlock from '@/components/ui/AnimatedBlock';
 import { useAuth } from '@/contexts/AuthContext';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
@@ -85,11 +86,7 @@ export default function AvatarScreen() {
         />
 
         {/* Greeting block */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full rounded-2xl p-4 mb-4 border border-(--color_primary_light)/30 bg-(--color_primary_light)/10"
-        >
+        <AnimatedBlock className="w-full rounded-2xl p-4 mb-4 border border-(--color_primary_light)/30 bg-(--color_primary_light)/10">
           <div className="flex items-center gap-3">
             <div className="text-2xl">
               {getCurrentHour() < 12 ? '☀️' : getCurrentHour() < 18 ? '🌤️' : '🌙'}
@@ -101,7 +98,7 @@ export default function AvatarScreen() {
               </div>
             </div>
           </div>
-        </motion.div>
+        </AnimatedBlock>
 
         <ScreenHint className="mb-4">
           Карта обновляется автоматически после каждой тренировки.{' '}
@@ -141,11 +138,7 @@ export default function AvatarScreen() {
           )}
         </AnimatePresence>
 
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.12 }}
-        >
+        <AnimatedBlock delay={0.12}>
           <AvatarView
             zones={zones}
             totalWorkouts={totalWorkouts}
@@ -153,7 +146,7 @@ export default function AvatarScreen() {
             loading={loading}
             gender={user?.gender ?? 'male'}
           />
-        </motion.div>
+        </AnimatedBlock>
       </div>
     </Screen>
   );
