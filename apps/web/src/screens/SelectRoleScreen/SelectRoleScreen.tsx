@@ -14,15 +14,14 @@ export default function SelectRoleScreen() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const token = searchParams.get('token');
   const userId = searchParams.get('userId');
 
   useEffect(() => {
-    if (!token || !userId) {
+    if (!userId) {
       toast.error('Недействительная ссылка');
       navigate('/login');
     }
-  }, [token, userId, navigate]);
+  }, [userId, navigate]);
 
   const toggleRole = (role: 'athlete' | 'trainer') => {
     setSelectedRoles((prev) => {
@@ -43,7 +42,7 @@ export default function SelectRoleScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!userId || !token) return;
+    if (!userId) return;
 
     setLoading(true);
     try {
@@ -52,7 +51,7 @@ export default function SelectRoleScreen() {
         role: getRole(),
       });
 
-      login(response.data.user, token);
+      login(response.data.user);
       toast.success('Добро пожаловать в Vervel!');
       navigate('/home');
     } catch {

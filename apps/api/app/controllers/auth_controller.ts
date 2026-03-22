@@ -12,6 +12,16 @@ import { AiBalanceService } from '#services/AiBalanceService';
 const disposableSet: Set<string> = new Set(disposableDomains);
 
 export default class AuthController {
+  private setAuthCookie(response: HttpContext['response'], tokenValue: string) {
+    response.cookie('auth_token', tokenValue, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      path: '/',
+    })
+  }
+
   public async login({ request, response }: HttpContext) {
     const ip = request.ip();
 
@@ -39,6 +49,7 @@ export default class AuthController {
       }
 
       const token = await User.accessTokens.create(user);
+      this.setAuthCookie(response, token.value!.release());
 
       return response.ok({
         user: {
@@ -49,7 +60,6 @@ export default class AuthController {
           gender: user.gender,
           themeHue: user.themeHue,
         },
-        token,
       });
     });
 
@@ -107,6 +117,7 @@ export default class AuthController {
         existing.role = 'both';
         await existing.save();
         const token = await User.accessTokens.create(existing);
+        this.setAuthCookie(response, token.value!.release());
         return response.ok({
           user: {
             id: existing.id,
@@ -116,7 +127,6 @@ export default class AuthController {
             gender: existing.gender,
             themeHue: existing.themeHue,
           },
-          token,
           upgraded: true,
         });
       }
@@ -164,6 +174,7 @@ export default class AuthController {
     }
 
     const token = await User.accessTokens.create(user);
+    this.setAuthCookie(response, token.value!.release());
 
     return response.created({
       user: {
@@ -174,7 +185,6 @@ export default class AuthController {
         gender: user.gender,
         themeHue: user.themeHue,
       },
-      token,
     });
   }
 
@@ -191,6 +201,7 @@ export default class AuthController {
       await User.accessTokens.delete(user, token.identifier);
     }
 
+    response.clearCookie('auth_token', { path: '/' });
     return response.ok({ message: 'Logged out' });
   }
 }

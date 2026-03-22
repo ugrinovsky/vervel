@@ -69,9 +69,8 @@ export default function RegisterScreen() {
         ...(gender ? { gender } : {}),
         ...(refId ? { refId: Number(refId) } : {}),
       });
-      const { user, token, upgraded } = response.data as any;
-      const tokenValue = typeof token === 'string' ? token : token?.token || '';
-      login(user, tokenValue);
+      const { user, upgraded } = response.data as any;
+      login(user);
       toast.success(upgraded ? `Роль обновлена. Добро пожаловать, ${user.fullName}!` : `Добро пожаловать, ${user.fullName}!`);
       navigate(inviteToken ? `/invite/${inviteToken}` : '/home');
     } catch (err: any) {

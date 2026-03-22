@@ -61,11 +61,11 @@ export default function VkIdButton() {
           const data = res.data;
 
           if (data.needsRole) {
-            navigate(`/select-role?token=${data.tempToken}&userId=${data.userId}`);
+            navigate(`/select-role?userId=${data.userId}`);
             return;
           }
 
-          login(data.user as any, data.token.token);
+          login(data.user as any);
         } catch {
           toast.error('Не удалось войти через VK');
         }

@@ -14,7 +14,6 @@ interface AuthUser {
 
 interface AuthContextValue {
   user: AuthUser | null;
-  token: string | null;
   isTrainer: boolean;
   isAthlete: boolean;
   /** Current active cabinet when role === 'both'. Otherwise matches the single role. */
@@ -23,7 +22,7 @@ interface AuthContextValue {
   balance: number | null;
   setBalance: (balance: number) => void;
   switchMode: () => void;
-  login: (user: AuthUser, token: string) => void;
+  login: (user: AuthUser) => void;
   logout: () => void;
 }
 
@@ -50,7 +49,6 @@ function getStoredMode(user: AuthUser | null): 'trainer' | 'athlete' {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const storedUser = getStoredUser();
   const [user, setUser] = useState<AuthUser | null>(storedUser);
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
   const [activeMode, setActiveMode] = useState<'trainer' | 'athlete'>(() => getStoredMode(storedUser));
   const [balance, setBalance] = useState<number | null>(storedUser?.balance ?? null);
 
@@ -61,11 +59,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (storedUser?.themeHue != null) ThemeController.apply(storedUser.themeHue);
   });
 
-  const login = useCallback((u: AuthUser, t: string) => {
+  const login = useCallback((u: AuthUser) => {
     localStorage.setItem('user', JSON.stringify(u));
-    localStorage.setItem('token', t);
     setUser(u);
-    setToken(t);
     if (u.balance !== undefined) setBalance(u.balance);
     ThemeController.apply(u.themeHue ?? ThemeController.getStored());
     // Reset mode to match role on login
@@ -76,10 +72,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     localStorage.removeItem('user');
-    localStorage.removeItem('token');
     localStorage.removeItem('activeMode');
     setUser(null);
-    setToken(null);
     setBalance(null);
     setActiveMode('trainer');
     ThemeController.reset();
@@ -96,7 +90,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
-      token,
       isTrainer: user?.role === 'trainer' || user?.role === 'both',
       isAthlete: user?.role === 'athlete' || user?.role === 'both',
       activeMode,
@@ -106,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
     }),
-    [user, token, activeMode, balance, switchMode, login, logout]
+    [user, activeMode, balance, switchMode, login, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

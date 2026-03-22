@@ -1,31 +1,20 @@
 import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useNavigate } from 'react-router';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import { privateApi } from '@/api/http/privateApi';
 
 export default function OAuthCallbackScreen() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { login } = useAuth();
 
   useEffect(() => {
-    const token = searchParams.get('token');
-
-    if (!token) {
-      toast.error('Ошибка авторизации');
-      navigate('/login');
-      return;
-    }
-
-    // Fetch user data with token
+    // Cookie was already set by the API redirect — just fetch the user profile
     const fetchUser = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/profile`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await privateApi.get('/profile');
 
-        login(response.data.data.user, token);
+        login(response.data.data.user);
         toast.success('Успешный вход!');
         navigate('/home');
       } catch (error) {
@@ -35,7 +24,7 @@ export default function OAuthCallbackScreen() {
     };
 
     fetchUser();
-  }, [searchParams, navigate, login]);
+  }, [navigate, login]);
 
   return (
     <div

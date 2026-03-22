@@ -100,10 +100,9 @@ export default function LoginScreen() {
 
     try {
       const response = await authApi.login({ email, password });
-      const { token, user } = response.data;
-      const tokenValue = typeof token === 'string' ? token : token?.token || '';
+      const { user } = response.data;
 
-      login(user, tokenValue);
+      login(user);
 
       toast.success(`Добро пожаловать, ${user.fullName}!`);
       navigate(inviteToken ? `/invite/${inviteToken}` : '/home');

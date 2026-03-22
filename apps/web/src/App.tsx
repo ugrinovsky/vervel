@@ -22,10 +22,10 @@ import 'tailwindcss';
 import './App.css';
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
-  const { token } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
 
-  if (!token) {
+  if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

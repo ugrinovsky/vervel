@@ -6,6 +6,16 @@ import { DateTime } from 'luxon'
 import env from '#start/env'
 
 export default class OAuthController {
+  private setAuthCookie(response: HttpContext['response'], tokenValue: string) {
+    response.cookie('auth_token', tokenValue, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 30,
+      path: '/',
+    })
+  }
+
   private getProviderConfig(provider: ProviderName) {
     if (provider === 'vk') {
       return {
@@ -202,20 +212,21 @@ export default class OAuthController {
 
       // Generate our access token
       const token = await User.accessTokens.create(user)
+      this.setAuthCookie(response, token.value!.release())
 
       // If user doesn't have role, redirect to role selection
       if (!user.role) {
         return response
           .redirect()
           .status(302)
-          .toPath(`/select-role?token=${token.value!.release()}&userId=${user.id}`)
+          .toPath(`/select-role?userId=${user.id}`)
       }
 
-      // User has role - redirect to app with token
+      // User has role - redirect to app
       return response
         .redirect()
         .status(302)
-        .toPath(`/auth/callback?token=${token.value!.release()}`)
+        .toPath(`/auth/callback`)
     } catch (error) {
       console.error('OAuth callback error:', error)
       return response
@@ -290,11 +301,11 @@ export default class OAuthController {
       }
 
       const token = await User.accessTokens.create(user)
+      this.setAuthCookie(response, token.value!.release())
 
       if (!user.role) {
         return response.ok({
           needsRole: true,
-          tempToken: token.value!.release(),
           userId: user.id,
         })
       }
@@ -307,7 +318,6 @@ export default class OAuthController {
           role: user.role,
           themeHue: user.themeHue,
         },
-        token,
       })
     } catch (error) {
       console.error('VK SDK login error:', error)
@@ -384,11 +394,11 @@ export default class OAuthController {
       }
 
       const token = await User.accessTokens.create(user)
+      this.setAuthCookie(response, token.value!.release())
 
       if (!user.role) {
         return response.ok({
           needsRole: true,
-          tempToken: token.value!.release(),
           userId: user.id,
         })
       }
@@ -401,7 +411,6 @@ export default class OAuthController {
           role: user.role,
           themeHue: user.themeHue,
         },
-        token,
       })
     } catch (error) {
       console.error('Yandex SDK login error:', error)

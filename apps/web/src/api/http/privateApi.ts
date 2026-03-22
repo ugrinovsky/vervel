@@ -1,16 +1,5 @@
 import { createApi } from './baseApi';
 
+// withCredentials is set in baseApi — the auth_token httpOnly cookie
+// is sent automatically on every request to the API.
 export const privateApi = createApi();
-
-privateApi.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
