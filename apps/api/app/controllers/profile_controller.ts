@@ -72,7 +72,12 @@ export default class ProfileController {
       if (specializations !== undefined) user.specializations = Array.isArray(specializations) ? specializations : null;
       if (education !== undefined) user.education = education || null;
       if (gender !== undefined) user.gender = gender === 'male' || gender === 'female' ? gender : null;
-      if (themeHue !== undefined) user.themeHue = Number.isInteger(Number(themeHue)) ? Number(themeHue) : null;
+      if (themeHue !== undefined) {
+        const n = Number(themeHue);
+        const isValidHue = Number.isInteger(n) && n >= 0 && n <= 359;
+        const isSpecial = n === -1 || n === -2 || n === -3; // dark / light / auto
+        user.themeHue = isValidHue || isSpecial ? n : null;
+      }
       if (donatePhone !== undefined) user.donatePhone = donatePhone || null;
       if (donateCard !== undefined) user.donateCard = donateCard || null;
       if (donateYookassaLink !== undefined) user.donateYookassaLink = donateYookassaLink || null;
@@ -93,6 +98,7 @@ export default class ProfileController {
             education: user.education,
             photoUrl: user.photoUrl,
             createdAt: user.createdAt,
+            themeHue: user.themeHue,
           },
         },
       });

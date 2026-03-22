@@ -19,6 +19,16 @@ import { getCurrentHour } from '@/utils/date';
 export const DEFAULT_HUE = 175;
 export type SpecialTheme = 'dark' | 'light' | 'auto';
 
+/** Sentinel values stored in theme_hue DB column for special themes */
+export const SPECIAL_HUE = { dark: -1, light: -2, auto: -3 } as const;
+
+function hueToSpecial(hue: number): SpecialTheme | null {
+  if (hue === SPECIAL_HUE.dark) return 'dark';
+  if (hue === SPECIAL_HUE.light) return 'light';
+  if (hue === SPECIAL_HUE.auto) return 'auto';
+  return null;
+}
+
 export const THEME_PRESETS = [
   { label: 'Коралловый', hue: 8 },
   { label: 'Янтарный', hue: 38 },
@@ -239,17 +249,18 @@ export const ThemeController = {
   },
 
   /**
-   * Apply hue theme + sync localStorage.
+   * Apply theme from DB value (hue 0–359 or sentinel -1/-2/-3).
    * Used by AuthContext on login/restore.
    */
   apply(hue: number): void {
     const root = document.documentElement;
-    const special = this.getStoredSpecial();
-    if (special === 'auto') {
-      applySpecialTheme(root, this._getAutoResolved());
-    } else if (special) {
-      applySpecialTheme(root, special);
+    const special = hueToSpecial(hue);
+    if (special) {
+      localStorage.setItem('themeSpecial', special);
+      const toApply = special === 'auto' ? this._getAutoResolved() : special;
+      applySpecialTheme(root, toApply);
     } else {
+      localStorage.removeItem('themeSpecial');
       applyHueTheme(root, hue);
     }
     this._syncLocalStorage(hue);
@@ -274,13 +285,18 @@ export const ThemeController = {
 
   /**
    * Apply a special standalone theme (dark / light / auto).
-   * Saves to localStorage immediately.
+   * Saves to localStorage + debounced API save via sentinel hue.
    */
   changeSpecial(type: SpecialTheme): void {
     localStorage.setItem('themeSpecial', type);
     const toApply = type === 'auto' ? this._getAutoResolved() : type;
     applySpecialTheme(document.documentElement, toApply);
+    this._syncLocalStorage(SPECIAL_HUE[type]);
     document.dispatchEvent(new CustomEvent('themechange'));
+    if (_debounceTimer) clearTimeout(_debounceTimer);
+    _debounceTimer = setTimeout(() => {
+      profileApi.updateProfile({ themeHue: SPECIAL_HUE[type] }).catch(() => {});
+    }, 500);
   },
 
   /** Reset to default hue theme and clear special theme. Used on logout. */
