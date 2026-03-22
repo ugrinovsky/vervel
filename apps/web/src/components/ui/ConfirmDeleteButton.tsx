@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useId } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+
+const CONFIRM_EVENT = 'confirm-delete:open';
 import { TrashIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
 
 interface Props {
@@ -28,7 +31,23 @@ export default function ConfirmDeleteButton({
   overlayLayout = 'row',
   className = '',
 }: Props) {
+  const id = useId();
   const [confirming, setConfirming] = useState(false);
+
+  // Reset when another confirm button opens
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if ((e as CustomEvent).detail !== id) setConfirming(false);
+    };
+    window.addEventListener(CONFIRM_EVENT, handler);
+    return () => window.removeEventListener(CONFIRM_EVENT, handler);
+  }, [id]);
+
+  const startConfirming = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setConfirming(true);
+    window.dispatchEvent(new CustomEvent(CONFIRM_EVENT, { detail: id }));
+  };
 
   /* ── inline variant ── */
   if (variant === 'inline') {
@@ -58,7 +77,7 @@ export default function ConfirmDeleteButton({
     return (
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); setConfirming(true); }}
+        onClick={startConfirming}
         className={`text-white/30 hover:text-red-400 transition-colors ${className}`}
       >
         {icon === 'trash' ? <TrashIcon className="w-4 h-4" /> : <XMarkIcon className="w-4 h-4" />}
@@ -71,63 +90,52 @@ export default function ConfirmDeleteButton({
     <>
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); setConfirming(true); }}
+        onClick={startConfirming}
         className={`text-(--color_text_muted) hover:text-red-400 transition-colors p-1 ${className}`}
       >
         {icon === 'trash' ? <TrashIcon className="w-4 h-4" /> : <XMarkIcon className="w-4 h-4" />}
       </button>
 
-      {confirming && (
-        <div
-          className={`absolute inset-0 ${overlayRounded} bg-black/45 backdrop-blur-sm z-10 flex items-center justify-center gap-3 ${
-            overlayLayout === 'column' ? 'flex-col gap-2' : ''
-          }`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <span className={`text-red-400 font-medium ${overlayLayout === 'column' ? 'text-xs' : 'text-sm'}`}>
-            {label}
-          </span>
-          {overlayLayout === 'column' ? (
+      <AnimatePresence>
+        {confirming && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.92 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            className={`absolute inset-0 ${overlayRounded} bg-black/30 backdrop-blur-sm z-10 border border-red-500/50 flex items-center justify-center gap-2 ${
+              overlayLayout === 'column' ? 'flex-col' : ''
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className={`text-[white] font-medium ${overlayLayout === 'column' ? 'text-xs' : 'text-sm'}`}>
+              {label}
+            </span>
             <div className="flex gap-2">
-              <button
+              <motion.button
                 type="button"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 }}
                 onClick={() => { onConfirm(); setConfirming(false); }}
-                className="p-1.5 text-red-400 hover:text-red-300 transition-colors"
-                title="Да"
+                className="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/80 hover:bg-red-500 text-[white] transition-colors"
               >
-                <CheckIcon className="w-5 h-5" />
-              </button>
-              <button
+                Да
+              </motion.button>
+              <motion.button
                 type="button"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.08 }}
                 onClick={() => setConfirming(false)}
-                className="p-1.5 text-white/60 hover:text-white transition-colors"
-                title="Отмена"
+                className="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 hover:bg-white/20 text-[white] transition-colors"
               >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
+                Нет
+              </motion.button>
             </div>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => { onConfirm(); setConfirming(false); }}
-                className="p-1.5 text-red-400 hover:text-red-300 transition-colors"
-                title="Да"
-              >
-                <CheckIcon className="w-5 h-5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirming(false)}
-                className="p-1.5 text-white/60 hover:text-white transition-colors"
-                title="Отмена"
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-            </>
-          )}
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

@@ -5,6 +5,7 @@ import type { ExerciseWithSets } from '@/types/Exercise';
 import { useEffect, useState } from 'react';
 import { ArrowUpIcon, ArrowDownIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
+import GhostButton from '@/components/ui/GhostButton';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
 
 interface Props {
@@ -161,13 +162,10 @@ export default function ExerciseDrawer({ open, exercise, workoutType = 'bodybuil
         {/* Replace exercise */}
         {allowReplace && (
           <>
-            <button
-              onClick={() => setReplacerOpen(true)}
-              className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-white/20 text-white/50 hover:text-white hover:border-white/40 text-sm transition-colors"
-            >
+            <GhostButton onClick={() => setReplacerOpen(true)}>
               <ArrowsRightLeftIcon className="w-4 h-4" />
               Сменить упражнение
-            </button>
+            </GhostButton>
             <ExercisePicker
               open={replacerOpen}
               onClose={() => setReplacerOpen(false)}

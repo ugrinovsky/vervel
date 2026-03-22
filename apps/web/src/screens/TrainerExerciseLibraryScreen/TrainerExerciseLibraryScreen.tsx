@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BookOpenIcon } from '@heroicons/react/24/outline';
 import Screen from '@/components/Screen/Screen';
@@ -29,9 +29,20 @@ export default function TrainerExerciseLibraryScreen() {
   } = useExerciseFilters(exercises);
 
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const filterBarRef = useRef<HTMLDivElement>(null);
+  const [filterBarHeight, setFilterBarHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    const el = filterBarRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setFilterBarHeight(el.offsetHeight));
+    ro.observe(el);
+    setFilterBarHeight(el.offsetHeight);
+    return () => ro.disconnect();
+  }, []);
 
   const filterKey = `${search}|${categoryFilter}|${zoneFilter}`;
-  const { visible, sentinelRef, hasMore, isPending } = useInfiniteScroll(filtered, filterKey);
+  const { visible, sentinelRef, hasMore } = useInfiniteScroll(filtered, filterKey);
 
   // Scroll to top when filter chip changes
   useEffect(() => {
@@ -39,7 +50,7 @@ export default function TrainerExerciseLibraryScreen() {
   }, [categoryFilter, zoneFilter]);
 
   return (
-    <Screen className={`trainer-exercise-library-screen${isPending ? ' !overflow-hidden' : ''}`}>
+    <Screen className="trainer-exercise-library-screen">
       <div className="flex flex-col w-full">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <ScreenHeader
@@ -100,12 +111,21 @@ export default function TrainerExerciseLibraryScreen() {
           {hasMore && <div ref={sentinelRef} className="h-8" />}
         </motion.div>
 
-        {/* Filter bar — sticky above nav */}
+        {/* Placeholder occupies space when filter bar is fixed */}
+        {hasMore && filterBarHeight > 0 && <div style={{ height: filterBarHeight }} />}
+
+        {/* Filter bar — fixed while more items exist (prevents sticky flicker on load),
+            sticky once at the last batch (allows natural unstick at end of list) */}
         <div
-          className="px-4 pt-4 pb-3 sticky z-10 border-t border-(--color_border)"
+          ref={filterBarRef}
+          className="px-4 pt-4 pb-3 z-10 border-t border-(--color_border)"
           style={{
-            bottom: 0,
-            background: 'linear-gradient(to top, rgb(var(--color_primary_ch) / 0.4) 0%, rgb(var(--color_primary_dark_ch) / 0.3) 50%, rgb(var(--color_primary_dark_ch) / 0.1) 100%)',
+            position: hasMore ? 'fixed' : 'sticky',
+            bottom: hasMore
+              ? 'calc(var(--nav-height) + env(safe-area-inset-bottom, 0px))'
+              : 0,
+            ...(hasMore ? { left: 0, right: 0, maxWidth: '798px', marginLeft: 'auto', marginRight: 'auto' } : {}),
+            background: 'linear-gradient(to top, rgb(var(--color_primary_ch) / 0.95) 0%, rgb(var(--color_primary_dark_ch) / 0.85) 60%, rgb(var(--color_primary_dark_ch) / 0.5) 100%)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
           }}

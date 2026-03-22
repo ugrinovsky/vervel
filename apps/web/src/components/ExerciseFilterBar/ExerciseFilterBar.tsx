@@ -1,6 +1,7 @@
 import { useRef, useCallback, useLayoutEffect, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import AppInput from '@/components/ui/AppInput';
 import type { ExerciseCategory, MuscleZone } from '@/types/Exercise';
 import { getZoneLabel } from '@/util/zones';
 
@@ -101,6 +102,7 @@ function ChipRow({
       {pill && (
         <motion.div
           className="absolute top-0 bottom-0.5 rounded-full bg-(--color_primary_light) pointer-events-none"
+          initial={{ left: pill.left, width: pill.width }}
           animate={{ left: pill.left, width: pill.width }}
           transition={{ type: 'spring', stiffness: 400, damping: 35 }}
         />
@@ -116,8 +118,8 @@ function ChipRow({
           onClick={() => onChipClick(key)}
           className={`relative shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border outline-none z-10 transition-colors ${
             activeKey === key
-              ? 'text-white border-transparent'
-              : 'bg-black/25 text-white border-white/10 hover:bg-black/35 hover:border-white/20'
+              ? 'text-[white] border-transparent'
+              : 'bg-black/25 text-[white] border-white/10 hover:bg-black/35 hover:border-white/20'
           }`}
         >
           {label}
@@ -167,13 +169,12 @@ export default function ExerciseFilterBar({
   return (
     <div className="space-y-2.5">
       <div className="relative">
-        <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
-        <input
-          type="text"
+        <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none z-10" />
+        <AppInput
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder={`Поиск среди ${exerciseCount} упражнений...`}
-          className="w-full bg-(--color_bg_card) border border-(--color_border) rounded-xl pl-9 pr-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-white/30"
+          className="pl-9 py-2.5! bg-black/25! placeholder:text-white/30!"
         />
       </div>
 

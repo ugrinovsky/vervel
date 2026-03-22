@@ -1,6 +1,6 @@
 import ActivityScreen from '@/screens/ActivityScreen/ActivityScreen';
 import AnalyticsScreen from '@/screens/AnalyticsScreen/AnalyticsScreen';
-import AvatarScreen from '@/screens/AvatarScreen';
+import AvatarScreen from '@/screens/AvatarScreen/AvatarScreen';
 import ProfileScreen from '@/screens/ProfileScreen/ProfileScreen';
 import WorkoutForm from '@/screens/WorkoutForm/WorkoutForm';
 import StreakScreen from '@/screens/StreakScreen/StreakScreen';

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useTransition, RefObject } from 'react';
+import { useState, useEffect, useRef, useCallback, RefObject } from 'react';
 
 const PAGE_SIZE = 24;
 
@@ -18,7 +18,6 @@ export function useInfiniteScroll<T>(
   scrollRef?: RefObject<HTMLElement | null>,
 ) {
   const [count, setCount] = useState(PAGE_SIZE);
-  const [isPending, startTransition] = useTransition();
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Reset to first page when filters change
@@ -38,14 +37,13 @@ export function useInfiniteScroll<T>(
       observerRef.current = new IntersectionObserver(
         ([entry]) => {
           if (entry.isIntersecting) {
-            startTransition(() => setCount((c) => c + PAGE_SIZE));
+            setCount((c) => c + PAGE_SIZE);
           }
         },
         { root, rootMargin: '100px', threshold: 0 },
       );
       observerRef.current.observe(el);
     },
-    // scrollRef is stable (useRef identity doesn't change)
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
@@ -54,6 +52,5 @@ export function useInfiniteScroll<T>(
     visible: items.slice(0, count),
     sentinelRef,
     hasMore: count < items.length,
-    isPending,
   };
 }

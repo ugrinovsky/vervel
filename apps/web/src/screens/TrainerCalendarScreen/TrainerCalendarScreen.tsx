@@ -149,13 +149,13 @@ function DraggableWorkout({
       {...listeners}
       {...attributes}
       style={isIntro ? INTRO_STRIPE_STYLE : undefined}
-      className={`rounded-xl px-3 h-9 flex items-center justify-between gap-2 touch-none select-none cursor-grab active:cursor-grabbing overflow-hidden ${
+      className={`relative rounded-xl px-3 h-9 flex items-center justify-between gap-2 touch-none select-none cursor-grab active:cursor-grabbing overflow-hidden ${
         isEditing ? 'ring-2 ring-white/40' : ''
       } ${isIntro ? 'ring-1 ring-inset ring-sky-400/40' : (WORKOUT_TYPE_COLORS[workout.workoutData.type] ?? 'bg-(--color_bg_card)')}`}
     >
       <WorkoutCardInner workout={workout} nicknames={nicknames} />
       <div onPointerDown={(e) => e.stopPropagation()}>
-        <ConfirmDeleteButton onConfirm={onDelete} />
+        <ConfirmDeleteButton onConfirm={onDelete} variant="overlay" overlayRounded="rounded-xl" />
       </div>
     </motion.div>
   );

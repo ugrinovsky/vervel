@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
+import GhostButton from '@/components/ui/GhostButton';
 import { ExerciseDetailContent } from '@/components/ExerciseDetailSheet/ExerciseDetailSheet';
 import ExerciseFilterBar from '@/components/ExerciseFilterBar/ExerciseFilterBar';
 import type { Exercise, ExerciseFull, ExerciseWithSets } from '@/types/Exercise';
@@ -45,7 +46,7 @@ export default function ExercisePicker({ onSelect, workoutType, open: controlled
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const filterKey = `${search}|${categoryFilter}|${zoneFilter}`;
-  const { visible: visibleExercises, sentinelRef, hasMore, isPending } = useInfiniteScroll(filtered, filterKey, scrollContainerRef);
+  const { visible: visibleExercises, sentinelRef, hasMore } = useInfiniteScroll(filtered, filterKey, scrollContainerRef);
 
   const openDetail = (ex: Exercise) => {
     setSelected(ex);
@@ -123,13 +124,10 @@ export default function ExercisePicker({ onSelect, workoutType, open: controlled
   return (
     <>
       {controlledOpen === undefined && (
-        <button
-          onClick={() => setOpen(true)}
-          className="mt-6 w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-colors"
-        >
+        <GhostButton onClick={() => setOpen(true)} className="mt-6">
           <PlusIcon className="w-4 h-4" />
-          <span className="text-sm">Добавить упражнение</span>
-        </button>
+          Добавить упражнение
+        </GhostButton>
       )}
 
       <BottomSheet open={isOpen} onClose={handleClose} header={headerContent}>
@@ -145,7 +143,7 @@ export default function ExercisePicker({ onSelect, workoutType, open: controlled
               style={{ height: 'calc(90dvh - 140px)' }}
             >
               {/* Scrollable grid */}
-              <div ref={scrollContainerRef} className={`flex-1 min-h-0 pb-4 ${isPending ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+              <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 pb-4">
                 {/* Count */}
                 <p className="text-xs text-(--color_text_muted) mb-3">
                   {filtered.length} упражнений

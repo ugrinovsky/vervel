@@ -16,8 +16,10 @@ export function useExerciseFilters(exercises: Exercise[]) {
   }, [exercises]);
 
   const availableZones = useMemo<MuscleZone[]>(() => {
+    const ALL: MuscleZone[] = ['core', 'legs', 'glutes', 'shoulders', 'biceps', 'forearms', 'triceps', 'chests', 'back'];
+    if (exercises.length === 0) return ALL;
     const set = new Set(exercises.flatMap((e) => e.zones));
-    return [...set] as MuscleZone[];
+    return ALL.filter((z) => set.has(z));
   }, [exercises]);
 
   const filtered = useMemo(() => {

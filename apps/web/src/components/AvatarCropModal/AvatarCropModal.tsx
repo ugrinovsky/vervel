@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 import Cropper from 'react-easy-crop';
 import type { Area } from 'react-easy-crop';
 
@@ -37,6 +38,8 @@ export default function AvatarCropModal({ src, onConfirm, onClose }: Props) {
   const [zoom, setZoom] = useState(1);
   const [croppedArea, setCroppedArea] = useState<Area | null>(null);
   const [confirming, setConfirming] = useState(false);
+
+  useEscapeKey(onClose);
 
   const onCropComplete = useCallback((_: Area, pixelCrop: Area) => {
     setCroppedArea(pixelCrop);

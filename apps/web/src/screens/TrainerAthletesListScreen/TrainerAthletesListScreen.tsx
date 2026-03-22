@@ -11,6 +11,7 @@ import { trainerApi, type AthleteListItem } from '@/api/trainer';
 import { useTrainerUnreadCounts } from '@/hooks/useTrainerUnreadCounts';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import AccentButton from '@/components/ui/AccentButton';
+import Tabs from '@/components/ui/Tabs';
 import {
   PlusIcon,
   UsersIcon,
@@ -159,24 +160,16 @@ export default function TrainerAthletesListScreen() {
               Атлеты
             </h2>
             <div className="flex items-center gap-2">
-              <div className="flex items-center rounded-lg bg-(--color_bg_card) border border-(--color_border) overflow-hidden">
-                {(
-                  [
-                    { v: '2', icon: <Squares2X2Icon className="w-4 h-4" />, title: '2 колонки' },
-                    { v: '3', icon: <ViewColumnsIcon className="w-4 h-4" />, title: '3 колонки' },
-                    { v: 'list', icon: <Bars3Icon className="w-4 h-4" />, title: 'Список' },
-                  ] as const
-                ).map(({ v, icon, title }) => (
-                  <button
-                    key={v}
-                    onClick={() => setViewMode(v)}
-                    title={title}
-                    className={`p-1.5 transition-colors ${view === v ? 'bg-(--color_primary_light) text-white' : 'text-(--color_text_muted) hover:text-white'}`}
-                  >
-                    {icon}
-                  </button>
-                ))}
-              </div>
+              <Tabs
+                size="sm"
+                active={view}
+                onChange={setViewMode}
+                tabs={[
+                  { id: '2', label: <Squares2X2Icon className="w-4 h-4" /> },
+                  { id: '3', label: <ViewColumnsIcon className="w-4 h-4" /> },
+                  { id: 'list', label: <Bars3Icon className="w-4 h-4" /> },
+                ]}
+              />
               <AccentButton size="sm" onClick={() => setShowAddDrawer(true)}>
                 <PlusIcon className="w-4 h-4" />
                 Добавить

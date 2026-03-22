@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
+import Tabs from '@/components/ui/Tabs';
 import QrScanner from '@/components/QrScanner/QrScanner';
 import { trainerApi } from '@/api/trainer';
 import AccentButton from '@/components/ui/AccentButton';
@@ -132,31 +133,16 @@ export default function AddAthleteDrawer({ open, onClose, onAdded }: Props) {
     }
   };
 
-  const tabs: { key: Tab; label: string }[] = [
-    { key: 'email', label: 'По email' },
-    { key: 'invite', label: 'Ссылка' },
-    { key: 'qr', label: 'QR-код' },
+  const tabs = [
+    { id: 'email' as Tab, label: 'По email' },
+    { id: 'invite' as Tab, label: 'Ссылка' },
+    { id: 'qr' as Tab, label: 'QR-код' },
   ];
 
   return (
     <BottomSheet open={open} onClose={onClose} title="Добавить атлета" emoji="➕">
       <div className="space-y-4">
-        {/* Tabs */}
-        <div className="flex gap-2">
-          {tabs.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
-                tab === t.key
-                  ? 'bg-(--color_primary_light) text-white'
-                  : 'bg-(--color_bg_card_hover) text-(--color_text_muted) hover:text-white'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <Tabs tabs={tabs} active={tab} onChange={setTab} />
 
         {/* Email tab */}
         {tab === 'email' && (

@@ -13,7 +13,7 @@ import TrainerPersonalScreen from '@/screens/TrainerPersonalScreen/TrainerPerson
 import TrainerPublicProfileScreen from '@/screens/TrainerPublicProfileScreen/TrainerPublicProfileScreen';
 import InviteScreen from '@/screens/InviteScreen/InviteScreen';
 import DocsScreen from '@/screens/DocsScreen/DocsScreen';
-import AvatarScreen from '@/screens/AvatarScreen';
+import AvatarScreen from '@/screens/AvatarScreen/AvatarScreen';
 import LandingScreen from '@/screens/LandingScreen/LandingScreen';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { useAchievementToast } from '@/hooks/useAchievementToast';

@@ -1,9 +1,10 @@
+import { type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { useId } from 'react';
 
 interface Tab<T extends string> {
   id: T;
-  label: string;
+  label: ReactNode;
 }
 
 interface Props<T extends string> {
@@ -11,31 +12,40 @@ interface Props<T extends string> {
   active: T;
   onChange: (id: T) => void;
   className?: string;
+  /** 'md' (default) — with outer padding and gap; 'sm' — seamless compact icon toggle */
+  size?: 'md' | 'sm';
 }
 
-export default function Tabs<T extends string>({ tabs, active, onChange, className = '' }: Props<T>) {
+export default function Tabs<T extends string>({ tabs, active, onChange, className = '', size = 'md' }: Props<T>) {
   const layoutId = useId();
+  const isCompact = size === 'sm';
 
   return (
     <motion.div
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
-      className={`flex gap-1 bg-(--color_bg_card) rounded-2xl p-1 border border-(--color_border) ${className}`}
+      className={
+        isCompact
+          ? `flex items-center rounded-lg bg-(--color_bg_card) border border-(--color_border) overflow-hidden ${className}`
+          : `flex gap-1 bg-(--color_bg_card) rounded-2xl p-1 border border-(--color_border) ${className}`
+      }
     >
       {tabs.map((tab) => (
         <button
           key={tab.id}
           onClick={() => onChange(tab.id)}
           style={active === tab.id ? { color: 'white' } : undefined}
-          className={`relative flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium transition-colors outline-none ${
-            active === tab.id ? '' : 'text-(--color_text_muted) hover:text-white'
-          }`}
+          className={
+            isCompact
+              ? `relative flex items-center justify-center p-1.5 transition-colors outline-none ${active === tab.id ? '' : 'text-(--color_text_muted) hover:text-white'}`
+              : `relative flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium transition-colors outline-none ${active === tab.id ? '' : 'text-(--color_text_muted) hover:text-white'}`
+          }
         >
           {active === tab.id && (
             <motion.span
               layoutId={layoutId}
-              className="absolute inset-0 rounded-xl bg-(--color_primary_light) shadow-sm"
+              className={isCompact ? 'absolute inset-0 bg-(--color_primary_light)' : 'absolute inset-0 rounded-xl bg-(--color_primary_light) shadow-sm'}
               transition={{ type: 'spring', stiffness: 400, damping: 35 }}
             />
           )}

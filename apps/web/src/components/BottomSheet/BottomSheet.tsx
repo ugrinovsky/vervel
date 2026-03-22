@@ -1,4 +1,5 @@
 import { type PropsWithChildren, type ReactNode, useEffect, useRef, useState } from 'react';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import CloseButton from '@/components/ui/CloseButton';
@@ -48,6 +49,8 @@ export default function BottomSheet({ open, onClose, title, emoji, header, child
     }
     return () => { document.body.style.overflow = ''; };
   }, [open]);
+
+  useEscapeKey(onClose, open);
 
   const headerContent = header ?? (
     <div className="flex items-center gap-2">

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ModalOverlayProps {
@@ -24,6 +25,8 @@ export default function ModalOverlay({
       document.body.style.overflow = '';
     };
   }, [open]);
+
+  useEscapeKey(onClose ?? (() => {}), open && !!onClose);
 
   return (
     <AnimatePresence>
