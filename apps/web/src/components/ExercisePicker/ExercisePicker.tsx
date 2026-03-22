@@ -23,18 +23,25 @@ function ExerciseCard({
   onQuickAdd: () => void;
 }) {
   const [imgError, setImgError] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
   return (
     <div className="flex flex-col rounded-xl overflow-hidden border border-(--color_border) bg-(--color_bg_card) hover:bg-(--color_bg_card_hover) transition-all text-left">
-      <button onClick={onClick} className="w-full aspect-video bg-black/30 overflow-hidden focus:outline-none">
+      <button onClick={onClick} className="w-full aspect-video bg-black/30 overflow-hidden focus:outline-none relative">
         {exercise.imageUrl && !imgError ? (
-          <img
-            src={exercise.imageUrl}
-            alt={exercise.title}
-            loading="lazy"
-            onError={() => setImgError(true)}
-            className="w-full h-full object-cover"
-          />
+          <>
+            {!imgLoaded && (
+              <div className="absolute inset-0 animate-pulse bg-white/8" />
+            )}
+            <img
+              src={exercise.imageUrl}
+              alt={exercise.title}
+              loading="lazy"
+              onError={() => setImgError(true)}
+              onLoad={() => setImgLoaded(true)}
+              className={`w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+            />
+          </>
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-indigo-900/60 to-purple-900/60">
             <span className="text-2xl font-bold text-white/20">{exercise.title[0]}</span>

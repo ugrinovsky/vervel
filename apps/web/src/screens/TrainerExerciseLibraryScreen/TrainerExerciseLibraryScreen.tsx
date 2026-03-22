@@ -26,6 +26,7 @@ const CATEGORY_TEXT_COLORS: Record<ExerciseCategory, string> = {
 
 function ExerciseCard({ exercise, onClick }: { exercise: Exercise; onClick: () => void }) {
   const [imgError, setImgError] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
   return (
     <button
@@ -33,15 +34,21 @@ function ExerciseCard({ exercise, onClick }: { exercise: Exercise; onClick: () =
       className="flex flex-col rounded-2xl overflow-hidden border border-white/10 bg-white/5 hover:bg-white/10 active:scale-[0.98] transition-all text-left w-full"
     >
       {/* Image */}
-      <div className="w-full aspect-3/2 bg-black/20 overflow-hidden">
+      <div className="w-full aspect-3/2 bg-black/20 overflow-hidden relative">
         {exercise.imageUrl && !imgError ? (
-          <img
-            src={exercise.imageUrl}
-            alt={exercise.title}
-            loading="lazy"
-            onError={() => setImgError(true)}
-            className="w-full h-full object-cover"
-          />
+          <>
+            {!imgLoaded && (
+              <div className="absolute inset-0 animate-pulse bg-white/8" />
+            )}
+            <img
+              src={exercise.imageUrl}
+              alt={exercise.title}
+              loading="lazy"
+              onError={() => setImgError(true)}
+              onLoad={() => setImgLoaded(true)}
+              className={`w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+            />
+          </>
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-900/50 to-purple-900/50">
             <span className="text-3xl font-black text-white/15">{exercise.title[0]}</span>

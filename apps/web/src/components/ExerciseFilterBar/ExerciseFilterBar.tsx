@@ -1,4 +1,5 @@
-import { useRef, useCallback, useLayoutEffect } from 'react';
+import { useRef, useCallback, useLayoutEffect, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import type { ExerciseCategory, MuscleZone } from '@/types/Exercise';
 import { getZoneLabel } from '@/util/zones';
@@ -36,7 +37,7 @@ function useScrollMask() {
     const atEnd = el.scrollLeft >= el.scrollWidth - el.clientWidth - 2;
     const mask = makeMask(atStart, atEnd);
     el.style.maskImage = mask;
-    el.style.webkitMaskImage = mask;
+    (el.style as any).webkitMaskImage = mask;
   }, []);
 
   useLayoutEffect(() => {
@@ -58,17 +59,33 @@ function useScrollMask() {
   return ref;
 }
 
-function FilterChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function FilterChip({ label, active, onClick, layoutId }: { label: string; active: boolean; onClick: () => void; layoutId: string }) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (active) {
+      btnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    }
+  }, [active]);
+
   return (
     <button
+      ref={btnRef}
       onClick={onClick}
-      className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
+      className={`relative shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border outline-none ${
         active
-          ? 'bg-(--color_primary_light) text-white border-transparent'
-          : 'bg-white/5 text-white/60 border-white/10 hover:text-white hover:border-white/30'
+          ? 'text-[white] border-transparent'
+          : 'bg-black/25 text-[white] border-white/10 hover:bg-black/35 hover:border-white/20'
       }`}
     >
-      {label}
+      {active && (
+        <motion.span
+          layoutId={layoutId}
+          className="absolute inset-0 rounded-full bg-(--color_primary_light)"
+          transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+        />
+      )}
+      <span className="relative z-10">{label}</span>
     </button>
   );
 }
@@ -114,29 +131,31 @@ export default function ExerciseFilterBar({
         />
       </div>
 
-      <div ref={catRef} className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
-        <FilterChip label="Все" active={!categoryFilter} onClick={() => onCategoryChange(null)} />
+      <motion.div layoutRoot ref={catRef} className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
+        <FilterChip label="Все" active={!categoryFilter} onClick={() => onCategoryChange(null)} layoutId="filter-cat" />
         {availableCategories.map((cat) => (
           <FilterChip
             key={cat}
             label={categoryLabels[cat]}
             active={categoryFilter === cat}
             onClick={() => onCategoryChange(categoryFilter === cat ? null : cat)}
+            layoutId="filter-cat"
           />
         ))}
-      </div>
+      </motion.div>
 
-      <div ref={zoneRef} className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
-        <FilterChip label="Все зоны" active={!zoneFilter} onClick={() => onZoneChange(null)} />
+      <motion.div layoutRoot ref={zoneRef} className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
+        <FilterChip label="Все зоны" active={!zoneFilter} onClick={() => onZoneChange(null)} layoutId="filter-zone" />
         {availableZones.map((zone) => (
           <FilterChip
             key={zone}
             label={getZoneLabel(zone)}
             active={zoneFilter === zone}
             onClick={() => onZoneChange(zoneFilter === zone ? null : zone)}
+            layoutId="filter-zone"
           />
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 }
