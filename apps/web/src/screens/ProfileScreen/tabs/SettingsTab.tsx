@@ -9,7 +9,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ThemeController, THEME_PRESETS, DEFAULT_HUE, type SpecialTheme } from '@/util/ThemeController';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import AccentButton from '@/components/ui/AccentButton';
+import GhostButton from '@/components/ui/GhostButton';
 import AppInput from '@/components/ui/AppInput';
+import ToggleGroup from '@/components/ui/ToggleGroup';
 
 const PWA_STEPS: Record<'ios' | 'android' | 'desktop', { hint: string; steps: React.ReactNode[] }> = {
   ios: {
@@ -167,18 +169,17 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
     <AnimatedBlock key="settings" className="space-y-4">
       <BottomSheet open={feedbackOpen} onClose={() => setFeedbackOpen(false)} emoji="💬" title="Написать нам">
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            {([['general', '💬 Общее'], ['bug', '🐛 Баг'], ['feature', '✨ Идея'], ['other', '📝 Другое']] as const).map(([val, label]) => (
-              <button
-                key={val}
-                type="button"
-                onClick={() => setFeedbackType(val)}
-                className={`py-2 rounded-xl text-xs font-medium transition-all border ${feedbackType === val ? 'bg-(--color_primary_light) text-white border-(--color_primary_light)' : 'bg-(--color_bg_input) text-(--color_text_muted) border-(--color_border) hover:text-white'}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <ToggleGroup
+            cols={2}
+            value={feedbackType}
+            onChange={setFeedbackType}
+            options={[
+              { value: 'general', label: '💬 Общее' },
+              { value: 'bug', label: '🐛 Баг' },
+              { value: 'feature', label: '✨ Идея' },
+              { value: 'other', label: '📝 Другое' },
+            ]}
+          />
           <textarea
             value={feedbackMessage}
             onChange={(e) => setFeedbackMessage(e.target.value)}
@@ -292,23 +293,15 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
           />
           <div>
             <label className="text-xs text-(--color_text_muted) mb-2 block">Пол</label>
-            <div className="grid grid-cols-2 gap-2">
-              {(['male', 'female'] as const).map((val) => (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => setGenderField(genderField === val ? null : val)}
-                  className="py-2.5 rounded-xl border text-sm font-medium transition-all"
-                  style={{
-                    borderColor: genderField === val ? 'var(--color_primary_light)' : 'var(--color_border)',
-                    background: genderField === val ? 'rgb(var(--color_primary_light_ch) / 0.15)' : 'var(--color_bg_input)',
-                    color: genderField === val ? 'var(--color_primary_light)' : 'var(--color_text_muted)',
-                  }}
-                >
-                  {val === 'male' ? '👨 Мужской' : '👩 Женский'}
-                </button>
-              ))}
-            </div>
+            <ToggleGroup
+              cols={2}
+              value={genderField}
+              onChange={(v) => setGenderField(genderField === v ? null : v)}
+              options={[
+                { value: 'male', label: '👨 Мужской' },
+                { value: 'female', label: '👩 Женский' },
+              ]}
+            />
           </div>
           <AccentButton
             onClick={handleSaveProfile}
@@ -342,13 +335,14 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Подтвердите пароль"
             />
-            <button
+            <AccentButton
               onClick={handleChangePassword}
               disabled={savingPassword || !currentPassword || !newPassword || !confirmPassword}
-              className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_bg_card_hover) text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+              loading={savingPassword}
+              loadingText="Сохранение..."
             >
-              {savingPassword ? 'Сохранение...' : 'Сменить пароль'}
-            </button>
+              Сменить пароль
+            </AccentButton>
           </div>
         </div>
       </div>
@@ -385,12 +379,9 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
       </div>
 
       {/* Feedback */}
-      <button
-        onClick={() => setFeedbackOpen(true)}
-        className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_bg_card) text-(--color_text_muted) border border-(--color_border) hover:bg-(--color_bg_card_hover) hover:text-white transition-colors"
-      >
+      <GhostButton variant="solid" onClick={() => setFeedbackOpen(true)} className="w-full">
         💬 Написать нам
-      </button>
+      </GhostButton>
 
       {/* Legal links */}
       <div className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)">
@@ -417,12 +408,9 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
       </div>
 
       {/* Logout */}
-      <button
-        onClick={handleLogout}
-        className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_bg_card) text-(--color_text_muted) border border-(--color_border) hover:bg-(--color_bg_card_hover) hover:text-white transition-colors"
-      >
+      <GhostButton variant="solid" onClick={handleLogout} className="w-full">
         Выйти из аккаунта
-      </button>
+      </GhostButton>
     </AnimatedBlock>
   );
 }

@@ -8,6 +8,7 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import AccentButton from '@/components/ui/AccentButton';
 import AppInput from '@/components/ui/AppInput';
+import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { trainerApi, type TrainerGroupItem, type UnreadCounts } from '@/api/trainer';
 import {
   PlusIcon,
@@ -22,7 +23,7 @@ export default function TrainerGroupsListScreen() {
   const [groups, setGroups] = useState<TrainerGroupItem[]>([]);
   const [unreadCounts, setUnreadCounts] = useState<UnreadCounts | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showGroupInput, setShowGroupInput] = useState(false);
+  const [showCreateSheet, setShowCreateSheet] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
 
   const loadData = async () => {
@@ -50,7 +51,7 @@ export default function TrainerGroupsListScreen() {
     try {
       await trainerApi.createGroup(newGroupName.trim());
       setNewGroupName('');
-      setShowGroupInput(false);
+      setShowCreateSheet(false);
       toast.success('Группа создана');
       loadData();
     } catch {
@@ -127,7 +128,7 @@ export default function TrainerGroupsListScreen() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-white">Все группы</h2>
             <AccentButton
-              onClick={() => setShowGroupInput(true)}
+              onClick={() => setShowCreateSheet(true)}
               size="sm"
             >
               <PlusIcon className="w-4 h-4" />
@@ -135,29 +136,7 @@ export default function TrainerGroupsListScreen() {
             </AccentButton>
           </div>
 
-          {showGroupInput && (
-            <div className="flex gap-2 mb-4">
-              <AppInput
-                type="text"
-                value={newGroupName}
-                onChange={(e) => setNewGroupName(e.target.value)}
-                placeholder="Название группы"
-                className="py-2 px-3"
-                onKeyDown={(e) => e.key === 'Enter' && handleCreateGroup()}
-                autoFocus
-              />
-              <AccentButton
-                onClick={handleCreateGroup}
-                disabled={!newGroupName.trim()}
-                size="sm"
-                className="px-4 py-2 rounded-xl"
-              >
-                OK
-              </AccentButton>
-            </div>
-          )}
-
-          {groups.length === 0 && !showGroupInput ? (
+          {groups.length === 0 ? (
             <div className="py-4 space-y-3">
               <div className="text-center">
                 <div className="text-3xl mb-2">👥</div>
@@ -213,6 +192,27 @@ export default function TrainerGroupsListScreen() {
           )}
         </motion.div>
       </div>
+
+      <BottomSheet
+        open={showCreateSheet}
+        onClose={() => { setShowCreateSheet(false); setNewGroupName(''); }}
+        emoji="👥"
+        title="Новая группа"
+      >
+        <div className="flex flex-col gap-3">
+          <AppInput
+            type="text"
+            value={newGroupName}
+            onChange={(e) => setNewGroupName(e.target.value)}
+            placeholder="Название группы"
+            onKeyDown={(e) => e.key === 'Enter' && handleCreateGroup()}
+            autoFocus
+          />
+          <AccentButton onClick={handleCreateGroup} disabled={!newGroupName.trim()}>
+            Создать группу
+          </AccentButton>
+        </div>
+      </BottomSheet>
     </Screen>
   );
 }

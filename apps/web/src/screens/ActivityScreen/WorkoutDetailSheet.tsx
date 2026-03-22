@@ -13,6 +13,7 @@ import { getWorkoutTypeLabel } from './utils';
 import { WOD_CONFIG, type WodType } from '@/constants/workoutTypes';
 import { getZoneLabel } from '@/util/zones';
 import toast from 'react-hot-toast';
+import GhostButton from '@/components/ui/GhostButton';
 import { PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import ExerciseDrawer from '@/screens/WorkoutForm/ExerciseDrawer';
 import type { ExerciseWithSets } from '@/types/Exercise';
@@ -489,13 +490,10 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate }: Props
                 onTimeChange={setEditTime}
               />
               <div className="flex gap-2">
-                <button
-                  onClick={handleCancelEdit}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm text-(--color_text_muted) border border-(--color_border) hover:text-white transition-colors"
-                >
+                <GhostButton variant="solid" onClick={handleCancelEdit} className="flex-1">
                   <XMarkIcon className="w-4 h-4" />
                   Отмена
-                </button>
+                </GhostButton>
                 <button
                   onClick={handleSaveWeights}
                   disabled={savingWeights}

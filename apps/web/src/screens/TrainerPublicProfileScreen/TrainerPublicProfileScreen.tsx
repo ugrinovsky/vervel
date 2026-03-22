@@ -8,6 +8,8 @@ import { profileApi, type TrainerPublicProfile } from '@/api/profile';
 import { athleteApi } from '@/api/athlete';
 import { ChatBubbleLeftIcon, ClipboardDocumentIcon, CheckIcon } from '@heroicons/react/24/outline';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
+import ListButton from '@/components/ui/ListButton';
+import ToggleGroup from '@/components/ui/ToggleGroup';
 import BackButton from '@/components/BackButton/BackButton';
 import AccentButton from '@/components/ui/AccentButton';
 import AppInput from '@/components/ui/AppInput';
@@ -66,14 +68,6 @@ export default function TrainerPublicProfileScreen() {
   const hasDonateDetails =
     profile?.donatePhone || profile?.donateCard || profile?.donateYookassaLink;
 
-  const initials = profile?.fullName
-    ? profile.fullName
-        .split(' ')
-        .map((w) => w[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-    : profile?.email?.[0]?.toUpperCase() || '?';
 
   if (!profile) return <Screen loading={loading} className="trainer-public-profile-screen" />;
 
@@ -177,24 +171,13 @@ export default function TrainerPublicProfileScreen() {
               <p className="text-xs text-(--color_text_muted) mb-3">
                 Выберите сумму или введите свою
               </p>
-              <div className="grid grid-cols-4 gap-2 mb-3">
-                {DONATION_AMOUNTS.map((amount) => (
-                  <button
-                    key={amount}
-                    onClick={() => {
-                      setSelectedAmount(amount);
-                      setCustomAmount('');
-                    }}
-                    className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
-                      selectedAmount === amount && !customAmount
-                        ? 'bg-(--color_primary_light) text-white'
-                        : 'bg-(--color_bg_card_hover) text-(--color_text_secondary) hover:text-white'
-                    }`}
-                  >
-                    {amount}₽
-                  </button>
-                ))}
-              </div>
+              <ToggleGroup
+                cols={4}
+                value={customAmount ? null : selectedAmount}
+                onChange={(v) => { setSelectedAmount(v); setCustomAmount(''); }}
+                options={DONATION_AMOUNTS.map((amount) => ({ value: amount, label: `${amount}₽` }))}
+                className="mb-3"
+              />
               <AppInput
                 type="number"
                 value={customAmount}
@@ -209,10 +192,7 @@ export default function TrainerPublicProfileScreen() {
               <div className="space-y-2">
                 {/* SBP */}
                 {profile.donatePhone && (
-                  <button
-                    onClick={() => copyToClipboard(profile.donatePhone!, 'phone')}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) hover:border-(--color_primary_light)/40 transition-colors group"
-                  >
+                  <ListButton variant="compact" onClick={() => copyToClipboard(profile.donatePhone!, 'phone')}>
                     <div className="text-left">
                       <p className="text-xs text-(--color_text_muted)">Перевод по СБП</p>
                       <p className="text-sm text-white font-medium">{profile.donatePhone}</p>
@@ -222,15 +202,12 @@ export default function TrainerPublicProfileScreen() {
                     ) : (
                       <ClipboardDocumentIcon className="w-4 h-4 text-(--color_text_muted) group-hover:text-white shrink-0 transition-colors" />
                     )}
-                  </button>
+                  </ListButton>
                 )}
 
                 {/* Card */}
                 {profile.donateCard && (
-                  <button
-                    onClick={() => copyToClipboard(profile.donateCard!, 'card')}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) hover:border-(--color_primary_light)/40 transition-colors group"
-                  >
+                  <ListButton variant="compact" onClick={() => copyToClipboard(profile.donateCard!, 'card')}>
                     <div className="text-left">
                       <p className="text-xs text-(--color_text_muted)">Номер карты</p>
                       <p className="text-sm text-white font-medium">{profile.donateCard}</p>
@@ -240,7 +217,7 @@ export default function TrainerPublicProfileScreen() {
                     ) : (
                       <ClipboardDocumentIcon className="w-4 h-4 text-(--color_text_muted) group-hover:text-white shrink-0 transition-colors" />
                     )}
-                  </button>
+                  </ListButton>
                 )}
 
                 {/* YooKassa link */}

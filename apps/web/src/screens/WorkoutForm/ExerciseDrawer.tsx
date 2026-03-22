@@ -217,12 +217,9 @@ export default function ExerciseDrawer({ open, exercise, workoutType = 'bodybuil
 
       {/* Save / Cancel */}
       <div className="flex gap-2 pt-4 border-t border-white/10 mt-4">
-        <button
-          onClick={onClose}
-          className="flex-1 py-3 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) text-(--color_text_muted) hover:text-white text-sm transition-colors"
-        >
+        <GhostButton variant="solid" onClick={onClose} className="flex-1">
           Отмена
-        </button>
+        </GhostButton>
         <AccentButton onClick={handleSave} className="flex-1 font-semibold">
           {workoutType === 'bodybuilding'
             ? `Сохранить${setsDetail.length > 0 ? ` (${setsDetail.length})` : ''}`

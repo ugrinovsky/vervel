@@ -18,6 +18,7 @@ import AiWorkoutGenerator from '@/components/AiWorkoutGenerator/AiWorkoutGenerat
 import AiWorkoutRecognizer from '@/components/AiWorkoutRecognizer/AiWorkoutRecognizer';
 import { ChevronDownIcon, ChevronUpIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
+import GhostButton from '@/components/ui/GhostButton';
 import type { ExerciseData, WorkoutTemplate } from '@/api/trainer';
 import type { AiWorkoutResult } from '@/api/ai';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
@@ -307,13 +308,9 @@ export default function WorkoutFormBase({
           {submitLabel}
         </AccentButton>
         {onCancel && (
-          <button
-            onClick={onCancel}
-            disabled={saving}
-            className="px-5 py-3 rounded-xl bg-(--color_bg_card_hover) text-(--color_text_muted) hover:text-white border border-(--color_border) transition-colors disabled:opacity-50"
-          >
+          <GhostButton variant="solid" onClick={onCancel} disabled={saving}>
             Отмена
-          </button>
+          </GhostButton>
         )}
       </div>
     </div>

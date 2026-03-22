@@ -10,6 +10,7 @@ import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import type { TrainerProfileStats } from '@/api/trainer';
 import AvatarCropModal from '@/components/AvatarCropModal/AvatarCropModal';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
+import ListButton from '@/components/ui/ListButton';
 import { CameraIcon } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
 
@@ -213,26 +214,22 @@ export default function ProfileTab({ data, trainerStats }: Props) {
               <span className="text-(--color_text_muted) text-sm">→</span>
             </div>
           </div>
-          <button
-            onClick={() => setQrOpen(true)}
-            className="w-full flex items-center gap-4 p-5 bg-(--color_bg_card) rounded-2xl border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
-          >
+          <ListButton onClick={() => setQrOpen(true)}>
             <div className="text-3xl">📲</div>
             <div className="flex-1">
               <div className="text-sm font-medium text-white">QR-код для тренера</div>
               <div className="text-xs text-(--color_text_muted) mt-0.5">Покажите тренеру, чтобы он добавил вас в команду</div>
             </div>
             <div className="text-(--color_text_muted) text-sm">→</div>
-          </button>
+          </ListButton>
 
           {/* Referral link */}
-          <button
+          <ListButton
             onClick={() => {
               const url = `${window.location.origin}/register?ref=${data.user.id}`;
               navigator.clipboard.writeText(url);
               toast.success('Реферальная ссылка скопирована!');
             }}
-            className="w-full flex items-center gap-4 p-5 bg-(--color_bg_card) rounded-2xl border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
           >
             <div className="text-3xl">🎁</div>
             <div className="flex-1">
@@ -247,19 +244,18 @@ export default function ProfileTab({ data, trainerStats }: Props) {
               </div>
             </div>
             <div className="text-(--color_text_muted) text-sm">📋</div>
-          </button>
+          </ListButton>
         </>
       )}
 
 
       {/* Cabinet switcher */}
       {isBoth && (
-        <button
+        <ListButton
           onClick={() => {
             switchMode();
             navigate(activeMode === 'trainer' ? '/' : '/trainer');
           }}
-          className="w-full flex items-center gap-4 p-5 bg-(--color_bg_card) rounded-2xl border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
         >
           <div className="text-3xl">{activeMode === 'trainer' ? '🏃' : '🏋️'}</div>
           <div className="flex-1">
@@ -271,7 +267,7 @@ export default function ProfileTab({ data, trainerStats }: Props) {
             </div>
           </div>
           <div className="text-(--color_text_muted) text-sm">→</div>
-        </button>
+        </ListButton>
       )}
 
       {/* Become athlete */}

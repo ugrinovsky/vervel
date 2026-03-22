@@ -15,6 +15,7 @@ import {
   type ScheduledWorkout,
 } from '@/api/trainer';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import Tabs from '@/components/ui/Tabs';
 
 function buildWorkoutPreviewMessage(
   date: Date,
@@ -230,19 +231,16 @@ export default function WorkoutInlineForm({
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-1.5 mb-2.5 p-1 rounded-xl bg-(--color_bg_card_hover)">
-        {(['group', 'athlete'] as const).map((mode) => (
-          <button
-            key={mode}
-            onClick={() => switchMode(mode)}
-            className={`py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              assigneeMode === mode ? 'bg-(--color_primary_light) text-white' : 'text-(--color_text_muted) hover:text-white'
-            }`}
-          >
-            {mode === 'group' ? '👥 Группа' : '🏃 Персональная'}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        className="mb-2.5"
+        size="sm"
+        active={assigneeMode}
+        onChange={(v) => switchMode(v as 'group' | 'athlete')}
+        tabs={[
+          { id: 'group', label: '👥 Группа' },
+          { id: 'athlete', label: '🏃 Персональная' },
+        ]}
+      />
 
       {selectedAssignees.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-2">

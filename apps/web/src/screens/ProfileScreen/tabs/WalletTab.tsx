@@ -8,6 +8,8 @@ import { paymentsApi } from '@/api/payments';
 import { useScrollPagination } from '@/hooks/useScrollPagination';
 import AiChat from '@/components/AiChat/AiChat';
 import AccentButton from '@/components/ui/AccentButton';
+import ListButton from '@/components/ui/ListButton';
+import ToggleGroup from '@/components/ui/ToggleGroup';
 
 const TOP_UP_AMOUNTS = [100, 250, 500, 1000];
 
@@ -95,21 +97,13 @@ export default function WalletTab({ balance, inTrainerMode }: Props) {
         </div>
 
         {/* Top-up */}
-        <div className="grid grid-cols-4 gap-2 mb-3">
-          {TOP_UP_AMOUNTS.map((amount) => (
-            <button
-              key={amount}
-              onClick={() => setSelectedAmount(amount)}
-              className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
-                selectedAmount === amount
-                  ? 'bg-(--color_primary_light) text-white'
-                  : 'bg-(--color_bg_card_hover) text-(--color_text_muted) hover:text-white'
-              }`}
-            >
-              {amount}₽
-            </button>
-          ))}
-        </div>
+        <ToggleGroup
+          cols={4}
+          value={selectedAmount}
+          onChange={setSelectedAmount}
+          options={TOP_UP_AMOUNTS.map((amount) => ({ value: amount, label: `${amount}₽` }))}
+          className="mb-3"
+        />
         <AccentButton
           onClick={handleTopup}
           disabled={!selectedAmount || topping}
@@ -124,10 +118,7 @@ export default function WalletTab({ balance, inTrainerMode }: Props) {
       </div>
 
       {/* AI Chat button */}
-      <button
-        onClick={() => setAiChatOpen(true)}
-        className="w-full flex items-center gap-3 p-4 bg-(--color_bg_card) rounded-2xl border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
-      >
+      <ListButton onClick={() => setAiChatOpen(true)} className="gap-3 p-4">
         <div className="w-10 h-10 flex items-center justify-center rounded-full bg-emerald-500/20 shrink-0">
           <SparklesIcon className="w-5 h-5 text-emerald-400" />
         </div>
@@ -138,16 +129,17 @@ export default function WalletTab({ balance, inTrainerMode }: Props) {
           </p>
         </div>
         <span className="text-(--color_text_muted) text-sm">→</span>
-      </button>
+      </ListButton>
 
       {/* Transaction history */}
-      {(transactions.length > 0 || txLoading) && (
-        <div className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)">
+      <div className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)">
           <p className="text-sm font-semibold text-white mb-3">История операций</p>
           {txLoading && transactions.length === 0 ? (
             <div className="flex justify-center py-2">
               <div className="w-4 h-4 border-2 border-white/20 border-t-(--color_primary_light) rounded-full animate-spin" />
             </div>
+          ) : transactions.length === 0 ? (
+            <p className="text-xs text-(--color_text_muted) text-center py-2">Операций пока не было</p>
           ) : (
             <div className="space-y-2">
               {transactions.map((tx) => {
@@ -191,8 +183,7 @@ export default function WalletTab({ balance, inTrainerMode }: Props) {
               )}
             </div>
           )}
-        </div>
-      )}
+      </div>
     </AnimatedBlock>
   );
 }

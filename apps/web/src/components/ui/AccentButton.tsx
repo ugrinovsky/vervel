@@ -25,7 +25,7 @@ export default function AccentButton({
   const base =
     size === 'sm'
       ? 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium'
-      : 'flex items-center justify-center gap-1.5 w-full py-3 rounded-xl text-sm font-medium';
+      : 'flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-sm font-medium';
 
   return (
     <button

@@ -38,7 +38,7 @@ export default function Tabs<T extends string>({ tabs, active, onChange, classNa
           style={active === tab.id ? { color: 'white' } : undefined}
           className={
             isCompact
-              ? `relative flex items-center justify-center p-1.5 transition-colors outline-none ${active === tab.id ? '' : 'text-(--color_text_muted) hover:text-white'}`
+              ? `relative flex-1 flex items-center justify-center px-2 py-1.5 text-xs font-medium transition-colors outline-none ${active === tab.id ? '' : 'text-(--color_text_muted) hover:text-white'}`
               : `relative flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium transition-colors outline-none ${active === tab.id ? '' : 'text-(--color_text_muted) hover:text-white'}`
           }
         >

@@ -25,6 +25,8 @@ import { PlusIcon, CalendarDaysIcon, UserPlusIcon, PhoneIcon } from '@heroicons/
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
+import Tabs from '@/components/ui/Tabs';
+import GhostButton from '@/components/ui/GhostButton';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 
 const WORKOUT_TYPE_COLORS: Record<string, string> = {
@@ -324,13 +326,9 @@ function IntroSessionForm({
 
       {/* Buttons */}
       <div className="flex gap-2 pt-1">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 py-2.5 rounded-xl bg-(--color_bg_card_hover) text-(--color_text_muted) text-sm font-medium"
-        >
+        <GhostButton variant="solid" type="button" onClick={onCancel} className="flex-1">
           Отмена
-        </button>
+        </GhostButton>
         <button
           type="submit"
           disabled={saving || !clientName.trim()}
@@ -744,30 +742,31 @@ export default function TrainerCalendarScreen() {
         ) : selectedTime !== null ? (
           <>
             {/* Tabs */}
-            <div className="flex gap-2 mb-5">
-              <button
-                onClick={() => setSheetTab('workout')}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  sheetTab === 'workout'
-                    ? 'bg-(--color_primary_light) text-white'
-                    : 'bg-(--color_bg_card_hover) text-(--color_text_muted) hover:text-white'
-                }`}
-              >
-                💪 Тренировка
-              </button>
-              <button
-                onClick={() => setSheetTab('intro')}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ring-1 ${
-                  sheetTab === 'intro'
-                    ? 'ring-sky-400/50 text-sky-500'
-                    : 'ring-transparent text-(--color_text_muted) hover:text-white bg-(--color_bg_card_hover)'
-                }`}
-                style={sheetTab === 'intro' ? INTRO_STRIPE_STYLE : undefined}
-              >
-                <UserPlusIcon className="w-4 h-4 inline mr-1.5 -mt-0.5" />
-                Вводная
-              </button>
-            </div>
+            <Tabs
+              className="mb-5"
+              active={sheetTab}
+              onChange={(v) => setSheetTab(v as 'workout' | 'intro')}
+              tabs={[
+                {
+                  id: 'workout',
+                  label: (
+                    <span className="flex items-center gap-1.5">
+                      <CalendarDaysIcon className="w-4 h-4" />
+                      Тренировка
+                    </span>
+                  ),
+                },
+                {
+                  id: 'intro',
+                  label: (
+                    <span className="flex items-center gap-1.5">
+                      <UserPlusIcon className="w-4 h-4" />
+                      Вводная
+                    </span>
+                  ),
+                },
+              ]}
+            />
 
             {sheetTab === 'workout' ? (
               <WorkoutInlineForm
