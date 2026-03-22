@@ -69,10 +69,10 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
       .slice(0, DISPLAY.TOP_MUSCLES_COUNT);
   }, [data]);
 
-  const getTrendColor = (trend: MuscleData['trend']) => {
+  const getTrendClass = (trend: MuscleData['trend']): string => {
     switch (trend) {
       case 'up':
-        return 'text-green-400';
+        return 'text-emerald-400';
       case 'down':
         return 'text-red-400';
       case 'stable':
@@ -152,7 +152,7 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
                 <div>
                   <div className="font-medium text-white">{muscle.displayName}</div>
                   <div className="flex items-center gap-2 text-xs">
-                    <span className={getTrendColor(muscle.trend)}>
+                    <span className={getTrendClass(muscle.trend)}>
                       {getTrendIcon(muscle.trend, muscle.change)}
                     </span>
                     {viewMode === 'relative' && (

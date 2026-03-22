@@ -34,7 +34,7 @@ function SparklineTooltip({ active, payload }: any) {
   return (
     <div className="bg-gray-900/95 border border-white/10 rounded-lg px-2 py-1.5 text-xs shadow-xl">
       <p className="text-white/50">{payload[0]?.payload?.label}</p>
-      <p className="text-emerald-400 font-semibold">{formatVolume(payload[0]?.value)}</p>
+      <p className="font-semibold" style={{ color: 'var(--color_primary_icon)' }}>{formatVolume(payload[0]?.value)}</p>
     </div>
   );
 }
@@ -81,7 +81,7 @@ export default function StatsOverview({ period, data }: StatsOverviewProps) {
           <div className="text-xs text-(--color_text_muted) mt-0.5">объём</div>
         </div>
         <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) text-center">
-          <div className="text-2xl font-bold text-orange-400">{avgIntensity}%</div>
+          <div className="text-2xl font-bold" style={{ color: 'var(--color-rose-400)' }}>{avgIntensity}%</div>
           <div className="text-xs text-(--color_text_muted) mt-0.5">интенсивность</div>
         </div>
       </div>
@@ -94,7 +94,10 @@ export default function StatsOverview({ period, data }: StatsOverviewProps) {
               Тренд объёма
             </p>
             {volumeTrend !== 0 && (
-              <span className={`text-xs font-semibold ${volumeTrend > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              <span
+                className={`text-xs font-semibold ${volumeTrend > 0 ? '' : 'text-red-400'}`}
+                style={volumeTrend > 0 ? { color: 'var(--color_primary_icon)' } : {}}
+              >
                 {volumeTrend > 0 ? '↑' : '↓'} {Math.abs(volumeTrend)}%
               </span>
             )}

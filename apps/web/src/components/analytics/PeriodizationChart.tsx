@@ -54,7 +54,7 @@ function tsbToReadiness(tsb: number): number {
 
 /** Цвет и метка готовности (по теме приложения) */
 function readinessLevel(tsb: number): { label: string; color: string } {
-  if (tsb > 5) return { label: 'Готов к полной нагрузке', color: 'var(--color_primary_light)' };
+  if (tsb > 5) return { label: 'Готов к полной нагрузке', color: 'var(--color_primary_icon)' };
   if (tsb > -20) return { label: 'Умеренная нагрузка', color: '#fbbf24' };
   return { label: 'Нужен отдых', color: '#f87171' };
 }
@@ -63,7 +63,7 @@ function readinessLevel(tsb: number): { label: string; color: string } {
 function barColor(ratio: number) {
   if (ratio > 0.75) return '#f87171';
   if (ratio > 0.45) return '#fbbf24';
-  return 'var(--color_primary_light)';
+  return 'var(--color_primary_icon)';
 }
 
 /** Мезоциклы по провалам нагрузки */
@@ -284,17 +284,17 @@ function metricStatus(
   if (abbr === 'ATL') {
     if (value > 50) return { hint: 'Высокая усталость', hintColor: '#f87171' };
     if (value > 25) return { hint: 'Умеренная усталость', hintColor: '#fbbf24' };
-    return { hint: 'Хорошее восстановление', hintColor: 'var(--color_primary_light)' };
+    return { hint: 'Хорошее восстановление', hintColor: 'var(--color_primary_icon)' };
   }
   if (abbr === 'CTL') {
     if (value < 10) return { hint: 'Низкая тренированность', hintColor: '#f87171' };
     if (value < 25) return { hint: 'Форма развивается', hintColor: '#fbbf24' };
-    return { hint: 'Хорошая база', hintColor: 'var(--color_primary_light)' };
+    return { hint: 'Хорошая база', hintColor: 'var(--color_primary_icon)' };
   }
   // TSB
   if (value < -20) return { hint: 'Нужен отдых', hintColor: '#f87171' };
   if (value < 5) return { hint: 'Умеренная нагрузка', hintColor: '#fbbf24' };
-  return { hint: 'Готов к нагрузкам', hintColor: 'var(--color_primary_light)' };
+  return { hint: 'Готов к нагрузкам', hintColor: 'var(--color_primary_icon)' };
 }
 
 function CustomTooltip({ active, payload, label }: any) {
@@ -319,14 +319,14 @@ const TSB_ZONES = [
     label: 'Пик готовности',
     detail:
       'Вы отдохнули и свежи. Хороший момент для рекорда или соревнований. Если нет цели — добавьте нагрузку, иначе форма начнёт снижаться.',
-    color: 'var(--color_primary_light)',
+    color: 'var(--color_primary_icon)',
   },
   {
     range: '0 … +15',
     label: 'Оптимальная форма',
     detail:
       'Баланс между усталостью и тренированностью. Вы в хорошей форме и достаточно свежи для качественных тренировок.',
-    color: 'var(--color_primary_light)',
+    color: 'var(--color_primary_icon)',
   },
   {
     range: '−20 … 0',
@@ -357,7 +357,7 @@ export default function PeriodizationChart({ data }: Props) {
     const twoWeeksAgo = series[series.length - 15];
     const diff = twoWeeksAgo ? current.ctl - twoWeeksAgo.ctl : 0;
     if (diff > 1.5)
-      return { label: '▲ тренированность растёт', color: 'var(--color_primary_light)' };
+      return { label: '▲ тренированность растёт', color: 'var(--color_primary_icon)' };
     if (diff < -1.5) return { label: '▼ меньше тренировок', color: '#fbbf24' };
     return { label: '→ тренированность стабильна', color: '#fbbf24' };
   }, [series, current.ctl]);
@@ -422,7 +422,7 @@ export default function PeriodizationChart({ data }: Props) {
           abbr="CTL"
           label="Форма"
           value={current.ctl}
-          color="var(--color_primary_light)"
+          color="var(--color_primary_icon)"
           progress={current.ctl / 80}
           hint={ctlStatus.hint}
           hintColor={ctlStatus.hintColor}
@@ -503,13 +503,13 @@ export default function PeriodizationChart({ data }: Props) {
                   weekVsAvg > 10
                     ? '#f87171'
                     : weekVsAvg < -10
-                      ? 'var(--color_primary_light)'
+                      ? 'var(--color_primary_icon)'
                       : '#fbbf24',
                 backgroundColor:
                   weekVsAvg > 10
                     ? 'rgba(248,113,113,0.12)'
                     : weekVsAvg < -10
-                      ? 'rgb(var(--color_primary_light_ch) / 0.12)'
+                      ? 'color-mix(in srgb, var(--color_primary_icon) 12%, transparent)'
                       : 'rgba(251,191,36,0.12)',
               }}
             >
@@ -538,7 +538,7 @@ export default function PeriodizationChart({ data }: Props) {
                         height: `${Math.max(ratio * 100, 4)}%`,
                         backgroundColor: barColor(ratio),
                         opacity: w.load === 0 ? 0.3 : 0.85,
-                        outline: isNow ? '2px solid var(--color_primary_light)' : 'none',
+                        outline: isNow ? '2px solid var(--color_primary_icon)' : 'none',
                         outlineOffset: '1px',
                       }}
                     />
@@ -546,7 +546,7 @@ export default function PeriodizationChart({ data }: Props) {
                   {isNow && (
                     <div
                       className="absolute left-1/2 -translate-x-1/2 text-[8px] font-bold whitespace-nowrap"
-                      style={{ top: '100%', marginTop: '4px', color: 'var(--color_primary_light)' }}
+                      style={{ top: '100%', marginTop: '4px', color: 'var(--color_primary_icon)' }}
                     >
                       ▲ сейчас
                     </div>
@@ -567,8 +567,8 @@ export default function PeriodizationChart({ data }: Props) {
                   key={idx}
                   className="text-[10px] px-2 py-0.5 rounded-md border"
                   style={{
-                    borderColor: isActive ? 'var(--color_primary_light)' : 'var(--color_border)',
-                    color: isActive ? 'var(--color_primary_light)' : 'var(--color_text_muted)',
+                    borderColor: isActive ? 'var(--color_primary_icon)' : 'var(--color_border)',
+                    color: isActive ? 'var(--color_primary_icon)' : 'var(--color_text_muted)',
                     backgroundColor: isActive
                       ? 'rgb(var(--color_primary_light_ch) / 0.1)'
                       : 'transparent',
@@ -583,7 +583,7 @@ export default function PeriodizationChart({ data }: Props) {
 
         <div className="flex items-center gap-3">
           {[
-            { color: 'var(--color_primary_light)', label: 'восстановление' },
+            { color: 'var(--color_primary_icon)', label: 'восстановление' },
             { color: '#fbbf24', label: 'средняя' },
             { color: '#f87171', label: 'высокая' },
           ].map(({ color, label }) => (
@@ -626,7 +626,7 @@ export default function PeriodizationChart({ data }: Props) {
                 type="monotone"
                 dataKey="ctl"
                 name="CTL (форма)"
-                stroke="var(--color_primary_light)"
+                stroke="var(--color_primary_icon)"
                 strokeWidth={2}
                 dot={false}
               />

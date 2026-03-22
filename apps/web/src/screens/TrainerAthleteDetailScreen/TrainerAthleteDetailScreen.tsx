@@ -10,7 +10,7 @@ import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm'
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import AnalyticsCards from '@/components/analytics/AnalyticsCards';
 import AvatarView from '@/components/AvatarView/AvatarView';
-import ActivityCalendar, { type DayData } from '@/components/ActivityGraph/ActivityGraph';
+import Calendar, { type DayData } from '@/components/ui/Calendar';
 import MonthlyStats from '@/screens/ActivityScreen/MonthlyStats';
 import DayDetails from '@/screens/ActivityScreen/DayDetails';
 import AccentButton from '@/components/ui/AccentButton';
@@ -334,7 +334,8 @@ export default function TrainerAthleteDetailScreen() {
             {monthlyStatsData && <MonthlyStats stats={monthlyStatsData} />}
 
             <div className="mb-6">
-              <ActivityCalendar
+              <Calendar
+                mode="load"
                 selectedDate={selectedDate}
                 onSelect={(day) => setSelectedDate(day.date)}
                 onMonthChange={setCurrentMonth}

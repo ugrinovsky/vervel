@@ -2,7 +2,7 @@
 
 export const WORKOUT_TYPE_CONFIG: Record<string, string> = {
   crossfit:     'Кроссфит',
-  bodybuilding: 'Бодибилдинг',
+  bodybuilding: 'Силовая',
   cardio:       'Кардио',
 };
 

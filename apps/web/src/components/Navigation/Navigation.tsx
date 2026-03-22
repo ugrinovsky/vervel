@@ -1,6 +1,6 @@
 import './styles.css';
 import { useEffect, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router';
+import { NavLink, useNavigate, useLocation } from 'react-router';
 import { athleteRoutes, trainerRoutes, RouteItem } from '@/constants/routes';
 import { useAuth } from '@/contexts/AuthContext';
 import Badge from '@/components/ui/Badge';
@@ -127,10 +127,12 @@ function ActionButton({
   route: RouteItem;
   navigate: ReturnType<typeof useNavigate>;
 }) {
+  const location = useLocation();
+  const isActive = location.pathname === route.path;
   return (
     <button
       onClick={() => navigate(route.path)}
-      className={route.accent ? 'nav-item-accent' : 'nav-item-inactive'}
+      className={isActive ? 'nav-item-active' : route.accent ? 'nav-item-accent' : 'nav-item-inactive'}
     >
       <route.icon className="w-6 h-6" strokeWidth={route.accent ? 2.5 : 2} />
     </button>

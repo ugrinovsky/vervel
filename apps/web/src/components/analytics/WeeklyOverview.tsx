@@ -20,10 +20,10 @@ const WEEK_DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const MONTH_NAMES = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
 
 const TYPE_COLORS: Record<string, string> = {
-  bodybuilding: '#a78bfa',
-  crossfit: '#f87171',
-  cardio: '#38bdf8',
-  mixed: '#fbbf24',
+  bodybuilding: 'var(--color_primary_icon)',
+  crossfit: 'var(--color-rose-400)',
+  cardio: 'var(--color-sky-400)',
+  mixed: 'var(--color-amber-400)',
 };
 
 
@@ -156,7 +156,7 @@ export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
                   fill={
                     entry.intensity === 0
                       ? 'var(--color_bg_card_hover)'
-                      : (TYPE_COLORS[entry.type] ?? '#10b981')
+                      : (TYPE_COLORS[entry.type] ?? 'var(--color_primary_icon)')
                   }
                   fillOpacity={entry.intensity > 0 ? 0.85 : 1}
                 />
@@ -172,7 +172,7 @@ export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
               <div key={type} className="flex items-center gap-1.5">
                 <div
                   className="w-2.5 h-2.5 rounded-full"
-                  style={{ backgroundColor: TYPE_COLORS[type] ?? '#10b981' }}
+                  style={{ backgroundColor: TYPE_COLORS[type] ?? 'var(--color_primary_icon)' }}
                 />
                 <span className="text-xs text-(--color_text_muted)">{WORKOUT_TYPE_CONFIG[type] ?? type}</span>
               </div>
@@ -203,7 +203,7 @@ export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
                         className="h-full rounded-full"
                         style={{
                           width: `${pct}%`,
-                          backgroundColor: TYPE_COLORS[d.type] ?? '#10b981',
+                          backgroundColor: TYPE_COLORS[d.type] ?? 'var(--color_primary_icon)',
                           opacity: 0.7,
                         }}
                       />

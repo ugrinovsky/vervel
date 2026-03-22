@@ -84,15 +84,15 @@ export default function WeekdayChart({ data }: Props) {
       {/* Summary stats */}
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) text-center">
-          <div className="text-xl font-bold text-amber-400">{DAYS[favIdx]}</div>
+          <div className="text-xl font-bold" style={{ color: 'var(--color-yellow-400)' }}>{DAYS[favIdx]}</div>
           <div className="text-xs text-(--color_text_muted) mt-0.5">любимый день</div>
         </div>
         <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) text-center">
-          <div className="text-xl font-bold text-emerald-400">{weekdayLoad}</div>
+          <div className="text-xl font-bold" style={{ color: 'var(--color_primary_icon)' }}>{weekdayLoad}</div>
           <div className="text-xs text-(--color_text_muted) mt-0.5">пн–пт</div>
         </div>
         <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) text-center">
-          <div className="text-xl font-bold text-emerald-400">{weekendPct}%</div>
+          <div className="text-xl font-bold" style={{ color: 'var(--color_primary_icon)' }}>{weekendPct}%</div>
           <div className="text-xs text-(--color_text_muted) mt-0.5">сб–вс</div>
         </div>
       </div>
@@ -110,7 +110,7 @@ export default function WeekdayChart({ data }: Props) {
               {weekdayData.map((entry, i) => (
                 <Cell
                   key={i}
-                  fill="var(--color_primary_light)"
+                  fill="var(--color_primary_icon)"
                   fillOpacity={i === favIdx ? 1 : i >= 5 ? 0.7 : 0.35 + entry.ratio * 0.55}
                 />
               ))}
@@ -140,7 +140,7 @@ export default function WeekdayChart({ data }: Props) {
                       className="h-full rounded-full transition-all duration-500"
                       style={{
                         width: `${pct}%`,
-                        backgroundColor: 'var(--color_primary_light)',
+                        backgroundColor: 'var(--color_primary_icon)',
                         opacity: d.i === favIdx ? 1 : 0.6,
                       }}
                     />
@@ -162,7 +162,7 @@ export default function WeekdayChart({ data }: Props) {
         <span className="text-xl shrink-0">💡</span>
         <p className="text-xs text-(--color_text_muted) leading-relaxed">
           Чаще всего вы тренируетесь в{' '}
-          <span className="text-amber-400 font-semibold">{DAYS_FULL[favIdx]}</span>.{' '}
+          <span className="font-semibold" style={{ color: 'var(--color-yellow-400)' }}>{DAYS_FULL[favIdx]}</span>.{' '}
           {weekendPct > 50
             ? 'Большинство тренировок — на выходных. Попробуйте добавить будни для лучшего восстановления.'
             : weekendPct < 15

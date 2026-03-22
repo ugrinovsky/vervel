@@ -8,6 +8,7 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import AccentButton from '@/components/ui/AccentButton';
 import AppInput from '@/components/ui/AppInput';
+import Card, { cardClass } from '@/components/ui/Card';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { trainerApi, type TrainerGroupItem, type UnreadCounts } from '@/api/trainer';
 import {
@@ -16,7 +17,7 @@ import {
   UsersIcon,
   ChatBubbleLeftEllipsisIcon,
 } from '@heroicons/react/24/outline';
-import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
+import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
 
 export default function TrainerGroupsListScreen() {
   const navigate = useNavigate();
@@ -93,19 +94,19 @@ export default function TrainerGroupsListScreen() {
           animate={{ opacity: 1, y: 0 }}
           className="grid grid-cols-3 gap-3 mb-6"
         >
-          <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
+          <Card className="p-3 flex flex-col items-center gap-1.5">
             <UserGroupIcon className="w-5 h-5 text-(--color_primary_icon)" />
             <div className="text-xl font-bold text-white">{groups.length}</div>
             <div className="text-[11px] text-(--color_text_muted) text-center">Групп</div>
-          </div>
-          <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
+          </Card>
+          <Card className="p-3 flex flex-col items-center gap-1.5">
             <UsersIcon className="w-5 h-5 text-(--color_primary_icon)" />
             <div className="text-xl font-bold text-white">
               {groups.reduce((s, g) => s + g.athleteCount, 0)}
             </div>
             <div className="text-[11px] text-(--color_text_muted) text-center">Атлетов</div>
-          </div>
-          <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
+          </Card>
+          <Card className="p-3 flex flex-col items-center gap-1.5">
             <ChatBubbleLeftEllipsisIcon
               className={`w-5 h-5 ${(unreadCounts?.groups.reduce((s, g) => s + g.unread, 0) ?? 0) > 0 ? 'text-red-400' : 'text-(--color_text_muted)'}`}
             />
@@ -115,7 +116,7 @@ export default function TrainerGroupsListScreen() {
               {unreadCounts?.groups.reduce((s, g) => s + g.unread, 0) ?? 0}
             </div>
             <div className="text-[11px] text-(--color_text_muted) text-center">Новых сообщ.</div>
-          </div>
+          </Card>
         </motion.div>
 
         {/* Groups */}
@@ -123,7 +124,7 @@ export default function TrainerGroupsListScreen() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-[var(--color_bg_card)] rounded-2xl p-5 border border-[var(--color_border)] mb-6"
+          className={`${cardClass} rounded-2xl p-5 mb-6`}
         >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-white">Все группы</h2>
@@ -161,31 +162,31 @@ export default function TrainerGroupsListScreen() {
               {groups.map((group) => {
                 const unread = getGroupUnread(group.id);
                 return (
-                  <div
+                  <ConfirmDeleteWrapper
                     key={group.id}
-                    className="relative flex items-center justify-between p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors cursor-pointer"
-                    onClick={() => navigate(`/trainer/groups/${group.id}`)}
+                    onConfirm={() => handleDeleteGroup(group.id)}
+
+                    className="p-3 bg-(--color_bg_card_hover) w-full"
                   >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <UserGroupIcon className="w-5 h-5 text-(--color_primary_icon) shrink-0" />
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium text-white truncate">{group.name}</div>
-                        <div className="text-xs text-(--color_text_muted)">
-                          {group.athleteCount} атлетов
+                    <div
+                      className="flex items-center justify-between cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => navigate(`/trainer/groups/${group.id}`)}
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <UserGroupIcon className="w-5 h-5 text-(--color_primary_icon) shrink-0" />
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-white truncate">{group.name}</div>
+                          <div className="text-xs text-(--color_text_muted)">
+                            {group.athleteCount} атлетов
+                          </div>
                         </div>
                       </div>
+                      <div className="flex items-center gap-2 shrink-0 ml-2">
+                        {unread > 0 && <Badge count={unread} />}
+                        <ConfirmDeleteWrapper.Trigger />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-2">
-                      {unread > 0 && (
-                        <Badge count={unread} />
-                      )}
-                      <ConfirmDeleteButton
-                        variant="overlay"
-                        label="Удалить группу?"
-                        onConfirm={() => handleDeleteGroup(group.id)}
-                      />
-                    </div>
-                  </div>
+                  </ConfirmDeleteWrapper>
                 );
               })}
             </div>

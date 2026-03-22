@@ -1,7 +1,7 @@
-import { useState } from 'react';
 import type { Exercise, ExerciseCategory } from '@/types/Exercise';
 import { getZoneLabel } from '@/util/zones';
 import { CATEGORY_LABELS } from '@/components/ExerciseFilterBar/ExerciseFilterBar';
+import { useImageLoad } from '@/hooks/useImageLoad';
 
 /* ------------------------------------------------------------------ */
 /* Shared image block                                                   */
@@ -16,21 +16,20 @@ const CATEGORY_TEXT_COLORS: Record<ExerciseCategory, string> = {
 };
 
 function ExerciseImage({ exercise, aspectClass }: { exercise: Exercise; aspectClass: string }) {
-  const [imgError, setImgError] = useState(false);
-  const [imgLoaded, setImgLoaded] = useState(false);
+  const { loaded, error, onLoad, onError } = useImageLoad();
 
   return (
     <div className={`w-full ${aspectClass} bg-black/20 overflow-hidden relative`}>
-      {exercise.imageUrl && !imgError ? (
+      {exercise.imageUrl && !error ? (
         <>
-          {!imgLoaded && <div className="absolute inset-0 animate-pulse bg-white/8" />}
+          {!loaded && <div className="absolute inset-0 animate-pulse bg-white/8" />}
           <img
             src={exercise.imageUrl}
             alt={exercise.title}
             loading="lazy"
-            onError={() => setImgError(true)}
-            onLoad={() => setImgLoaded(true)}
-            className={`w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+            onError={onError}
+            onLoad={onLoad}
+            className={`w-full h-full object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
           />
         </>
       ) : (

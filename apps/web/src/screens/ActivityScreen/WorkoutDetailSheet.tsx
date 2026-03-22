@@ -14,6 +14,7 @@ import { WOD_CONFIG, type WodType } from '@/constants/workoutTypes';
 import { getZoneLabel } from '@/util/zones';
 import toast from 'react-hot-toast';
 import GhostButton from '@/components/ui/GhostButton';
+import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 import { PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import ExerciseDrawer from '@/screens/WorkoutForm/ExerciseDrawer';
 import type { ExerciseWithSets } from '@/types/Exercise';
@@ -128,12 +129,13 @@ function IntensityBar({ value }: { value: number }) {
 /* ─── Карточка упражнения ─────────────────────────────────────────── */
 
 function ExerciseCard({
-  ex, exerciseName, isEditing, onEditClick,
+  ex, exerciseName, isEditing, onEditClick, onDelete,
 }: {
   ex: FullWorkout['exercises'][number];
   exerciseName: string;
   isEditing: boolean;
   onEditClick?: () => void;
+  onDelete?: () => void;
 }) {
   const isInSuperset = !!ex.blockId;
   const isWod = ex.type === 'wod';
@@ -141,7 +143,7 @@ function ExerciseCard({
   const vol = isWod ? 0 : exerciseVolume(ex.sets);
 
   return (
-    <div className={`rounded-xl p-3 border space-y-2 ${isInSuperset ? 'bg-amber-500/10 border-amber-500/40' : 'bg-(--color_bg_card) border-(--color_border)'}`}>
+    <div className={`relative rounded-xl p-3 border space-y-2 ${isInSuperset ? 'bg-amber-500/10 border-amber-500/40' : 'bg-(--color_bg_card) border-(--color_border)'}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
           {isInSuperset && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 font-semibold shrink-0">СС</span>}
@@ -159,6 +161,9 @@ function ExerciseCard({
             >
               <PencilIcon className="w-3.5 h-3.5" />
             </button>
+          )}
+          {isEditing && onDelete && (
+            <ConfirmDeleteButton icon="trash" variant="overlay" onConfirm={onDelete} className="p-1" />
           )}
         </div>
       </div>
@@ -435,6 +440,36 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate }: Props
             )}
           </div>
 
+          {/* ── Режим редактирования ──────────────────────────────── */}
+          {isEditing && (
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <GhostButton variant="solid" onClick={handleCancelEdit} className="flex-1">
+                  <XMarkIcon className="w-4 h-4" />
+                  Отмена
+                </GhostButton>
+                <button
+                  onClick={handleSaveWeights}
+                  disabled={savingWeights}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium bg-emerald-500 text-black hover:bg-emerald-400 transition-colors disabled:opacity-50"
+                >
+                  <CheckIcon className="w-4 h-4" />
+                  {savingWeights ? 'Сохранение...' : 'Сохранить'}
+                </button>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
+                <PencilIcon className="w-4 h-4 shrink-0" />
+                Редактируйте дату, время, веса или замените упражнение
+              </div>
+              <WorkoutDateTimeRow
+                date={editDate}
+                time={editTime}
+                onDateChange={setEditDate}
+                onTimeChange={setEditTime}
+              />
+            </div>
+          )}
+
           {/* ── Интенсивность ──────────────────────────────────────── */}
           <div>
             <div className="flex items-center justify-between mb-1">
@@ -476,36 +511,6 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate }: Props
             </div>
           )}
 
-          {/* ── Режим редактирования ──────────────────────────────── */}
-          {isEditing && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
-                <PencilIcon className="w-4 h-4 shrink-0" />
-                Редактируйте дату, время, веса или замените упражнение
-              </div>
-              <WorkoutDateTimeRow
-                date={editDate}
-                time={editTime}
-                onDateChange={setEditDate}
-                onTimeChange={setEditTime}
-              />
-              <div className="flex gap-2">
-                <GhostButton variant="solid" onClick={handleCancelEdit} className="flex-1">
-                  <XMarkIcon className="w-4 h-4" />
-                  Отмена
-                </GhostButton>
-                <button
-                  onClick={handleSaveWeights}
-                  disabled={savingWeights}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium bg-emerald-500 text-black hover:bg-emerald-400 transition-colors disabled:opacity-50"
-                >
-                  <CheckIcon className="w-4 h-4" />
-                  {savingWeights ? 'Сохранение...' : 'Сохранить'}
-                </button>
-              </div>
-            </div>
-          )}
-
 
           {/* ── Упражнения ─────────────────────────────────────────── */}
           {fullWorkout.exercises.length > 0 && (
@@ -523,6 +528,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate }: Props
                         exerciseName={name}
                         isEditing={isEditing}
                         onEditClick={() => setEditingExIdx(i)}
+                        onDelete={isEditing ? () => setEditExercises((prev) => prev.filter((_, idx) => idx !== i)) : undefined}
                       />
                       {isEditing && i < arr.length - 1 && (
                         <div className="relative flex items-center h-7 pl-4 mb-2">

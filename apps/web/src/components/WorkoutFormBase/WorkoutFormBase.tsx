@@ -298,20 +298,20 @@ export default function WorkoutFormBase({
 
       {/* Actions */}
       <div className="flex gap-2 pt-1">
+        {onCancel && (
+          <GhostButton variant="solid" onClick={onCancel} disabled={saving}>
+            Отмена
+          </GhostButton>
+        )}
         <AccentButton
           onClick={handleSubmit}
-          disabled={saving}
+          disabled={saving || exercises.length === 0}
           loading={saving}
           loadingText="Сохранение..."
           className="flex-1 font-semibold"
         >
           {submitLabel}
         </AccentButton>
-        {onCancel && (
-          <GhostButton variant="solid" onClick={onCancel} disabled={saving}>
-            Отмена
-          </GhostButton>
-        )}
       </div>
     </div>
   );

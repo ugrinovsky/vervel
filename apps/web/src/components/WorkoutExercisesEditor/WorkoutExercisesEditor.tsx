@@ -179,7 +179,7 @@ export default function WorkoutExercisesEditor({
             return (
               <div key={i}>
                 <div
-                  className={`p-3 rounded-xl min-w-0 border transition-colors ${
+                  className={`relative p-3 rounded-xl min-w-0 border transition-colors ${
                     isInBlock
                       ? 'bg-amber-500/10 border-amber-500/40'
                       : 'bg-white/[0.07] border-white/10'
@@ -203,6 +203,7 @@ export default function WorkoutExercisesEditor({
                     </button>
                     <ConfirmDeleteButton
                       icon="x"
+                      variant="overlay"
                       onConfirm={() => removeExercise(i)}
                       className="shrink-0 mt-0.5"
                     />

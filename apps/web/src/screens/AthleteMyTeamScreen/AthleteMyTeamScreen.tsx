@@ -221,7 +221,7 @@ export default function AthleteMyTeamScreen() {
                     return (
                       <div
                         key={trainer.id}
-                        className="p-4 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors"
+                        className="p-4 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors border border-white/10"
                       >
                         {/* Top row: photo + name/specs */}
                         <div className="flex items-start gap-3 mb-3">

@@ -7,7 +7,7 @@ import { getWorkoutTypeLabel } from './utils';
 import WorkoutDetailSheet from './WorkoutDetailSheet';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
 import { workoutsApi } from '@/api/workouts';
-import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
+import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
 import toast from 'react-hot-toast';
 import AccentButton from '@/components/ui/AccentButton';
 
@@ -54,15 +54,8 @@ function WorkoutTile({
   const timeLabel = extractTime(workout.date);
   const fromTrainer = workout.scheduledWorkoutId != null;
 
-  return (
-    <div
-      onClick={onClick}
-      className={`relative w-full text-left rounded-xl p-4 border transition-colors cursor-pointer active:scale-[0.98] ${
-        isUpcoming
-          ? 'bg-(--color_bg_card) border-(--color_primary_light)/40 ring-1 ring-inset ring-(--color_primary_light)/20 hover:border-(--color_primary_light)/60'
-          : 'bg-(--color_bg_card) border-(--color_border) hover:border-(--color_primary_light)/30'
-      }`}
-    >
+  const body = (
+    <div onClick={onClick} className="w-full text-left p-4 cursor-pointer active:scale-[0.98]">
       {/* Заголовок */}
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 min-w-0">
@@ -88,14 +81,10 @@ function WorkoutTile({
               от тренера
             </span>
           )}
-          {onDelete && (
-            <ConfirmDeleteButton
-              variant="inline"
-              label="Удалить?"
-              onConfirm={onDelete}
-            />
-          )}
-          {!onDelete && <span className="text-xs text-(--color_text_muted)">→</span>}
+          {onDelete
+            ? <ConfirmDeleteWrapper.Trigger />
+            : <span className="text-xs text-(--color_text_muted)">→</span>
+          }
         </div>
       </div>
 
@@ -122,6 +111,33 @@ function WorkoutTile({
           <span className="text-sm font-semibold text-emerald-400">{volumeLabel}</span>
         </div>
       )}
+    </div>
+  );
+
+  if (onDelete) {
+    return (
+      <ConfirmDeleteWrapper
+        onConfirm={onDelete}
+
+        normalBorder={isUpcoming ? 'border-(--color_primary_light)/40' : 'border-(--color_border)'}
+        className={`w-full transition-colors bg-(--color_bg_card) ${
+          isUpcoming
+            ? 'ring-1 ring-inset ring-(--color_primary_light)/20 hover:border-(--color_primary_light)/60'
+            : 'hover:border-(--color_primary_light)/30'
+        }`}
+      >
+        {body}
+      </ConfirmDeleteWrapper>
+    );
+  }
+
+  return (
+    <div className={`relative w-full rounded-xl border transition-colors bg-(--color_bg_card) ${
+      isUpcoming
+        ? 'border-(--color_primary_light)/40 ring-1 ring-inset ring-(--color_primary_light)/20'
+        : 'border-(--color_border) hover:border-(--color_primary_light)/30'
+    }`}>
+      {body}
     </div>
   );
 }
@@ -180,7 +196,7 @@ export default function DayDetails({ date, workouts, onDeleted, readOnly = false
   return (
     <>
       <div className="animate-fade-in">
-        <div className="glass p-5 rounded-xl">
+        <div className="bg-white/5 p-5 rounded-xl border border-white/20">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-xl font-bold text-white">

@@ -1,4 +1,4 @@
-import ActivityCalendar, { DayData } from '@/components/ActivityGraph/ActivityGraph';
+import Calendar, { type DayData } from '@/components/ui/Calendar';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import MonthlyStats from './MonthlyStats';
@@ -119,15 +119,31 @@ export default function ActivityScreen() {
           transition={{ delay: 0.1 }}
           className="mb-4"
         >
-          <ActivityCalendar
+          <Calendar
+            mode="load"
             selectedDate={selectedDate}
             onSelect={handleSelectDay}
             onMonthChange={handleMonthChange}
-            onGoToToday={handleGoToToday}
+            onTodayClick={handleGoToToday}
             month={currentMonth}
             days={days}
           />
         </motion.div>
+
+        <AnimatePresence>
+          {selectedDate && (
+            <motion.div
+              key={selectedDate.toISOString()}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="mb-4"
+            >
+              <DayDetails date={selectedDate} workouts={dayWorkouts} onDeleted={refetch} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {monthlyStats && (
           <motion.div
@@ -139,20 +155,6 @@ export default function ActivityScreen() {
             <MonthlyStats stats={monthlyStats} />
           </motion.div>
         )}
-
-        <AnimatePresence>
-          {selectedDate && (
-            <motion.div
-              key={selectedDate.toISOString()}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
-            >
-              <DayDetails date={selectedDate} workouts={dayWorkouts} onDeleted={refetch} />
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Tip: links to related screens */}
         <motion.div

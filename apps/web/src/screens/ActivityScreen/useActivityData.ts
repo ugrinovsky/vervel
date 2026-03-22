@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
 import { toDateKey } from '@/utils/date';
 import { workoutsApi } from '@/api/workouts';
-import type { DayData } from '@/components/ActivityGraph/ActivityGraph';
+import type { DayData } from '@/components/ui/Calendar';
 import type { WorkoutTimelineEntry, WorkoutStats } from '@/types/Analytics';
 
 const DEFAULT_DURATION = 60;

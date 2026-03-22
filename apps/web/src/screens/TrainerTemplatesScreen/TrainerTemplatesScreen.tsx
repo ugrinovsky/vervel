@@ -15,7 +15,7 @@ import { useNavigate } from 'react-router';
 import { PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
 import AppInput from '@/components/ui/AppInput';
-import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
+import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
 import { WORKOUT_TYPE_CONFIG, exerciseBrief } from '@/constants/workoutTypes';
 
 export default function TrainerTemplatesScreen() {
@@ -174,9 +174,11 @@ export default function TrainerTemplatesScreen() {
           ) : (
             <div className="space-y-2">
               {templates.map((template) => (
-                <div
+                <ConfirmDeleteWrapper
                   key={template.id}
-                  className="relative p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors"
+                  onConfirm={() => handleDelete(template.id)}
+
+                  className="p-3 bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors"
                 >
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 flex-1">
@@ -202,11 +204,7 @@ export default function TrainerTemplatesScreen() {
                       >
                         <PencilIcon className="w-4 h-4" />
                       </button>
-                      <ConfirmDeleteButton
-                        variant="overlay"
-                        label="Удалить шаблон?"
-                        onConfirm={() => handleDelete(template.id)}
-                      />
+                      <ConfirmDeleteWrapper.Trigger />
                     </div>
                   </div>
 
@@ -238,7 +236,7 @@ export default function TrainerTemplatesScreen() {
                       )}
                     </div>
                   )}
-                </div>
+                </ConfirmDeleteWrapper>
               ))}
             </div>
           )}

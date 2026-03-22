@@ -22,7 +22,7 @@ import {
   Bars3Icon,
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
-import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
+import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
 
 export default function TrainerAthletesListScreen() {
   const navigate = useNavigate();
@@ -219,36 +219,31 @@ export default function TrainerAthletesListScreen() {
                   {filteredAthletes.map((athlete) => {
                     const unread = getAthleteUnread(athlete.id);
                     return (
-                      <motion.div
-                        key={athlete.id}
-                        whileTap={{ scale: 0.99 }}
-                        className="relative flex items-start gap-3 px-4 py-3 rounded-xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors"
-                      >
-                        <ConfirmDeleteButton
-                          variant="overlay"
-                          label="Отвязать?"
-                          overlayRounded="rounded-xl"
-                          overlayLayout="column"
+                      <motion.div key={athlete.id} whileTap={{ scale: 0.99 }}>
+                        <ConfirmDeleteWrapper
                           onConfirm={() => handleRemoveAthlete(athlete.id)}
-                          className="absolute top-2 left-2 z-10 p-0.5"
-                        />
-                        <div className="flex items-center gap-3 flex-1 min-w-0 pl-6 cursor-pointer" onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}>
-                          <UserAvatar photoUrl={athlete.photoUrl} name={athlete.fullName} size={44} />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm font-semibold text-white truncate leading-snug">
-                              {athlete.nickname || athlete.fullName || 'Без имени'}
-                            </div>
-                            {athlete.nickname && (
-                              <div className="text-[11px] text-(--color_text_muted) truncate leading-snug">
-                                {athlete.fullName || ''}
+
+                          className="flex items-center gap-3 px-4 py-3 bg-(--color_bg_card) hover:bg-(--color_bg_card_hover) transition-colors"
+                        >
+                          <div className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}>
+                            <UserAvatar photoUrl={athlete.photoUrl} name={athlete.fullName} size={44} />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-semibold text-white truncate leading-snug">
+                                {athlete.nickname || athlete.fullName || 'Без имени'}
                               </div>
-                            )}
-                            <div className="text-[11px] text-(--color_text_muted)/70 truncate leading-snug">
-                              {athlete.status === 'pending' ? '⏳ Ожидает' : athlete.email}
+                              {athlete.nickname && (
+                                <div className="text-[11px] text-(--color_text_muted) truncate leading-snug">
+                                  {athlete.fullName || ''}
+                                </div>
+                              )}
+                              <div className="text-[11px] text-(--color_text_muted)/70 truncate leading-snug">
+                                {athlete.status === 'pending' ? '⏳ Ожидает' : athlete.email}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        {unread > 0 && <Badge count={unread} />}
+                          {unread > 0 && <Badge count={unread} />}
+                          <ConfirmDeleteWrapper.Trigger />
+                        </ConfirmDeleteWrapper>
                       </motion.div>
                     );
                   })}
@@ -265,38 +260,34 @@ export default function TrainerAthletesListScreen() {
                   {filteredAthletes.map((athlete) => {
                     const unread = getAthleteUnread(athlete.id);
                     return (
-                      <motion.div
-                        key={athlete.id}
-                        whileTap={{ scale: 0.97 }}
-                        className="relative flex flex-col items-center gap-2 p-4 rounded-2xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors"
-                      >
-                        {unread > 0 && <Badge count={unread} className="absolute top-2.5 right-2.5 z-10" />}
-                        <ConfirmDeleteButton
-                          variant="overlay"
-                          label="Отвязать?"
-                          overlayRounded="rounded-2xl"
-                          overlayLayout="column"
+                      <motion.div key={athlete.id} whileTap={{ scale: 0.97 }}>
+                        <ConfirmDeleteWrapper
                           onConfirm={() => handleRemoveAthlete(athlete.id)}
-                          className="absolute top-2.5 left-2.5 z-10 p-0.5"
-                        />
-                        <div className="cursor-pointer w-full flex flex-col items-center gap-2" onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}>
-                          <UserAvatar photoUrl={athlete.photoUrl} name={athlete.fullName} size={view === '2' ? 68 : 52} />
-                          <div className="w-full text-center">
-                            {athlete.nickname && (
-                              <div className={`leading-tight truncate font-semibold text-white ${view === '2' ? 'text-sm' : 'text-xs'}`}>
-                                {athlete.nickname}
+                          rounded="rounded-2xl"
+                          overlayLayout="column"
+                          className="flex flex-col items-center gap-2 p-4 bg-(--color_bg_card) hover:bg-(--color_bg_card_hover) transition-colors"
+                        >
+                          {unread > 0 && <Badge count={unread} className="absolute top-2.5 right-2.5" />}
+                          <ConfirmDeleteWrapper.Trigger className="absolute top-2.5 left-2.5" />
+                          <div className="cursor-pointer w-full flex flex-col items-center gap-2" onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}>
+                            <UserAvatar photoUrl={athlete.photoUrl} name={athlete.fullName} size={view === '2' ? 68 : 52} />
+                            <div className="w-full text-center">
+                              {athlete.nickname && (
+                                <div className={`leading-tight truncate font-semibold text-white ${view === '2' ? 'text-sm' : 'text-xs'}`}>
+                                  {athlete.nickname}
+                                </div>
+                              )}
+                              <div className={`text-(--color_text_muted) truncate ${view === '2' ? 'text-xs' : 'text-[10px]'}`}>
+                                {athlete.fullName || 'Без имени'}
                               </div>
-                            )}
-                            <div className={`text-(--color_text_muted) truncate ${view === '2' ? 'text-xs' : 'text-[10px]'}`}>
-                              {athlete.fullName || 'Без имени'}
+                              {view === '2' && (
+                                <div className="text-[10px] text-(--color_text_muted)/60 truncate">
+                                  {athlete.status === 'pending' ? '⏳ Ожидает' : athlete.email}
+                                </div>
+                              )}
                             </div>
-                            {view === '2' && (
-                              <div className="text-[10px] text-(--color_text_muted)/60 truncate">
-                                {athlete.status === 'pending' ? '⏳ Ожидает' : athlete.email}
-                              </div>
-                            )}
                           </div>
-                        </div>
+                        </ConfirmDeleteWrapper>
                       </motion.div>
                     );
                   })}

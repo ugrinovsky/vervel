@@ -18,7 +18,7 @@ import AppInput from '@/components/ui/AppInput';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
-import TrainerCalendar, { type TrainerDayData } from '@/components/TrainerCalendar/TrainerCalendar';
+import Calendar, { type TrainerDayData } from '@/components/ui/Calendar';
 import { trainerApi, type ScheduledWorkout, type AthleteListItem, type TrainerGroupItem } from '@/api/trainer';
 import { toDateKey, parseApiDateTime, toApiDateTime } from '@/utils/date';
 import { PlusIcon, CalendarDaysIcon, UserPlusIcon, PhoneIcon } from '@heroicons/react/24/outline';
@@ -335,7 +335,7 @@ function IntroSessionForm({
           className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-40 transition-opacity ring-1 ring-sky-400/40"
           style={{ background: 'linear-gradient(135deg, rgba(14,165,233,0.75), rgba(2,132,199,0.75))' }}
         >
-          {saving ? 'Сохранение…' : 'Добавить вводную'}
+          {saving ? 'Сохранение…' : 'Добавить'}
         </button>
       </div>
     </form>
@@ -550,7 +550,8 @@ export default function TrainerCalendarScreen() {
 
         {/* ── Calendar (top) ── */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="pt-1 pb-1 shrink-0">
-          <TrainerCalendar
+          <Calendar
+            mode="count"
             days={calendarDays}
             selectedDate={selectedDate}
             month={currentMonth}

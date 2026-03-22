@@ -73,7 +73,7 @@ export default function AnalyticsCards({ stats, monthStats, periodization, timeR
                 style={{ backgroundColor: 'var(--color_primary_light)', opacity: 0.18 }}
               />
               <div
-                className="relative w-11 h-11 rounded-xl flex items-center justify-center text-[22px] leading-none shrink-0"
+                className="relative w-11 h-11 rounded-xl flex items-center justify-center text-[22px] leading-none shrink-0 mb-2"
                 style={{ backgroundColor: 'rgb(var(--color_primary_light_ch) / 0.15)' }}
               >
                 {card.icon}

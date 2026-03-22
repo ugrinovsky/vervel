@@ -11,9 +11,10 @@ import { trainerApi, type AthleteListItem, type TrainerGroupItem } from '@/api/t
 import AthleteAvatarsRow from '@/components/AthleteAvatarsRow/AthleteAvatarsRow';
 import InlineAthleteAvatar from '@/components/MiniAvatar/InlineAthleteAvatar';
 import { PlusIcon, UsersIcon, ChatBubbleLeftIcon, TrophyIcon } from '@heroicons/react/24/outline';
-import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
+import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
 import BackButton from '@/components/BackButton/BackButton';
 import AccentButton from '@/components/ui/AccentButton';
+import { cardClass } from '@/components/ui/Card';
 
 type Tab = 'members' | 'chat';
 
@@ -164,7 +165,7 @@ export default function TrainerGroupDetailScreen() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) mb-6"
+            className={`${cardClass} rounded-2xl p-5 mb-6`}
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-white">Участники</h2>
@@ -212,27 +213,28 @@ export default function TrainerGroupDetailScreen() {
             ) : (
               <div className="grid grid-cols-2 gap-2">
                 {athletes.map((athlete) => (
-                  <div
+                  <ConfirmDeleteWrapper
                     key={athlete.id}
-                    className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors cursor-pointer relative"
-                    onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}
+                    onConfirm={() => handleRemoveFromGroup(athlete.id)}
+                    overlayLayout="column"
+                    trigger={<ConfirmDeleteWrapper.Trigger className="absolute top-2 right-2 z-[1]" />}
+                    className="bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors cursor-pointer"
                   >
-                    <div onClick={(e) => e.stopPropagation()} className="absolute top-2 right-2">
-                      <ConfirmDeleteButton
-                        label="Убрать?"
-                        onConfirm={() => handleRemoveFromGroup(athlete.id)}
-                      />
-                    </div>
-                    <InlineAthleteAvatar athleteId={athlete.id} size="md" />
-                    <div className="text-center min-w-0 w-full">
-                      <div className="text-xs font-medium text-white truncate">
-                        {athlete.fullName || 'Без имени'}
+                    <div
+                      className="flex flex-col items-center gap-1.5 p-3"
+                      onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}
+                    >
+                      <InlineAthleteAvatar athleteId={athlete.id} size="md" />
+                      <div className="text-center min-w-0 w-full">
+                        <div className="text-xs font-medium text-white truncate">
+                          {athlete.fullName || 'Без имени'}
+                        </div>
+                        <div className="text-[10px] text-(--color_text_muted) truncate">
+                          {athlete.email}
+                        </div>
                       </div>
-                      <div className="text-[10px] text-(--color_text_muted) truncate">
-                        {athlete.email}
-                      </div>
                     </div>
-                  </div>
+                  </ConfirmDeleteWrapper>
                 ))}
               </div>
             )}

@@ -1,5 +1,6 @@
-import { CalendarIcon, ChartBarIcon, ChartPieIcon, FireIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, ChartBarIcon, ChartPieIcon, FireIcon, ClockIcon } from '@heroicons/react/24/outline';
 import StatCard from './StatCard';
+import InfoRow from './InfoRow';
 import { formatVolume, formatVolumeCompact } from './utils';
 import type { MonthlyStatsData } from './useActivityData';
 
@@ -45,9 +46,17 @@ export default function MonthlyStats({ stats }: MonthlyStatsProps) {
         />
       </div>
 
-      <div className="mt-4 pt-4 border-t border-(--color_border) grid grid-cols-2 gap-4 text-sm text-(--color_text_muted)">
-        <div>Всего сожжено: ~{stats.totalCalories.toLocaleString()} ккал</div>
-        <div>Средняя тренировка: {stats.avgDuration} мин</div>
+      <div className="mt-4 pt-4 border-t border-(--color_border) flex gap-3">
+        <InfoRow
+          icon={<FireIcon className="w-4 h-4 text-rose-400/80 shrink-0" />}
+          value={`~${stats.totalCalories.toLocaleString()} ккал`}
+          label="сожжено"
+        />
+        <InfoRow
+          icon={<ClockIcon className="w-4 h-4 text-sky-400/80 shrink-0" />}
+          value={`${stats.avgDuration} мин`}
+          label="ср. тренировка"
+        />
       </div>
     </div>
   );

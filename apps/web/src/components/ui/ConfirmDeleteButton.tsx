@@ -53,23 +53,22 @@ export default function ConfirmDeleteButton({
   if (variant === 'inline') {
     if (confirming) {
       return (
-        <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
-          <span className="text-xs text-red-400 mr-1 select-none">{label}</span>
+        <div className="inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             onClick={() => { onConfirm(); setConfirming(false); }}
-            className="p-1 text-red-400 hover:text-red-300 transition-colors"
+            className="text-red-400 hover:text-red-300 transition-colors"
             title="Да"
           >
-            <CheckIcon className="w-3.5 h-3.5" />
+            <CheckIcon className="w-3.5 h-3.5 block" />
           </button>
           <button
             type="button"
             onClick={() => setConfirming(false)}
-            className="p-1 text-white/40 hover:text-white transition-colors"
+            className="text-white/40 hover:text-white transition-colors"
             title="Отмена"
           >
-            <XMarkIcon className="w-3.5 h-3.5" />
+            <XMarkIcon className="w-3.5 h-3.5 block" />
           </button>
         </div>
       );

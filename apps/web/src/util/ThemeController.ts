@@ -96,11 +96,13 @@ function applyHueTheme(root: HTMLElement, hue: number) {
   const primaryDark = hslToRgb(hDark, 67, 17);
 
   const hN = ((hLight % 360) + 360) % 360;
+  // Cool hues (blue/purple/indigo) require higher lightness for the same perceived brightness
+  const coolBoost = (hN >= 200 && hN <= 350) ? 12 : 0;
   const lightL =
     hN >= 30 && hN <= 100 ? 38
     : hN >= 100 && hN <= 170 ? 38
-    : hN >= 200 && hN <= 290 ? 50
-    : 44;
+    : hN >= 200 && hN <= 290 ? 50 + coolBoost
+    : 44 + coolBoost;
   const primaryLight = hslToRgb(hLight, 75, lightL);
 
   const iconL =
@@ -120,11 +122,12 @@ function applyHueTheme(root: HTMLElement, hue: number) {
   root.style.setProperty('--color_bg_screen', `radial-gradient(circle at 50% 52.5%, rgb(${primary}) 0%, rgb(${primaryDark}) 90%)`);
 
   const shades: Record<string, [number, number]> = {
-    '100': [65, 92], '200': [70, 82], '300': [68, 72], '400': [68, 55],
-    '500': [78, 40], '600': [82, 31], '700': [84, 23], '800': [80, 17], '900': [75, 13],
+    '100': [65, 92], '200': [70, 82], '300': [68, 72 + coolBoost],
+    '400': [68, 55 + coolBoost], '500': [78, 40 + coolBoost],
+    '600': [82, 31], '700': [84, 23], '800': [80, 17], '900': [75, 13],
   };
   for (const [shade, [sat, light]] of Object.entries(shades)) {
-    const rgb = `rgb(${hslToRgb(hLight, sat, light)})`;
+    const rgb = `rgb(${hslToRgb(hLight, sat, Math.min(light, 90))})`;
     for (const family of TAILWIND_FAMILIES) {
       root.style.setProperty(`--color-${family}-${shade}`, rgb);
     }

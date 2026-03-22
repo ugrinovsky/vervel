@@ -1,4 +1,5 @@
 import { resolvePhotoUrl } from '@/utils/photoUrl';
+import { useImageLoad } from '@/hooks/useImageLoad';
 
 interface Props {
   photoUrl?: string | null;
@@ -21,22 +22,32 @@ export default function UserAvatar({ photoUrl, name, size, className = '' }: Pro
   const src = resolvePhotoUrl(photoUrl);
   const initials = getInitials(name);
   const fontSize = Math.round(size * 0.36);
+  const { loaded, error, onLoad, onError } = useImageLoad();
 
-  if (src) {
+  const baseStyle = { width: size, height: size };
+  const sharedClass = `rounded-full shrink-0 border border-(--color_primary_icon)/30 ${className}`;
+
+  if (src && !error) {
     return (
-      <img
-        src={src}
-        alt={name || 'avatar'}
-        style={{ width: size, height: size }}
-        className={`rounded-full object-cover shrink-0 border border-(--color_primary_light)/30 ${className}`}
-      />
+      <div style={baseStyle} className={`${sharedClass} relative overflow-hidden`}>
+        {!loaded && <div className="absolute inset-0 animate-pulse bg-(--color_primary_icon)/15" />}
+        <img
+          src={src}
+          alt={name || 'avatar'}
+          loading="lazy"
+          onError={onError}
+          onLoad={onLoad}
+          style={baseStyle}
+          className={`object-cover transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        />
+      </div>
     );
   }
 
   return (
     <div
-      style={{ width: size, height: size, fontSize }}
-      className={`rounded-full bg-(--color_primary_light)/25 border border-(--color_primary_light)/30 flex items-center justify-center font-bold shrink-0 text-(--color_primary_light) ${className}`}
+      style={{ ...baseStyle, fontSize }}
+      className={`${sharedClass} bg-(--color_primary_icon)/20 flex items-center justify-center font-bold text-(--color_primary_icon)`}
     >
       {initials}
     </div>

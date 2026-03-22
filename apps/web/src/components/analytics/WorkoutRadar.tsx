@@ -30,7 +30,7 @@ type RadarMetric = {
   color: string;
 };
 
-export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
+export default function WorkoutRadar({ data = {} }: WorkoutRadarProps) {
   // Безопасное получение avgIntensity (может быть 0-1 или уже 0-100)
   const rawIntensity = Number(data.avgIntensity) || 0;
   const intensity =
@@ -139,7 +139,13 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <div className="px-3 py-1 bg-emerald-400/15 text-emerald-400 rounded-full whitespace-nowrap">
+          <div
+            className="px-3 py-1 rounded-full whitespace-nowrap"
+            style={{
+              backgroundColor: 'color-mix(in srgb, var(--color_primary_icon) 15%, transparent)',
+              color: 'var(--color_primary_icon)',
+            }}
+          >
             Среднее: {averageValue}%
           </div>
         </div>
@@ -160,9 +166,11 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
                 dataKey="metric"
                 tick={({ x, y, payload }) => {
                   const text = String(payload.value);
+                  const metric = metrics.find((m) => m.metric === text);
+                  const label = metric ? `${text} ${metric.value}%` : text;
                   const padding = 8;
                   const charWidth = 7.5;
-                  const rectWidth = text.length * charWidth + padding * 2;
+                  const rectWidth = label.length * charWidth + padding * 2;
                   const rectHeight = 26;
                   const offsetY = 20;
 
@@ -170,11 +178,11 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
                   let additionalOffsetY = 0;
 
                   if (text === 'Баланс') {
-                    additionalOffsetX = -8;
+                    additionalOffsetX = 10;
                   } else if (text === 'Сила') {
                     additionalOffsetY = -34;
                   } else if (text === 'Объем') {
-                    additionalOffsetX = 10;
+                    additionalOffsetX = -10;
                   }
 
                   const finalX = Number(x) + additionalOffsetX;
@@ -187,8 +195,9 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
                         y={finalY - rectHeight / 2 + offsetY}
                         width={rectWidth}
                         height={rectHeight}
-                        fill="rgb(var(--color_primary_light_ch) / 0.15)"
-                        stroke="var(--color_primary_light)"
+                        fill="var(--color_primary_icon)"
+                        fillOpacity={0.15}
+                        stroke="var(--color_primary_icon)"
                         strokeWidth={1.5}
                         rx={8}
                         ry={8}
@@ -197,12 +206,12 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
                         x={finalX}
                         y={finalY}
                         textAnchor="middle"
-                        fill="var(--color_primary_light)"
+                        fill="var(--color_primary_icon)"
                         fontSize={13}
                         fontWeight={600}
                         dy={offsetY + 5}
                       >
-                        {text}
+                        {label}
                       </text>
                     </g>
                   );
@@ -216,50 +225,39 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
               />
               <Radar
                 dataKey="value"
-                stroke="var(--color_primary_light)"
+                stroke="var(--color_primary_icon)"
                 fill="url(#radarGradient)"
                 fillOpacity={0.6}
                 strokeWidth={2.5}
+                dot={{ r: 4, fill: 'var(--color_primary_icon)', strokeWidth: 0 }}
               />
             </RadarChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="space-y-3">
-          {/* Лучший показатель */}
-          <div className="p-4 bg-[var(--color_bg_card)]/30 rounded-lg hover:bg-[var(--color_bg_card_hover)] transition">
-            <div className="text-xs text-[var(--color_text_muted)] mb-2 font-medium">
-              🏆 Лучший показатель
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="font-bold text-white text-lg">{bestMetric.metric}</div>
-              <div className="text-2xl font-bold text-emerald-400">{bestMetric.value}%</div>
-            </div>
+<div className="grid grid-cols-3 lg:grid-cols-1 gap-2 lg:gap-3">
+          <div className="p-3 bg-(--color_bg_card) rounded-xl border border-(--color_border)">
+            <div className="text-[11px] text-(--color_text_muted) mb-1">Лучший</div>
+            <div className="font-semibold text-white text-sm leading-tight">{bestMetric.metric}</div>
+            <div className="text-lg font-bold text-emerald-400">{bestMetric.value}%</div>
           </div>
 
-          {/* Для улучшения */}
-          <div className="p-4 bg-[var(--color_bg_card)]/30 rounded-lg hover:bg-[var(--color_bg_card_hover)] transition">
-            <div className="text-xs text-[var(--color_text_muted)] mb-2 font-medium">
-              📈 Для улучшения
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="font-bold text-white text-lg">{worstMetric.metric}</div>
-              <div className="text-2xl font-bold text-yellow-400">{worstMetric.value}%</div>
-            </div>
+          <div className="p-3 bg-(--color_bg_card) rounded-xl border border-(--color_border)">
+            <div className="text-[11px] text-(--color_text_muted) mb-1">Слабый</div>
+            <div className="font-semibold text-white text-sm leading-tight">{worstMetric.metric}</div>
+            <div className="text-lg font-bold text-yellow-400">{worstMetric.value}%</div>
           </div>
 
-          {/* Общий балл */}
           <div
-            className="p-4 rounded-lg border"
+            className="p-3 rounded-xl border"
             style={{
-              backgroundColor: 'rgb(var(--color_primary_light_ch) / 0.12)',
-              borderColor: 'rgb(var(--color_primary_light_ch) / 0.3)',
+              backgroundColor: 'color-mix(in srgb, var(--color_primary_icon) 12%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--color_primary_icon) 30%, transparent)',
             }}
           >
-            <div className="text-xs text-(--color_primary_icon)/80 mb-2 font-medium">
-              ⭐ Общий балл
-            </div>
-            <div className="text-3xl font-bold text-emerald-400">{averageValue}%</div>
+            <div className="text-[11px] text-(--color_text_muted) mb-1">Средний</div>
+            <div className="font-semibold text-white text-sm leading-tight">балл</div>
+            <div className="text-lg font-bold text-emerald-400">{averageValue}%</div>
           </div>
         </div>
       </div>

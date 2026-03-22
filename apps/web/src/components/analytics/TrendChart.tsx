@@ -38,7 +38,7 @@ function CustomTooltip({ active, payload, label }: any) {
   return (
     <div className="bg-gray-900/95 border border-white/10 rounded-xl px-3 py-2.5 text-xs shadow-2xl">
       <p className="text-white/50 mb-1.5">{label}</p>
-      {vol && <p style={{ color: vol.fill ?? '#818cf8' }}>Объём: {formatVolume(vol.value)}</p>}
+      {vol && <p style={{ color: vol.fill ?? 'var(--color_primary_icon)' }}>Объём: {formatVolume(vol.value)}</p>}
       {int && <p style={{ color: int.stroke }}>Интенсивность: {int.value}%</p>}
     </div>
   );
@@ -109,7 +109,7 @@ export default function TrendChart({ period, data }: Props) {
           <div className="text-xs text-(--color_text_muted) mt-0.5">суммарный объём</div>
         </div>
         <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) text-center">
-          <div className="text-lg font-bold text-orange-400">{avgInt}%</div>
+          <div className="text-lg font-bold" style={{ color: 'var(--color-rose-400)' }}>{avgInt}%</div>
           <div className="text-xs text-(--color_text_muted) mt-0.5">ср. интенсивность</div>
         </div>
         <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) text-center">
@@ -151,7 +151,7 @@ export default function TrendChart({ period, data }: Props) {
                 return (
                   <Cell
                     key={i}
-                    fill="var(--color_primary_light)"
+                    fill="var(--color_primary_icon)"
                     fillOpacity={entry.volume > 0 ? 0.5 + ratio * 0.4 : 0.07}
                   />
                 );
@@ -161,7 +161,7 @@ export default function TrendChart({ period, data }: Props) {
               yAxisId="int"
               type="monotone"
               dataKey="intensity"
-              stroke="var(--color_primary_icon)"
+              stroke="var(--color-rose-400)"
               strokeWidth={2}
               dot={false}
               connectNulls
@@ -172,11 +172,11 @@ export default function TrendChart({ period, data }: Props) {
         {/* Legend */}
         <div className="flex items-center gap-4 mt-2">
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-sm bg-emerald-500/60" />
+            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: 'var(--color_primary_icon)', opacity: 0.6 }} />
             <span className="text-xs text-(--color_text_muted)">Объём</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-4 h-0.5 bg-emerald-300" />
+            <div className="w-4 h-0.5" style={{ backgroundColor: 'var(--color-rose-400)' }} />
             <span className="text-xs text-(--color_text_muted)">Интенсивность</span>
           </div>
         </div>
@@ -202,12 +202,12 @@ export default function TrendChart({ period, data }: Props) {
                       className="h-full rounded-full"
                       style={{
                         width: `${(d.volume / maxVol) * 100}%`,
-                        backgroundColor: 'var(--color_primary_light)',
+                        backgroundColor: 'var(--color_primary_icon)',
                         opacity: 0.7,
                       }}
                     />
                   </div>
-                  <span className="text-xs text-emerald-400 w-12 text-right">{formatVolume(d.volume)}</span>
+                  <span className="text-xs w-12 text-right text-emerald-400">{formatVolume(d.volume)}</span>
                 </div>
               ))}
           </div>
