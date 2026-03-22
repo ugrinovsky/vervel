@@ -57,8 +57,6 @@ export default function TrainerTodayScreen() {
     loadData();
   }, []);
 
-  if (!overview) return <Screen loading={loading} className="trainer-today-screen" />;
-
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
@@ -85,8 +83,8 @@ export default function TrainerTodayScreen() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-base font-bold text-white">{getGreeting(user?.fullName)}</div>
-              <div className="text-xs text-(--color_text_secondary) mt-0.5">
-                {getTrainerSubtitle(overview.stats.todayWorkoutsCount)}
+              <div className="text-xs text-(--color_text_secondary) mt-0.5 min-h-[1rem]">
+                {overview ? getTrainerSubtitle(overview.stats.todayWorkoutsCount) : ''}
               </div>
             </div>
           </div>
@@ -157,6 +155,7 @@ export default function TrainerTodayScreen() {
           </>
         )}
 
+        {overview && <>
         {/* Stats */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -251,6 +250,7 @@ export default function TrainerTodayScreen() {
             </div>
           )}
         </motion.div>
+        </>}
 
         {/* Quick Actions */}
         <motion.div

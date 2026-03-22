@@ -96,9 +96,9 @@ export default function AvatarScreen() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-base font-bold text-white">{getGreeting(user?.fullName)}</div>
-              {motivation && (
-                <div className="text-xs text-(--color_text_secondary) mt-0.5">{motivation.text}</div>
-              )}
+              <div className="text-xs text-(--color_text_secondary) mt-0.5 min-h-4">
+                {motivation?.text ?? ''}
+              </div>
             </div>
           </div>
         </motion.div>
