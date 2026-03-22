@@ -134,7 +134,9 @@ function applyHueTheme(root: HTMLElement, hue: number) {
   const hex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', hex);
 
-  root.style.setProperty('--safe_area_bg', `rgb(${primaryDark})`);
+  const safeAreaBg = `rgb(${primaryDark})`;
+  root.style.setProperty('--safe_area_bg', safeAreaBg);
+  document.body.style.setProperty('--safe_area_bg', safeAreaBg);
 }
 
 function applySpecialTheme(root: HTMLElement, type: 'dark' | 'light') {
@@ -159,6 +161,7 @@ function applySpecialTheme(root: HTMLElement, type: 'dark' | 'light') {
     root.style.setProperty('--color_text_muted', 'rgba(0, 0, 0, 0.48)');
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#f4f3f1');
     root.style.setProperty('--safe_area_bg', 'rgb(244, 243, 241)');
+    document.body.style.setProperty('--safe_area_bg', 'rgb(244, 243, 241)');
   } else {
     applyAccentTailwindColors(root, DARK_ACCENT_HUE, 0, 1);
     root.removeAttribute('data-theme');
@@ -180,6 +183,7 @@ function applySpecialTheme(root: HTMLElement, type: 'dark' | 'light') {
     root.style.setProperty('--color_text_muted', 'rgba(255, 255, 255, 0.7)');
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#0c0c10');
     root.style.setProperty('--safe_area_bg', 'rgb(12, 12, 16)');
+    document.body.style.setProperty('--safe_area_bg', 'rgb(12, 12, 16)');
   }
 }
 
