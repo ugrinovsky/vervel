@@ -132,7 +132,7 @@ function ActionButton({
   return (
     <button
       onClick={() => navigate(route.path)}
-      className={isActive ? 'nav-item-active' : route.accent ? 'nav-item-accent' : 'nav-item-inactive'}
+      className={route.accent ? (isActive ? 'nav-item-accent-active' : 'nav-item-accent') : (isActive ? 'nav-item-active' : 'nav-item-inactive')}
     >
       <route.icon className="w-6 h-6" strokeWidth={route.accent ? 2.5 : 2} />
     </button>

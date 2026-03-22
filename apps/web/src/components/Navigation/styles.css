@@ -85,6 +85,21 @@
   filter: drop-shadow(0 0 16px rgb(var(--color_primary_light_ch) / 0.7));
 }
 
+.nav-item-accent-active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  color: white;
+  background: rgb(var(--color_primary_light_ch) / 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 9999px;
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 0 12px rgb(var(--color_primary_light_ch) / 0.6));
+  transform: translateY(-2px) scale(1.05);
+}
+
 .nav-button-center {
   position: relative;
   width: 4rem;
