@@ -445,13 +445,13 @@ export default function AvatarView({
 
         {/* Zone detail BottomSheet */}
         <BottomSheet
-          open={!!(selectedZone && zones[selectedZone])}
+          open={!!(selectedZone && normalizedZones[selectedZone])}
           onClose={() => setSelectedZone(null)}
           title={selectedZone ? getZoneLabel(selectedZone) : ''}
         >
-          {selectedZone && zones[selectedZone] && (
+          {selectedZone && normalizedZones[selectedZone] && (
             <>
-              <ZoneDetail zone={zones[selectedZone]} />
+              <ZoneDetail zone={normalizedZones[selectedZone]} />
               <div className="mt-4 pt-4 border-t border-white/10">
                 <h4 className="text-xs font-semibold text-(--color_text_secondary) uppercase tracking-wider mb-3">
                   Последние тренировки
