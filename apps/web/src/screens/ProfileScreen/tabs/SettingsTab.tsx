@@ -87,6 +87,8 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
 
   const [activeHue, setActiveHue] = useState(() => data.user.themeHue ?? DEFAULT_HUE);
   const [activeSpecial, setActiveSpecial] = useState<SpecialTheme | null>(() => ThemeController.getStoredSpecial());
+  const [initialHue] = useState(() => data.user.themeHue ?? DEFAULT_HUE);
+  const [initialSpecial] = useState<SpecialTheme | null>(() => ThemeController.getStoredSpecial());
 
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState<'general' | 'bug' | 'feature' | 'other'>('general');
@@ -100,6 +102,8 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
     setGenderField(data.user.gender ?? null);
   }, [data.user]);
 
+  const themeChanged = activeSpecial !== initialSpecial || (activeSpecial === null && activeHue !== initialHue);
+
   const handleThemeChange = (hue: number) => {
     setActiveSpecial(null);
     setActiveHue(hue);
@@ -109,6 +113,11 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
   const handleSpecialThemeChange = (type: SpecialTheme) => {
     setActiveSpecial(type);
     ThemeController.changeSpecial(type);
+  };
+
+  const handleApplyTheme = () => {
+    toast.success('Тема применена');
+    setTimeout(() => window.location.reload(), 800);
   };
 
   const handleSaveProfile = async () => {
@@ -271,6 +280,11 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
             style={{ background: `hsl(${activeHue}, 74%, 30%)` }}
           />
         </div>
+        {themeChanged && (
+          <div className="mt-4">
+            <AccentButton onClick={handleApplyTheme}>Применить тему</AccentButton>
+          </div>
+        )}
       </div>
 
       {/* Profile settings */}
