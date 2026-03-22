@@ -60,7 +60,7 @@ export function useActivityData() {
     const month = currentMonth.getMonth();
     const from = toDateKey(new Date(year, month, 1));
     const to = toDateKey(new Date(year, month + 1, 0)) + 'T23:59:59';
-    setLoading(true);
+    if (!stats) setLoading(true);
     workoutsApi.stats(from, to)
       .then((res) => setStats(res.data))
       .catch(() => setStats(null))

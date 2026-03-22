@@ -105,13 +105,13 @@ export default function ActivityScreen() {
 
         <div className="border-t border-(--color_border) my-3" />
 
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
+        <div className="mb-4">
           <ScreenHint>
             Нажмите на день — откроются детали тренировок.{' '}
             <span className="text-white font-medium">Насыщенность цвета</span> отражает интенсивность нагрузки.
             Нет цвета — день без тренировок.
           </ScreenHint>
-        </motion.div>
+        </div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
