@@ -85,9 +85,7 @@ export default function LoginScreen() {
     }
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const doLogin = async () => {
     const newErrors: typeof errors = {};
     if (!email) newErrors.email = 'Введите email';
     else if (!validateEmail(email)) newErrors.email = 'Некорректный email';
@@ -114,6 +112,15 @@ export default function LoginScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    doLogin();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') doLogin();
   };
 
   return (
@@ -316,6 +323,7 @@ export default function LoginScreen() {
                   autoCapitalize="none"
                   autoCorrect="off"
                   spellCheck={false}
+                  onKeyDown={handleKeyDown}
                 />
               </div>
               {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email}</p>}
@@ -337,6 +345,7 @@ export default function LoginScreen() {
                   autoCapitalize="none"
                   autoCorrect="off"
                   spellCheck={false}
+                  onKeyDown={handleKeyDown}
                 />
                 <button
                   type="button"

@@ -37,20 +37,22 @@ export default function AnalyticsScreen() {
           description="Статистика нагрузок, топ мышц и баланс тела — выберите период, чтобы увидеть динамику"
         />
 
-        {/* Hint block */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-4">
-          <ScreenHint>
-            <span className="text-white font-medium">Неделя</span> — оперативный контроль нагрузки.{' '}
-            <br />
-            <span className="text-white font-medium">Месяц</span> — видите тренды и объём работы.{' '}
-            <br />
-            <span className="text-white font-medium">Год</span> — оцениваете долгосрочный прогресс и
-            периодизацию.
-          </ScreenHint>
-        </motion.div>
+        <ScreenHint className="mb-4">
+          <span className="text-white font-medium">Неделя</span> — оперативный контроль нагрузки.{' '}
+          <br />
+          <span className="text-white font-medium">Месяц</span> — видите тренды и объём работы.{' '}
+          <br />
+          <span className="text-white font-medium">Год</span> — оцениваете долгосрочный прогресс и
+          периодизацию.
+        </ScreenHint>
 
         {/* Period selector */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+          className="grid grid-cols-3 gap-3 mb-4"
+        >
           {(['week', 'month', 'year'] as const).map((p) => (
             <button
               key={p}
@@ -64,14 +66,20 @@ export default function AnalyticsScreen() {
               {p === 'week' ? 'Неделя' : p === 'month' ? 'Месяц' : 'Год'}
             </button>
           ))}
-        </div>
+        </motion.div>
 
-        <AnalyticsCards
-          stats={stats}
-          monthStats={monthStats}
-          periodization={periodization}
-          timeRange={timeRange}
-        />
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.18 }}
+        >
+          <AnalyticsCards
+            stats={stats}
+            monthStats={monthStats}
+            periodization={periodization}
+            timeRange={timeRange}
+          />
+        </motion.div>
 
         {/* Quick links */}
         <motion.div

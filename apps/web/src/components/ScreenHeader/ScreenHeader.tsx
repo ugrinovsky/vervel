@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 interface ScreenHeaderProps {
   /** Эмодзи или иконка */
@@ -21,7 +22,12 @@ export default function ScreenHeader({
   className = '',
 }: ScreenHeaderProps) {
   return (
-    <div className={`screen-header mb-6 ${className}`}>
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className={`screen-header mb-6 ${className}`}
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
@@ -51,6 +57,6 @@ export default function ScreenHeader({
 
       {/* Decorative line */}
       <div className="mt-4 h-[2px] bg-gradient-to-r from-[var(--color_primary_light)]/50 via-[var(--color_primary)]/30 to-transparent rounded-full" />
-    </div>
+    </motion.div>
   );
 }

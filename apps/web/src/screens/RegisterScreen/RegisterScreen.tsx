@@ -44,9 +44,7 @@ export default function RegisterScreen() {
     return 'athlete';
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const doRegister = async () => {
     const newErrors: typeof errors = {};
     if (!fullName.trim()) newErrors.fullName = 'Введите имя';
     if (!email) newErrors.email = 'Введите email';
@@ -75,7 +73,7 @@ export default function RegisterScreen() {
       const tokenValue = typeof token === 'string' ? token : token?.token || '';
       login(user, tokenValue);
       toast.success(upgraded ? `Роль обновлена. Добро пожаловать, ${user.fullName}!` : `Добро пожаловать, ${user.fullName}!`);
-      navigate(inviteToken ? `/invite/${inviteToken}` : '/');
+      navigate(inviteToken ? `/invite/${inviteToken}` : '/home');
     } catch (err: any) {
       const status = err?.response?.status;
       const message = err?.response?.data?.message;
@@ -89,6 +87,15 @@ export default function RegisterScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    doRegister();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') doRegister();
   };
 
   return (
@@ -141,6 +148,7 @@ export default function RegisterScreen() {
                 onChange={(e) => { setFullName(e.target.value); setErrors((p) => ({ ...p, fullName: undefined })); }}
                 className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.fullName ? 'border-red-400' : 'border-white/20'}`}
                 placeholder="Ваше имя"
+                onKeyDown={handleKeyDown}
               />
               {errors.fullName && <p className="mt-1 text-xs text-red-400">{errors.fullName}</p>}
             </div>
@@ -156,6 +164,7 @@ export default function RegisterScreen() {
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
+                onKeyDown={handleKeyDown}
               />
               {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email}</p>}
             </div>
@@ -171,6 +180,7 @@ export default function RegisterScreen() {
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
+                onKeyDown={handleKeyDown}
               />
               {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password}</p>}
             </div>
@@ -188,6 +198,7 @@ export default function RegisterScreen() {
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
+                onKeyDown={handleKeyDown}
               />
               {errors.confirmPassword && <p className="mt-1 text-xs text-red-400">{errors.confirmPassword}</p>}
             </div>

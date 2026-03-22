@@ -77,7 +77,7 @@ export default function BottomSheet({ open, onClose, title, emoji, header, child
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
             className="background relative w-full rounded-t-3xl p-6 pb-6 max-h-[90dvh] overflow-y-auto overscroll-contain justify-center flex"
-            style={{ backgroundColor: 'var(--color_bg_card)' }}
+            style={{ backgroundColor: 'var(--color_bg_card)', borderTop: '1px solid var(--color_border)', boxShadow: '0 -4px 20px rgba(0,0,0,0.2)' }}
           >
             <div className={'max-w-[798px] w-full h-max'}>
               {/* Handle */}

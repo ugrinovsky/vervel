@@ -1,5 +1,4 @@
-import { useEffect } from 'react';
-import { useNavigate, Link } from 'react-router';
+import { Navigate, Link } from 'react-router';
 import { motion } from 'framer-motion';
 import VerveLogo from '@/components/VerveLogo/VerveLogo';
 import { useAuth } from '@/contexts/AuthContext';
@@ -133,11 +132,8 @@ function fade(delay = 0) {
 
 export default function LandingScreen() {
   const { token } = useAuth();
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (token) navigate('/home', { replace: true });
-  }, [token, navigate]);
+  if (token) return <Navigate to="/home" replace />;
 
   return (
     /*

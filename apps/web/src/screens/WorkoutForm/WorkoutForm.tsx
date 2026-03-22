@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router';
+import { motion } from 'framer-motion';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
@@ -66,7 +67,12 @@ export default function WorkoutForm() {
 
   return (
     <Screen className="workout-form-screen">
-      <div className="p-4 w-full flex-1 text-white">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="p-4 w-full flex-1 text-white"
+      >
         <ScreenHeader
           icon="💪"
           title="Новая тренировка"
@@ -86,7 +92,7 @@ export default function WorkoutForm() {
           submitLabel="Сохранить"
           onSubmit={handleSubmit}
         />
-      </div>
+      </motion.div>
     </Screen>
   );
 }

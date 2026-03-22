@@ -7,6 +7,21 @@ import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import { trainerApi, type TodayOverview, type UnreadCounts } from '@/api/trainer';
+import { useAuth } from '@/contexts/AuthContext';
+import { getCurrentHour } from '@/utils/date';
+
+function getGreeting(fullName: string | null | undefined) {
+  const hour = getCurrentHour();
+  const firstName = fullName?.trim().split(' ')[0] ?? null;
+  const base = hour < 12 ? 'Доброе утро' : hour < 18 ? 'Добрый день' : 'Добрый вечер';
+  return firstName ? `${base}, ${firstName}` : base;
+}
+
+function getTrainerSubtitle(todayCount: number) {
+  if (todayCount === 0) return 'Тренировок сегодня нет — можно выдохнуть.';
+  if (todayCount === 1) return '1 тренировка запланирована на сегодня.';
+  return `${todayCount} тренировки запланированы на сегодня.`;
+}
 import {
   ClockIcon,
   UserGroupIcon,
@@ -17,6 +32,7 @@ import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 
 export default function TrainerTodayScreen() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [overview, setOverview] = useState<TodayOverview | null>(null);
   const [unreadCounts, setUnreadCounts] = useState<UnreadCounts | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,6 +72,25 @@ export default function TrainerTodayScreen() {
           title="Сегодня"
           description="Что происходит сегодня — запланированные тренировки, непрочитанные сообщения и активность атлетов"
         />
+
+        {/* Greeting block */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full rounded-2xl p-4 mb-4 border border-(--color_primary_light)/30 bg-(--color_primary_light)/10"
+        >
+          <div className="flex items-center gap-3">
+            <div className="text-2xl">
+              {getCurrentHour() < 12 ? '☀️' : getCurrentHour() < 18 ? '🌤️' : '🌙'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-base font-bold text-white">{getGreeting(user?.fullName)}</div>
+              <div className="text-xs text-(--color_text_secondary) mt-0.5">
+                {getTrainerSubtitle(overview.stats.todayWorkoutsCount)}
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
         <ScreenHint className="mb-4">
           Дашборд тренера на текущий день. Красные бейджи — непрочитанные сообщения от атлетов и групп.{' '}

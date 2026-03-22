@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router';
+import { motion } from 'framer-motion';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 const DOCS: Record<string, { title: string; content: React.ReactNode }> = {
@@ -339,7 +340,12 @@ export default function DocsScreen() {
 
   return (
     <div className="h-full overflow-y-auto" style={{ backgroundColor: 'var(--color_bg)' }}>
-      <div className="p-4 w-full mx-auto pb-12">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="p-4 w-full mx-auto pb-12"
+      >
         {/* Header */}
         <div className="flex items-center gap-3 mb-6 pt-4">
           <button
@@ -359,7 +365,7 @@ export default function DocsScreen() {
         <p className="text-xs text-(--color_text_muted) text-center mt-6">
           Vervel · nazar9505@yandex.ru
         </p>
-      </div>
+      </motion.div>
     </div>
   );
 }

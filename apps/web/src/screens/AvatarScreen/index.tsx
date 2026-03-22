@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
+import { toDateKey, getCurrentHour } from '@/utils/date';
 
 
 interface TodayWorkout {
@@ -16,6 +17,22 @@ interface TodayWorkout {
   workoutType: string;
   exerciseCount: number;
   notes: string | null;
+}
+
+function getGreeting(fullName: string | null | undefined) {
+  const hour = getCurrentHour();
+  const firstName = fullName?.trim().split(' ')[0] ?? null;
+  const base = hour < 12 ? 'Доброе утро' : hour < 18 ? 'Добрый день' : 'Добрый вечер';
+  return firstName ? `${base}, ${firstName}` : base;
+}
+
+function getMotivation(lastWorkoutDaysAgo: number | null, totalWorkouts: number) {
+  if (totalWorkouts === 0) return { text: 'Первая тренировка позади — это уже победа!', emoji: '🎉' };
+  if (lastWorkoutDaysAgo === 0) return { text: 'Уже потренировались сегодня. Отличная работа!', emoji: '🔥' };
+  if (lastWorkoutDaysAgo === 1) return { text: 'Вчера была тренировка — тело восстанавливается.', emoji: '💪' };
+  if (lastWorkoutDaysAgo !== null && lastWorkoutDaysAgo <= 3) return { text: `${lastWorkoutDaysAgo} дня без тренировок — время вернуться!`, emoji: '⚡' };
+  if (lastWorkoutDaysAgo !== null) return { text: `${lastWorkoutDaysAgo} дней перерыва — с возвращением!`, emoji: '👋' };
+  return { text: 'Рады видеть вас снова!', emoji: '👋' };
 }
 
 export default function AvatarScreen() {
@@ -41,8 +58,7 @@ export default function AvatarScreen() {
           setLastWorkoutDaysAgo(avatarRes.data.data.lastWorkoutDaysAgo);
         }
         if (workoutsRes.data.success) {
-          const d = new Date();
-          const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          const todayStr = toDateKey(new Date());
           const found = workoutsRes.data.data.find(
             (w) => (w.date as string).slice(0, 10) === todayStr
           );
@@ -57,6 +73,8 @@ export default function AvatarScreen() {
     load();
   }, []);
 
+  const motivation = !loading ? getMotivation(lastWorkoutDaysAgo, totalWorkouts) : null;
+
   return (
     <Screen className="avatar-screen">
       <div className="p-4 w-full">
@@ -65,6 +83,25 @@ export default function AvatarScreen() {
           title="Карта нагрузки"
           description="Визуализация восстановления мышц — красный цвет значит активная нагрузка, зелёный — мышцы готовы к следующей тренировке"
         />
+
+        {/* Greeting block */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full rounded-2xl p-4 mb-4 border border-(--color_primary_light)/30 bg-(--color_primary_light)/10"
+        >
+          <div className="flex items-center gap-3">
+            <div className="text-2xl">
+              {getCurrentHour() < 12 ? '☀️' : getCurrentHour() < 18 ? '🌤️' : '🌙'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-base font-bold text-white">{getGreeting(user?.fullName)}</div>
+              {motivation && (
+                <div className="text-xs text-(--color_text_secondary) mt-0.5">{motivation.text}</div>
+              )}
+            </div>
+          </div>
+        </motion.div>
 
         <ScreenHint className="mb-4">
           Карта обновляется автоматически после каждой тренировки.{' '}
@@ -104,13 +141,19 @@ export default function AvatarScreen() {
           )}
         </AnimatePresence>
 
-        <AvatarView
-          zones={zones}
-          totalWorkouts={totalWorkouts}
-          lastWorkoutDaysAgo={lastWorkoutDaysAgo}
-          loading={loading}
-          gender={user?.gender ?? 'male'}
-        />
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+        >
+          <AvatarView
+            zones={zones}
+            totalWorkouts={totalWorkouts}
+            lastWorkoutDaysAgo={lastWorkoutDaysAgo}
+            loading={loading}
+            gender={user?.gender ?? 'male'}
+          />
+        </motion.div>
       </div>
     </Screen>
   );
