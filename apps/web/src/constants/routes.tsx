@@ -53,7 +53,7 @@ export const athleteRoutes: RouteItem[] = [
     toolbarPosition: 'left',
   },
   {
-    path: '/',
+    path: '/home',
     label: 'Avatar',
     icon: UserIcon,
     element: <AvatarScreen />,

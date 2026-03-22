@@ -76,7 +76,7 @@ export default function Navigation() {
           </div>
 
           <div className="flex justify-center items-center shrink-0">
-            {centerItem && <ActionButtonCenter route={centerItem} navigate={navigate} />}
+            {centerItem && <ActionButtonCenter route={centerItem} />}
           </div>
 
           <div className="flex justify-around items-center min-w-0">
@@ -113,17 +113,11 @@ function NavItem({ route, unread = 0 }: { route: RouteItem; unread?: number }) {
   );
 }
 
-function ActionButtonCenter({
-  route,
-  navigate,
-}: {
-  route: RouteItem;
-  navigate: ReturnType<typeof useNavigate>;
-}) {
+function ActionButtonCenter({ route }: { route: RouteItem }) {
   return (
-    <button onClick={() => navigate(route.path)} className="nav-button-center main-button">
+    <NavLink to={route.path} end className="nav-button-center outline-none">
       <route.icon className="w-7 h-7" strokeWidth={2.5} />
-    </button>
+    </NavLink>
   );
 }
 
