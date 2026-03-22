@@ -38,6 +38,8 @@ interface WorkoutInlineFormProps {
   preselectedAssignee?: AssignedTo;
   preselectedDate?: string;
   preselectedTime?: string;
+  initialGroups?: TrainerGroupItem[];
+  initialAthletes?: AthleteListItem[];
   onSuccess?: () => void;
   onCancel?: () => void;
   /** Skip outer card wrapper — use when rendering inside BottomSheet */
@@ -49,6 +51,8 @@ export default function WorkoutInlineForm({
   preselectedAssignee,
   preselectedDate,
   preselectedTime,
+  initialGroups,
+  initialAthletes,
   onSuccess,
   onCancel,
   noCard = false,
@@ -56,8 +60,8 @@ export default function WorkoutInlineForm({
 
   // ── Assignees ─────────────────────────────────────────────────────
 
-  const [groups, setGroups] = useState<TrainerGroupItem[]>([]);
-  const [athletes, setAthletes] = useState<AthleteListItem[]>([]);
+  const [groups, setGroups] = useState<TrainerGroupItem[]>(initialGroups ?? []);
+  const [athletes, setAthletes] = useState<AthleteListItem[]>(initialAthletes ?? []);
   const [selectedAssignees, setSelectedAssignees] = useState<AssignedTo[]>(
     editWorkout?.assignedTo ?? []
   );
@@ -80,6 +84,7 @@ export default function WorkoutInlineForm({
 
   useEffect(() => {
     if (!showAssigneePicker) return;
+    if (initialGroups && initialAthletes) return;
     const load = async () => {
       try {
         setLoadingAssignees(true);
@@ -259,7 +264,7 @@ export default function WorkoutInlineForm({
       )}
 
       {loadingAssignees ? (
-        <div className="flex justify-center py-2">
+        <div className="rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) flex items-center justify-center py-2.5">
           <div className="w-4 h-4 border border-white/20 border-t-(--color_primary_light) rounded-full animate-spin" />
         </div>
       ) : (

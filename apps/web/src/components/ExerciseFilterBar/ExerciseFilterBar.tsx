@@ -1,4 +1,4 @@
-import { useRef, useCallback, useLayoutEffect, useEffect } from 'react';
+import { useRef, useCallback, useLayoutEffect, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import type { ExerciseCategory, MuscleZone } from '@/types/Exercise';
@@ -59,36 +59,75 @@ function useScrollMask() {
   return ref;
 }
 
-function FilterChip({ label, active, onClick, layoutId }: { label: string; active: boolean; onClick: () => void; layoutId: string }) {
-  const btnRef = useRef<HTMLButtonElement>(null);
+/* ------------------------------------------------------------------ */
+/* ChipRow — pill positioned via offsetLeft (parent-relative, not     */
+/* viewport-relative), so page scroll doesn't affect the animation    */
+/* ------------------------------------------------------------------ */
 
+interface ChipItem {
+  key: string;
+  label: string;
+}
+
+function ChipRow({
+  chips,
+  activeKey,
+  onChipClick,
+}: {
+  chips: ChipItem[];
+  activeKey: string | null;
+  onChipClick: (key: string) => void;
+}) {
+  const rowRef = useScrollMask();
+  const btnRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const [pill, setPill] = useState<{ left: number; width: number } | null>(null);
+
+  // Measure active chip position relative to the row (offsetLeft = parent-relative)
+  useLayoutEffect(() => {
+    const activeBtn = btnRefs.current.get(activeKey ?? '__none__');
+    if (!activeBtn) { setPill(null); return; }
+    setPill({ left: activeBtn.offsetLeft, width: activeBtn.offsetWidth });
+  }, [activeKey, chips]);
+
+  // Scroll active chip into view
   useEffect(() => {
-    if (active) {
-      btnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-    }
-  }, [active]);
+    const activeBtn = btnRefs.current.get(activeKey ?? '__none__');
+    activeBtn?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+  }, [activeKey]);
 
   return (
-    <button
-      ref={btnRef}
-      onClick={onClick}
-      className={`relative shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border outline-none ${
-        active
-          ? 'text-[white] border-transparent'
-          : 'bg-black/25 text-[white] border-white/10 hover:bg-black/35 hover:border-white/20'
-      }`}
-    >
-      {active && (
-        <motion.span
-          layoutId={layoutId}
-          className="absolute inset-0 rounded-full bg-(--color_primary_light)"
+    <div ref={rowRef} className="relative flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
+      {/* Sliding pill — animates left/width, both parent-relative */}
+      {pill && (
+        <motion.div
+          className="absolute top-0 bottom-0.5 rounded-full bg-(--color_primary_light) pointer-events-none"
+          animate={{ left: pill.left, width: pill.width }}
           transition={{ type: 'spring', stiffness: 400, damping: 35 }}
         />
       )}
-      <span className="relative z-10">{label}</span>
-    </button>
+
+      {chips.map(({ key, label }) => (
+        <button
+          key={key}
+          ref={(el) => {
+            if (el) btnRefs.current.set(key, el);
+            else btnRefs.current.delete(key);
+          }}
+          onClick={() => onChipClick(key)}
+          className={`relative shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border outline-none z-10 transition-colors ${
+            activeKey === key
+              ? 'text-white border-transparent'
+              : 'bg-black/25 text-white border-white/10 hover:bg-black/35 hover:border-white/20'
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
   );
 }
+
+/* ------------------------------------------------------------------ */
 
 interface Props {
   exerciseCount: number;
@@ -115,8 +154,15 @@ export default function ExerciseFilterBar({
   availableZones,
   categoryLabels = CATEGORY_LABELS,
 }: Props) {
-  const catRef = useScrollMask();
-  const zoneRef = useScrollMask();
+  const catChips: ChipItem[] = [
+    { key: '__all__', label: 'Все' },
+    ...availableCategories.map((cat) => ({ key: cat, label: categoryLabels[cat] })),
+  ];
+
+  const zoneChips: ChipItem[] = [
+    { key: '__all__', label: 'Все зоны' },
+    ...availableZones.map((zone) => ({ key: zone, label: getZoneLabel(zone) })),
+  ];
 
   return (
     <div className="space-y-2.5">
@@ -131,31 +177,17 @@ export default function ExerciseFilterBar({
         />
       </div>
 
-      <motion.div layoutRoot ref={catRef} className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
-        <FilterChip label="Все" active={!categoryFilter} onClick={() => onCategoryChange(null)} layoutId="filter-cat" />
-        {availableCategories.map((cat) => (
-          <FilterChip
-            key={cat}
-            label={categoryLabels[cat]}
-            active={categoryFilter === cat}
-            onClick={() => onCategoryChange(categoryFilter === cat ? null : cat)}
-            layoutId="filter-cat"
-          />
-        ))}
-      </motion.div>
+      <ChipRow
+        chips={catChips}
+        activeKey={categoryFilter ?? '__all__'}
+        onChipClick={(key) => onCategoryChange(key === '__all__' ? null : (key as ExerciseCategory))}
+      />
 
-      <motion.div layoutRoot ref={zoneRef} className="flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
-        <FilterChip label="Все зоны" active={!zoneFilter} onClick={() => onZoneChange(null)} layoutId="filter-zone" />
-        {availableZones.map((zone) => (
-          <FilterChip
-            key={zone}
-            label={getZoneLabel(zone)}
-            active={zoneFilter === zone}
-            onClick={() => onZoneChange(zoneFilter === zone ? null : zone)}
-            layoutId="filter-zone"
-          />
-        ))}
-      </motion.div>
+      <ChipRow
+        chips={zoneChips}
+        activeKey={zoneFilter ?? '__all__'}
+        onChipClick={(key) => onZoneChange(key === '__all__' ? null : (key as MuscleZone))}
+      />
     </div>
   );
 }

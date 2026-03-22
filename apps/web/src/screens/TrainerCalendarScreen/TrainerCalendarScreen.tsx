@@ -19,7 +19,7 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import TrainerCalendar, { type TrainerDayData } from '@/components/TrainerCalendar/TrainerCalendar';
-import { trainerApi, type ScheduledWorkout, type AthleteListItem } from '@/api/trainer';
+import { trainerApi, type ScheduledWorkout, type AthleteListItem, type TrainerGroupItem } from '@/api/trainer';
 import { toDateKey, parseApiDateTime, toApiDateTime } from '@/utils/date';
 import { PlusIcon, CalendarDaysIcon, UserPlusIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
@@ -91,7 +91,7 @@ function WorkoutCardInner({
     return (
       <div className="flex items-center gap-2 min-w-0">
         <UserPlusIcon className="w-3.5 h-3.5 text-sky-300 shrink-0" />
-        <span className="text-sm font-medium text-sky-100 truncate">
+        <span className="text-sm font-medium text-sky-500 truncate">
           {workout.workoutData.clientName || 'Вводная'}
         </span>
         {workout.workoutData.clientPhone && (
@@ -285,7 +285,7 @@ function IntroSessionForm({
           <UserPlusIcon className="w-5 h-5 text-sky-300" />
         </div>
         <div>
-          <div className="text-sm font-semibold text-sky-100">Вводная тренировка</div>
+          <div className="text-sm font-semibold text-sky-500">Вводная тренировка</div>
           <div className="text-xs text-(--color_text_muted)">Слот занят — клиент без аккаунта</div>
         </div>
       </div>
@@ -356,6 +356,7 @@ export default function TrainerCalendarScreen() {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [editingWorkout, setEditingWorkout] = useState<ScheduledWorkout | null>(null);
   const [athletes, setAthletes] = useState<AthleteListItem[]>([]);
+  const [groups, setGroups] = useState<TrainerGroupItem[]>([]);
   const [activeWorkout, setActiveWorkout] = useState<ScheduledWorkout | null>(null);
   const [draggedWidth, setDraggedWidth] = useState<number | undefined>(undefined);
   const [sheetTab, setSheetTab] = useState<'workout' | 'intro'>('workout');
@@ -405,6 +406,7 @@ export default function TrainerCalendarScreen() {
 
   useEffect(() => {
     trainerApi.listAthletes().then((res) => setAthletes(res.data.data)).catch(() => {});
+    trainerApi.listGroups().then((res) => setGroups(res.data.data)).catch(() => {});
   }, []);
 
   const nicknames = useMemo(() => {
@@ -757,7 +759,7 @@ export default function TrainerCalendarScreen() {
                 onClick={() => setSheetTab('intro')}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ring-1 ${
                   sheetTab === 'intro'
-                    ? 'ring-sky-400/50 text-sky-100'
+                    ? 'ring-sky-400/50 text-sky-500'
                     : 'ring-transparent text-(--color_text_muted) hover:text-white bg-(--color_bg_card_hover)'
                 }`}
                 style={sheetTab === 'intro' ? INTRO_STRIPE_STYLE : undefined}
@@ -772,6 +774,8 @@ export default function TrainerCalendarScreen() {
                 key={`${selectedDateStr}-${selectedTime}`}
                 preselectedDate={selectedDateStr}
                 preselectedTime={selectedTime}
+                initialGroups={groups}
+                initialAthletes={athletes}
                 noCard
                 onSuccess={() => { setSelectedTime(null); loadWorkouts(currentMonth); }}
                 onCancel={() => setSelectedTime(null)}

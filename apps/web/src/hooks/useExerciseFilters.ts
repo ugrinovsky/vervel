@@ -9,10 +9,10 @@ export function useExerciseFilters(exercises: Exercise[]) {
   const [zoneFilter, setZoneFilter] = useState<MuscleZone | null>(null);
 
   const availableCategories = useMemo<ExerciseCategory[]>(() => {
+    const ALL: ExerciseCategory[] = ['strength', 'functional', 'olympic', 'cardio', 'gymnastics'];
+    if (exercises.length === 0) return ALL;
     const set = new Set(exercises.map((e) => e.category));
-    return (
-      ['strength', 'functional', 'olympic', 'cardio', 'gymnastics'] as ExerciseCategory[]
-    ).filter((c) => set.has(c));
+    return ALL.filter((c) => set.has(c));
   }, [exercises]);
 
   const availableZones = useMemo<MuscleZone[]>(() => {

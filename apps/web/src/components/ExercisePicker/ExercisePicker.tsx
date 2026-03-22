@@ -1,74 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { ExerciseDetailContent } from '@/components/ExerciseDetailSheet/ExerciseDetailSheet';
-import ExerciseFilterBar, { CATEGORY_LABELS_SHORT } from '@/components/ExerciseFilterBar/ExerciseFilterBar';
+import ExerciseFilterBar from '@/components/ExerciseFilterBar/ExerciseFilterBar';
 import type { Exercise, ExerciseFull, ExerciseWithSets } from '@/types/Exercise';
 import { exercisesApi } from '@/api/exercises';
 import { useExerciseFilters } from '@/hooks/useExerciseFilters';
-import { getZoneLabel } from '@/util/zones';
-
-/* ------------------------------------------------------------------ */
-/* ExerciseCard                                                         */
-/* ------------------------------------------------------------------ */
-
-function ExerciseCard({
-  exercise,
-  onClick,
-  onQuickAdd,
-}: {
-  exercise: Exercise;
-  onClick: () => void;
-  onQuickAdd: () => void;
-}) {
-  const [imgError, setImgError] = useState(false);
-  const [imgLoaded, setImgLoaded] = useState(false);
-
-  return (
-    <div className="flex flex-col rounded-xl overflow-hidden border border-(--color_border) bg-(--color_bg_card) hover:bg-(--color_bg_card_hover) transition-all text-left">
-      <button onClick={onClick} className="w-full aspect-video bg-black/30 overflow-hidden focus:outline-none relative">
-        {exercise.imageUrl && !imgError ? (
-          <>
-            {!imgLoaded && (
-              <div className="absolute inset-0 animate-pulse bg-white/8" />
-            )}
-            <img
-              src={exercise.imageUrl}
-              alt={exercise.title}
-              loading="lazy"
-              onError={() => setImgError(true)}
-              onLoad={() => setImgLoaded(true)}
-              className={`w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
-            />
-          </>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-indigo-900/60 to-purple-900/60">
-            <span className="text-2xl font-bold text-white/20">{exercise.title[0]}</span>
-          </div>
-        )}
-      </button>
-
-      <div className="px-2 pt-1.5 pb-1 cursor-pointer flex-1" onClick={onClick}>
-        <p className="text-xs font-medium text-(--color_text_secondary) leading-snug line-clamp-2">
-          {exercise.title}
-        </p>
-        {exercise.zones.length > 0 && (
-          <span className="text-[9px] text-(--color_primary_light) opacity-80 mt-0.5 block">
-            {getZoneLabel(exercise.zones[0])}
-          </span>
-        )}
-      </div>
-
-      <button
-        onClick={(e) => { e.stopPropagation(); onQuickAdd(); }}
-        className="mx-2 mb-2 py-1 rounded-lg text-xs font-semibold transition-all active:scale-95 bg-(--color_primary_light)/15 hover:bg-(--color_primary_light)/25 text-(--color_primary_light)"
-      >
-        + Добавить
-      </button>
-    </div>
-  );
-}
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import { ExercisePickerCard } from '@/components/ExerciseCard/ExerciseCard';
 
 /* ------------------------------------------------------------------ */
 /* ExercisePicker                                                       */
@@ -103,7 +43,9 @@ export default function ExercisePicker({ onSelect, workoutType, open: controlled
     exercisesApi.list().then((res) => setExercises(res ?? []));
   }, []);
 
-  const visibleExercises = filtered.slice(0, 60);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const filterKey = `${search}|${categoryFilter}|${zoneFilter}`;
+  const { visible: visibleExercises, sentinelRef, hasMore, isPending } = useInfiniteScroll(filtered, filterKey, scrollContainerRef);
 
   const openDetail = (ex: Exercise) => {
     setSelected(ex);
@@ -203,12 +145,10 @@ export default function ExercisePicker({ onSelect, workoutType, open: controlled
               style={{ height: 'calc(90dvh - 140px)' }}
             >
               {/* Scrollable grid */}
-              <div className="flex-1 overflow-y-auto min-h-0 pb-4">
+              <div ref={scrollContainerRef} className={`flex-1 min-h-0 pb-4 ${isPending ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                 {/* Count */}
                 <p className="text-xs text-(--color_text_muted) mb-3">
-                  {filtered.length > 60
-                    ? `Показано 60 из ${filtered.length} — уточните поиск`
-                    : `${filtered.length} упражнений`}
+                  {filtered.length} упражнений
                 </p>
 
                 {visibleExercises.length === 0 ? (
@@ -216,11 +156,14 @@ export default function ExercisePicker({ onSelect, workoutType, open: controlled
                     Ничего не найдено
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    {visibleExercises.map((ex) => (
-                      <ExerciseCard key={ex.id} exercise={ex} onClick={() => openDetail(ex)} onQuickAdd={() => handleQuickAdd(ex)} />
-                    ))}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-2 gap-2">
+                      {visibleExercises.map((ex) => (
+                        <ExercisePickerCard key={ex.id} exercise={ex} onClick={() => openDetail(ex)} onQuickAdd={() => handleQuickAdd(ex)} />
+                      ))}
+                    </div>
+                    {hasMore && <div ref={sentinelRef} className="h-8" />}
+                  </>
                 )}
               </div>
 
@@ -236,7 +179,7 @@ export default function ExercisePicker({ onSelect, workoutType, open: controlled
                   zoneFilter={zoneFilter}
                   onZoneChange={setZoneFilter}
                   availableZones={availableZones}
-                  categoryLabels={CATEGORY_LABELS_SHORT}
+
                 />
               </div>
             </motion.div>

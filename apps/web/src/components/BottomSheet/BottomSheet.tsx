@@ -21,7 +21,8 @@ function AnimatedHeight({ children }: { children: ReactNode }) {
     const el = contentRef.current;
     if (!el) return;
     const observer = new ResizeObserver(([entry]) => {
-      setHeight(entry.contentRect.height);
+      const h = entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height;
+      setHeight(h);
     });
     observer.observe(el);
     return () => observer.disconnect();
@@ -33,7 +34,7 @@ function AnimatedHeight({ children }: { children: ReactNode }) {
       transition={{ type: 'spring', damping: 30, stiffness: 250 }}
       style={{ overflow: 'hidden' }}
     >
-      <div ref={contentRef} className="px-px pb-px">{children}</div>
+      <div ref={contentRef} className="p-px">{children}</div>
     </motion.div>
   );
 }

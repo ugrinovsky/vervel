@@ -5,90 +5,13 @@ import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import ExerciseDetailSheet from '@/components/ExerciseDetailSheet/ExerciseDetailSheet';
-import ExerciseFilterBar, { CATEGORY_LABELS } from '@/components/ExerciseFilterBar/ExerciseFilterBar';
+import ExerciseFilterBar from '@/components/ExerciseFilterBar/ExerciseFilterBar';
 import { useExercises } from '@/hooks/useExercises';
 import { useExerciseFilters } from '@/hooks/useExerciseFilters';
-import type { Exercise, ExerciseCategory } from '@/types/Exercise';
-import { getZoneLabel } from '@/util/zones';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import type { Exercise } from '@/types/Exercise';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
-
-const CATEGORY_TEXT_COLORS: Record<ExerciseCategory, string> = {
-  strength:   'text-blue-400',
-  olympic:    'text-yellow-400',
-  gymnastics: 'text-purple-400',
-  functional: 'text-orange-400',
-  cardio:     'text-green-400',
-};
-
-/* ------------------------------------------------------------------ */
-/* Exercise card                                                        */
-/* ------------------------------------------------------------------ */
-
-function ExerciseCard({ exercise, onClick }: { exercise: Exercise; onClick: () => void }) {
-  const [imgError, setImgError] = useState(false);
-  const [imgLoaded, setImgLoaded] = useState(false);
-
-  return (
-    <button
-      onClick={onClick}
-      className="flex flex-col rounded-2xl overflow-hidden border border-white/10 bg-white/5 hover:bg-white/10 active:scale-[0.98] transition-all text-left w-full"
-    >
-      {/* Image */}
-      <div className="w-full aspect-3/2 bg-black/20 overflow-hidden relative">
-        {exercise.imageUrl && !imgError ? (
-          <>
-            {!imgLoaded && (
-              <div className="absolute inset-0 animate-pulse bg-white/8" />
-            )}
-            <img
-              src={exercise.imageUrl}
-              alt={exercise.title}
-              loading="lazy"
-              onError={() => setImgError(true)}
-              onLoad={() => setImgLoaded(true)}
-              className={`w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
-            />
-          </>
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-900/50 to-purple-900/50">
-            <span className="text-3xl font-black text-white/15">{exercise.title[0]}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Info */}
-      <div className="px-2.5 py-2 flex flex-col gap-1 flex-1">
-        <p className="text-sm font-medium text-(--color_text_secondary) leading-snug line-clamp-2">
-          {exercise.title}
-        </p>
-        <div className="mt-auto flex items-end justify-between gap-1">
-          <div className="flex flex-col gap-1 min-w-0">
-            <p className={`text-[10px] leading-none truncate ${CATEGORY_TEXT_COLORS[exercise.category] ?? 'text-(--color_text_muted)'}`}>
-              {CATEGORY_LABELS[exercise.category] ?? exercise.category}
-            </p>
-            {exercise.zones.length > 0 && (
-              <p className="text-[10px] leading-none truncate text-(--color_text_muted)">
-                {exercise.zones.slice(0, 2).map(getZoneLabel).join(' · ')}
-              </p>
-            )}
-          </div>
-          <div className="flex items-end gap-px shrink-0">
-            {[1, 2, 3, 4, 5, 6].map((bar) => {
-              const filled = bar <= Math.round(exercise.intensity * 6);
-              return (
-                <div
-                  key={bar}
-                  style={{ height: bar * 3 + 2 }}
-                  className={`w-1 rounded-sm transition-colors ${filled ? 'bg-(--color_primary_light)' : 'bg-white/15'}`}
-                />
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </button>
-  );
-}
+import { ExerciseLibraryCard } from '@/components/ExerciseCard/ExerciseCard';
 
 /* ------------------------------------------------------------------ */
 /* Screen                                                               */
@@ -106,15 +29,17 @@ export default function TrainerExerciseLibraryScreen() {
   } = useExerciseFilters(exercises);
 
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+
+  const filterKey = `${search}|${categoryFilter}|${zoneFilter}`;
+  const { visible, sentinelRef, hasMore, isPending } = useInfiniteScroll(filtered, filterKey);
+
   // Scroll to top when filter chip changes
   useEffect(() => {
     document.querySelector('.trainer-exercise-library-screen')?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [categoryFilter, zoneFilter]);
 
-  const visible = filtered.slice(0, 80);
-
   return (
-    <Screen className="trainer-exercise-library-screen">
+    <Screen className={`trainer-exercise-library-screen${isPending ? ' !overflow-hidden' : ''}`}>
       <div className="flex flex-col w-full">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <ScreenHeader
@@ -137,11 +62,7 @@ export default function TrainerExerciseLibraryScreen() {
         {/* Results count */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="px-4 mb-3">
           <p className="text-xs text-(--color_text_muted)">
-            {loading
-              ? '…'
-              : filtered.length > 80
-                ? `Показано 80 из ${filtered.length} — уточните поиск`
-                : `${filtered.length} упражнений`}
+            {loading ? '…' : `${filtered.length} упражнений`}
           </p>
         </motion.div>
 
@@ -171,16 +92,12 @@ export default function TrainerExerciseLibraryScreen() {
           ) : (
             <div className="grid grid-cols-2 gap-3">
               {visible.map((ex) => (
-                <ExerciseCard key={ex.id} exercise={ex} onClick={() => setSelectedExercise(ex)} />
+                <ExerciseLibraryCard key={ex.id} exercise={ex} onClick={() => setSelectedExercise(ex)} />
               ))}
             </div>
           )}
 
-          {filtered.length > 80 && !loading && (
-            <p className="text-center text-xs text-(--color_text_muted) mt-4">
-              Уточните поиск или выберите категорию / зону мышц
-            </p>
-          )}
+          {hasMore && <div ref={sentinelRef} className="h-8" />}
         </motion.div>
 
         {/* Filter bar — sticky above nav */}
