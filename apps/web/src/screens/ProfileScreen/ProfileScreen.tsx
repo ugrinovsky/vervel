@@ -11,6 +11,7 @@ import { aiApi } from '@/api/ai';
 import { useAuth } from '@/contexts/AuthContext';
 import ProfileTab from './tabs/ProfileTab';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
+import Tabs from '@/components/ui/Tabs';
 import WalletTab from './tabs/WalletTab';
 import SettingsTab from './tabs/SettingsTab';
 
@@ -100,25 +101,15 @@ export default function ProfileScreen() {
           <span className="text-white font-medium">Настройки</span> — тема, уведомления и выход.
         </ScreenHint>
 
-        {/* Tabs */}
-        <div className="flex gap-1 bg-(--color_bg_card) rounded-2xl p-1 border border-(--color_border) mb-6">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                setSearchParams({ tab: tab.id }, { replace: true });
-              }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                activeTab === tab.id
-                  ? 'bg-(--color_primary_light) text-white shadow-sm'
-                  : 'text-(--color_text_muted) hover:text-white'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <Tabs
+          tabs={TABS}
+          active={activeTab}
+          onChange={(id) => {
+            setActiveTab(id);
+            setSearchParams({ tab: id }, { replace: true });
+          }}
+          className="mb-6"
+        />
 
         <AnimatePresence mode="wait">
           {activeTab === 'profile' && (
@@ -128,7 +119,6 @@ export default function ProfileScreen() {
             <WalletTab
               key="wallet"
               balance={balance}
-              setBalance={setBalance}
               inTrainerMode={inTrainerMode}
             />
           )}

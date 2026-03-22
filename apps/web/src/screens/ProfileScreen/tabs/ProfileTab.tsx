@@ -66,12 +66,6 @@ export default function ProfileTab({ data, trainerStats }: Props) {
       .catch(() => {});
   }, [inAthleteMode]);
 
-  const getInitials = () => {
-    if (data.user.fullName) {
-      return data.user.fullName.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2);
-    }
-    return data.user.email?.[0]?.toUpperCase() || '?';
-  };
 
   const formatDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -111,9 +105,9 @@ export default function ProfileTab({ data, trainerStats }: Props) {
   return (
     <motion.div
       key="profile"
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 10 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.15 }}
       className="space-y-4"
     >

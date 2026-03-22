@@ -13,11 +13,10 @@ const TOP_UP_AMOUNTS = [100, 250, 500, 1000];
 
 interface Props {
   balance: number | null;
-  setBalance: (b: number) => void;
   inTrainerMode: boolean;
 }
 
-export default function WalletTab({ balance, setBalance, inTrainerMode }: Props) {
+export default function WalletTab({ balance, inTrainerMode }: Props) {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [topping, setTopping] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
@@ -60,9 +59,9 @@ export default function WalletTab({ balance, setBalance, inTrainerMode }: Props)
   return (
     <motion.div
       key="wallet"
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 10 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.15 }}
       className="space-y-4"
     >
