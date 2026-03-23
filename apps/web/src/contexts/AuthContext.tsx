@@ -2,7 +2,9 @@ import { createContext, useContext, useState, useCallback, useMemo, type ReactNo
 import type { UserRole } from '@/api/auth';
 import { ThemeController } from '@/util/ThemeController';
 
-interface AuthUser {
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+export interface AuthUser {
   id: number;
   email: string;
   fullName: string;
@@ -14,19 +16,31 @@ interface AuthUser {
 
 interface AuthContextValue {
   user: AuthUser | null;
-  isTrainer: boolean;
-  isAthlete: boolean;
-  /** Current active cabinet when role === 'both'. Otherwise matches the single role. */
-  activeMode: 'trainer' | 'athlete';
-  /** Wallet balance in rubles — for AI features, donations. null = not yet loaded. */
-  balance: number | null;
-  setBalance: (balance: number) => void;
-  switchMode: () => void;
   login: (user: AuthUser) => void;
   logout: () => void;
 }
 
+interface RoleContextValue {
+  isTrainer: boolean;
+  isAthlete: boolean;
+  /** Current active cabinet when role === 'both'. Otherwise matches the single role. */
+  activeMode: 'trainer' | 'athlete';
+  switchMode: () => void;
+}
+
+interface BalanceContextValue {
+  /** Wallet balance in rubles — for AI features, donations. null = not yet loaded. */
+  balance: number | null;
+  setBalance: (balance: number) => void;
+}
+
+// ─── Contexts ────────────────────────────────────────────────────────────────
+
 const AuthContext = createContext<AuthContextValue | null>(null);
+const RoleContext = createContext<RoleContextValue | null>(null);
+const BalanceContext = createContext<BalanceContextValue | null>(null);
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function getStoredUser(): AuthUser | null {
   try {
@@ -41,10 +55,11 @@ function getStoredUser(): AuthUser | null {
 function getStoredMode(user: AuthUser | null): 'trainer' | 'athlete' {
   const stored = localStorage.getItem('activeMode') as 'trainer' | 'athlete' | null;
   if (stored === 'trainer' || stored === 'athlete') return stored;
-  // Default: trainer if has trainer role
   if (user?.role === 'trainer' || user?.role === 'both') return 'trainer';
   return 'athlete';
 }
+
+// ─── Provider ────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const storedUser = getStoredUser();
@@ -64,7 +79,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(u);
     if (u.balance !== undefined) setBalance(u.balance);
     ThemeController.apply(u.themeHue ?? ThemeController.getStored());
-    // Reset mode to match role on login
     const mode = u.role === 'athlete' ? 'athlete' : 'trainer';
     localStorage.setItem('activeMode', mode);
     setActiveMode(mode);
@@ -87,26 +101,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const value = useMemo<AuthContextValue>(
+  const authValue = useMemo<AuthContextValue>(
+    () => ({ user, login, logout }),
+    [user, login, logout],
+  );
+
+  const roleValue = useMemo<RoleContextValue>(
     () => ({
-      user,
       isTrainer: user?.role === 'trainer' || user?.role === 'both',
       isAthlete: user?.role === 'athlete' || user?.role === 'both',
       activeMode,
-      balance,
-      setBalance,
       switchMode,
-      login,
-      logout,
     }),
-    [user, activeMode, balance, switchMode, login, logout]
+    [user, activeMode, switchMode],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  const balanceValue = useMemo<BalanceContextValue>(
+    () => ({ balance, setBalance }),
+    [balance],
+  );
+
+  return (
+    <AuthContext.Provider value={authValue}>
+      <RoleContext.Provider value={roleValue}>
+        <BalanceContext.Provider value={balanceValue}>
+          {children}
+        </BalanceContext.Provider>
+      </RoleContext.Provider>
+    </AuthContext.Provider>
+  );
 }
 
+// ─── Hooks ───────────────────────────────────────────────────────────────────
+
+/** Identity: user, login, logout. */
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
+}
+
+/** Role & cabinet mode: isTrainer, isAthlete, activeMode, switchMode. */
+export function useActiveMode(): RoleContextValue {
+  const ctx = useContext(RoleContext);
+  if (!ctx) throw new Error('useActiveMode must be used within AuthProvider');
+  return ctx;
+}
+
+/** Wallet balance: balance, setBalance. */
+export function useBalance(): BalanceContextValue {
+  const ctx = useContext(BalanceContext);
+  if (!ctx) throw new Error('useBalance must be used within AuthProvider');
   return ctx;
 }

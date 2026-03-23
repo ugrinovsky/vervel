@@ -15,8 +15,9 @@ import InviteScreen from '@/screens/InviteScreen/InviteScreen';
 import DocsScreen from '@/screens/DocsScreen/DocsScreen';
 import AvatarScreen from '@/screens/AvatarScreen/AvatarScreen';
 import LandingScreen from '@/screens/LandingScreen/LandingScreen';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { AuthProvider, useAuth, useActiveMode } from '@/contexts/AuthContext';
 import { useAchievementToast } from '@/hooks/useAchievementToast';
+import IncomingCallWatcher from '@/components/VideoCall/IncomingCallWatcher';
 
 import 'tailwindcss';
 import './App.css';
@@ -34,7 +35,7 @@ function ProtectedRoute({ children }: { children: JSX.Element }) {
 
 /** Root screen: redirects trainers (or 'both' in trainer mode) to /trainer */
 function HomeScreen(): JSX.Element {
-  const { isTrainer, isAthlete, activeMode } = useAuth();
+  const { isTrainer, isAthlete, activeMode } = useActiveMode();
   const showTrainerNav = isTrainer && (!isAthlete || activeMode === 'trainer');
   if (showTrainerNav) {
     return <Navigate to="/trainer" replace />;
@@ -45,6 +46,9 @@ function HomeScreen(): JSX.Element {
 function AppContent(): JSX.Element {
   const location = useLocation();
   useAchievementToast();
+  const { user } = useAuth();
+  const { isAthlete, activeMode } = useActiveMode();
+  const showIncomingCallWatcher = !!user && isAthlete && activeMode === 'athlete';
   const isAuthPage =
     location.pathname === '/' ||
     location.pathname === '/login' ||

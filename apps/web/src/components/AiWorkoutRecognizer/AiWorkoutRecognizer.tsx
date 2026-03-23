@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CameraIcon, SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { aiApi, type AiWorkoutResult } from '@/api/ai';
-import { useAuth } from '@/contexts/AuthContext';
+import { useBalance } from '@/contexts/AuthContext';
 
 const COST_RECOGNIZE = 10;
 const MAX_FILE_SIZE_MB = 5;
@@ -90,7 +90,7 @@ function AiLoadingView() {
  * и распознать упражнения через AI. Форма открывается в BottomSheet.
  */
 export default function AiWorkoutRecognizer({ onResult }: Props) {
-  const { balance, setBalance } = useAuth();
+  const { balance, setBalance } = useBalance();
   const hasEnoughBalance = balance === null || balance >= COST_RECOGNIZE;
 
   const [open, setOpen] = useState(false);

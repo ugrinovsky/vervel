@@ -2,14 +2,14 @@ import './styles.css';
 import { useEffect, useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router';
 import { athleteRoutes, trainerRoutes, RouteItem } from '@/constants/routes';
-import { useAuth } from '@/contexts/AuthContext';
+import { useActiveMode } from '@/contexts/AuthContext';
 import Badge from '@/components/ui/Badge';
 import { athleteApi } from '@/api/athlete';
 import { useTrainerUnreadCounts } from '@/hooks/useTrainerUnreadCounts';
 
 export default function Navigation() {
   const navigate = useNavigate();
-  const { isTrainer, isAthlete, activeMode } = useAuth();
+  const { isTrainer, isAthlete, activeMode } = useActiveMode();
   const showTrainerNav = isTrainer && (!isAthlete || activeMode === 'trainer');
 
   const { data: trainerUnread } = useTrainerUnreadCounts(showTrainerNav ? 30_000 : undefined);

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import toast, { type Toast } from 'react-hot-toast';
 import { streakApi, type Achievement } from '@/api/streak';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, useActiveMode } from '@/contexts/AuthContext';
 
 function AchievementToast({ t, achievement }: { t: Toast; achievement: Achievement }) {
   return (
@@ -60,7 +60,8 @@ export async function checkForNewAchievements() {
 
 /** Монтируется в App — проверяет при старте и при возврате на вкладку */
 export function useAchievementToast() {
-  const { user, activeMode } = useAuth();
+  const { user } = useAuth();
+  const { activeMode } = useActiveMode();
   const initialDone = useRef(false);
 
   useEffect(() => {

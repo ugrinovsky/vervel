@@ -4,7 +4,7 @@ import AnimatedBlock from '@/components/ui/AnimatedBlock';
 import toast from 'react-hot-toast';
 import { profileApi, type ProfileData } from '@/api/profile';
 import { privateApi } from '@/api/http/privateApi';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, useActiveMode } from '@/contexts/AuthContext';
 import AthleteQrCode from '@/components/AthleteQrCode/AthleteQrCode';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import type { TrainerProfileStats } from '@/api/trainer';
@@ -21,7 +21,8 @@ interface Props {
 
 export default function ProfileTab({ data, trainerStats }: Props) {
   const navigate = useNavigate();
-  const { isAthlete, isTrainer, activeMode, switchMode, login, user } = useAuth();
+  const { login, user } = useAuth();
+  const { isAthlete, isTrainer, activeMode, switchMode } = useActiveMode();
   const isBoth = isTrainer && isAthlete;
   const inTrainerMode = isTrainer && (!isAthlete || activeMode === 'trainer');
   const inAthleteMode = isAthlete && (!isTrainer || activeMode === 'athlete');

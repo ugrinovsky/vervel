@@ -8,7 +8,7 @@ import { profileApi, type ProfileData } from '@/api/profile';
 import { trainerApi, type TrainerProfileStats } from '@/api/trainer';
 import { aiApi } from '@/api/ai';
 
-import { useAuth } from '@/contexts/AuthContext';
+import { useActiveMode, useBalance } from '@/contexts/AuthContext';
 import ProfileTab from './tabs/ProfileTab';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import Tabs from '@/components/ui/Tabs';
@@ -25,7 +25,8 @@ const TABS: { id: Tab; label: string }[] = [
 
 export default function ProfileScreen() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { isTrainer, isAthlete, activeMode, balance, setBalance } = useAuth();
+  const { isTrainer, isAthlete, activeMode } = useActiveMode();
+  const { balance, setBalance } = useBalance();
   const inTrainerMode = isTrainer && (!isAthlete || activeMode === 'trainer');
 
   const [activeTab, setActiveTab] = useState<Tab>(() => {

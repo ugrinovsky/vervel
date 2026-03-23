@@ -5,7 +5,7 @@ import ModalOverlay from '@/components/ModalOverlay/ModalOverlay';
 import ReactMarkdown from 'react-markdown';
 import { aiApi } from '@/api/ai';
 import { checkForNewAchievements } from '@/hooks/useAchievementToast';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, useActiveMode, useBalance } from '@/contexts/AuthContext';
 import { AI_CHAT_MIN_BALANCE as MIN_BALANCE } from '@/constants/ai';
 const DISPLAY_STEP = 20;
 const MAX_INPUT_LENGTH = 1000;
@@ -37,7 +37,9 @@ interface Props {
 }
 
 export default function AiChat({ open, onClose }: Props) {
-  const { balance, setBalance, isTrainer, isAthlete, activeMode, user } = useAuth();
+  const { user } = useAuth();
+  const { isTrainer, isAthlete, activeMode } = useActiveMode();
+  const { balance, setBalance } = useBalance();
   const inTrainerMode = isTrainer && (!isAthlete || activeMode === 'trainer');
   const suggestions = inTrainerMode ? TRAINER_SUGGESTIONS : ATHLETE_SUGGESTIONS;
   const hasEnoughBalance = balance === null || balance >= MIN_BALANCE;
