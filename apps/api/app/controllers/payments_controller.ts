@@ -18,7 +18,7 @@ const YOOKASSA_IP_RANGES = [
   '77.75.156.35',
 ]
 
-const ALLOWED_AMOUNTS = [100, 250, 500, 1000] as const
+const ALLOWED_AMOUNTS = [100, 250, 500, 1000]
 
 const topupValidator = vine.compile(
   vine.object({

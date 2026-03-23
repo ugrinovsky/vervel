@@ -79,13 +79,13 @@ export default class OAuthController {
 
     // Check for OAuth errors
     if (request.input('error')) {
-      return response.redirect(302, `${appUrl}/login?error=oauth_denied&provider=${provider}`)
+      return response.redirect().status(302).toPath(`${appUrl}/login?error=oauth_denied&provider=${provider}`)
     }
 
     const code = request.input('code')
 
     if (!code) {
-      return response.redirect(302, `${appUrl}/login?error=oauth_failed&provider=${provider}`)
+      return response.redirect().status(302).toPath(`${appUrl}/login?error=oauth_failed&provider=${provider}`)
     }
 
     try {
