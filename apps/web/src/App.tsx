@@ -48,7 +48,6 @@ function AppContent(): JSX.Element {
   useAchievementToast();
   const { user } = useAuth();
   const { isAthlete, activeMode } = useActiveMode();
-  const showIncomingCallWatcher = !!user && isAthlete && activeMode === 'athlete';
   const isAuthPage =
     location.pathname === '/' ||
     location.pathname === '/login' ||
@@ -57,6 +56,7 @@ function AppContent(): JSX.Element {
     location.pathname === '/select-role' ||
     location.pathname.startsWith('/invite/') ||
     location.pathname.startsWith('/docs/');
+  const showIncomingCallWatcher = !!user && isAthlete && activeMode === 'athlete' && !isAuthPage;
 
   // Deduplicate routes (profile appears in both athlete and trainer routes)
   const uniqueRoutes = routes.filter(
@@ -134,6 +134,7 @@ function AppContent(): JSX.Element {
         />
       </Routes>
       {!isAuthPage && <Navigation />}
+      {showIncomingCallWatcher && <IncomingCallWatcher />}
     </>
   );
 }
