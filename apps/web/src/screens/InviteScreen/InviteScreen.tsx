@@ -15,8 +15,8 @@ interface InviteInfo {
 export default function InviteScreen() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
-  const { token: authToken } = useAuth();
-  const isLoggedIn = !!authToken;
+  const { user: authUser } = useAuth();
+  const isLoggedIn = !!authUser;
 
   const [info, setInfo] = useState<InviteInfo | null>(null);
   const [loadingInfo, setLoadingInfo] = useState(true);

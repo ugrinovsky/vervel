@@ -21,7 +21,7 @@ interface Props {
 
 export default function ProfileTab({ data, trainerStats }: Props) {
   const navigate = useNavigate();
-  const { isAthlete, isTrainer, activeMode, switchMode, login, user, token } = useAuth();
+  const { isAthlete, isTrainer, activeMode, switchMode, login, user } = useAuth();
   const isBoth = isTrainer && isAthlete;
   const inTrainerMode = isTrainer && (!isAthlete || activeMode === 'trainer');
   const inAthleteMode = isAthlete && (!isTrainer || activeMode === 'athlete');
@@ -75,9 +75,9 @@ export default function ProfileTab({ data, trainerStats }: Props) {
     try {
       setBecomingAthlete(true);
       const res = await profileApi.becomeAthlete();
-      if (res.data.success && user && token) {
+      if (res.data.success && user) {
         const updatedUser = res.data.data.user;
-        login({ ...user, role: updatedUser.role as any }, token);
+        login({ ...user, role: updatedUser.role as any });
         toast.success('Режим атлета активирован!');
       }
     } catch {
@@ -91,9 +91,9 @@ export default function ProfileTab({ data, trainerStats }: Props) {
     try {
       setBecomingTrainer(true);
       const res = await profileApi.becomeTrainer();
-      if (res.data.success && user && token) {
+      if (res.data.success && user) {
         const updatedUser = res.data.data.user;
-        login({ ...user, role: updatedUser.role as any }, token);
+        login({ ...user, role: updatedUser.role as any });
         toast.success('Режим тренера активирован!');
       }
     } catch {

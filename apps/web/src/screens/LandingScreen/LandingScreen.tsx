@@ -131,9 +131,9 @@ function fade(delay = 0) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function LandingScreen() {
-  const { token } = useAuth();
+  const { user } = useAuth();
 
-  if (token) return <Navigate to="/home" replace />;
+  if (user) return <Navigate to="/home" replace />;
 
   return (
     /*
