@@ -8,7 +8,7 @@ import ExerciseFilterBar from '@/components/ExerciseFilterBar/ExerciseFilterBar'
 import type { Exercise, ExerciseFull, ExerciseWithSets } from '@/types/Exercise';
 import { exercisesApi } from '@/api/exercises';
 import { useExerciseFilters } from '@/hooks/useExerciseFilters';
-import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import { useClientInfiniteScroll } from '@/hooks/useClientInfiniteScroll';
 import { ExercisePickerCard } from '@/components/ExerciseCard/ExerciseCard';
 
 /* ------------------------------------------------------------------ */
@@ -46,7 +46,7 @@ export default function ExercisePicker({ onSelect, workoutType, open: controlled
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const filterKey = `${search}|${categoryFilter}|${zoneFilter}`;
-  const { visible: visibleExercises, sentinelRef, hasMore } = useInfiniteScroll(filtered, filterKey, scrollContainerRef);
+  const { visible: visibleExercises, sentinelRef, hasMore } = useClientInfiniteScroll(filtered, filterKey, scrollContainerRef);
 
   const openDetail = (ex: Exercise) => {
     setSelected(ex);

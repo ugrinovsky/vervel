@@ -5,12 +5,12 @@ import { useState, useRef, useCallback } from 'react';
  * Supports both "prepend older" (chats scroll-up) and "append older" (lists scroll-down) modes.
  *
  * Usage:
- *   const { items, loading, hasMore, initialize, loadMore } = useScrollPagination(
+ *   const { items, loading, hasMore, initialize, loadMore } = useServerPagination(
  *     (offset, limit) => api.fetchPage(offset, limit),
  *     { limit: 20, mode: 'append' }
  *   );
  */
-export function useScrollPagination<T>(
+export function useServerPagination<T>(
   fetcher: (offset: number, limit: number) => Promise<T[]>,
   { limit = 20, mode = 'append' }: { limit?: number; mode?: 'prepend' | 'append' } = {}
 ) {

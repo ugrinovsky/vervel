@@ -8,7 +8,7 @@ import ExerciseDetailSheet from '@/components/ExerciseDetailSheet/ExerciseDetail
 import ExerciseFilterBar from '@/components/ExerciseFilterBar/ExerciseFilterBar';
 import { useExercises } from '@/hooks/useExercises';
 import { useExerciseFilters } from '@/hooks/useExerciseFilters';
-import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import { useClientInfiniteScroll } from '@/hooks/useClientInfiniteScroll';
 import type { Exercise } from '@/types/Exercise';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import { ExerciseLibraryCard } from '@/components/ExerciseCard/ExerciseCard';
@@ -42,7 +42,7 @@ export default function TrainerExerciseLibraryScreen() {
   }, []);
 
   const filterKey = `${search}|${categoryFilter}|${zoneFilter}`;
-  const { visible, sentinelRef, hasMore } = useInfiniteScroll(filtered, filterKey);
+  const { visible, sentinelRef, hasMore } = useClientInfiniteScroll(filtered, filterKey);
 
   // Scroll to top when filter chip changes
   useEffect(() => {

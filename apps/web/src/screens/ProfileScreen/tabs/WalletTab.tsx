@@ -5,7 +5,7 @@ import { SparklesIcon } from '@heroicons/react/24/outline';
 import { aiApi } from '@/api/ai';
 import type { AiBalance } from '@/api/ai';
 import { paymentsApi } from '@/api/payments';
-import { useScrollPagination } from '@/hooks/useScrollPagination';
+import { useServerPagination } from '@/hooks/useServerPagination';
 import AiChat from '@/components/AiChat/AiChat';
 import AccentButton from '@/components/ui/AccentButton';
 import ListButton from '@/components/ui/ListButton';
@@ -34,7 +34,7 @@ export default function WalletTab({ balance, inTrainerMode }: Props) {
     hasMore: txHasMore,
     initialize: txInit,
     loadMore: txLoadMore,
-  } = useScrollPagination<AiBalance['transactions'][number]>(txFetcher, { limit: 20 });
+  } = useServerPagination<AiBalance['transactions'][number]>(txFetcher, { limit: 20 });
 
   useEffect(() => {
     txInit();

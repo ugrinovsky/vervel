@@ -12,7 +12,7 @@ const PAGE_SIZE = 24;
  * @param scrollRef - optional ref to the scroll container (pass when scroll happens inside
  *                    a div, not the document — e.g. BottomSheet inner scroll div)
  */
-export function useInfiniteScroll<T>(
+export function useClientInfiniteScroll<T>(
   items: T[],
   resetKey: string,
   scrollRef?: RefObject<HTMLElement | null>,
