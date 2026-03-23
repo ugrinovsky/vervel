@@ -3,6 +3,21 @@ import type { Exercise, ExerciseCategory, MuscleZone } from '@/types/Exercise';
 
 export const normalizeSearch = (s: string) => s.toLowerCase().replace(/ё/g, 'е');
 
+export function filterExercises(
+  exercises: Exercise[],
+  search: string,
+  categoryFilter: ExerciseCategory | null,
+  zoneFilter: MuscleZone | null,
+): Exercise[] {
+  const q = normalizeSearch(search.trim());
+  return exercises.filter((ex) => {
+    if (categoryFilter && ex.category !== categoryFilter) return false;
+    if (zoneFilter && !ex.zones.includes(zoneFilter)) return false;
+    if (q) return normalizeSearch(ex.title).includes(q);
+    return true;
+  });
+}
+
 export function useExerciseFilters(exercises: Exercise[]) {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<ExerciseCategory | null>(null);
@@ -22,15 +37,10 @@ export function useExerciseFilters(exercises: Exercise[]) {
     return ALL.filter((z) => set.has(z));
   }, [exercises]);
 
-  const filtered = useMemo(() => {
-    const q = normalizeSearch(search.trim());
-    return exercises.filter((ex) => {
-      if (categoryFilter && ex.category !== categoryFilter) return false;
-      if (zoneFilter && !ex.zones.includes(zoneFilter)) return false;
-      if (q) return normalizeSearch(ex.title).includes(q);
-      return true;
-    });
-  }, [exercises, search, categoryFilter, zoneFilter]);
+  const filtered = useMemo(
+    () => filterExercises(exercises, search, categoryFilter, zoneFilter),
+    [exercises, search, categoryFilter, zoneFilter]
+  );
 
   return {
     search, setSearch,

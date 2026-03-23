@@ -3,6 +3,7 @@ import UserStreak from '#models/user_streak'
 import StreakHistory from '#models/streak_history'
 import type Achievement from '#models/achievement'
 import AchievementService from './AchievementService.js'
+import { computeStreakUpdate } from './streakLogic.js'
 
 export interface StreakUpdateResult {
   streak: UserStreak
@@ -42,44 +43,34 @@ export class StreakService {
     }
 
     const lastDate = userStreak.lastWorkoutDate
-      ? DateTime.fromJSDate(userStreak.lastWorkoutDate.toJSDate()).startOf('day')
+      ? DateTime.fromJSDate(userStreak.lastWorkoutDate.toJSDate())
       : null
 
+    const computation = computeStreakUpdate(
+      lastDate,
+      workoutDate,
+      userStreak.currentStreak,
+      userStreak.longestStreak
+    )
+
+    if (computation.status === 'same_day') {
+      return { streak: userStreak, newAchievements: [], streakStatus: 'continued' }
+    }
+
     const currentDate = workoutDate.startOf('day')
+    const streakStatus = computation.status === 'broken' ? 'broken' : 'continued'
 
-    // Если тренировка в тот же день - не обновляем streak
-    if (lastDate && lastDate.hasSame(currentDate, 'day')) {
-      return {
-        streak: userStreak,
-        newAchievements: [],
-        streakStatus: 'continued',
-      }
-    }
-
-    const daysDiff = lastDate ? Math.floor(currentDate.diff(lastDate, 'days').days) : 999
-
-    let streakStatus: StreakUpdateResult['streakStatus'] = 'continued'
-
-    if (daysDiff === 1) {
-      // Продолжение streak
-      userStreak.currentStreak += 1
-      streakStatus = 'continued'
-    } else {
-      // Streak сломался
-      await this.logStreakEvent(userId, currentDate, 'streak_broken', userStreak.currentStreak, {
-        daysMissed: daysDiff - 1,
-      })
-
-      userStreak.currentStreak = 1
+    if (computation.status === 'broken') {
+      const daysMissed = Math.floor(currentDate.diff(lastDate!.startOf('day'), 'days').days) - 1
+      await this.logStreakEvent(userId, currentDate, 'streak_broken', userStreak.currentStreak, { daysMissed })
       userStreak.streakStartedAt = DateTime.now()
-      streakStatus = 'broken'
     }
 
-    // Обновление рекорда
-    if (userStreak.currentStreak > userStreak.longestStreak) {
-      userStreak.longestStreak = userStreak.currentStreak
-      userStreak.longestStreakAchievedAt = DateTime.now()
+    userStreak.currentStreak = computation.newCurrentStreak
+    userStreak.longestStreak = computation.newLongestStreak
 
+    if (computation.newRecord) {
+      userStreak.longestStreakAchievedAt = DateTime.now()
       await this.logStreakEvent(userId, currentDate, 'new_record', userStreak.currentStreak)
     }
 

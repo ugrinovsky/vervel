@@ -22,6 +22,7 @@ import GhostButton from '@/components/ui/GhostButton';
 import type { ExerciseData, WorkoutTemplate } from '@/api/trainer';
 import type { AiWorkoutResult } from '@/api/ai';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
+import { convertExercisesForType, convertAiResult } from './workoutTypeConversion';
 
 export interface WorkoutFormData {
   date: Date;
@@ -90,46 +91,18 @@ export default function WorkoutFormBase({
     if (exercises.length === 0) { setWorkoutType(newType); return; }
 
     const oldType = workoutType;
-
-    if (oldType !== 'cardio' && newType !== 'cardio') {
-      setWorkoutType(newType);
-      setExercises((prev) => prev.map((ex) => {
-        if (newType === 'crossfit') {
-          const { setsDetail, sets: _c, blockId: _b, ...rest } = ex;
-          return { ...rest, reps: setsDetail?.[0]?.reps ?? ex.reps ?? 10, weight: setsDetail?.[0]?.weight ?? ex.weight };
-        }
-        const { wodType: _w, timeCap: _t, rounds: _r, ...rest } = ex;
-        if (rest.duration != null) return rest;
-        return { ...rest, setsDetail: [
-          { reps: ex.reps ?? 10, weight: ex.weight },
-          { reps: ex.reps ?? 10, weight: ex.weight },
-          { reps: ex.reps ?? 10, weight: ex.weight },
-        ] };
-      }));
-      toast(`Тип изменён на «${WORKOUT_TYPE_CONFIG[newType] ?? newType}». Упражнения адаптированы.`, { icon: 'ℹ️' });
-      return;
-    }
+    setWorkoutType(newType);
+    setExercises((prev) => convertExercisesForType(prev, oldType, newType));
 
     if (newType === 'cardio') {
-      setWorkoutType(newType);
-      setExercises((prev) => prev.map((ex) => {
-        const { setsDetail: _s, sets: _c, reps: _r, weight: _w, blockId: _b,
-                wodType: _wt, timeCap: _tc, rounds: _ro, distance: _d, ...rest } = ex;
-        return { ...rest, duration: 20 };
-      }));
       toast('Подходы убраны — для кардио оставлена длительность (20 мин)', { icon: '🏃' });
-    } else {
-      setWorkoutType(newType);
-      setExercises((prev) => prev.map((ex) => {
-        if (ex.duration == null) return ex;
-        const { duration: _d, ...rest } = ex;
-        if (newType === 'crossfit') return { ...rest, reps: 10 };
-        return { ...rest, sets: 3, reps: 10, setsDetail: [{ reps: 10 }, { reps: 10 }, { reps: 10 }] };
-      }));
+    } else if (oldType === 'cardio') {
       toast(
         newType === 'crossfit' ? 'Длительность убрана — добавлены повторы (10)' : 'Длительность убрана — добавлены подходы (3×10)',
         { icon: '💪' }
       );
+    } else {
+      toast(`Тип изменён на «${WORKOUT_TYPE_CONFIG[newType] ?? newType}». Упражнения адаптированы.`, { icon: 'ℹ️' });
     }
   };
 
@@ -137,18 +110,7 @@ export default function WorkoutFormBase({
 
   const handleAiResult = (result: AiWorkoutResult) => {
     setWorkoutType(result.workoutType);
-    const converted: ExerciseData[] = result.exercises.map((ex, i) => {
-      const base = { exerciseId: ex.exerciseId ?? `ai-${i}`, name: ex.displayName ?? ex.name, notes: ex.notes };
-      if (result.workoutType === 'cardio') {
-        return { ...base, duration: ex.duration ?? 20 };
-      }
-      if (result.workoutType === 'crossfit') {
-        return { ...base, reps: ex.reps ?? 10, weight: ex.weight };
-      }
-      // bodybuilding
-      const setsDetail = Array.from({ length: ex.sets ?? 3 }, () => ({ reps: ex.reps ?? 10, weight: ex.weight }));
-      return { ...base, sets: ex.sets, reps: ex.reps, weight: ex.weight, setsDetail };
-    });
+    const converted = convertAiResult(result);
     setExercises(converted);
     setAiGenerated(true);
     if (result.notes) setNotes(result.notes);
