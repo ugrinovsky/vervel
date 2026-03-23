@@ -22,7 +22,7 @@ export function usePushNotifications() {
   // On mount: register SW and sync existing subscription to backend
   useEffect(() => {
     if (!supported) return
-    navigator.serviceWorker.register('/sw.js')
+    navigator.serviceWorker.register('/sw.js', { type: 'module' })
     if (Notification.permission === 'granted') {
       syncSubscription().catch(() => {})
     }

@@ -261,8 +261,7 @@ function MetricCard({
         />
         {zeroAt !== undefined && (
           <div
-            className="absolute top-0 bottom-0 w-px"
-            className="bg-white/35"
+            className="absolute top-0 bottom-0 w-px bg-white/35"
             style={{ left: `${zeroAt * 100}%` }}
           />
         )}
