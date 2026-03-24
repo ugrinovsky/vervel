@@ -92,7 +92,7 @@ export default function AvatarScreen() {
               {getCurrentHour() < 12 ? '☀️' : getCurrentHour() < 18 ? '🌤️' : '🌙'}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-base font-bold text-white">{getGreeting(user?.fullName)}</div>
+              <div className="text-base font-bold text-(--color_text_primary)">{getGreeting(user?.fullName)}</div>
               <div className="text-xs text-(--color_text_secondary) mt-0.5 min-h-4">
                 {motivation?.text ?? ''}
               </div>
