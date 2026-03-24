@@ -1,0 +1,202 @@
+import type { HttpContext } from '@adonisjs/core/http'
+import { DateTime } from 'luxon'
+import VideoCall from '#models/video_call'
+import TrainerAthlete from '#models/trainer_athlete'
+import TrainerGroup from '#models/trainer_group'
+import LiveKitService from '#services/LiveKitService'
+
+export default class VideoCallsController {
+  /**
+   * Trainer initiates a call to an athlete or group.
+   * POST /trainer/calls
+   * Body: { athleteId } or { groupId }
+   */
+  async create({ request, auth, response }: HttpContext) {
+    const trainer = auth.getUserOrFail()
+    const { athleteId, groupId } = request.only(['athleteId', 'groupId'])
+
+    if (!athleteId && !groupId) {
+      return response.badRequest({ message: 'Укажите athleteId или groupId' })
+    }
+
+    let roomName: string
+
+    if (athleteId) {
+      // Verify active trainer↔athlete binding
+      const binding = await TrainerAthlete.query()
+        .where('trainer_id', trainer.id)
+        .where('athlete_id', athleteId)
+        .where('status', 'active')
+        .first()
+      if (!binding) {
+        return response.forbidden({ message: 'Атлет не найден или не активен' })
+      }
+      roomName = LiveKitService.personalRoomName(trainer.id, athleteId)
+    } else {
+      // Verify group belongs to trainer
+      const group = await TrainerGroup.query()
+        .where('id', groupId)
+        .where('trainer_id', trainer.id)
+        .whereNull('deleted_at')
+        .first()
+      if (!group) {
+        return response.forbidden({ message: 'Группа не найдена' })
+      }
+      roomName = LiveKitService.groupRoomName(trainer.id, groupId)
+    }
+
+    // Create or reuse existing pending/active call for this room
+    let call = await VideoCall.query()
+      .where('room_name', roomName)
+      .whereIn('status', ['pending', 'active'])
+      .first()
+
+    if (!call) {
+      await LiveKitService.createRoom(roomName)
+      call = await VideoCall.create({
+        roomName,
+        trainerId: trainer.id,
+        athleteId: athleteId ?? null,
+        groupId: groupId ?? null,
+        status: 'pending',
+      })
+    }
+
+    const token = await LiveKitService.createToken({
+      roomName,
+      userId: trainer.id,
+      userName: trainer.fullName ?? trainer.id.toString(),
+      role: 'trainer',
+    })
+
+    return response.ok({
+      callId: call.id,
+      roomName,
+      token,
+      url: LiveKitService.wsUrl,
+    })
+  }
+
+  /**
+   * Athlete or trainer joins an existing call.
+   * POST /calls/:roomName/join
+   */
+  async join({ params, auth, response }: HttpContext) {
+    const user = auth.getUserOrFail()
+    const call = await VideoCall.query()
+      .where('room_name', params.roomName)
+      .whereIn('status', ['pending', 'active'])
+      .first()
+
+    if (!call) {
+      return response.notFound({ message: 'Звонок не найден или завершён' })
+    }
+
+    // Check access: must be trainer, the assigned athlete, or a member of the group
+    const isTrainer = call.trainerId === user.id
+    const isAthlete = call.athleteId === user.id
+    let isGroupMember = false
+
+    if (call.groupId && !isTrainer) {
+      const membership = await TrainerGroup.query()
+        .where('id', call.groupId)
+        .whereHas('athletes', (q) => q.where('users.id', user.id))
+        .first()
+      isGroupMember = !!membership
+    }
+
+    if (!isTrainer && !isAthlete && !isGroupMember) {
+      return response.forbidden({ message: 'Нет доступа к этому звонку' })
+    }
+
+    // Mark as active on first join
+    if (call.status === 'pending') {
+      call.status = 'active'
+      call.startedAt = DateTime.now()
+      await call.save()
+    }
+
+    const token = await LiveKitService.createToken({
+      roomName: call.roomName,
+      userId: user.id,
+      userName: user.fullName ?? user.id.toString(),
+      role: isTrainer ? 'trainer' : 'athlete',
+    })
+
+    return response.ok({
+      callId: call.id,
+      roomName: call.roomName,
+      token,
+      url: LiveKitService.wsUrl,
+    })
+  }
+
+  /**
+   * End a call (trainer only).
+   * POST /trainer/calls/:callId/end
+   */
+  async end({ params, auth, response }: HttpContext) {
+    const trainer = auth.getUserOrFail()
+    const call = await VideoCall.query()
+      .where('id', params.callId)
+      .where('trainer_id', trainer.id)
+      .whereIn('status', ['pending', 'active'])
+      .firstOrFail()
+
+    call.status = 'ended'
+    call.endedAt = DateTime.now()
+    await call.save()
+
+    await LiveKitService.deleteRoom(call.roomName)
+
+    return response.ok({ message: 'Звонок завершён' })
+  }
+
+  /**
+   * Get call history for trainer.
+   * GET /trainer/calls
+   */
+  async trainerHistory({ auth, response }: HttpContext) {
+    const trainer = auth.getUserOrFail()
+    const calls = await VideoCall.query()
+      .where('trainer_id', trainer.id)
+      .preload('athlete')
+      .preload('group')
+      .orderBy('created_at', 'desc')
+      .limit(50)
+
+    return response.ok(calls)
+  }
+
+  /**
+   * Get active call for athlete (to show incoming call screen).
+   * GET /athlete/calls/active
+   */
+  async athleteActive({ auth, response }: HttpContext) {
+    const user = auth.getUserOrFail()
+
+    // Personal call
+    const personalCall = await VideoCall.query()
+      .where('athlete_id', user.id)
+      .whereIn('status', ['pending', 'active'])
+      .preload('trainer')
+      .first()
+
+    if (personalCall) {
+      return response.ok(personalCall)
+    }
+
+    // Group call — find groups user belongs to
+    const groupCall = await VideoCall.query()
+      .whereNotNull('group_id')
+      .whereIn('status', ['pending', 'active'])
+      .whereHas('group', (q) =>
+        q.whereHas('athletes', (aq) => aq.where('users.id', user.id))
+      )
+      .preload('trainer')
+      .preload('group')
+      .first()
+
+    return response.ok(groupCall ?? null)
+  }
+}

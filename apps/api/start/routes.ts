@@ -78,6 +78,10 @@ router
     router.get('profile/qr-data', '#controllers/invite_controller.getQrData');
     router.get('referral/stats', '#controllers/invite_controller.getReferralStats');
 
+    // Video calls — join (athlete + trainer)
+    router.post('calls/:roomName/join', '#controllers/video_calls_controller.join');
+    router.get('athlete/calls/active', '#controllers/video_calls_controller.athleteActive');
+
     // Athlete: my groups and trainers
     router.get('athlete/my-groups', '#controllers/athlete_controller.getMyGroups');
     router.get('athlete/my-trainers', '#controllers/athlete_controller.getMyTrainers');
@@ -169,6 +173,11 @@ router
     router.post('workout-templates', '#controllers/workout_template_controller.create');
     router.put('workout-templates/:id', '#controllers/workout_template_controller.update');
     router.delete('workout-templates/:id', '#controllers/workout_template_controller.delete');
+
+    // Video calls
+    router.post('calls', '#controllers/video_calls_controller.create');
+    router.post('calls/:callId/end', '#controllers/video_calls_controller.end');
+    router.get('calls', '#controllers/video_calls_controller.trainerHistory');
   })
   .prefix('trainer')
   .use([middleware.auth(), middleware.trainer()]);

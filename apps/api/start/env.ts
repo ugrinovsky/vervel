@@ -81,6 +81,16 @@ export default await Env.create(new URL('../', import.meta.url), {
 
   /*
   |----------------------------------------------------------
+  | LiveKit video calls
+  |----------------------------------------------------------
+  */
+  LIVEKIT_URL: Env.schema.string.optional(),
+  LIVEKIT_HOST: Env.schema.string.optional(),
+  LIVEKIT_API_KEY: Env.schema.string.optional(),
+  LIVEKIT_API_SECRET: Env.schema.string.optional(),
+
+  /*
+  |----------------------------------------------------------
   | Web Push Notifications (VAPID)
   |----------------------------------------------------------
   */

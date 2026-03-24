@@ -11,6 +11,7 @@ import { trainerApi, type AthleteListItem, type TrainerGroupItem } from '@/api/t
 import AthleteAvatarsRow from '@/components/AthleteAvatarsRow/AthleteAvatarsRow';
 import InlineAthleteAvatar from '@/components/MiniAvatar/InlineAthleteAvatar';
 import { PlusIcon, UsersIcon, ChatBubbleLeftIcon, TrophyIcon } from '@heroicons/react/24/outline';
+import CallButton from '@/components/VideoCall/CallButton';
 import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
 import BackButton from '@/components/BackButton/BackButton';
 import AccentButton from '@/components/ui/AccentButton';
@@ -158,6 +159,7 @@ export default function TrainerGroupDetailScreen() {
           >
             <TrophyIcon className="w-4 h-4" />
           </button>
+          <CallButton groupId={id} />
         </div>
 
         {/* Tab Content */}

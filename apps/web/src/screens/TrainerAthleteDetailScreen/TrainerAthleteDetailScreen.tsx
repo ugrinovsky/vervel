@@ -19,6 +19,7 @@ import { useAthleteAvatar } from '@/hooks/useAthleteAvatar';
 import { trainerApi, type PeriodizationData } from '@/api/trainer';
 import { useTrainerUnreadCounts } from '@/hooks/useTrainerUnreadCounts';
 import { ChatBubbleLeftIcon, PlusIcon, PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import CallButton from '@/components/VideoCall/CallButton';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import BackButton from '@/components/BackButton/BackButton';
 import type { MonthlyStatsData } from '@/screens/ActivityScreen/useActivityData';
@@ -240,20 +241,18 @@ export default function TrainerAthleteDetailScreen() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="grid grid-cols-2 gap-3 mb-5"
+          className="grid grid-cols-3 gap-3 mb-5"
         >
           <AccentButton onClick={() => setShowCreate(true)} className="font-medium">
             <PlusIcon className="w-4 h-4" />
             Тренировка
           </AccentButton>
-          <button
-            onClick={() => setShowChat(true)}
-            className="relative flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) text-white font-medium text-sm hover:border-(--color_primary_light)/50 transition-colors"
-          >
+          <AccentButton onClick={() => setShowChat(true)} className="relative font-medium">
             <ChatBubbleLeftIcon className="w-4 h-4" />
             Чат
             {unread > 0 && <Badge count={unread} className="absolute -top-1.5 -right-1.5" />}
-          </button>
+          </AccentButton>
+          <CallButton athleteId={id} />
         </motion.div>
 
         {/* ── Tab bar ───────────────────────────────────────────────────── */}

@@ -31,6 +31,7 @@ services:
       DB_DATABASE: ${DB_DATABASE:-vervel}
       HOST: 0.0.0.0
       PORT: 3333
+      LIVEKIT_HOST: http://livekit:7880
     depends_on:
       - postgres
 
@@ -43,6 +44,18 @@ services:
       - '5173:80'
     depends_on:
       - api
+
+  livekit:
+    image: livekit/livekit-server:latest
+    container_name: vervel_livekit
+    ports:
+      - '7880:7880'
+      - '7881:7881'
+      # UDP range for prod — not needed locally (WebSocket fallback is used)
+      # - '50000-60000:50000-60000/udp'
+    volumes:
+      - ./${LIVEKIT_CONFIG:-livekit.yaml}:/livekit.yaml
+    command: --config /livekit.yaml
 
 volumes:
   pgdata:
