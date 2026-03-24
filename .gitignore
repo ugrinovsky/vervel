@@ -7,3 +7,7 @@ package-lock.json
 
 # Docker secrets (managed per-environment)
 .env
+
+# Prod-specific configs (managed on server)
+livekit.prod.yaml
+nginx/livekit.vervel.ru
