@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+echo "Installing dependencies..."
+npm install
+
 echo "Waiting for Postgres..."
 until pg_isready -h "$DB_HOST" -p "$DB_PORT"; do
   sleep 2
