@@ -45,11 +45,7 @@ export default class VideoCallsController {
       roomName = LiveKitService.groupRoomName(trainer.id, groupId)
     }
 
-    // Create or reuse existing pending/active call for this room
-    let call = await VideoCall.query()
-      .where('room_name', roomName)
-      .whereIn('status', ['pending', 'active'])
-      .first()
+    let call = await VideoCall.findBy('room_name', roomName)
 
     if (!call) {
       await LiveKitService.createRoom(roomName)
@@ -60,6 +56,12 @@ export default class VideoCallsController {
         groupId: groupId ?? null,
         status: 'pending',
       })
+    } else if (call.status === 'ended') {
+      await LiveKitService.createRoom(roomName)
+      call.status = 'pending'
+      call.startedAt = null
+      call.endedAt = null
+      await call.save()
     }
 
     const token = await LiveKitService.createToken({
