@@ -310,7 +310,8 @@ export const ThemeController = {
   reset(): void {
     localStorage.removeItem('themeSpecial');
     applyHueTheme(document.documentElement, DEFAULT_HUE);
-    this._syncLocalStorage(DEFAULT_HUE);
+    // Do NOT call _syncLocalStorage here — user object is being cleared on logout.
+    // Writing it back would leave a ghost user in localStorage.
     document.dispatchEvent(new CustomEvent('themechange'));
   },
 

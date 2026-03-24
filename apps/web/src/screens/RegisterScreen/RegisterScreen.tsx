@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { authApi, type UserRole } from '@/api/auth';
 import { useAuth } from '@/contexts/AuthContext';
+import AppInput from '@/components/ui/AppInput';
 
 export default function RegisterScreen() {
   const [fullName, setFullName] = useState('');
@@ -113,7 +114,7 @@ export default function RegisterScreen() {
         className="relative w-full max-w-md z-10"
       >
         <div
-          className="rounded-3xl p-8 border relative overflow-hidden background glass"
+          className="rounded-3xl p-8 border relative overflow-hidden glass"
           style={{ backgroundColor: 'rgb(var(--color_primary_dark_ch) / 0.95)' }}
         >
           <div
@@ -139,80 +140,62 @@ export default function RegisterScreen() {
               style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0 }}
               aria-hidden="true"
             />
-            <div>
-              <label className="block text-sm font-medium mb-2 text-emerald-100">Имя</label>
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => { setFullName(e.target.value); setErrors((p) => ({ ...p, fullName: undefined })); }}
-                className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.fullName ? 'border-red-400' : 'border-white/20'}`}
-                placeholder="Ваше имя"
-                onKeyDown={handleKeyDown}
-              />
-              {errors.fullName && <p className="mt-1 text-xs text-red-400">{errors.fullName}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2 text-emerald-100">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: undefined })); }}
-                className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.email ? 'border-red-400' : 'border-white/20'}`}
-                placeholder="your@email.com"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                onKeyDown={handleKeyDown}
-              />
-              {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2 text-emerald-100">Пароль</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); setErrors((p) => ({ ...p, password: undefined })); }}
-                className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.password ? 'border-red-400' : 'border-white/20'}`}
-                placeholder="Минимум 8 символов, буквы и цифры"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                onKeyDown={handleKeyDown}
-              />
-              {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2 text-emerald-100">
-                Подтвердите пароль
-              </label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => { setConfirmPassword(e.target.value); setErrors((p) => ({ ...p, confirmPassword: undefined })); }}
-                className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.confirmPassword ? 'border-red-400' : 'border-white/20'}`}
-                placeholder="Повторите пароль"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                onKeyDown={handleKeyDown}
-              />
-              {errors.confirmPassword && <p className="mt-1 text-xs text-red-400">{errors.confirmPassword}</p>}
-            </div>
+            <AppInput
+              label="Имя"
+              value={fullName}
+              onChange={(e) => { setFullName(e.target.value); setErrors((p) => ({ ...p, fullName: undefined })); }}
+              placeholder="Ваше имя"
+              error={errors.fullName}
+              onKeyDown={handleKeyDown}
+            />
+            <AppInput
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: undefined })); }}
+              placeholder="your@email.com"
+              error={errors.email}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              onKeyDown={handleKeyDown}
+            />
+            <AppInput
+              label="Пароль"
+              type="password"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setErrors((p) => ({ ...p, password: undefined })); }}
+              placeholder="Минимум 8 символов, буквы и цифры"
+              error={errors.password}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              onKeyDown={handleKeyDown}
+            />
+            <AppInput
+              label="Подтвердите пароль"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => { setConfirmPassword(e.target.value); setErrors((p) => ({ ...p, confirmPassword: undefined })); }}
+              placeholder="Повторите пароль"
+              error={errors.confirmPassword}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              onKeyDown={handleKeyDown}
+            />
 
             {/* Gender selection */}
             <div>
-              <label className="block text-sm font-medium mb-3 text-emerald-100">Пол</label>
+              <label className="block text-sm font-medium mb-3 text-(--color_text_secondary)">Пол</label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setGender(gender === 'male' ? null : 'male')}
                   className={`p-3 rounded-xl border text-center transition-all ${
                     gender === 'male'
-                      ? 'border-emerald-400 bg-emerald-500/20 text-white'
-                      : 'border-white/20 bg-white/5 text-white/60'
+                      ? 'border-emerald-400 bg-emerald-500/20 text-(--color_text_primary)'
+                      : 'border-(--color_border) bg-(--color_bg_card) text-(--color_text_muted)'
                   }`}
                 >
                   <div className="text-2xl mb-1">♂</div>
@@ -223,8 +206,8 @@ export default function RegisterScreen() {
                   onClick={() => setGender(gender === 'female' ? null : 'female')}
                   className={`p-3 rounded-xl border text-center transition-all ${
                     gender === 'female'
-                      ? 'border-emerald-400 bg-emerald-500/20 text-white'
-                      : 'border-white/20 bg-white/5 text-white/60'
+                      ? 'border-emerald-400 bg-emerald-500/20 text-(--color_text_primary)'
+                      : 'border-(--color_border) bg-(--color_bg_card) text-(--color_text_muted)'
                   }`}
                 >
                   <div className="text-2xl mb-1">♀</div>
@@ -235,15 +218,15 @@ export default function RegisterScreen() {
 
             {/* Role selection */}
             <div>
-              <label className="block text-sm font-medium mb-3 text-emerald-100">Я являюсь</label>
+              <label className="block text-sm font-medium mb-3 text-(--color_text_secondary)">Я являюсь</label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => toggleRole('athlete')}
                   className={`p-3 rounded-xl border text-center transition-all ${
                     selectedRoles.has('athlete')
-                      ? 'border-emerald-400 bg-emerald-500/20 text-white'
-                      : 'border-white/20 bg-white/5 text-white/60'
+                      ? 'border-emerald-400 bg-emerald-500/20 text-(--color_text_primary)'
+                      : 'border-(--color_border) bg-(--color_bg_card) text-(--color_text_muted)'
                   }`}
                 >
                   <div className="text-2xl mb-1">🏃</div>
@@ -254,8 +237,8 @@ export default function RegisterScreen() {
                   onClick={() => toggleRole('trainer')}
                   className={`p-3 rounded-xl border text-center transition-all ${
                     selectedRoles.has('trainer')
-                      ? 'border-emerald-400 bg-emerald-500/20 text-white'
-                      : 'border-white/20 bg-white/5 text-white/60'
+                      ? 'border-emerald-400 bg-emerald-500/20 text-(--color_text_primary)'
+                      : 'border-(--color_border) bg-(--color_bg_card) text-(--color_text_muted)'
                   }`}
                 >
                   <div className="text-2xl mb-1">🏋️</div>

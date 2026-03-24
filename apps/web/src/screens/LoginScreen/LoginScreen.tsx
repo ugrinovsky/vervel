@@ -5,7 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import VerveLogo from '@/components/VerveLogo/VerveLogo';
-import VkIdButton from '@/components/VkIdButton/VkIdButton';
 import YandexIdButton from '@/components/YandexIdButton/YandexIdButton';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
@@ -271,7 +270,7 @@ export default function LoginScreen() {
         }}
       >
         <div
-          className="rounded-3xl p-8 border relative overflow-hidden background glass"
+          className="rounded-3xl p-8 border relative overflow-hidden glass"
           style={{
             backgroundColor: 'rgb(var(--color_primary_dark_ch) / 0.95)',
           }}

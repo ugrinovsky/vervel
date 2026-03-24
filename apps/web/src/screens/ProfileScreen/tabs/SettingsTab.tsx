@@ -68,7 +68,7 @@ interface Props {
 
 export default function SettingsTab({ data, onProfileUpdate }: Props) {
   const navigate = useNavigate();
-  const { logout, login, user } = useAuth();
+  const { logout, updateUser, user } = useAuth();
   const { permission: pushPermission, loading: pushLoading, enable: enablePush, supported: pushSupported } = usePushNotifications();
   const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
   const isAndroid = /android/i.test(navigator.userAgent)
@@ -127,7 +127,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
       const response = await profileApi.updateProfile({ fullName: nameField, email: emailField, gender: genderField });
       if (response.data.success) {
         const updatedUser = response.data.data.user;
-        if (user) login({ ...user, ...updatedUser, fullName: updatedUser.fullName ?? '', role: updatedUser.role as UserRole, themeHue: activeHue });
+        if (user) updateUser({ ...user, ...updatedUser, fullName: updatedUser.fullName ?? '', role: updatedUser.role as UserRole, themeHue: activeHue });
         onProfileUpdate(updatedUser);
         toast.success('Профиль обновлён');
       }

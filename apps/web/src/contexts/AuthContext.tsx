@@ -17,6 +17,7 @@ export interface AuthUser {
 interface AuthContextValue {
   user: AuthUser | null;
   login: (user: AuthUser) => void;
+  updateUser: (user: AuthUser) => void;
   logout: () => void;
 }
 
@@ -84,6 +85,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setActiveMode(mode);
   }, []);
 
+  const updateUser = useCallback((u: AuthUser) => {
+    localStorage.setItem('user', JSON.stringify(u));
+    setUser(u);
+    if (u.balance !== undefined) setBalance(u.balance);
+    ThemeController.apply(u.themeHue ?? ThemeController.getStored());
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem('user');
     localStorage.removeItem('activeMode');
@@ -102,8 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const authValue = useMemo<AuthContextValue>(
-    () => ({ user, login, logout }),
-    [user, login, logout],
+    () => ({ user, login, updateUser, logout }),
+    [user, login, updateUser, logout],
   );
 
   const roleValue = useMemo<RoleContextValue>(
