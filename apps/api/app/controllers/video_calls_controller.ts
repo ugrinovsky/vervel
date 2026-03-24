@@ -1,5 +1,6 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
+import emitter from '@adonisjs/core/services/emitter'
 import VideoCall from '#models/video_call'
 import TrainerAthlete from '#models/trainer_athlete'
 import TrainerGroup from '#models/trainer_group'
@@ -46,6 +47,7 @@ export default class VideoCallsController {
     }
 
     let call = await VideoCall.findBy('room_name', roomName)
+    let shouldNotify = false
 
     if (!call) {
       await LiveKitService.createRoom(roomName)
@@ -56,12 +58,33 @@ export default class VideoCallsController {
         groupId: groupId ?? null,
         status: 'pending',
       })
+      shouldNotify = true
     } else if (call.status === 'ended') {
       await LiveKitService.createRoom(roomName)
       call.status = 'pending'
       call.startedAt = null
       call.endedAt = null
       await call.save()
+      shouldNotify = true
+    }
+
+    if (shouldNotify) {
+      let recipientIds: number[] = []
+      if (athleteId) {
+        recipientIds = [athleteId]
+      } else if (groupId) {
+        const group = await TrainerGroup.query()
+          .where('id', groupId)
+          .preload('athletes')
+          .firstOrFail()
+        recipientIds = group.athletes.map((a) => a.id)
+      }
+      if (recipientIds.length > 0) {
+        emitter.emit('push:call_incoming', {
+          recipientIds,
+          trainerName: trainer.fullName ?? 'Тренер',
+        })
+      }
     }
 
     const token = await LiveKitService.createToken({

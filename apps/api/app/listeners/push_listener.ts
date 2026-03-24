@@ -39,4 +39,12 @@ export default class PushListener {
       url: `/home`,
     })
   }
+
+  async onCallIncoming(data: EventsList['push:call_incoming']) {
+    await PushNotificationService.sendToUsers(data.recipientIds, {
+      title: 'Входящий звонок',
+      body: `Тренер ${data.trainerName} звонит вам`,
+      url: `/home`,
+    })
+  }
 }

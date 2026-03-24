@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { callsApi, type VideoCall } from '../../api/calls'
 import { useVideoCall } from '../../hooks/useVideoCall'
 import IncomingCall from './IncomingCall'
@@ -14,14 +14,28 @@ export default function IncomingCallWatcher() {
   const [incomingCall, setIncomingCall] = useState<VideoCall | null>(null)
   const { session, joinCall, leaveCall } = useVideoCall()
 
-  // Rooms the user has dismissed (declined or left) — won't show again
-  const dismissedRooms = useRef<Set<string>>(new Set())
+  const getDismissed = (): Set<string> => {
+    try {
+      const stored = sessionStorage.getItem('dismissedCalls')
+      return stored ? new Set(JSON.parse(stored)) : new Set()
+    } catch {
+      return new Set()
+    }
+  }
+
+  const addDismissed = (roomName: string) => {
+    try {
+      const set = getDismissed()
+      set.add(roomName)
+      sessionStorage.setItem('dismissedCalls', JSON.stringify([...set]))
+    } catch {}
+  }
 
   const poll = useCallback(async () => {
     try {
       const res = await callsApi.getActiveCall()
       const call = res.data ?? null
-      if (call && dismissedRooms.current.has(call.roomName)) return
+      if (call && getDismissed().has(call.roomName)) return
       setIncomingCall(call)
     } catch {
       // ignore network errors silently
@@ -42,12 +56,12 @@ export default function IncomingCallWatcher() {
   }
 
   const handleDecline = () => {
-    if (incomingCall) dismissedRooms.current.add(incomingCall.roomName)
+    if (incomingCall) addDismissed(incomingCall.roomName)
     setIncomingCall(null)
   }
 
   const handleDisconnected = () => {
-    if (session) dismissedRooms.current.add(session.roomName)
+    if (session) addDismissed(session.roomName)
     leaveCall()
   }
 

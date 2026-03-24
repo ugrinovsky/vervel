@@ -173,6 +173,17 @@ export default class extends BaseSeeder {
       },
       // Социальные
       {
+        key: 'find_trainer',
+        category: 'social' as const,
+        title: 'Найди своего тренера',
+        description: 'Присоединитесь к персональному тренеру',
+        icon: '🤝',
+        color: 'emerald',
+        requirementType: 'trainers_connected',
+        requirementValue: 1,
+        isActive: true,
+      },
+      {
         key: 'first_group_join',
         category: 'social' as const,
         title: 'В команде!',

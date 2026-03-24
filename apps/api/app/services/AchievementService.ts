@@ -55,6 +55,15 @@ export default class AchievementService {
       groupsJoined = Number((result[0] as any).$extras.total ?? 0)
     }
 
+    let trainersConnected = 0
+    if (unearnedTypes.has('trainers_connected')) {
+      const result = await TrainerAthlete.query()
+        .where('athleteId', userId)
+        .where('status', 'active')
+        .count('* as total')
+      trainersConnected = Number((result[0] as any).$extras.total ?? 0)
+    }
+
     let trainerMessages = 0
     if (unearnedTypes.has('trainer_messages')) {
       const result = await db
@@ -77,6 +86,7 @@ export default class AchievementService {
         aiChatCount,
         groupsJoined,
         trainerMessages,
+        trainersConnected,
       })
 
       if (shouldUnlock) {
@@ -151,6 +161,7 @@ export default class AchievementService {
       aiChatCount: number
       groupsJoined: number
       trainerMessages: number
+      trainersConnected: number
     }
   ): boolean {
     const val = achievement.requirementValue || 0
@@ -169,6 +180,9 @@ export default class AchievementService {
 
       case 'trainer_messages':
         return ctx.trainerMessages >= val
+
+      case 'trainers_connected':
+        return ctx.trainersConnected >= val
 
       default:
         return false

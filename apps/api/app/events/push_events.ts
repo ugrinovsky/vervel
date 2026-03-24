@@ -21,5 +21,9 @@ declare module '@adonisjs/core/types' {
       scheduledDate: string
       trainerName: string
     }
+    'push:call_incoming': {
+      recipientIds: number[]
+      trainerName: string
+    }
   }
 }
