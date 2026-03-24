@@ -7,6 +7,7 @@ import { getWorkoutTypeLabel } from './utils';
 import WorkoutDetailSheet from './WorkoutDetailSheet';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
 import { workoutsApi } from '@/api/workouts';
+import { parseApiDateTime } from '@/utils/date';
 import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
 import toast from 'react-hot-toast';
 import AccentButton from '@/components/ui/AccentButton';
@@ -26,7 +27,7 @@ function pluralWorkouts(n: number): string {
 
 function extractTime(dateStr: string): string | null {
   try {
-    const d = new Date(dateStr);
+    const d = parseApiDateTime(dateStr);
     const h = d.getHours();
     const m = d.getMinutes();
     if (h === 0 && m === 0) return null;
@@ -161,8 +162,8 @@ export default function DayDetails({ date, workouts, onDeleted, readOnly = false
   const hasWorkouts = workouts.length > 0;
 
   const now = new Date();
-  const past = workouts.filter((w) => new Date(w.date) < now);
-  const upcoming = workouts.filter((w) => new Date(w.date) >= now);
+  const past = workouts.filter((w) => parseApiDateTime(w.date) < now);
+  const upcoming = workouts.filter((w) => parseApiDateTime(w.date) >= now);
   const hasBothGroups = past.length > 0 && upcoming.length > 0;
 
   const handleAddWorkout = () => {

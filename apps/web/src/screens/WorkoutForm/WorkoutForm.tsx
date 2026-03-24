@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import WorkoutFormBase, { type WorkoutFormData } from '@/components/WorkoutFormBase/WorkoutFormBase';
-import { parseLocalDate, toApiDateTime } from '@/utils/date';
+import { parseLocalDate, toApiDateTime, toDateKey } from '@/utils/date';
 import { workoutsApi, type WorkoutExercise } from '@/api/workouts';
 import { checkForNewAchievements } from '@/hooks/useAchievementToast';
 import type { ExerciseData } from '@/api/trainer';
@@ -58,7 +58,7 @@ export default function WorkoutForm() {
       });
       toast.success('Тренировка сохранена 💪');
       checkForNewAchievements();
-      navigate(-1);
+      navigate('/calendar', { state: { date: toDateKey(data.date) } });
     } catch (err: any) {
       toast.error(err?.response?.data?.message || err?.message || 'Ошибка сохранения');
       throw err;

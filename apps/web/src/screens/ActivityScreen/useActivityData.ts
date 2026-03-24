@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
-import { toDateKey } from '@/utils/date';
+import { useLocation } from 'react-router';
+import { toDateKey, parseApiDateTime, parseLocalDate } from '@/utils/date';
 import { workoutsApi } from '@/api/workouts';
 import type { DayData } from '@/components/ui/Calendar';
 import type { WorkoutTimelineEntry, WorkoutStats } from '@/types/Analytics';
@@ -9,11 +10,11 @@ const DEFAULT_DURATION = 60;
 const CALORIES_PER_KG = 0.05;
 
 function findWorkoutByDate(timeline: WorkoutTimelineEntry[], dateStr: string) {
-  return timeline.find((w) => format(new Date(w.date), 'yyyy-MM-dd') === dateStr);
+  return timeline.find((w) => format(parseApiDateTime(w.date), 'yyyy-MM-dd') === dateStr);
 }
 
 function filterWorkoutsByDate(timeline: WorkoutTimelineEntry[], dateStr: string) {
-  return timeline.filter((w) => format(new Date(w.date), 'yyyy-MM-dd') === dateStr);
+  return timeline.filter((w) => format(parseApiDateTime(w.date), 'yyyy-MM-dd') === dateStr);
 }
 
 export interface DayStats {
@@ -47,8 +48,15 @@ const EMPTY_DAY_STATS: DayStats = {
 };
 
 export function useActivityData() {
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
-  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const location = useLocation();
+  const initialDate = (location.state as { date?: string } | null)?.date;
+
+  const [selectedDate, setSelectedDate] = useState<Date | null>(
+    initialDate ? parseLocalDate(initialDate) : new Date()
+  );
+  const [currentMonth, setCurrentMonth] = useState<Date>(
+    initialDate ? parseLocalDate(initialDate) : new Date()
+  );
   const [stats, setStats] = useState<WorkoutStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refetchTrigger, setRefetchTrigger] = useState(0);
