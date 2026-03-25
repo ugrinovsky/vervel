@@ -48,11 +48,11 @@ export default class AchievementService {
 
     let groupsJoined = 0
     if (unearnedTypes.has('groups_joined')) {
-      const result = await TrainerAthlete.query()
-        .where('athleteId', userId)
-        .where('status', 'active')
+      const result = await db
+        .from('group_athletes')
+        .where('athlete_id', userId)
         .count('* as total')
-      groupsJoined = Number((result[0] as any).$extras.total ?? 0)
+      groupsJoined = Number((result[0] as any).total ?? 0)
     }
 
     let trainersConnected = 0

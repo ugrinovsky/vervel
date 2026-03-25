@@ -198,7 +198,6 @@ export default function TrainerAthleteDetailScreen() {
             {editingNickname ? (
               <>
                 <input
-                  autoFocus
                   value={nicknameInput}
                   onChange={(e) => setNicknameInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSaveNickname(); if (e.key === 'Escape') { setEditingNickname(false); setNicknameInput(nickname ?? ''); } }}

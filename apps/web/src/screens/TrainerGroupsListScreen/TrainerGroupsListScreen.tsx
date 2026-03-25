@@ -207,7 +207,6 @@ export default function TrainerGroupsListScreen() {
             onChange={(e) => setNewGroupName(e.target.value)}
             placeholder="Название группы"
             onKeyDown={(e) => e.key === 'Enter' && handleCreateGroup()}
-            autoFocus
           />
           <AccentButton onClick={handleCreateGroup} disabled={!newGroupName.trim()}>
             Создать группу

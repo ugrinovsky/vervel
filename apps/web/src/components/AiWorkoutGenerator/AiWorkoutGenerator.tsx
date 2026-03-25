@@ -174,7 +174,6 @@ export default function AiWorkoutGenerator({ onResult }: Props) {
                   onChange={(e) => setPrompt(e.target.value.slice(0, MAX_PROMPT_LENGTH))}
                   placeholder="Например: грудь и трицепсы, 45 мин, средний уровень…"
                   rows={4}
-                  autoFocus
                   className="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-white text-sm resize-none outline-none focus:border-emerald-400/60 transition-colors placeholder:text-white/30"
                 />
                 <span className={`absolute bottom-2 right-3 text-[10px] ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-red-400' : 'text-white/25'}`}>
