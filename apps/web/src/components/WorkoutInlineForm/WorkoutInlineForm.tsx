@@ -151,10 +151,6 @@ export default function WorkoutInlineForm({
 
   const handleSubmit = async (data: WorkoutFormData) => {
     const assignedTo = preselectedAssignee ? [preselectedAssignee] : selectedAssignees;
-    if (!preselectedAssignee && selectedAssignees.length === 0) {
-      toast.error('Выберите группу или атлета');
-      return;
-    }
 
     const scheduledDate = toApiDateTime(data.date, data.time);
     const normalizedExercises = data.exercises.map((ex) => {
