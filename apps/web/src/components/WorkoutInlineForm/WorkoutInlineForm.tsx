@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { parseLocalDate, toApiDateTime, toDateKey, toTimeKey } from '@/utils/date';
+import { parseLocalDate, parseApiDateTime, toApiDateTime, toDateKey, toTimeKey } from '@/utils/date';
 import toast from 'react-hot-toast';
 import WorkoutFormBase, { type WorkoutFormData } from '@/components/WorkoutFormBase/WorkoutFormBase';
 import SectionLabel from '@/components/SectionLabel';
@@ -67,6 +67,7 @@ export default function WorkoutInlineForm({
     editWorkout?.assignedTo ?? []
   );
   const [loadingAssignees, setLoadingAssignees] = useState(false);
+  const [assigneeListOpen, setAssigneeListOpen] = useState(true);
   const [assigneeMode, setAssigneeMode] = useState<'group' | 'athlete'>(() => {
     if (editWorkout?.assignedTo?.length) return editWorkout.assignedTo[0].type;
     if (preselectedAssignee) return preselectedAssignee.type;
@@ -130,13 +131,13 @@ export default function WorkoutInlineForm({
   // ── Initial values ────────────────────────────────────────────────
 
   const initialDate = (() => {
-    if (editWorkout) return new Date(editWorkout.scheduledDate);
+    if (editWorkout) return parseApiDateTime(editWorkout.scheduledDate);
     if (preselectedDate) return parseLocalDate(preselectedDate);
     return undefined;
   })();
 
   const initialTime = (() => {
-    if (editWorkout) return new Date(editWorkout.scheduledDate);
+    if (editWorkout) return parseApiDateTime(editWorkout.scheduledDate);
     const d = new Date();
     if (preselectedTime) {
       const [h, m] = preselectedTime.split(':').map(Number);
