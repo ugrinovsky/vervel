@@ -267,7 +267,7 @@ export default function WorkoutFormBase({
         )}
         <AccentButton
           onClick={handleSubmit}
-          disabled={saving || exercises.length === 0}
+          disabled={saving}
           loading={saving}
           loadingText="Сохранение..."
           className="flex-1 font-semibold"
