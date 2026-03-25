@@ -253,7 +253,7 @@ export default function WorkoutFormBase({
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder={notesPlaceholder}
-          rows={3}
+          rows={6}
           className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none placeholder:text-(--color_text_muted) leading-relaxed"
         />
       </div>
