@@ -28,6 +28,13 @@ export interface ProfileData {
     streakMode: 'simple' | 'intensive';
     currentWeekWorkouts: number;
     weeklyRequired: number;
+    xp: number;
+    level: number;
+    levelName: string;
+    xpForNextLevel: number;
+    xpProgressPct: number;
+    totalVolume: number;
+    avgIntensity: number | null;
   };
 }
 
@@ -86,4 +93,18 @@ export const profileApi = {
 
   sendFeedback: (data: { type: 'general' | 'bug' | 'feature' | 'other'; message: string; contact?: string }) =>
     privateApi.post<{ success: boolean; message: string }>('/feedback', data),
+
+  logMeasurement: (data: { type: string; value: number; loggedAt?: string }) =>
+    privateApi.post<{ success: boolean; data: { id: number; type: string; value: number; loggedAt: string } }>(
+      '/profile/measurements',
+      data
+    ),
+
+  getMeasurements: (type = 'body_weight', limit = 50) =>
+    privateApi.get<{ success: boolean; data: Array<{ id: number; type: string; value: number; loggedAt: string }> }>(
+      `/profile/measurements?type=${type}&limit=${limit}`
+    ),
+
+  deleteMeasurement: (id: number) =>
+    privateApi.delete<{ success: boolean }>(`/profile/measurements/${id}`),
 };

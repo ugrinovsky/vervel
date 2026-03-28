@@ -1,5 +1,6 @@
 import { test } from '@japa/runner'
 import User from '#models/user'
+import db from '@adonisjs/lucid/services/db'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -49,7 +50,11 @@ test.group('Публичные роуты', () => {
 
 // ─── Auth: регистрация ────────────────────────────────────────────────────────
 
-test.group('Auth: регистрация', () => {
+test.group('Auth: регистрация', (group) => {
+  group.setup(async () => {
+    await db.from('rate_limits').delete()
+  })
+
   test('POST /register создаёт нового пользователя', async ({ client }) => {
     const unique = Date.now()
     const response = await client.post('/register').json({
@@ -152,6 +157,97 @@ test.group('Profile', () => {
       .json({ fullName: 'Обновлённое Имя' })
     response.assertStatus(200)
     response.assertBodyContains({ success: true })
+  })
+})
+
+// ─── Measurements ─────────────────────────────────────────────────────────────
+
+test.group('Measurements', () => {
+  test('POST /profile/measurements → 401 без авторизации', async ({ client }) => {
+    const response = await client.post('/profile/measurements').json({ type: 'body_weight', value: 75 })
+    response.assertStatus(401)
+  })
+
+  test('POST /profile/measurements создаёт замер', async ({ client, assert }) => {
+    const user = await athleteUser()
+    const response = await client
+      .post('/profile/measurements')
+      .loginAs(user)
+      .json({ type: 'body_weight', value: 80.5 })
+    response.assertStatus(200)
+    response.assertBodyContains({ success: true })
+    const body = response.body()
+    assert.equal(body.data.type, 'body_weight')
+    assert.equal(body.data.value, 80.5)
+    assert.exists(body.data.loggedAt)
+  })
+
+  test('POST /profile/measurements → 400 при отрицательном значении', async ({ client }) => {
+    const user = await athleteUser()
+    const response = await client
+      .post('/profile/measurements')
+      .loginAs(user)
+      .json({ type: 'body_weight', value: -5 })
+    response.assertStatus(400)
+  })
+
+  test('POST /profile/measurements → 400 при пустом type', async ({ client }) => {
+    const user = await athleteUser()
+    const response = await client
+      .post('/profile/measurements')
+      .loginAs(user)
+      .json({ type: '', value: 75 })
+    response.assertStatus(400)
+  })
+
+  test('GET /profile/measurements возвращает историю по умолчанию body_weight', async ({ client, assert }) => {
+    const user = await athleteUser()
+    // Сначала создаём замер
+    await client.post('/profile/measurements').loginAs(user).json({ type: 'body_weight', value: 77 })
+    const response = await client.get('/profile/measurements').loginAs(user)
+    response.assertStatus(200)
+    response.assertBodyContains({ success: true })
+    const body = response.body()
+    assert.isArray(body.data)
+    assert.isTrue(body.data.length > 0)
+    assert.equal(body.data[0].type, 'body_weight')
+  })
+
+  test('GET /profile/measurements?type=body_fat_pct фильтрует по типу', async ({ client, assert }) => {
+    const user = await athleteUser()
+    await client.post('/profile/measurements').loginAs(user).json({ type: 'body_fat_pct', value: 18.5 })
+    const response = await client.get('/profile/measurements?type=body_fat_pct').loginAs(user)
+    response.assertStatus(200)
+    const body = response.body()
+    assert.isTrue(body.data.every((m: any) => m.type === 'body_fat_pct'))
+  })
+
+  test('DELETE /profile/measurements/:id удаляет свой замер', async ({ client, assert }) => {
+    const user = await athleteUser()
+    const createRes = await client
+      .post('/profile/measurements')
+      .loginAs(user)
+      .json({ type: 'body_weight', value: 79 })
+    const id = createRes.body().data.id
+    const deleteRes = await client.delete(`/profile/measurements/${id}`).loginAs(user)
+    deleteRes.assertStatus(200)
+    // Проверяем что замер удалён
+    const listRes = await client.get('/profile/measurements').loginAs(user)
+    const exists = listRes.body().data.some((m: any) => m.id === id)
+    assert.isFalse(exists)
+  })
+
+  test('DELETE /profile/measurements/:id → 404 для чужого замера', async ({ client }) => {
+    const user = await athleteUser()
+    const trainer = await trainerUser()
+    const createRes = await client
+      .post('/profile/measurements')
+      .loginAs(trainer)
+      .json({ type: 'body_weight', value: 90 })
+    const id = createRes.body().data.id
+    // Атлет пытается удалить замер тренера
+    const deleteRes = await client.delete(`/profile/measurements/${id}`).loginAs(user)
+    deleteRes.assertStatus(404)
   })
 })
 
@@ -551,13 +647,14 @@ test.group('OAuth: защита и базовая логика', () => {
     response.assertStatus(400)
   })
 
-  test('GET /oauth/vk/callback с ?error=access_denied → не 500', async ({ client, assert }) => {
-    const response = await client.get('/oauth/vk/callback').qs({ error: 'access_denied' })
+  test('GET /oauth/vk/callback с ?error=access_denied → редирект, не 500', async ({ client, assert }) => {
+    // Отключаем следование редиректу, чтобы не коннектиться к фронту на 5173
+    const response = await client.get('/oauth/vk/callback').qs({ error: 'access_denied' }).redirects(0)
     assert.notEqual(response.status(), 500)
   })
 
-  test('GET /oauth/vk/callback без code → не 500', async ({ client, assert }) => {
-    const response = await client.get('/oauth/vk/callback')
+  test('GET /oauth/vk/callback без code → редирект, не 500', async ({ client, assert }) => {
+    const response = await client.get('/oauth/vk/callback').redirects(0)
     assert.notEqual(response.status(), 500)
   })
 

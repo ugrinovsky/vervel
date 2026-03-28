@@ -696,8 +696,9 @@ export default class TrainerController {
    */
   async getGroupLeaderboard({ auth, params, request, response }: HttpContext) {
     const trainer = auth.user!
-    const period = Number(request.input('period', 7))
-    const days = [7, 30].includes(period) ? period : 7
+    const period = [7, 30].includes(Number(request.input('period', 30)))
+      ? (Number(request.input('period', 30)) as 7 | 30)
+      : 30
 
     const group = await TrainerGroup.query()
       .where('id', params.id)
@@ -705,41 +706,16 @@ export default class TrainerController {
       .preload('athletes')
       .firstOrFail()
 
-    const since = DateTime.now().minus({ days }).toJSDate()
     const athleteIds = group.athletes.map((a) => a.id)
+    const meta = { groupName: group.name, trainerName: trainer.fullName ?? null }
 
     if (athleteIds.length === 0) {
-      return response.ok({ success: true, data: [] })
+      return response.ok({ success: true, data: { ...meta, entries: [] } })
     }
 
-    const workouts = await Workout.query()
-      .whereIn('userId', athleteIds)
-      .where('date', '>=', since)
-      .whereNull('deleted_at')
+    const { ProgressionService } = await import('#services/ProgressionService')
+    const entries = await ProgressionService.getGroupLeaderboard(athleteIds, period)
 
-    const statsMap = new Map<number, { workouts: number; volume: number; intensity: number }>()
-    for (const id of athleteIds) {
-      statsMap.set(id, { workouts: 0, volume: 0, intensity: 0 })
-    }
-
-    for (const w of workouts) {
-      const s = statsMap.get(w.userId)!
-      s.workouts += 1
-      s.volume += Number(w.totalVolume) || 0
-      s.intensity += Number(w.totalIntensity) || 0
-    }
-
-    const data = group.athletes.map((a) => {
-      const s = statsMap.get(a.id)!
-      return {
-        id: a.id,
-        fullName: a.fullName,
-        workouts: s.workouts,
-        volume: Math.round(s.volume),
-        intensity: Math.round(s.intensity * 100) / 100,
-      }
-    })
-
-    return response.ok({ success: true, data })
+    return response.ok({ success: true, data: { ...meta, entries } })
   }
 }

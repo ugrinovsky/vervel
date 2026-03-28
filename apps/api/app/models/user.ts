@@ -13,7 +13,8 @@ import OAuthProvider from './oauth_provider.js';
 import Chat from './chat.js';
 import Message from './message.js';
 import ScheduledWorkout from './scheduled_workout.js';
-import WorkoutTemplate from './workout_template.js';
+import WorkoutTemplate from './workout_template.js'
+import UserMeasurement from './user_measurement.js'
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
   uids: ['email'],
@@ -60,6 +61,9 @@ export default class User extends compose(BaseModel, AuthFinder) {
   declare themeHue: number | null;
 
   @column()
+  declare xp: number;
+
+  @column()
   declare referredById: number | null;
 
   @column()
@@ -102,7 +106,10 @@ export default class User extends compose(BaseModel, AuthFinder) {
   declare scheduledWorkouts: HasMany<typeof ScheduledWorkout>;
 
   @hasMany(() => WorkoutTemplate, { foreignKey: 'trainerId' })
-  declare workoutTemplates: HasMany<typeof WorkoutTemplate>;
+  declare workoutTemplates: HasMany<typeof WorkoutTemplate>
+
+  @hasMany(() => UserMeasurement)
+  declare measurements: HasMany<typeof UserMeasurement>
 
   get isTrainer(): boolean {
     return this.role === 'trainer' || this.role === 'both';

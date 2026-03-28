@@ -19,6 +19,16 @@
   --color_text_primary: rgba(255, 255, 255, 1);
   --color_text_secondary: rgba(255, 255, 255, 0.9);
   --color_text_muted: rgba(255, 255, 255, 0.7);
+
+  /* Chart palette — harmonizes with emerald/teal primary */
+  --color_chart_1: rgb(16 185 129);   /* emerald  — primary_light */
+  --color_chart_2: rgb(6 182 212);    /* cyan     */
+  --color_chart_3: rgb(167 139 250);  /* violet   */
+  --color_chart_4: rgb(251 191 36);   /* amber    */
+  --color_chart_5: rgb(251 113 133);  /* rose     */
+  --color_chart_6: rgb(56 189 248);   /* sky      */
+  --color_chart_7: rgb(251 146 60);   /* orange   */
+  --color_chart_8: rgb(163 230 53);   /* lime     */
 }
 
 /* ─── Light special theme ────────────────────────────────────────────────── */

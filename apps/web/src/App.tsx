@@ -11,6 +11,7 @@ import TrainerAthleteDetailScreen from '@/screens/TrainerAthleteDetailScreen/Tra
 import TrainerGroupDetailScreen from '@/screens/TrainerGroupDetailScreen/TrainerGroupDetailScreen';
 import TrainerPersonalScreen from '@/screens/TrainerPersonalScreen/TrainerPersonalScreen';
 import TrainerPublicProfileScreen from '@/screens/TrainerPublicProfileScreen/TrainerPublicProfileScreen';
+import LeaderboardScreen from '@/screens/LeaderboardScreen/LeaderboardScreen';
 import InviteScreen from '@/screens/InviteScreen/InviteScreen';
 import DocsScreen from '@/screens/DocsScreen/DocsScreen';
 import AvatarScreen from '@/screens/AvatarScreen/AvatarScreen';
@@ -129,6 +130,14 @@ function AppContent(): JSX.Element {
           element={
             <ProtectedRoute>
               <TrainerPublicProfileScreen />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/groups/:groupId/leaderboard"
+          element={
+            <ProtectedRoute>
+              <LeaderboardScreen />
             </ProtectedRoute>
           }
         />

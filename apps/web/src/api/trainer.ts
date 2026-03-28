@@ -10,6 +10,26 @@ export interface AthleteListItem {
   photoUrl: string | null;
 }
 
+export interface LeaderboardResponse {
+  groupName: string;
+  trainerName: string | null;
+  entries: LeaderboardEntry[];
+}
+
+export interface LeaderboardEntry {
+  userId: number;
+  fullName: string | null;
+  photoUrl: string | null;
+  workouts: number;
+  volume: number;
+  relativeVolume: number | null;
+  progressionCoeff: number | null;
+  streakWeeks: number;
+  xp: number;
+  level: number;
+  weeklySeries: { date: string; workouts: number; volume: number }[];
+}
+
 export interface TrainerGroupItem {
   id: number;
   name: string;
@@ -201,11 +221,10 @@ export const trainerApi = {
     privateApi.post(`/trainer/groups/${groupId}/athletes`, { athleteId }),
   removeAthleteFromGroup: (groupId: number, athleteId: number) =>
     privateApi.delete(`/trainer/groups/${groupId}/athletes/${athleteId}`),
-  getGroupLeaderboard: (groupId: number, period: 7 | 30 = 7) =>
-    privateApi.get<{
-      success: boolean;
-      data: { id: number; fullName: string | null; workouts: number; volume: number; intensity: number }[];
-    }>(`/trainer/groups/${groupId}/leaderboard?period=${period}`),
+  getGroupLeaderboard: (groupId: number, period: 7 | 30 = 30) =>
+    privateApi.get<{ success: boolean; data: LeaderboardResponse }>(
+      `/trainer/groups/${groupId}/leaderboard?period=${period}`
+    ),
 
   // Chats
   getOrCreateGroupChat: (groupId: number) =>

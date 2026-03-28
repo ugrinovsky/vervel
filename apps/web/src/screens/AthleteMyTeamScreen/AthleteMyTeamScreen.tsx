@@ -9,7 +9,6 @@ import FullScreenChat from '@/components/FullScreenChat/FullScreenChat';
 import AiChat from '@/components/AiChat/AiChat';
 import { athleteApi, type AthleteGroup, type AthleteTrainer } from '@/api/athlete';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
-import AccentButton from '@/components/ui/AccentButton';
 import {
   ChatBubbleLeftIcon,
   UserGroupIcon,
@@ -17,7 +16,9 @@ import {
   UserCircleIcon,
   CalendarDaysIcon,
   SparklesIcon,
+  TrophyIcon,
 } from '@heroicons/react/24/outline';
+import IconButton from '@/components/ui/IconButton';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 import { AI_CHAT_MIN_BALANCE } from '@/constants/ai';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
@@ -221,20 +222,19 @@ export default function AthleteMyTeamScreen() {
                     return (
                       <div
                         key={trainer.id}
-                        className="p-4 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors border border-white/10"
+                        className="p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors border border-white/10"
                       >
-                        {/* Top row: photo + name/specs */}
-                        <div className="flex items-start gap-3 mb-3">
-                          <UserAvatar photoUrl={trainer.photoUrl} name={trainer.fullName} size={60} />
+                        <div className="flex items-start gap-3">
+                          <UserAvatar photoUrl={trainer.photoUrl} name={trainer.fullName} size={40} />
                           <div className="min-w-0 flex-1">
-                            <div className="text-sm font-semibold text-white">
+                            <div className="text-sm font-medium text-white">
                               {trainer.fullName || 'Без имени'}
                             </div>
-                            <div className="text-xs text-(--color_text_muted) mb-1.5">
+                            <div className="text-xs text-(--color_text_muted)">
                               {trainer.email}
                             </div>
                             {trainer.specializations && trainer.specializations.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
+                              <div className="flex flex-wrap gap-1 mt-1">
                                 {trainer.specializations.map((s) => (
                                   <span
                                     key={s}
@@ -245,35 +245,28 @@ export default function AthleteMyTeamScreen() {
                                 ))}
                               </div>
                             )}
+                            {trainer.bio && (
+                              <p className="text-xs text-(--color_text_muted) leading-relaxed mt-1 line-clamp-2">
+                                {trainer.bio}
+                              </p>
+                            )}
                           </div>
-                        </div>
-
-                        {/* Bio snippet */}
-                        {trainer.bio && (
-                          <p className="text-xs text-(--color_text_muted) leading-relaxed mb-3 line-clamp-2">
-                            {trainer.bio}
-                          </p>
-                        )}
-
-                        {/* Action buttons */}
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => navigate(`/trainer/profile/${trainer.id}`)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--color_bg_card) text-(--color_text_secondary) text-xs font-medium hover:text-white transition-colors"
-                          >
-                            <UserCircleIcon className="w-3.5 h-3.5" />
-                            Профиль
-                          </button>
-                          <AccentButton
-                            size="sm"
-                            onClick={() => openTrainerChat(trainer)}
-                            disabled={openingChatFor === trainer.id}
-                            className="relative text-xs"
-                          >
-                            {trainerUnread > 0 && <Badge count={trainerUnread} size="xs" className="absolute -top-1.5 -right-1.5" />}
-                            <ChatBubbleLeftIcon className="w-3.5 h-3.5" />
-                            Чат
-                          </AccentButton>
+                          <div className="flex flex-col gap-1.5 shrink-0">
+                            <IconButton onClick={() => navigate(`/trainer/profile/${trainer.id}`)}>
+                              <UserCircleIcon className="w-3.5 h-3.5" />
+                              Профиль
+                            </IconButton>
+                            <IconButton
+                              variant="accent"
+                              onClick={() => openTrainerChat(trainer)}
+                              disabled={openingChatFor === trainer.id}
+                              className="relative"
+                            >
+                              {trainerUnread > 0 && <Badge count={trainerUnread} size="xs" className="absolute -top-1.5 -right-1.5" />}
+                              <ChatBubbleLeftIcon className="w-3.5 h-3.5" />
+                              Чат
+                            </IconButton>
+                          </div>
                         </div>
                       </div>
                     );
@@ -315,15 +308,22 @@ export default function AthleteMyTeamScreen() {
                               {group.memberCount} участников
                             </div>
                           </div>
-                          <button
-                            onClick={() => openGroupChat(group)}
-                            disabled={openingChatFor === group.id}
-                            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-(--color_primary_light) text-white text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0"
-                          >
-                            {groupUnread > 0 && <Badge count={groupUnread} size="xs" className="absolute -top-1.5 -right-1.5" />}
-                            <ChatBubbleLeftIcon className="w-3.5 h-3.5" />
-                            Чат
-                          </button>
+                          <div className="flex flex-col gap-1.5 shrink-0">
+                            <IconButton onClick={() => navigate(`/groups/${group.id}/leaderboard`)}>
+                              <TrophyIcon className="w-3.5 h-3.5" />
+                              Рейтинг
+                            </IconButton>
+                            <IconButton
+                              variant="accent"
+                              onClick={() => openGroupChat(group)}
+                              disabled={openingChatFor === group.id}
+                              className="relative"
+                            >
+                              {groupUnread > 0 && <Badge count={groupUnread} size="xs" className="absolute -top-1.5 -right-1.5" />}
+                              <ChatBubbleLeftIcon className="w-3.5 h-3.5" />
+                              Чат
+                            </IconButton>
+                          </div>
                         </div>
                       </div>
                     );

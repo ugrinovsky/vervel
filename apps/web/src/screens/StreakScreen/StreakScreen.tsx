@@ -11,6 +11,7 @@ import { streakApi } from '@/api/streak';
 import ToggleGroup from '@/components/ui/ToggleGroup';
 import toast from 'react-hot-toast';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
+import ShareResultCard from '@/components/ShareResultCard/ShareResultCard';
 
 export default function StreakScreen() {
   const navigate = useNavigate();
@@ -127,7 +128,36 @@ export default function StreakScreen() {
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+        {/* XP / Level */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="bg-(--color_bg_card) rounded-2xl p-4 border border-(--color_border)"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="text-sm font-semibold text-white">
+                ⭐ {stats.xp} XP · Lv {stats.level}
+              </div>
+              <div className="text-xs text-(--color_text_muted) mt-0.5">{stats.levelName}</div>
+            </div>
+            <div className="text-xs text-(--color_text_muted)">
+              до Lv {stats.level + 1}: {stats.xpForNextLevel - stats.xp} XP
+            </div>
+          </div>
+          <div className="h-2 rounded-full bg-white/8">
+            <div
+              className="h-full rounded-full transition-all duration-700"
+              style={{
+                width: `${stats.xpProgressPct}%`,
+                backgroundColor: 'var(--color_primary_light)',
+              }}
+            />
+          </div>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <StreakCard
             currentStreak={stats.streak}
             longestStreak={stats.longestStreak}
@@ -139,11 +169,15 @@ export default function StreakScreen() {
         </motion.div>
 
         {/* Achievements */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
           <AchievementsList />
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <ShareResultCard profileData={profileData} />
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
           <ScreenLinks links={[
             { emoji: '💪', bg: 'bg-orange-500/20', label: 'Добавить тренировку', sub: 'Чтобы не прервать серию', to: '/workouts/new' },
             { emoji: '📅', bg: 'bg-blue-500/20',   label: 'Календарь',           sub: 'История тренировок',    to: '/calendar' },

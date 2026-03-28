@@ -9,7 +9,7 @@ export default class Achievement extends BaseModel {
   declare key: string
 
   @column()
-  declare category: 'streak' | 'workout' | 'usage' | 'social'
+  declare category: 'streak' | 'workout' | 'usage' | 'social' | 'progress'
 
   @column()
   declare title: string

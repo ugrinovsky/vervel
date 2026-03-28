@@ -81,7 +81,7 @@ export default function TrainerPublicProfileScreen() {
       />
 
       <div className="p-4 w-full mx-auto">
-        <BackButton onClick={() => navigate(-1)} />
+        <BackButton onClick={() => navigate(-1)} className="mb-5" />
 
         {/* Header: photo + name + specializations */}
         <motion.div

@@ -5,6 +5,9 @@ import Workout from '#models/workout'
 import TrainerAthlete from '#models/trainer_athlete'
 import db from '@adonisjs/lucid/services/db'
 import type UserStreak from '#models/user_streak'
+import { XpService } from './XpService.js'
+import type { XpRewardKey } from './xpLogic.js'
+import { ProgressionService } from './ProgressionService.js'
 
 export default class AchievementService {
   /**
@@ -75,6 +78,16 @@ export default class AchievementService {
       trainerMessages = Number((result[0] as any).total ?? 0)
     }
 
+    let personalRecords = 0
+    if (unearnedTypes.has('personal_records')) {
+      personalRecords = await ProgressionService.countPersonalRecords(userId)
+    }
+
+    let progressionCoeff: number | null = null
+    if (unearnedTypes.has('progression_coeff')) {
+      progressionCoeff = await ProgressionService.getProgressionCoeff(userId)
+    }
+
     const newlyUnlocked: Achievement[] = []
 
     for (const achievement of allAchievements) {
@@ -87,6 +100,8 @@ export default class AchievementService {
         groupsJoined,
         trainerMessages,
         trainersConnected,
+        personalRecords,
+        progressionCoeff,
       })
 
       if (shouldUnlock) {
@@ -96,6 +111,15 @@ export default class AchievementService {
           unlockedAt: DateTime.now(),
           isSeen: false,
         })
+
+        // XP за ачивку в зависимости от категории
+        const xpKey: XpRewardKey =
+          achievement.category === 'progress'
+            ? 'ACHIEVEMENT_LARGE'
+            : achievement.category === 'workout'
+              ? 'ACHIEVEMENT_MEDIUM'
+              : 'ACHIEVEMENT_SMALL'
+        await XpService.award(userId, xpKey)
 
         newlyUnlocked.push(achievement)
       }
@@ -162,6 +186,8 @@ export default class AchievementService {
       groupsJoined: number
       trainerMessages: number
       trainersConnected: number
+      personalRecords: number
+      progressionCoeff: number | null
     }
   ): boolean {
     const val = achievement.requirementValue || 0
@@ -190,6 +216,12 @@ export default class AchievementService {
           ctx.userStreak.mode === 'intensive' &&
           ctx.userStreak.currentStreak >= val
         )
+
+      case 'personal_records':
+        return ctx.personalRecords >= val
+
+      case 'progression_coeff':
+        return ctx.progressionCoeff !== null && ctx.progressionCoeff >= val
 
       default:
         return false

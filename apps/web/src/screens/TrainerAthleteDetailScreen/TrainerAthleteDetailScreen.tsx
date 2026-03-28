@@ -183,7 +183,7 @@ export default function TrainerAthleteDetailScreen() {
       </BottomSheet>
 
       <div className="p-4 w-full mx-auto">
-        <BackButton onClick={() => navigate('/trainer/athletes')} />
+        <BackButton onClick={() => navigate('/trainer/athletes')} className="mb-5" />
 
         {/* ── Hero ─────────────────────────────────────────────────────── */}
         <motion.div

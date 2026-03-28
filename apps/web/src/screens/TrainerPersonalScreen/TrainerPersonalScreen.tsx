@@ -148,7 +148,7 @@ export default function TrainerPersonalScreen() {
   return (
     <Screen className="trainer-personal-screen">
       <div className="p-4 w-full mx-auto">
-        <BackButton onClick={() => navigate(-1)} />
+        <BackButton onClick={() => navigate(-1)} className="mb-5" />
 
         <ScreenHeader
           icon="🪪"

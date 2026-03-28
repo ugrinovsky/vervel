@@ -1,6 +1,6 @@
 import { privateApi } from './http/privateApi';
 import { publicApi } from './http/publicApi';
-import type { PeriodizationData } from './trainer';
+import type { PeriodizationData, LeaderboardEntry, LeaderboardResponse } from './trainer';
 
 export interface AthleteGroup {
   id: number;
@@ -67,4 +67,9 @@ export const athleteApi = {
 
   getMyPeriodization: () =>
     privateApi.get<{ success: boolean; data: PeriodizationData }>('/athlete/periodization'),
+
+  getGroupLeaderboard: (groupId: number, period: 7 | 30 = 30) =>
+    privateApi.get<{ success: boolean; data: LeaderboardResponse }>(
+      `/athlete/groups/${groupId}/leaderboard?period=${period}`
+    ),
 };

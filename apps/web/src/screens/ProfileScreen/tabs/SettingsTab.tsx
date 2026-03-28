@@ -79,6 +79,8 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
   const [nameField, setNameField] = useState(data.user.fullName || '');
   const [emailField, setEmailField] = useState(data.user.email);
   const [genderField, setGenderField] = useState<'male' | 'female' | null>(data.user.gender ?? null);
+  const [bodyWeightField, setBodyWeightField] = useState('');
+  const [savingWeight, setSavingWeight] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState('');
@@ -119,6 +121,21 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
   const handleApplyTheme = () => {
     toast.success('Тема применена');
     setTimeout(() => window.location.reload(), 800);
+  };
+
+  const handleSaveWeight = async () => {
+    const value = parseFloat(bodyWeightField.replace(',', '.'));
+    if (!value || value <= 0 || value > 300) { toast.error('Введите корректный вес (кг)'); return; }
+    try {
+      setSavingWeight(true);
+      await profileApi.logMeasurement({ type: 'body_weight', value });
+      setBodyWeightField('');
+      toast.success('Вес сохранён');
+    } catch {
+      toast.error('Ошибка при сохранении веса');
+    } finally {
+      setSavingWeight(false);
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -326,6 +343,32 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
           >
             Сохранить
           </AccentButton>
+        </div>
+
+        {/* Body weight */}
+        <div className="mt-6 pt-6 border-t border-(--color_border)">
+          <h3 className="text-sm font-semibold text-white mb-1">Вес тела</h3>
+          <p className="text-xs text-(--color_text_muted) mb-3">
+            Используется для расчёта относительного тоннажа в рейтинге. История сохраняется.
+          </p>
+          <div className="flex gap-2">
+            <AppInput
+              type="number"
+              value={bodyWeightField}
+              onChange={(e) => setBodyWeightField(e.target.value)}
+              placeholder="Вес в кг, напр. 75.5"
+              className="flex-1"
+            />
+            <AccentButton
+              onClick={handleSaveWeight}
+              disabled={savingWeight || !bodyWeightField}
+              loading={savingWeight}
+              loadingText="..."
+              className="shrink-0"
+            >
+              Сохранить
+            </AccentButton>
+          </div>
         </div>
 
         {/* Password change */}

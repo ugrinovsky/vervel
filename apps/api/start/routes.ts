@@ -60,6 +60,9 @@ router
     router.put('profile/password', '#controllers/profile_controller.changePassword');
     router.post('profile/become-athlete', '#controllers/profile_controller.becomeAthlete');
     router.post('profile/become-trainer', '#controllers/profile_controller.becomeTrainer');
+    router.post('profile/measurements', '#controllers/profile_controller.logMeasurement');
+    router.get('profile/measurements', '#controllers/profile_controller.getMeasurements');
+    router.delete('profile/measurements/:id', '#controllers/profile_controller.deleteMeasurement');
 
     // Публичный профиль тренера (для атлетов)
     router.get('athlete/trainers/:trainerId/profile', '#controllers/profile_controller.getTrainerPublicProfile');
@@ -68,6 +71,9 @@ router
     router.get('streak', '#controllers/streak_controller.show');
     router.get('streak/history', '#controllers/streak_controller.history');
     router.patch('streak/mode', '#controllers/streak_controller.setMode');
+
+    // Progression
+    router.get('progression', '#controllers/progression_controller.getUserProgression');
 
     // Achievement routes
     router.get('achievements', '#controllers/streak_controller.achievements');
@@ -91,6 +97,7 @@ router
     router.get('athlete/periodization', '#controllers/athlete_controller.getMyPeriodization');
     router.get('athlete/chats/group/:groupId', '#controllers/athlete_controller.getOrCreateGroupChat');
     router.get('athlete/chats/trainer/:trainerId', '#controllers/athlete_controller.getOrCreatePersonalChat');
+    router.get('athlete/groups/:id/leaderboard', '#controllers/progression_controller.getGroupLeaderboard');
 
     // Shared chat messages (trainer or athlete participant)
     router.get('chats/:chatId/messages', '#controllers/chat_controller.getMessagesShared');

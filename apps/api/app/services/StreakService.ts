@@ -3,6 +3,7 @@ import UserStreak from '#models/user_streak'
 import StreakHistory from '#models/streak_history'
 import type Achievement from '#models/achievement'
 import AchievementService from './AchievementService.js'
+import { XpService } from './XpService.js'
 import { computeWeeklyStreakUpdate, type StreakMode } from './streakLogic.js'
 
 export interface StreakUpdateResult {
@@ -108,6 +109,17 @@ export class StreakService {
           : 'continued'
 
     const newAchievements = await AchievementService.checkAndUnlockAchievements(userId, userStreak)
+
+    // XP за тренировку
+    await XpService.award(userId, 'WORKOUT_COMPLETED')
+
+    // Дополнительный XP за завершение недели
+    if (computation.status === 'week_completed') {
+      await XpService.award(userId, 'WEEK_COMPLETED')
+      if (computation.newRecord) {
+        await XpService.award(userId, 'STREAK_RECORD')
+      }
+    }
 
     return { streak: userStreak, newAchievements, streakStatus }
   }

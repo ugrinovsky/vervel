@@ -1,5 +1,14 @@
 @import 'tailwindcss';
 
+/* Тач-фидбек: кнопки затемняются при нажатии на мобилках */
+@layer base {
+  button:active,
+  a:active,
+  [role="button"]:active {
+    opacity: 0.7;
+  }
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: rgb(var(--color_primary_light_ch) / 0.3) transparent;

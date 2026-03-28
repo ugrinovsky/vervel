@@ -1,11 +1,14 @@
 import { join } from 'node:path'
 import { mkdir, unlink } from 'node:fs/promises'
 import { cuid } from '@adonisjs/core/helpers'
-import Workout from '#models/workout';
-import hash from '@adonisjs/core/services/hash';
-import { HttpContext } from '@adonisjs/core/http';
-import { StreakService } from '#services/StreakService';
-import User from '#models/user';
+import { DateTime } from 'luxon'
+import Workout from '#models/workout'
+import UserMeasurement from '#models/user_measurement'
+import hash from '@adonisjs/core/services/hash'
+import { HttpContext } from '@adonisjs/core/http'
+import { StreakService } from '#services/StreakService'
+import { computeLevel } from '#services/xpLogic'
+import User from '#models/user'
 
 export default class ProfileController {
   async getProfile({ auth, response }: HttpContext) {
@@ -20,6 +23,13 @@ export default class ProfileController {
       const streak = userStreak?.currentStreak || 0;
       const longestStreak = userStreak?.longestStreak || 0;
       const topZones = this.calculateTopZones(workouts);
+      const levelInfo = computeLevel(user.xp ?? 0);
+
+      const totalVolume = workouts.reduce((sum, w) => sum + (Number(w.totalVolume) || 0), 0);
+      const workoutsWithIntensity = workouts.filter((w) => (w.totalIntensity ?? 0) > 0);
+      const avgIntensity = workoutsWithIntensity.length > 0
+        ? Math.round(workoutsWithIntensity.reduce((sum, w) => sum + (w.totalIntensity ?? 0), 0) / workoutsWithIntensity.length)
+        : null;
 
       return response.json({
         success: true,
@@ -49,6 +59,13 @@ export default class ProfileController {
             streakMode: userStreak?.mode || 'simple',
             currentWeekWorkouts: userStreak?.currentWeekWorkouts || 0,
             weeklyRequired: userStreak?.mode === 'intensive' ? 5 : 3,
+            xp: user.xp ?? 0,
+            level: levelInfo.level,
+            levelName: levelInfo.levelName,
+            xpForNextLevel: levelInfo.xpForNextLevel,
+            xpProgressPct: levelInfo.progressPct,
+            totalVolume: Math.round(totalVolume),
+            avgIntensity,
           },
         },
       });
@@ -230,6 +247,88 @@ export default class ProfileController {
         },
       },
     })
+  }
+
+  /**
+   * POST /profile/measurements
+   * Добавить замер (вес тела, % жира и т.д.)
+   */
+  async logMeasurement({ auth, request, response }: HttpContext) {
+    const user = auth.user!
+    const { type, value, loggedAt } = request.only(['type', 'value', 'loggedAt'])
+
+    if (!type || typeof type !== 'string' || type.length > 64) {
+      return response.badRequest({ success: false, message: 'Некорректный тип замера' })
+    }
+
+    const numValue = Number(value)
+    if (!numValue || numValue <= 0) {
+      return response.badRequest({ success: false, message: 'Некорректное значение' })
+    }
+
+    const date = loggedAt ? DateTime.fromISO(loggedAt) : DateTime.now()
+    if (!date.isValid) {
+      return response.badRequest({ success: false, message: 'Некорректная дата' })
+    }
+
+    const measurement = await UserMeasurement.create({
+      userId: user.id,
+      type,
+      value: numValue,
+      loggedAt: date,
+    })
+
+    return response.ok({
+      success: true,
+      data: {
+        id: measurement.id,
+        type: measurement.type,
+        value: Number(measurement.value),
+        loggedAt: measurement.loggedAt.toISO(),
+      },
+    })
+  }
+
+  /**
+   * GET /profile/measurements?type=body_weight&limit=50
+   * История замеров по типу
+   */
+  async getMeasurements({ auth, request, response }: HttpContext) {
+    const user = auth.user!
+    const type = request.input('type', 'body_weight')
+    const limit = Math.min(Number(request.input('limit', 50)), 200)
+
+    const measurements = await UserMeasurement.query()
+      .where('userId', user.id)
+      .where('type', type)
+      .orderBy('loggedAt', 'desc')
+      .limit(limit)
+
+    return response.ok({
+      success: true,
+      data: measurements.map((m) => ({
+        id: m.id,
+        type: m.type,
+        value: Number(m.value),
+        loggedAt: m.loggedAt.toISO(),
+      })),
+    })
+  }
+
+  /**
+   * DELETE /profile/measurements/:id
+   */
+  async deleteMeasurement({ auth, params, response }: HttpContext) {
+    const user = auth.user!
+
+    const measurement = await UserMeasurement.query()
+      .where('id', params.id)
+      .where('userId', user.id)
+      .firstOrFail()
+
+    await measurement.delete()
+
+    return response.ok({ success: true })
   }
 
   async changePassword({ auth, request, response }: HttpContext) {
