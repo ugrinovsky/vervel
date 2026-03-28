@@ -5,7 +5,7 @@ import AnimatedBlock from '@/components/ui/AnimatedBlock';
 import toast from 'react-hot-toast';
 import { profileApi, type ProfileData } from '@/api/profile';
 import type { UserRole } from '@/api/auth';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, useActiveMode } from '@/contexts/AuthContext';
 
 import { ThemeController, THEME_PRESETS, DEFAULT_HUE, type SpecialTheme } from '@/util/ThemeController';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
@@ -69,6 +69,7 @@ interface Props {
 export default function SettingsTab({ data, onProfileUpdate }: Props) {
   const navigate = useNavigate();
   const { logout, updateUser, user } = useAuth();
+  const { isTrainer } = useActiveMode();
   const { permission: pushPermission, loading: pushLoading, enable: enablePush, supported: pushSupported } = usePushNotifications();
   const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent)
   const isAndroid = /android/i.test(navigator.userAgent)
@@ -346,30 +347,31 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
         </div>
 
         {/* Body weight */}
-        <div className="mt-6 pt-6 border-t border-(--color_border)">
-          <h3 className="text-sm font-semibold text-white mb-1">Вес тела</h3>
-          <p className="text-xs text-(--color_text_muted) mb-3">
-            Используется для расчёта относительного тоннажа в рейтинге. История сохраняется.
-          </p>
-          <div className="flex gap-2">
-            <AppInput
-              type="number"
-              value={bodyWeightField}
-              onChange={(e) => setBodyWeightField(e.target.value)}
-              placeholder="Вес в кг, напр. 75.5"
-              className="flex-1"
-            />
-            <AccentButton
-              onClick={handleSaveWeight}
-              disabled={savingWeight || !bodyWeightField}
-              loading={savingWeight}
-              loadingText="..."
-              className="shrink-0"
-            >
-              Сохранить
-            </AccentButton>
+        {!isTrainer && (
+          <div className="mt-6 pt-6 border-t border-(--color_border)">
+            <h3 className="text-sm font-semibold text-white mb-1">Вес тела</h3>
+            <p className="text-xs text-(--color_text_muted) mb-3">
+              Используется для расчёта относительного тоннажа в рейтинге. История сохраняется.
+            </p>
+            <div className="space-y-2">
+              <AppInput
+                type="number"
+                value={bodyWeightField}
+                onChange={(e) => setBodyWeightField(e.target.value)}
+                placeholder="Вес в кг, напр. 75.5"
+              />
+              <AccentButton
+                onClick={handleSaveWeight}
+                disabled={savingWeight || !bodyWeightField}
+                loading={savingWeight}
+                loadingText="..."
+                className="w-full"
+              >
+                Сохранить
+              </AccentButton>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Password change */}
         <div className="mt-6 pt-6 border-t border-(--color_border)">
