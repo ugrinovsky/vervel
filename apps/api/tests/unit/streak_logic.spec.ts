@@ -95,20 +95,34 @@ test.group('новая неделя — продолжение streak', () => {
     assert.isFalse(r.newCurrentWeekCompleted)
   })
 
-  test('вторая неделя: завершена → streak = 2', ({ assert }) => {
-    // Пришли в новую неделю, сделали 3 тренировки
-    const start = base({
+  test('вторая неделя: завершена → streak = 2, новый рекорд', ({ assert }) => {
+    const r = computeWeeklyStreakUpdate(base({
       currentWeekStart: mon('2024-01-22'),
       currentWeekWorkouts: 2,
       currentWeekCompleted: false,
       currentStreak: 1,
       longestStreak: 1,
       workoutDate: day('2024-01-26'),
-    })
-    const r = computeWeeklyStreakUpdate(start)
+    }))
     assert.equal(r.status, 'week_completed')
     assert.equal(r.newCurrentStreak, 2)
+    assert.equal(r.newLongestStreak, 2)
     assert.isTrue(r.newRecord)
+  })
+
+  test('week_completed когда streak < longestStreak → newRecord = false', ({ assert }) => {
+    const r = computeWeeklyStreakUpdate(base({
+      currentWeekStart: mon('2024-01-22'),
+      currentWeekWorkouts: 2,
+      currentWeekCompleted: false,
+      currentStreak: 1,
+      longestStreak: 10, // рекорд выше
+      workoutDate: day('2024-01-26'),
+    }))
+    assert.equal(r.status, 'week_completed')
+    assert.equal(r.newCurrentStreak, 2)
+    assert.equal(r.newLongestStreak, 10) // рекорд не меняется
+    assert.isFalse(r.newRecord)
   })
 })
 
@@ -127,6 +141,7 @@ test.group('сброс streak', () => {
     assert.equal(r.status, 'week_broken')
     assert.equal(r.newCurrentStreak, 0)
     assert.equal(r.newLongestStreak, 5)
+    assert.equal(r.newCurrentWeekWorkouts, 1) // новая тренировка уже считается
   })
 
   test('пропуск нескольких недель → week_broken', ({ assert }) => {
@@ -140,6 +155,37 @@ test.group('сброс streak', () => {
     }))
     assert.equal(r.status, 'week_broken')
     assert.equal(r.newCurrentStreak, 0)
+    assert.equal(r.newCurrentWeekWorkouts, 1)
+  })
+})
+
+// ── граница недели ─────────────────────────────────────────────────────────
+
+test.group('граница недели (ISO: пн–вс)', () => {
+  test('тренировка в вс, следующая в пн → week_continued', ({ assert }) => {
+    const r = computeWeeklyStreakUpdate(base({
+      currentWeekStart: mon('2024-01-15'), // пн 15 янв
+      currentWeekWorkouts: 3,
+      currentWeekCompleted: true,
+      currentStreak: 1,
+      longestStreak: 1,
+      workoutDate: day('2024-01-22'), // пн 22 янв (следующая неделя)
+    }))
+    assert.equal(r.status, 'week_continued')
+    assert.equal(r.newCurrentWeekWorkouts, 1)
+    // newCurrentWeekStart должен быть понедельником новой недели
+    assert.equal(r.newCurrentWeekStart.toISODate(), '2024-01-22')
+  })
+
+  test('воскресенье той же ISO-недели — same_week', ({ assert }) => {
+    // ISO-неделя: пн 15 – вс 21; 1 тренировка уже есть → добавляем 2-ю в вс
+    const r = computeWeeklyStreakUpdate(base({
+      currentWeekStart: mon('2024-01-15'),
+      currentWeekWorkouts: 1,
+      workoutDate: day('2024-01-21'), // воскресенье той же недели
+    }))
+    assert.equal(r.status, 'same_week')
+    assert.equal(r.newCurrentWeekWorkouts, 2)
   })
 })
 
