@@ -53,68 +53,51 @@ export default function StreakCard({
       onClick={onClick}
       className="w-full bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border) text-left relative overflow-hidden"
     >
-      {/* Animated background */}
-      <div className="absolute inset-0 opacity-5">
-        <motion.div
-          animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
-          style={{
-            background: isIntensive
-              ? 'linear-gradient(90deg, #a855f7, #ec4899, #a855f7)'
-              : 'linear-gradient(90deg, var(--color_primary), var(--color_primary_light), var(--color_primary))',
-            backgroundSize: '200% 100%',
-          }}
-          className="w-full h-full"
-        />
-      </div>
+      {/* Subtle background tint */}
+      <div
+        className="absolute inset-0 opacity-5"
+        style={{
+          background: isIntensive
+            ? 'linear-gradient(135deg, #a855f7, #ec4899)'
+            : 'linear-gradient(135deg, var(--color_primary), var(--color_primary_light))',
+        }}
+      />
 
       <div className="relative z-10">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{isIntensive ? '⚡' : '🔥'}</span>
-            <span className="text-sm font-medium text-(--color_text_primary)">
-              {isIntensive ? 'Усиленный режим' : 'Обычный режим'}
-            </span>
+        {/* Header: режим слева, число недель справа */}
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">{isIntensive ? '⚡' : '🔥'}</span>
+              <span className="text-sm font-medium text-(--color_text_primary)">
+                {isIntensive ? 'Усиленный режим' : 'Обычный режим'}
+              </span>
+            </div>
+            <div className="text-xs text-(--color_text_muted) mt-1">{getMotivationalMessage()}</div>
+            {longestStreak > currentStreak && (
+              <div className="text-xs text-(--color_text_muted) mt-0.5">
+                Рекорд: {longestStreak} {getWeekWord(longestStreak)}
+              </div>
+            )}
+            {isRecord && currentStreak > 1 && (
+              <div className="text-xs text-(--color_primary_icon) mt-0.5 font-medium">⚡ Это ваш рекорд!</div>
+            )}
           </div>
-          <span className="text-xs text-(--color_text_muted) bg-(--color_bg_card_hover) px-2 py-0.5 rounded-full">
-            {weeklyRequired}/нед
-          </span>
+
+          <div className="text-right">
+            <motion.div
+              key={currentStreak}
+              initial={{ scale: 1.4, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="text-5xl font-black text-(--color_text_primary) leading-none"
+            >
+              {currentStreak}
+            </motion.div>
+            <div className="text-sm text-(--color_text_muted) mt-0.5">
+              {getWeekWord(currentStreak)}
+            </div>
+          </div>
         </div>
-
-        {/* Main streak number */}
-        <div className="flex items-end gap-3 mb-2">
-          <motion.div
-            key={currentStreak}
-            initial={{ scale: 1.5, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="text-5xl font-black text-(--color_text_primary)"
-          >
-            {currentStreak}
-          </motion.div>
-          <div className="text-lg text-(--color_primary_icon) pb-2">
-            {getWeekWord(currentStreak)}
-          </div>
-        </div>
-
-        {/* Record indicator */}
-        {isRecord && currentStreak > 1 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 text-(--color_primary_icon) text-sm font-medium mb-2"
-          >
-            <span>⚡</span>
-            <span>Это ваш рекорд!</span>
-          </motion.div>
-        )}
-
-        {/* Longest streak — показываем только когда текущая серия хуже рекорда */}
-        {longestStreak > currentStreak && (
-          <div className="text-xs text-(--color_text_muted)">
-            Лучшая серия: {longestStreak} {getWeekWord(longestStreak)}
-          </div>
-        )}
 
         {/* Current week progress */}
         <div className="mt-4 pt-4 border-t border-(--color_border)">
@@ -167,10 +150,6 @@ export default function StreakCard({
           })}
         </div>
 
-        {/* Motivational message */}
-        <div className="mt-3 text-xs text-(--color_text_muted)">
-          {getMotivationalMessage()}
-        </div>
       </div>
     </motion.button>
   );
