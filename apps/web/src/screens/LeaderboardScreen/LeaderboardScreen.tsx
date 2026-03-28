@@ -13,6 +13,7 @@ import { athleteApi } from '@/api/athlete';
 import { useActiveMode } from '@/contexts/AuthContext';
 import { drawLeaderboardCard, shareCanvas } from '@/utils/shareCard';
 import IconButton from '@/components/ui/IconButton';
+import CardHeader from '@/components/ui/CardHeader';
 import { ArrowUpOnSquareIcon } from '@heroicons/react/24/outline';
 
 type Metric = 'progressionCoeff' | 'relativeVolume' | 'streakWeeks' | 'xp';
@@ -262,16 +263,17 @@ export default function LeaderboardScreen() {
             {/* Podium */}
             {sorted.length >= 2 && (
               <AnimatedBlock className={`${cardClass} rounded-2xl px-4 pt-3 pb-0 overflow-hidden`}>
-                <div className="text-xs font-medium text-(--color_text_muted) mb-1">Топ-3</div>
+                <CardHeader title="Топ-3" />
                 <Podium sorted={hasResults ? sorted : []} metric={metric} format={currentMetric.format} />
               </AnimatedBlock>
             )}
 
             {/* Line chart */}
             <AnimatedBlock delay={0.08} className={`${cardClass} rounded-2xl p-4`}>
-              <div className="text-xs font-medium text-(--color_text_muted) mb-3">
-                Динамика — {metric === 'relativeVolume' ? 'объём (кг)' : 'тренировок'} по {period === 7 ? 'дням' : 'неделям'}
-              </div>
+              <CardHeader
+                title="Динамика"
+                description={`${metric === 'relativeVolume' ? 'объём (кг)' : 'тренировок'} по ${period === 7 ? 'дням' : 'неделям'}`}
+              />
               <LineChart
                 dates={sorted[0]?.weeklySeries?.map((p) => p.date) ?? []}
                 valueKey={metric === 'relativeVolume' ? 'volume' : 'workouts'}
@@ -284,6 +286,7 @@ export default function LeaderboardScreen() {
             </AnimatedBlock>
 
             {/* Detail cards */}
+            <CardHeader title="Атлеты" />
             <div className="space-y-2">
               {sorted.map((entry, i) => {
                 const value = entry[metric];
