@@ -25,6 +25,9 @@ export interface ProfileData {
     streak: number;
     longestStreak: number;
     topZones: Array<{ zone: string; total: number }>;
+    streakMode: 'simple' | 'intensive';
+    currentWeekWorkouts: number;
+    weeklyRequired: number;
   };
 }
 

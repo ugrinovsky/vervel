@@ -1,4 +1,9 @@
 import { privateApi } from './http/privateApi'
+import { createApi } from './http/baseApi'
+
+// Background polling must NOT redirect on 401 — a silent 401 during polling
+// would kick the user to /login in the middle of an active session.
+const silentApi = createApi({ redirectOn401: false })
 
 export interface CallSession {
   callId: number
@@ -45,5 +50,5 @@ export const callsApi = {
 
   /** Athlete: get active incoming call */
   getActiveCall: () =>
-    privateApi.get<VideoCall | null>('/athlete/calls/active'),
+    silentApi.get<VideoCall | null>('/athlete/calls/active'),
 }

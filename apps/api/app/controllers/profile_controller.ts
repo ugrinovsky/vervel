@@ -46,6 +46,9 @@ export default class ProfileController {
             streak,
             longestStreak,
             topZones,
+            streakMode: userStreak?.mode || 'simple',
+            currentWeekWorkouts: userStreak?.currentWeekWorkouts || 0,
+            weeklyRequired: userStreak?.mode === 'intensive' ? 5 : 3,
           },
         },
       });

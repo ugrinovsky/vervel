@@ -184,6 +184,13 @@ export default class AchievementService {
       case 'trainers_connected':
         return ctx.trainersConnected >= val
 
+      case 'streak_intensive_weeks':
+        return (
+          ctx.userStreak !== null &&
+          ctx.userStreak.mode === 'intensive' &&
+          ctx.userStreak.currentStreak >= val
+        )
+
       default:
         return false
     }

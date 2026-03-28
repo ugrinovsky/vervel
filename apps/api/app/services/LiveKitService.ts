@@ -51,6 +51,18 @@ export default class LiveKitService {
   }
 
   /**
+   * Returns true if the LiveKit room currently exists (i.e. was not auto-expired or deleted).
+   */
+  static async roomExists(roomName: string): Promise<boolean> {
+    try {
+      const rooms = await roomService.listRooms([roomName])
+      return rooms.length > 0
+    } catch {
+      return false
+    }
+  }
+
+  /**
    * Delete a LiveKit room and disconnect all participants.
    */
   static async deleteRoom(roomName: string): Promise<void> {

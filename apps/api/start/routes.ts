@@ -67,6 +67,7 @@ router
     // Streak routes
     router.get('streak', '#controllers/streak_controller.show');
     router.get('streak/history', '#controllers/streak_controller.history');
+    router.patch('streak/mode', '#controllers/streak_controller.setMode');
 
     // Achievement routes
     router.get('achievements', '#controllers/streak_controller.achievements');

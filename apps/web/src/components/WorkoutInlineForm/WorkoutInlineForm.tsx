@@ -67,7 +67,6 @@ export default function WorkoutInlineForm({
     editWorkout?.assignedTo ?? []
   );
   const [loadingAssignees, setLoadingAssignees] = useState(false);
-  const [assigneeListOpen, setAssigneeListOpen] = useState(true);
   const [assigneeMode, setAssigneeMode] = useState<'group' | 'athlete'>(() => {
     if (editWorkout?.assignedTo?.length) return editWorkout.assignedTo[0].type;
     if (preselectedAssignee) return preselectedAssignee.type;
@@ -216,28 +215,9 @@ export default function WorkoutInlineForm({
     </div>
   ) : (
     <div>
-      <div className="flex items-center justify-between mb-2">
+      <div className="mb-2">
         <SectionLabel>Кому назначить</SectionLabel>
-        {selectedAssignees.length > 0 && (
-          <button
-            onClick={() => setSelectedAssignees([])}
-            className="text-[10px] text-(--color_text_muted) hover:text-white transition-colors"
-          >
-            Сбросить
-          </button>
-        )}
       </div>
-
-      <Tabs
-        className="mb-2.5"
-        size="sm"
-        active={assigneeMode}
-        onChange={(v) => switchMode(v as 'group' | 'athlete')}
-        tabs={[
-          { id: 'group', label: '👥 Группа' },
-          { id: 'athlete', label: '🏃 Персональная' },
-        ]}
-      />
 
       {selectedAssignees.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-2">
@@ -257,6 +237,17 @@ export default function WorkoutInlineForm({
           ))}
         </div>
       )}
+
+      <Tabs
+        className="mb-2.5"
+        size="sm"
+        active={assigneeMode}
+        onChange={(v) => switchMode(v as 'group' | 'athlete')}
+        tabs={[
+          { id: 'group', label: '👥 Группа' },
+          { id: 'athlete', label: '🏃 Персональная' },
+        ]}
+      />
 
       {loadingAssignees ? (
         <div className="rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) flex items-center justify-center py-2.5">

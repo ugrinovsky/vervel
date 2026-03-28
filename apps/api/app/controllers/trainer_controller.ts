@@ -94,7 +94,7 @@ export default class TrainerController {
     const trainer = auth.user!
     const { email } = await request.validateUsing(addAthleteByEmailValidator)
 
-    const athlete = await User.findBy('email', email)
+    const athlete = await User.findBy('email', email.toLowerCase())
     if (!athlete) {
       return response.notFound({ message: 'Пользователь с таким email не найден' })
     }

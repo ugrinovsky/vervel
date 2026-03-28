@@ -19,6 +19,9 @@ export default class StreakController {
             longestStreak: 0,
             lastWorkoutDate: null,
             streakStartedAt: null,
+            mode: 'simple',
+            currentWeekWorkouts: 0,
+            weeklyRequired: 3,
           },
         })
       }
@@ -31,6 +34,9 @@ export default class StreakController {
           lastWorkoutDate: streak.lastWorkoutDate?.toISO(),
           streakStartedAt: streak.streakStartedAt?.toISO(),
           longestStreakAchievedAt: streak.longestStreakAchievedAt?.toISO(),
+          mode: streak.mode,
+          currentWeekWorkouts: streak.currentWeekWorkouts,
+          weeklyRequired: streak.mode === 'intensive' ? 5 : 3,
         },
       })
     } catch (error) {
@@ -68,6 +74,24 @@ export default class StreakController {
         success: false,
         message: 'Ошибка при получении истории',
       })
+    }
+  }
+
+  /**
+   * Сменить режим ударного режима
+   */
+  async setMode({ auth, request, response }: HttpContext) {
+    try {
+      const user = auth.user!
+      const { mode } = request.only(['mode'])
+      if (!['simple', 'intensive'].includes(mode)) {
+        return response.badRequest({ success: false, message: 'Invalid mode' })
+      }
+      await StreakService.setMode(user.id, mode as 'simple' | 'intensive')
+      return response.json({ success: true, data: { mode } })
+    } catch (error) {
+      console.error('Set streak mode error:', error)
+      return response.internalServerError({ success: false, message: 'Ошибка при смене режима' })
     }
   }
 

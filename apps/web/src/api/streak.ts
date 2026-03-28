@@ -6,6 +6,9 @@ export interface StreakData {
   lastWorkoutDate: string | null;
   streakStartedAt: string | null;
   longestStreakAchievedAt: string | null;
+  mode: 'simple' | 'intensive';
+  currentWeekWorkouts: number;
+  weeklyRequired: number;
 }
 
 export interface StreakHistoryItem {
@@ -61,4 +64,7 @@ export const streakApi = {
     privateApi.post<{ success: boolean; message: string }>('/achievements/seen', {
       achievementIds,
     }),
+
+  setMode: (mode: 'simple' | 'intensive') =>
+    privateApi.patch<{ success: boolean; data: { mode: string } }>('/streak/mode', { mode }),
 };

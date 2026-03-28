@@ -25,6 +25,18 @@ export default class UserStreak extends BaseModel {
   @column.dateTime()
   declare longestStreakAchievedAt: DateTime | null
 
+  @column()
+  declare mode: string  // 'simple' | 'intensive'
+
+  @column()
+  declare currentWeekWorkouts: number
+
+  @column.date()
+  declare currentWeekStart: DateTime | null
+
+  @column()
+  declare currentWeekCompleted: boolean
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 

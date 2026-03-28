@@ -208,6 +208,13 @@ export default class VideoCallsController {
       .first()
 
     if (personalCall) {
+      const alive = await LiveKitService.roomExists(personalCall.roomName)
+      if (!alive) {
+        personalCall.status = 'ended'
+        personalCall.endedAt = DateTime.now()
+        await personalCall.save()
+        return response.ok(null)
+      }
       return response.ok(personalCall)
     }
 
@@ -222,6 +229,17 @@ export default class VideoCallsController {
       .preload('group')
       .first()
 
-    return response.ok(groupCall ?? null)
+    if (groupCall) {
+      const alive = await LiveKitService.roomExists(groupCall.roomName)
+      if (!alive) {
+        groupCall.status = 'ended'
+        groupCall.endedAt = DateTime.now()
+        await groupCall.save()
+        return response.ok(null)
+      }
+      return response.ok(groupCall)
+    }
+
+    return response.ok(null)
   }
 }
