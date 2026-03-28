@@ -18,12 +18,12 @@ export default function IncomingCall({ call, onAccept, onDecline }: IncomingCall
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0, y: -80, scale: 0.9 }}
+        initial={{ opacity: 0, y: -16, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -80, scale: 0.9 }}
-        className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4"
+        exit={{ opacity: 0, y: -16, scale: 0.95 }}
+        className="w-[calc(100vw-32px)] sm:max-w-sm"
       >
-        <div className="bg-(--color_bg_card) backdrop-blur-xl rounded-2xl p-4 border border-(--color_border) shadow-2xl">
+        <div className="bg-(--color_bg_card) backdrop-blur-xl rounded-2xl p-4 border border-(--color_border) shadow-[inset_0_-1px_0_var(--color_border),0_8px_40px_rgba(0,0,0,0.5)]">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-(--color_primary_light) flex items-center justify-center shrink-0">
               <VideoCameraIcon className="w-5 h-5 text-white" />

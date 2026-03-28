@@ -22,6 +22,7 @@ export interface VideoCall {
   startedAt: string | null
   endedAt: string | null
   createdAt: string
+  updatedAt: string
   trainer?: { id: number; fullName: string | null; photoUrl: string | null }
   athlete?: { id: number; fullName: string | null; photoUrl: string | null }
   group?: { id: number; name: string }
@@ -47,6 +48,10 @@ export const callsApi = {
   /** Anyone: join an existing call by roomName */
   join: (roomName: string) =>
     privateApi.post<CallSession>(`/calls/${roomName}/join`),
+
+  /** Athlete: decline an incoming call */
+  declineCall: (roomName: string) =>
+    privateApi.post<{ message: string }>(`/calls/${roomName}/decline`),
 
   /** Athlete: get active incoming call */
   getActiveCall: () =>

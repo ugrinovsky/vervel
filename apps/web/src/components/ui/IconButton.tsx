@@ -24,7 +24,7 @@ export default function IconButton({
   const base =
     size === 'icon'
       ? 'flex items-center justify-center w-9 h-9 rounded-xl shrink-0'
-      : 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg shrink-0';
+      : 'flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg shrink-0';
 
   const colors =
     variant === 'accent'

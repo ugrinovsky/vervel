@@ -85,8 +85,9 @@ router
     router.get('profile/qr-data', '#controllers/invite_controller.getQrData');
     router.get('referral/stats', '#controllers/invite_controller.getReferralStats');
 
-    // Video calls — join (athlete + trainer)
+    // Video calls — join / decline (athlete + trainer)
     router.post('calls/:roomName/join', '#controllers/video_calls_controller.join');
+    router.post('calls/:roomName/decline', '#controllers/video_calls_controller.decline');
     router.get('athlete/calls/active', '#controllers/video_calls_controller.athleteActive');
 
     // Athlete: my groups and trainers

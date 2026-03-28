@@ -1,7 +1,8 @@
 import { VideoCameraIcon } from '@heroicons/react/24/outline'
 import AccentButton from '../ui/AccentButton'
 import { useVideoCall } from '../../hooks/useVideoCall'
-import VideoCallRoom from './VideoCallRoom'
+import VideoCallRoom, { DisconnectReason } from './VideoCallRoom'
+import toast from 'react-hot-toast'
 
 interface CallButtonProps {
   athleteId?: number
@@ -33,9 +34,16 @@ export default function CallButton({ athleteId, groupId }: CallButtonProps) {
       {session && (
         <VideoCallRoom
           session={session}
-          onDisconnected={() => {
-            endCall()
-            leaveCall()
+          onDisconnected={(reason) => {
+            if (reason === DisconnectReason.ROOM_DELETED) {
+              // Athlete ended the call — room already deleted on server
+              toast('Атлет завершил звонок', { icon: '📵' })
+              leaveCall()
+            } else {
+              // Trainer pressed leave — clean up on server
+              endCall().catch(() => {})
+              leaveCall()
+            }
           }}
         />
       )}

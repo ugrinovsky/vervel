@@ -5,6 +5,7 @@ import VideoCall from '#models/video_call'
 import TrainerAthlete from '#models/trainer_athlete'
 import TrainerGroup from '#models/trainer_group'
 import LiveKitService from '#services/LiveKitService'
+import { computeCallAction } from '#services/callLogic'
 
 export default class VideoCallsController {
   /**
@@ -47,10 +48,17 @@ export default class VideoCallsController {
     }
 
     let call = await VideoCall.findBy('room_name', roomName)
-    let shouldNotify = false
+
+    const roomAlive = call && call.status !== 'ended'
+      ? await LiveKitService.roomExists(roomName)
+      : false
+    const action = computeCallAction(call, roomAlive)
+
+    if (action.shouldCreateRoom) {
+      await LiveKitService.createRoom(roomName)
+    }
 
     if (!call) {
-      await LiveKitService.createRoom(roomName)
       call = await VideoCall.create({
         roomName,
         trainerId: trainer.id,
@@ -58,17 +66,14 @@ export default class VideoCallsController {
         groupId: groupId ?? null,
         status: 'pending',
       })
-      shouldNotify = true
-    } else if (call.status === 'ended') {
-      await LiveKitService.createRoom(roomName)
+    } else if (action.shouldResetCall) {
       call.status = 'pending'
       call.startedAt = null
       call.endedAt = null
       await call.save()
-      shouldNotify = true
     }
 
-    if (shouldNotify) {
+    if (action.shouldNotify) {
       let recipientIds: number[] = []
       if (athleteId) {
         recipientIds = [athleteId]
@@ -100,6 +105,44 @@ export default class VideoCallsController {
       token,
       url: LiveKitService.wsUrl,
     })
+  }
+
+  /**
+   * Athlete declines an incoming call.
+   * POST /calls/:roomName/decline
+   */
+  async decline({ params, auth, response }: HttpContext) {
+    const user = auth.getUserOrFail()
+    const call = await VideoCall.query()
+      .where('room_name', params.roomName)
+      .whereIn('status', ['pending', 'active'])
+      .first()
+
+    if (!call) {
+      return response.ok({ message: 'Звонок уже завершён' })
+    }
+
+    // Only the assigned athlete (or group member) can decline
+    const isAthlete = call.athleteId === user.id
+    let isGroupMember = false
+    if (call.groupId && !isAthlete) {
+      const membership = await TrainerGroup.query()
+        .where('id', call.groupId)
+        .whereHas('athletes', (q) => q.where('users.id', user.id))
+        .first()
+      isGroupMember = !!membership
+    }
+
+    if (!isAthlete && !isGroupMember) {
+      return response.forbidden({ message: 'Нет доступа к этому звонку' })
+    }
+
+    call.status = 'ended'
+    call.endedAt = DateTime.now()
+    await call.save()
+    await LiveKitService.deleteRoom(call.roomName)
+
+    return response.ok({ message: 'Звонок отклонён' })
   }
 
   /**
@@ -208,14 +251,11 @@ export default class VideoCallsController {
       .first()
 
     if (personalCall) {
+      // Don't mutate the record here — a flaky LiveKit check would permanently
+      // destroy a valid pending call. Stale records are cleaned up when the
+      // trainer re-initiates (create endpoint) or ends the call explicitly.
       const alive = await LiveKitService.roomExists(personalCall.roomName)
-      if (!alive) {
-        personalCall.status = 'ended'
-        personalCall.endedAt = DateTime.now()
-        await personalCall.save()
-        return response.ok(null)
-      }
-      return response.ok(personalCall)
+      return response.ok(alive ? personalCall : null)
     }
 
     // Group call — find groups user belongs to
@@ -231,13 +271,7 @@ export default class VideoCallsController {
 
     if (groupCall) {
       const alive = await LiveKitService.roomExists(groupCall.roomName)
-      if (!alive) {
-        groupCall.status = 'ended'
-        groupCall.endedAt = DateTime.now()
-        await groupCall.save()
-        return response.ok(null)
-      }
-      return response.ok(groupCall)
+      return response.ok(alive ? groupCall : null)
     }
 
     return response.ok(null)

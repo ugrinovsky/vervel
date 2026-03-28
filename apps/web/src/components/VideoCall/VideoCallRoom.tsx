@@ -8,14 +8,16 @@ import {
 } from '@livekit/components-react'
 import type { TrackReference } from '@livekit/components-react'
 import { useCallControls } from '../../hooks/useCallControls'
-import { Track } from 'livekit-client'
+import { Track, DisconnectReason } from 'livekit-client'
 import type { CallSession } from '../../api/calls'
 import { VideoCameraSlashIcon } from '@heroicons/react/24/solid'
 import CallControls from './CallControls'
 
+export { DisconnectReason }
+
 interface VideoCallRoomProps {
   session: CallSession
-  onDisconnected: () => void
+  onDisconnected: (reason?: DisconnectReason) => void
 }
 
 function ParticipantTile({ identity, cameraTracks }: { identity: string; cameraTracks: TrackReference[] }) {
@@ -33,8 +35,8 @@ function ParticipantTile({ identity, cameraTracks }: { identity: string; cameraT
   )
 }
 
-function CallUI({ onLeave }: { onLeave: () => void }) {
-  const controls = useCallControls(onLeave)
+function CallUI() {
+  const controls = useCallControls()
   const { localParticipant } = useLocalParticipant()
   const remoteParticipants = useRemoteParticipants()
 
@@ -157,7 +159,7 @@ export default function VideoCallRoom({ session, onDisconnected }: VideoCallRoom
       video
       onDisconnected={onDisconnected}
     >
-      <CallUI onLeave={onDisconnected} />
+      <CallUI />
     </LiveKitRoom>
   )
 }

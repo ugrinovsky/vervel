@@ -1,7 +1,7 @@
 import { type PropsWithChildren, type ReactNode, useEffect, useRef, useState } from 'react';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import CloseButton from '@/components/ui/CloseButton';
 
 interface Props extends PropsWithChildren {
@@ -41,6 +41,8 @@ function AnimatedHeight({ children }: { children: ReactNode }) {
 }
 
 export default function BottomSheet({ open, onClose, title, emoji, header, children }: Props) {
+  const dragControls = useDragControls();
+
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden';
@@ -79,13 +81,26 @@ export default function BottomSheet({ open, onClose, title, emoji, header, child
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            drag="y"
+            dragControls={dragControls}
+            dragListener={false}
+            dragConstraints={{ top: 0 }}
+            dragElastic={{ top: 0, bottom: 0.4 }}
+            onDragEnd={(_, info) => {
+              if (info.offset.y > 0) onClose();
+            }}
             onClick={(e) => e.stopPropagation()}
             className="background relative w-full rounded-t-3xl p-6 pb-6 max-h-[90dvh] overflow-y-auto overscroll-contain justify-center flex"
             style={{ backgroundColor: 'var(--color_bg_card)', borderTop: '1px solid var(--color_border)', boxShadow: '0 -4px 20px rgba(0,0,0,0.2)' }}
           >
             <div className={'max-w-[798px] w-full h-max'}>
-              {/* Handle */}
-              <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-white/20" />
+              {/* Handle — расширенная touch-зона */}
+              <div
+                className="absolute top-0 left-0 right-0 h-8 flex items-center justify-center touch-none cursor-grab active:cursor-grabbing"
+                onPointerDown={(e) => dragControls.start(e)}
+              >
+                <div className="w-10 h-1 rounded-full bg-white/20" />
+              </div>
 
               {/* Header */}
               <div className="flex items-start justify-between pt-2 mb-4">
