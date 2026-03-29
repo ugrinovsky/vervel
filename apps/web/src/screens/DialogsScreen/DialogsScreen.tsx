@@ -10,14 +10,17 @@ import { type DialogItem } from '@/api/chat'
 import { useActiveMode } from '@/contexts/AuthContext'
 import { useDialogs } from '@/hooks/useDialogs'
 import { SparklesIcon, UserGroupIcon } from '@heroicons/react/24/outline'
+import { parseWorkoutPreview } from '@/components/ChatBox/WorkoutPreviewCard'
 import { formatDialogTime } from '@/utils/date'
 import SearchInput from '@/components/ui/SearchInput'
 
 type DialogTab = 'all' | 'personal' | 'group'
 
 function DialogRow({ dialog, onOpen }: { dialog: DialogItem; onOpen: () => void }) {
+  const rawContent = dialog.lastMessage?.content ?? ''
+  const isWorkout = !!parseWorkoutPreview(rawContent)
   const preview = dialog.lastMessage
-    ? (dialog.lastMessage.isOwnMessage ? 'Вы: ' : '') + dialog.lastMessage.content
+    ? (dialog.lastMessage.isOwnMessage ? 'Вы: ' : '') + (isWorkout ? '🏋️ Тренировка' : rawContent)
     : 'Нет сообщений'
 
   return (
