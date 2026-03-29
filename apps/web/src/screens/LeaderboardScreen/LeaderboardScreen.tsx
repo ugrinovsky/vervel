@@ -271,7 +271,7 @@ export default function LeaderboardScreen() {
             {/* Line chart */}
             <AnimatedBlock delay={0.08} className={`${cardClass} rounded-2xl p-4`}>
               <CardHeader
-                title="Динамика"
+                title="Активность"
                 description={`${metric === 'relativeVolume' ? 'объём (кг)' : 'тренировок'} по ${period === 7 ? 'дням' : 'неделям'}`}
               />
               <LineChart
