@@ -1,43 +1,20 @@
 import './styles.css';
-import { useEffect, useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router';
 import { athleteRoutes, trainerRoutes, RouteItem } from '@/constants/routes';
 import { useActiveMode } from '@/contexts/AuthContext';
 import Badge from '@/components/ui/Badge';
-import { athleteApi } from '@/api/athlete';
-import { useTrainerUnreadCounts } from '@/hooks/useTrainerUnreadCounts';
+import { useDialogs } from '@/hooks/useDialogs';
 
 export default function Navigation() {
   const navigate = useNavigate();
   const { isTrainer, isAthlete, activeMode } = useActiveMode();
   const showTrainerNav = isTrainer && (!isAthlete || activeMode === 'trainer');
 
-  const { data: trainerUnread } = useTrainerUnreadCounts(showTrainerNav ? 30_000 : undefined);
-  const [athleteUnread, setAthleteUnread] = useState(0);
+  const { data: dialogs } = useDialogs(30_000);
+  const totalUnread = dialogs?.reduce((s, d) => s + d.unreadCount, 0) ?? 0;
 
-  useEffect(() => {
-    if (showTrainerNav) return;
-    const fetch = () =>
-      athleteApi
-        .getUnreadCounts()
-        .then((r: any) => setAthleteUnread(r.data.data.total))
-        .catch(() => {});
-    fetch();
-    const interval = setInterval(fetch, 30_000);
-    return () => clearInterval(interval);
-  }, [showTrainerNav]);
-
-  const trainerGroupsUnread = trainerUnread?.groups.reduce((s, g) => s + g.unread, 0) ?? 0;
-  const trainerAthletesUnread = trainerUnread?.athletes.reduce((s, a) => s + a.unread, 0) ?? 0;
-
-  const getTrainerUnread = (path: string) => {
-    if (path === '/trainer/groups') return trainerGroupsUnread;
-    if (path === '/trainer/athletes') return trainerAthletesUnread;
-    return 0;
-  };
-
-  const getAthleteUnread = (path: string) => {
-    if (path === '/my-team') return athleteUnread;
+  const getUnread = (path: string) => {
+    if (path === '/dialogs') return totalUnread;
     return 0;
   };
 
@@ -49,7 +26,7 @@ export default function Navigation() {
         <div className="max-w-md mx-auto px-3 h-16">
           <div className="flex items-center justify-around h-full">
             {navItems.map((route) => (
-              <NavItem key={route.path} route={route} unread={getTrainerUnread(route.path)} />
+              <NavItem key={route.path} route={route} unread={getUnread(route.path)} />
             ))}
           </div>
         </div>
@@ -71,7 +48,7 @@ export default function Navigation() {
               route.isButton ? (
                 <ActionButton key={route.path} route={route} navigate={navigate} />
               ) : (
-                <NavItem key={route.path} route={route} unread={getAthleteUnread(route.path)} />
+                <NavItem key={route.path} route={route} unread={getUnread(route.path)} />
               )
             ))}
           </div>
@@ -85,7 +62,7 @@ export default function Navigation() {
               route.isButton ? (
                 <ActionButton key={route.path} route={route} navigate={navigate} />
               ) : (
-                <NavItem key={route.path} route={route} unread={getAthleteUnread(route.path)} />
+                <NavItem key={route.path} route={route} unread={getUnread(route.path)} />
               )
             ))}
           </div>

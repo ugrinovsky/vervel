@@ -15,6 +15,7 @@ export default function AppInput({ label, error, className = '', ...props }: App
       <input
         {...props}
         className={`${BASE_CLS} ${error ? 'border-red-500/60 focus:border-red-400' : ''} ${className}`}
+        style={{ outline: 'none', ...props.style }}
       />
       {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
     </div>

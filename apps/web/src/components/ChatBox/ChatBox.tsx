@@ -17,9 +17,11 @@ const PAGE_SIZE = 20;
 interface ChatBoxProps {
   chatId: number;
   className?: string;
+  glass?: boolean;
+  topPadding?: number;
 }
 
-export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
+export default function ChatBox({ chatId, className = '', glass = false, topPadding }: ChatBoxProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -32,24 +34,41 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const bottomPanelRef = useRef<HTMLDivElement>(null);
   const oldestIdRef = useRef<number | null>(null);
   const newestIdRef = useRef<number | null>(null);
   const prevScrollHeightRef = useRef(0);
   const restoringScrollRef = useRef(false);
   const loadingOlderRef = useRef(false);
+  const scrollNeededRef = useRef<ScrollBehavior | null>(null);
+  const [bottomPanelHeight, setBottomPanelHeight] = useState(80);
 
-  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
-    messagesEndRef.current?.scrollIntoView({ behavior });
-  };
-
-  // Restore scroll position after prepending older messages
+  // Scroll to bottom or restore position — runs after DOM is updated
   useLayoutEffect(() => {
     if (restoringScrollRef.current && scrollContainerRef.current) {
       const container = scrollContainerRef.current;
       container.scrollTop = container.scrollHeight - prevScrollHeightRef.current;
       restoringScrollRef.current = false;
+      return;
     }
-  }, [messages]);
+    if (!initialLoading && scrollNeededRef.current) {
+      const container = scrollContainerRef.current;
+      if (container) {
+        container.scrollTo({ top: container.scrollHeight, behavior: scrollNeededRef.current });
+      }
+      scrollNeededRef.current = null;
+    }
+  }, [messages, initialLoading]);
+
+  // Track bottom panel height for absolute positioning in glass mode
+  useEffect(() => {
+    const el = bottomPanelRef.current
+    if (!el) return
+    const obs = new ResizeObserver(() => setBottomPanelHeight(el.offsetHeight))
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, []);
 
   // Initial load
   useEffect(() => {
@@ -66,7 +85,7 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
           newestIdRef.current = data[data.length - 1].id;
         }
         chatApi.markAsRead(chatId).catch(() => {});
-        setTimeout(() => scrollToBottom('instant'), 50);
+        scrollNeededRef.current = 'instant';
       } catch {
         if (!cancelled) toast.error('Ошибка загрузки сообщений');
       } finally {
@@ -125,31 +144,30 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
     return () => observer.disconnect();
   }, [initialLoading, loadOlderMessages]);
 
-  // Poll for new messages every 10s
+  // Real-time messages via SSE
   useEffect(() => {
     if (initialLoading) return;
-    const interval = setInterval(async () => {
-      try {
-        const res = await chatApi.getMessages(chatId, { limit: PAGE_SIZE });
-        const data = res.data.data;
-        if (data.length === 0) return;
-        const latestId = data[data.length - 1].id;
-        if (newestIdRef.current !== null && latestId <= newestIdRef.current) return;
 
+    const apiBase = import.meta.env.VITE_API_URL || '';
+    const afterId = newestIdRef.current ?? 0;
+    const url = `${apiBase}/chats/${chatId}/stream?after_id=${afterId}`;
+    const source = new EventSource(url, { withCredentials: true });
+
+    source.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data) as { type: string; data: ChatMessage };
+        if (msg.type !== 'message') return;
         setMessages((prev) => {
-          const existingIds = new Set(prev.map((m) => m.id));
-          const newOnes = data.filter((m) => !existingIds.has(m.id));
-          if (newOnes.length === 0) return prev;
-          newestIdRef.current = newOnes[newOnes.length - 1].id;
-          return [...prev, ...newOnes];
+          if (prev.some((m) => m.id === msg.data.id)) return prev;
+          newestIdRef.current = msg.data.id;
+          return [...prev, msg.data];
         });
         chatApi.markAsRead(chatId).catch(() => {});
-        scrollToBottom('smooth');
-      } catch {
-        // silent
-      }
-    }, 10000);
-    return () => clearInterval(interval);
+        scrollNeededRef.current = 'smooth';
+      } catch { /* ignore */ }
+    };
+
+    return () => source.close();
   }, [chatId, initialLoading]);
 
   const handleSend = async () => {
@@ -160,9 +178,9 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
     try {
       const res = await chatApi.sendMessage(chatId, content);
       const msg = res.data.data;
+      scrollNeededRef.current = 'smooth';
       setMessages((prev) => [...prev, msg]);
       newestIdRef.current = msg.id;
-      setTimeout(() => scrollToBottom('smooth'), 50);
       checkForNewAchievements();
     } catch {
       toast.error('Ошибка отправки сообщения');
@@ -172,28 +190,46 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
 
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNewMessage(e.target.value);
+    const ta = e.target;
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 72) + 'px';
+  };
+
+  // Reset textarea height after send
+  useEffect(() => {
+    if (!newMessage && textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+  }, [newMessage]);
+
   const formatTime = (dateString: string) =>
     new Date(dateString).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
   if (initialLoading) {
     return (
-      <div className={`flex items-center justify-center p-8 ${className}`}>
+      <div className={`flex items-center justify-center p-8 ${className}`} style={glass ? { paddingTop: (topPadding ?? 0) + 32 } : undefined}>
         <div className="w-6 h-6 border-2 border-white/20 border-t-(--color_primary_light) rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className={`flex flex-col h-full ${className}`}>
+    <div className={glass ? `relative h-full ${className}` : `flex flex-col h-full ${className}`}>
       {/* Messages */}
-      <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
+      <div
+        ref={scrollContainerRef}
+        className={glass ? 'absolute inset-0 overflow-y-auto px-4 space-y-3' : 'flex-1 min-h-0 overflow-y-auto p-4 space-y-3'}
+        style={glass ? { paddingTop: (topPadding ?? 0) + 16, paddingBottom: bottomPanelHeight + 16 } : undefined}
+      >
         <div ref={topSentinelRef} className="h-px" />
 
         {loadingOlder && (
@@ -245,18 +281,27 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
                   className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[75%] ${
+                    className={`max-w-[75%] rounded-2xl px-4 py-2 text-white ${
                       isCurrentUser
-                        ? 'bg-(--color_primary_light) text-white'
-                        : 'bg-(--color_bg_card_hover) text-white'
-                    } rounded-2xl px-4 py-2`}
+                        ? glass
+                          ? ''
+                          : 'bg-(--color_primary_light)'
+                        : glass
+                          ? 'bg-white/10 backdrop-blur-sm border border-white/10'
+                          : 'bg-(--color_bg_card_hover)'
+                    }`}
+                    style={
+                      isCurrentUser && glass
+                        ? { background: 'rgb(var(--color_primary_light_ch) / 0.35)' }
+                        : undefined
+                    }
                   >
                     {showSender && !isCurrentUser && (
                       <div className="text-xs text-(--color_text_muted) mb-1">
                         {message.sender.fullName || 'Без имени'}
                       </div>
                     )}
-                    <div className="text-sm break-words">{message.content}</div>
+                    <div className="text-sm wrap-break-word whitespace-pre-wrap">{message.content}</div>
                     <div
                       className={`text-xs mt-1 ${isCurrentUser ? 'text-white/70' : 'text-(--color_text_muted)'}`}
                     >
@@ -272,27 +317,67 @@ export default function ChatBox({ chatId, className = '' }: ChatBoxProps) {
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-(--color_border)">
-        <div className="flex gap-2">
-          <AppInput
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Написать сообщение..."
-            disabled={sending}
-            className="py-2 disabled:opacity-50"
-          />
-          <AccentButton
-            size="sm"
+      {glass ? (
+        <div
+          ref={bottomPanelRef}
+          className="absolute bottom-0 left-0 right-0 z-10 flex items-center gap-2 px-3"
+          style={{
+            background: 'var(--chat_panel_bg)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            borderTop: '1px solid var(--color_border)',
+            paddingTop: '10px',
+            paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 10px)',
+          }}
+        >
+          <div className="flex-1 flex items-center bg-white/8 rounded-2xl px-3 py-2.5 border border-white/10">
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              value={newMessage}
+              onChange={handleTextareaChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Написать сообщение..."
+              disabled={sending}
+              className="flex-1 bg-transparent text-sm text-white placeholder:text-white/35 border-none focus:outline-none resize-none leading-5"
+              style={{ outline: 'none', maxHeight: '72px', overflowY: 'auto' }}
+            />
+          </div>
+          <button
             onClick={handleSend}
             disabled={!newMessage.trim() || sending}
-            className="px-4 py-2 rounded-xl disabled:cursor-not-allowed"
+            className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all duration-200 disabled:cursor-not-allowed ${
+              newMessage.trim()
+                ? 'bg-(--color_primary_light) opacity-100'
+                : 'bg-white/10 opacity-50'
+            }`}
           >
-            <PaperAirplaneIcon className="w-5 h-5" />
-          </AccentButton>
+            <PaperAirplaneIcon className="w-4 h-4 text-white" />
+          </button>
         </div>
-      </div>
+      ) : (
+        <div className="p-4 border-t border-(--color_border)">
+          <div className="flex gap-2">
+            <AppInput
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Написать сообщение..."
+              disabled={sending}
+              className="py-2 disabled:opacity-50"
+            />
+            <AccentButton
+              size="sm"
+              onClick={handleSend}
+              disabled={!newMessage.trim() || sending}
+              className="px-4 py-2 rounded-xl disabled:cursor-not-allowed"
+            >
+              <PaperAirplaneIcon className="w-5 h-5" />
+            </AccentButton>
+          </div>
+        </div>
+      )}
 
       <WorkoutDetailSheet
         data={openPreview}

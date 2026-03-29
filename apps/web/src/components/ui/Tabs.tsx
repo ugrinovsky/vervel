@@ -14,11 +14,36 @@ interface Props<T extends string> {
   className?: string;
   /** 'md' (default) — with outer padding and gap; 'sm' — seamless compact icon toggle */
   size?: 'md' | 'sm';
+  /** 'default' (default) — pill/background style; 'underline' — animated bottom border */
+  variant?: 'default' | 'underline';
 }
 
-export default function Tabs<T extends string>({ tabs, active, onChange, className = '', size = 'md' }: Props<T>) {
+export default function Tabs<T extends string>({ tabs, active, onChange, className = '', size = 'md', variant = 'default' }: Props<T>) {
   const layoutId = useId();
   const isCompact = size === 'sm';
+
+  if (variant === 'underline') {
+    return (
+      <div className={`flex ${className}`}>
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => onChange(tab.id)}
+            className={`relative flex-1 flex items-center justify-center py-2.5 text-sm font-medium transition-colors outline-none ${active === tab.id ? 'text-white' : 'text-(--color_text_muted) hover:text-white'}`}
+          >
+            <span className="relative z-10">{tab.label}</span>
+            {active === tab.id && (
+              <motion.div
+                layoutId={`${layoutId}-tab-underline`}
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-(--color_primary_light)"
+                transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+              />
+            )}
+          </button>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <motion.div

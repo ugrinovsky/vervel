@@ -100,7 +100,9 @@ router
     router.get('athlete/chats/trainer/:trainerId', '#controllers/athlete_controller.getOrCreatePersonalChat');
     router.get('athlete/groups/:id/leaderboard', '#controllers/progression_controller.getGroupLeaderboard');
 
-    // Shared chat messages (trainer or athlete participant)
+    // Dialogs list + shared chat actions (trainer or athlete participant)
+    router.get('chats', '#controllers/chat_controller.listChats');
+    router.get('chats/:chatId/stream', '#controllers/chat_controller.streamMessages');
     router.get('chats/:chatId/messages', '#controllers/chat_controller.getMessagesShared');
     router.post('chats/:chatId/messages', '#controllers/chat_controller.sendMessageShared');
     router.post('chats/:chatId/read', '#controllers/chat_controller.markAsRead');

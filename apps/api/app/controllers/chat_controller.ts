@@ -7,6 +7,8 @@ import ChatRead from '#models/chat_read'
 import TrainerGroup from '#models/trainer_group'
 import TrainerAthlete from '#models/trainer_athlete'
 import AchievementService from '#services/AchievementService'
+import DialogService from '#services/DialogService'
+import { resolveAfterId, formatSseEvent } from '#services/chatStreamLogic'
 import emitter from '@adonisjs/core/services/emitter'
 
 export default class ChatController {
@@ -167,7 +169,7 @@ export default class ChatController {
         senderName: `Тренер ${message.sender.fullName}`,
         content: content.trim(),
         recipientIds,
-        url: '/my-team',
+        url: '/dialogs',
       })
     }
 
@@ -229,6 +231,14 @@ export default class ChatController {
   }
 
   // ─── Shared (trainer OR athlete member) ──────────────────────────────────
+
+  /**
+   * GET /chats — all dialogs for the current user
+   */
+  async listChats({ auth, response }: HttpContext) {
+    const data = await DialogService.listForUser(auth.user!.id)
+    return response.ok({ success: true, data })
+  }
 
   /**
    * Check if user has access to a chat (trainer or athlete participant)
@@ -376,6 +386,89 @@ export default class ChatController {
   }
 
   /**
+   * GET /chats/:chatId/stream  — SSE real-time messages
+   * Uses Last-Event-ID header on reconnect (set by browser automatically)
+   */
+  async streamMessages({ auth, params, request, response }: HttpContext) {
+    const user = auth.user!
+    const chatId = Number(params.chatId)
+
+    const chat = await this.findChatForUser(user.id, chatId)
+    if (!chat) return response.notFound({ message: 'Чат не найден' })
+
+    // After_id: use Last-Event-ID header (auto-sent by browser on reconnect) or query param
+    const lastEventId = request.header('last-event-id')
+    let latestId = resolveAfterId(lastEventId, request.input('after_id'))
+
+    const raw = response.response
+
+    // CORS headers must be set directly on raw before flushHeaders()
+    // because AdonisJS CORS middleware buffers headers and writes them
+    // only at response finalization — too late for SSE streams.
+    const origin = request.header('origin')
+    if (origin) {
+      raw.setHeader('Access-Control-Allow-Origin', origin)
+      raw.setHeader('Access-Control-Allow-Credentials', 'true')
+    }
+    raw.setHeader('Content-Type', 'text/event-stream')
+    raw.setHeader('Cache-Control', 'no-cache')
+    raw.setHeader('Connection', 'keep-alive')
+    raw.setHeader('X-Accel-Buffering', 'no')
+    raw.flushHeaders()
+
+    let closed = false
+
+    const sendEvent = (id: number, data: object) => {
+      if (!closed && !raw.writableEnded) {
+        raw.write(formatSseEvent(id, data))
+      }
+    }
+
+    const poll = setInterval(async () => {
+      if (closed) return
+      try {
+        const messages = await Message.query()
+          .where('chatId', chatId)
+          .where('id', '>', latestId)
+          .preload('sender', (q) => q.select('id', 'fullName', 'email'))
+          .orderBy('id', 'asc')
+          .limit(20)
+
+        for (const m of messages) {
+          sendEvent(m.id, {
+            type: 'message',
+            data: {
+              id: m.id,
+              content: m.content,
+              senderId: m.senderId,
+              sender: { id: m.sender.id, fullName: m.sender.fullName, email: m.sender.email },
+              createdAt: m.createdAt,
+            },
+          })
+          latestId = m.id
+        }
+      } catch { /* ignore */ }
+    }, 2000)
+
+    // Keepalive comment every 25s to prevent proxy timeouts
+    const ping = setInterval(() => {
+      if (!closed && !raw.writableEnded) raw.write(': ping\n\n')
+    }, 25000)
+
+    const cleanup = () => {
+      closed = true
+      clearInterval(poll)
+      clearInterval(ping)
+    }
+
+    request.request.on('close', cleanup)
+
+    return new Promise<void>((resolve) => {
+      request.request.on('close', resolve)
+    })
+  }
+
+  /**
    * POST /chats/:chatId/messages  (shared – trainer or athlete)
    */
   async sendMessageShared({ auth, params, request, response }: HttpContext) {
@@ -413,7 +506,7 @@ export default class ChatController {
 
     if (isTrainer) {
       senderLabel = `Тренер ${message.sender.fullName}`
-      url = '/my-team'
+      url = '/dialogs'
       if (chat.type === 'personal' && chat.athleteId) {
         recipientIds = [chat.athleteId]
       } else if (chat.type === 'group' && chat.groupId) {
@@ -422,7 +515,7 @@ export default class ChatController {
       }
     } else {
       senderLabel = message.sender.fullName ?? message.sender.email
-      url = '/trainer/personal'
+      url = '/dialogs'
       recipientIds = [chat.trainerId]
     }
 

@@ -1,4 +1,6 @@
 :root {
+  --chat_panel_bg: rgba(0, 0, 0, 0.3);
+
   --color_bg_screen: radial-gradient(circle at 50% 52.5%, rgb(14 92 77) 0%, rgb(14 58 72) 90%);
 
   --color_primary: rgb(14 92 77);
@@ -34,6 +36,8 @@
 /* ─── Light special theme ────────────────────────────────────────────────── */
 
 html[data-theme="light"] {
+  --chat_panel_bg: rgba(244, 243, 241, 0.82);
+
   /*
    * Remap Tailwind's --color-white token to near-black.
    * All Tailwind utilities adapt automatically:
@@ -128,6 +132,10 @@ html[data-theme="light"] .ai-markdown h3 {
 /* Avatar gradient end: --color_primary is ivory in light theme */
 html[data-theme="light"] .to-\(--color_primary\) {
   --tw-gradient-to: color-mix(in srgb, var(--color_primary_light) 65%, #000 35%) !important;
+}
+
+html[data-theme="light"] .chat-icon-overlay {
+  opacity: 0.08 !important;
 }
 
 input:focus {

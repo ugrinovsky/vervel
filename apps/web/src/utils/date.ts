@@ -62,3 +62,31 @@ export function parseApiDateTime(dateStr: string): Date {
   const [h, min, s] = timePart.split(':').map(Number);
   return new Date(y, mo - 1, d, h, min, s ?? 0);
 }
+
+const DAY_NAMES = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+
+/**
+ * Formats a datetime string for dialog list display (Telegram-style):
+ * - Same day → "HH:mm"
+ * - Within last 7 days → short weekday name ("Пн", "Вт", …)
+ * - Older → "dd.mm.YY"
+ */
+export function formatDialogTime(iso: string): string {
+  const date = parseApiDateTime(iso);
+  const now = new Date();
+
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.round((todayStart.getTime() - dateStart.getTime()) / 86_400_000);
+
+  if (diffDays === 0) {
+    return toTimeKey(date);
+  }
+  if (diffDays < 7) {
+    return DAY_NAMES[date.getDay()];
+  }
+  const d = String(date.getDate()).padStart(2, '0');
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const y = String(date.getFullYear()).slice(2);
+  return `${d}.${m}.${y}`;
+}

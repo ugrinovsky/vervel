@@ -11,6 +11,8 @@ import TrainerCalendarScreen from '@/screens/TrainerCalendarScreen/TrainerCalend
 import TrainerTemplatesScreen from '@/screens/TrainerTemplatesScreen/TrainerTemplatesScreen';
 import TrainerExerciseLibraryScreen from '@/screens/TrainerExerciseLibraryScreen/TrainerExerciseLibraryScreen';
 import AthleteMyTeamScreen from '@/screens/AthleteMyTeamScreen/AthleteMyTeamScreen';
+import DialogsScreen from '@/screens/DialogsScreen/DialogsScreen';
+import TrainerTeamScreen from '@/screens/TrainerTeamScreen/TrainerTeamScreen';
 import {
   ChartBarIcon,
   PlusIcon,
@@ -23,6 +25,7 @@ import {
   RectangleStackIcon,
   BookOpenIcon,
   TrophyIcon,
+  ChatBubbleLeftRightIcon,
 } from '@heroicons/react/24/outline';
 
 export interface RouteItem {
@@ -38,6 +41,13 @@ export interface RouteItem {
 
 /** Routes for athletes (default navigation) */
 export const athleteRoutes: RouteItem[] = [
+  {
+    path: '/dialogs',
+    label: 'Диалоги',
+    icon: ChatBubbleLeftRightIcon,
+    element: <DialogsScreen />,
+    toolbarPosition: 'left',
+  },
   {
     path: '/analytics',
     label: 'Аналитика',
@@ -60,17 +70,17 @@ export const athleteRoutes: RouteItem[] = [
     toolbarPosition: 'center',
   },
   {
-    path: '/my-team',
-    label: 'Команда',
-    icon: UserGroupIcon,
-    element: <AthleteMyTeamScreen />,
-    toolbarPosition: 'left',
-  },
-  {
     path: '/streak',
     label: 'Ачивки',
     icon: TrophyIcon,
     element: <StreakScreen />,
+    // убрана из тулбара — доступна из профиля
+  },
+  {
+    path: '/my-team',
+    label: 'Команда',
+    icon: UserGroupIcon,
+    element: <AthleteMyTeamScreen />,
     toolbarPosition: 'right',
   },
   {
@@ -94,6 +104,13 @@ export const athleteRoutes: RouteItem[] = [
 /** Routes for trainers (different navigation) */
 export const trainerRoutes: RouteItem[] = [
   {
+    path: '/dialogs',
+    label: 'Диалоги',
+    icon: ChatBubbleLeftRightIcon,
+    element: <DialogsScreen />,
+    toolbarPosition: 'left',
+  },
+  {
     path: '/trainer',
     label: 'Сегодня',
     icon: ClockIcon,
@@ -105,13 +122,20 @@ export const trainerRoutes: RouteItem[] = [
     label: 'Группы',
     icon: UserGroupIcon,
     element: <TrainerGroupsListScreen />,
-    toolbarPosition: 'left',
+    // убрана из тулбара — доступна из TrainerTeamScreen
   },
   {
     path: '/trainer/athletes',
     label: 'Атлеты',
     icon: UsersIcon,
     element: <TrainerAthletesListScreen />,
+    // убрана из тулбара — доступна из TrainerTeamScreen
+  },
+  {
+    path: '/trainer/team',
+    label: 'Команда',
+    icon: UsersIcon,
+    element: <TrainerTeamScreen />,
     toolbarPosition: 'left',
   },
   {
