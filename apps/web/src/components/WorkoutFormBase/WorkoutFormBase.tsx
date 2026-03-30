@@ -82,7 +82,7 @@ interface Props {
 export default function WorkoutFormBase({
   initialDate,
   initialTime,
-  initialType = 'crossfit',
+  initialType = 'bodybuilding',
   initialNotes = '',
   initialExercises = [],
   storageKey,

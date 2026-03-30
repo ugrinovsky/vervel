@@ -47,7 +47,7 @@ const EMPTY_DAY_STATS: DayStats = {
   fromTrainer: false,
 };
 
-export function useActivityData() {
+export function useActivityData(draftDate?: string | null) {
   const location = useLocation();
   const initialDate = (location.state as { date?: string } | null)?.date;
 
@@ -84,7 +84,8 @@ export function useActivityData() {
 
     return Array.from({ length: daysInMonth }, (_, i) => {
       const date = new Date(year, month, i + 1);
-      const workout = findWorkoutByDate(stats.timeline, format(date, 'yyyy-MM-dd'));
+      const dateKey = format(date, 'yyyy-MM-dd');
+      const workout = findWorkoutByDate(stats.timeline, dateKey);
 
       return {
         date,
@@ -93,9 +94,10 @@ export function useActivityData() {
         workoutType: workout?.type as DayData['workoutType'],
         intensity: workout?.intensity,
         fromTrainer: workout?.scheduledWorkoutId != null,
+        hasDraft: draftDate === dateKey,
       };
     });
-  }, [stats, currentMonth]);
+  }, [stats, currentMonth, draftDate]);
 
   const dayStats: DayStats | null = useMemo(() => {
     if (!selectedDate || !stats?.timeline) return null;

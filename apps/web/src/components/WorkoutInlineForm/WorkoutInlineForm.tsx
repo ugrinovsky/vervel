@@ -16,6 +16,7 @@ import {
 } from '@/api/trainer';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import Tabs from '@/components/ui/Tabs';
+import { useAuth } from '@/contexts/AuthContext';
 
 function buildWorkoutPreviewMessage(
   date: Date,
@@ -58,6 +59,8 @@ export default function WorkoutInlineForm({
   onCancel,
   noCard = false,
 }: WorkoutInlineFormProps) {
+  const { user } = useAuth();
+  const storageKey = !editWorkout && user ? `trainer_workout_draft_${user.id}` : undefined;
 
   // ── Assignees ─────────────────────────────────────────────────────
 
@@ -300,6 +303,7 @@ export default function WorkoutInlineForm({
       initialType={editWorkout?.workoutData.type !== 'intro' ? editWorkout?.workoutData.type : undefined}
       initialNotes={editWorkout?.notes ?? ''}
       initialExercises={editWorkout?.workoutData.exercises ?? []}
+      storageKey={storageKey}
       templates={templates}
       headerSlot={assigneePicker}
       submitLabel={editWorkout ? 'Сохранить' : 'Создать тренировку'}

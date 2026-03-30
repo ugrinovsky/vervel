@@ -10,7 +10,7 @@ interface Props {
 export default function WorkoutTypeTabs({ value, onChange }: Props) {
   return (
     <div className="grid grid-cols-3 gap-2">
-      {(['crossfit', 'bodybuilding', 'cardio'] as const).map((type) => (
+      {(['bodybuilding', 'crossfit', 'cardio'] as const).map((type) => (
         <button
           key={type}
           type="button"

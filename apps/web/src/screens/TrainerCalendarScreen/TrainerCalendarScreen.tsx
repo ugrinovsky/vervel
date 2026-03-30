@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { getDaysInMonth, startOfMonth } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -28,6 +28,7 @@ import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 import Tabs from '@/components/ui/Tabs';
 import GhostButton from '@/components/ui/GhostButton';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
+import { useAuth } from '@/contexts/AuthContext';
 
 const WORKOUT_TYPE_COLORS: Record<string, string> = {
   crossfit: 'bg-white/10 ring-1 ring-inset ring-white/20',
@@ -346,6 +347,19 @@ function IntroSessionForm({
 
 export default function TrainerCalendarScreen() {
   const today = new Date();
+  const { user } = useAuth();
+
+  const trainerDraft = useMemo(() => {
+    if (!user) return null;
+    try {
+      const raw = localStorage.getItem(`trainer_workout_draft_${user.id}`);
+      if (!raw) return null;
+      const d = JSON.parse(raw);
+      if (!d.exercises?.length && !d.notes) return null;
+      return d as { workoutType: string; exercises: any[]; notes: string; date: string; time: string };
+    } catch { return null; }
+  }, [user]);
+
   const [currentMonth, setCurrentMonth] = useState<Date>(startOfMonth(today));
   const [workouts, setWorkouts] = useState<ScheduledWorkout[]>([]);
   const [loading, setLoading] = useState(true);
@@ -525,6 +539,16 @@ export default function TrainerCalendarScreen() {
     setSelectedTime(time);
   };
 
+  const openDraftForm = useCallback(() => {
+    if (!trainerDraft) return;
+    const draftDateObj = new Date(trainerDraft.date);
+    setSelectedDate(draftDateObj);
+    setCurrentMonth(startOfMonth(draftDateObj));
+    setEditingWorkout(null);
+    setSheetTab('workout');
+    setSelectedTime(trainerDraft.time ?? '09:00');
+  }, [trainerDraft]);
+
   const openEditForm = (workout: ScheduledWorkout) => {
     setSelectedTime(null);
     setEditingWorkout(workout);
@@ -547,6 +571,25 @@ export default function TrainerCalendarScreen() {
             Используйте шаблоны, чтобы не вводить упражнения заново.
           </ScreenHint>
         </motion.div>
+
+        {/* ── Draft restore banner ── */}
+        {trainerDraft && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-3 flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 shrink-0"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-amber-300">Незаконченная тренировка</p>
+              <p className="text-xs text-amber-400/70 mt-0.5 truncate">
+                {trainerDraft.exercises.length} упр. · {trainerDraft.workoutType === 'bodybuilding' ? 'Силовая' : trainerDraft.workoutType === 'crossfit' ? 'CrossFit' : 'Кардио'}
+              </p>
+            </div>
+            <AccentButton size="sm" onClick={openDraftForm} className="shrink-0">
+              Продолжить
+            </AccentButton>
+          </motion.div>
+        )}
 
         {/* ── Calendar (top) ── */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="pt-1 pb-1 shrink-0">

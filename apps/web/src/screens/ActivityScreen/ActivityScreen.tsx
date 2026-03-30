@@ -9,9 +9,31 @@ import { useNavigate } from 'react-router';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import AccentButton from '@/components/ui/AccentButton';
+import { useAuth } from '@/contexts/AuthContext';
+import { useMemo } from 'react';
+import { format } from 'date-fns';
+
+function useWorkoutDraft(userId?: number) {
+  return useMemo(() => {
+    if (!userId) return null;
+    try {
+      const raw = localStorage.getItem(`workout_draft_${userId}`);
+      if (!raw) return null;
+      const draft = JSON.parse(raw);
+      if (!draft.exercises?.length && !draft.notes) return null;
+      return draft as { workoutType: string; exercises: any[]; notes: string; date: string };
+    } catch {
+      return null;
+    }
+  }, [userId]);
+}
 
 export default function ActivityScreen() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const draft = useWorkoutDraft(user?.id);
+  const draftDate = draft?.date ? format(new Date(draft.date), 'yyyy-MM-dd') : null;
+
   const {
     selectedDate,
     setSelectedDate,
@@ -23,7 +45,7 @@ export default function ActivityScreen() {
     dayWorkouts,
     monthlyStats,
     refetch,
-  } = useActivityData();
+  } = useActivityData(draftDate);
 
   const handleSelectDay = (day: DayData) => setSelectedDate(day.date);
   const handleMonthChange = (newMonth: Date) => setCurrentMonth(newMonth);
@@ -105,6 +127,25 @@ export default function ActivityScreen() {
 
         <div className="border-t border-(--color_border) my-3" />
 
+        {/* Draft restore banner */}
+        {draft && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-amber-300">Незаконченная тренировка</p>
+              <p className="text-xs text-amber-400/70 mt-0.5 truncate">
+                {draft.exercises.length} упр. · {draft.workoutType === 'bodybuilding' ? 'Силовая' : draft.workoutType === 'crossfit' ? 'CrossFit' : 'Кардио'}
+              </p>
+            </div>
+            <AccentButton size="sm" onClick={() => navigate('/workouts/new')} className="shrink-0">
+              Продолжить
+            </AccentButton>
+          </motion.div>
+        )}
+
         <div className="mb-4">
           <ScreenHint>
             Нажмите на день — откроются детали тренировок.{' '}
@@ -140,7 +181,7 @@ export default function ActivityScreen() {
               transition={{ duration: 0.2 }}
               className="mb-4"
             >
-              <DayDetails date={selectedDate} workouts={dayWorkouts} onDeleted={refetch} />
+              <DayDetails date={selectedDate} workouts={dayWorkouts} onDeleted={refetch} draft={draft} />
             </motion.div>
           )}
         </AnimatePresence>

@@ -12,6 +12,7 @@ export interface DayData {
   workoutType?: 'strength' | 'cardio' | 'crossfit' | 'rest';
   intensity?: number;
   fromTrainer?: boolean;
+  hasDraft?: boolean;
 }
 
 export interface TrainerDayData {
@@ -211,6 +212,9 @@ export default function Calendar(props: CalendarProps) {
                     {day.fromTrainer && !hideTrainer && (
                       <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-violet-400 rounded-full border border-gray-900" title="Назначено тренером" />
                     )}
+                    {day.hasDraft && (
+                      <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-amber-400 rounded-full border border-gray-900" title="Есть черновик" />
+                    )}
                   </button>
                 );
               })
@@ -246,6 +250,12 @@ export default function Calendar(props: CalendarProps) {
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-violet-400" />
                   <span className="text-xs text-(--color_text_secondary)">От тренера</span>
+                </div>
+              )}
+              {props.days.some((d) => d.hasDraft) && (
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-amber-400" />
+                  <span className="text-xs text-(--color_text_secondary)">Черновик</span>
                 </div>
               )}
             </div>

@@ -56,6 +56,10 @@ export default class User extends compose(BaseModel, AuthFinder) {
   @column()
   declare balance: number;
 
+  /** Бесплатный AI-парсинг заметок — выставляется вручную администратором для бета-тестеров */
+  @column()
+  declare aiNotesFree: boolean;
+
   /** Theme hue (0–359) — persisted per account so theme follows the user across devices. */
   @column()
   declare themeHue: number | null;

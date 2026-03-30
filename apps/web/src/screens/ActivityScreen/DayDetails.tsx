@@ -12,11 +12,19 @@ import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
 import toast from 'react-hot-toast';
 import AccentButton from '@/components/ui/AccentButton';
 
+interface DraftData {
+  workoutType: string;
+  exercises: any[];
+  notes: string;
+  date: string;
+}
+
 interface DayDetailsProps {
   date: Date;
   workouts: WorkoutTimelineEntry[];
   onDeleted: () => void;
   readOnly?: boolean;
+  draft?: DraftData | null;
 }
 
 function pluralWorkouts(n: number): string {
@@ -155,11 +163,15 @@ function SectionDivider({ label }: { label: string }) {
   );
 }
 
-export default function DayDetails({ date, workouts, onDeleted, readOnly = false }: DayDetailsProps) {
+export default function DayDetails({ date, workouts, onDeleted, readOnly = false, draft }: DayDetailsProps) {
   const [activeWorkout, setActiveWorkout] = useState<WorkoutTimelineEntry | null>(null);
   const [localIntensities, setLocalIntensities] = useState<Record<number, number>>({});
   const navigate = useNavigate();
   const hasWorkouts = workouts.length > 0;
+
+  const draftForThisDay = draft && draft.date
+    ? format(new Date(draft.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+    : false;
 
   const now = new Date();
   const past = workouts.filter((w) => parseApiDateTime(w.date) < now);
@@ -217,6 +229,30 @@ export default function DayDetails({ date, workouts, onDeleted, readOnly = false
             )}
           </div>
 
+          {draftForThisDay && draft && (
+            <div
+              onClick={() => navigate('/workouts/new')}
+              className="w-full text-left p-4 rounded-xl border border-amber-500/40 bg-amber-500/10 cursor-pointer hover:border-amber-500/60 transition-colors mb-3"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-medium shrink-0">
+                    Черновик
+                  </span>
+                  <span className="text-sm font-semibold text-white truncate">
+                    {draft.workoutType === 'bodybuilding' ? 'Силовая' : draft.workoutType === 'crossfit' ? 'CrossFit' : 'Кардио'}
+                  </span>
+                </div>
+                <span className="text-xs text-amber-400/70 shrink-0">
+                  {draft.exercises.length} упр. →
+                </span>
+              </div>
+              {draft.notes && (
+                <p className="text-xs text-(--color_text_muted) mt-1.5 truncate">{draft.notes}</p>
+              )}
+            </div>
+          )}
+
           {hasWorkouts ? (
             <div className="space-y-3">
               {/* Прошедшие */}
@@ -238,7 +274,7 @@ export default function DayDetails({ date, workouts, onDeleted, readOnly = false
                 </>
               )}
             </div>
-          ) : (
+          ) : !draftForThisDay ? (
             <div className="text-center py-10">
               <div className="text-4xl mb-3">😴</div>
               <p className="text-(--color_text_muted) text-sm">В этот день тренировок не было</p>
@@ -246,7 +282,7 @@ export default function DayDetails({ date, workouts, onDeleted, readOnly = false
                 Выберите другой день на календаре
               </p>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
 
