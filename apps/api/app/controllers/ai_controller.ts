@@ -514,9 +514,20 @@ function selectCatalogForNotes(notes: string): string[] {
     }
   }
 
-  if (detectedZones.size === 0) {
-    return catalog.slice(0, 200).map((ex) => ex.title)
+  // Упражнения, где целевая зона — PRIMARY (первый элемент zones[])
+  const primary = catalog.filter(
+    (ex) => ex.zones.length > 0 && detectedZones.has(ex.zones[0])
+  )
+
+  if (primary.length >= 100) {
+    return primary.slice(0, 100).map((ex) => ex.title)
   }
 
-  return catalog.filter((ex) => ex.zones.some((z) => detectedZones.has(z))).map((ex) => ex.title)
+  // Добираем вторичными, чтобы набрать до 100
+  const primaryIds = new Set(primary.map((ex) => ex.id))
+  const secondary = catalog
+    .filter((ex) => !primaryIds.has(ex.id) && ex.zones.some((z) => detectedZones.has(z)))
+    .slice(0, 100 - primary.length)
+
+  return [...primary, ...secondary].map((ex) => ex.title)
 }
