@@ -52,4 +52,7 @@ export const workoutsApi = {
   stats: (from: string, to: string) => privateApi.get('/workouts/stats', { params: { from, to } }),
   byZone: (zone: string, limit = 5) =>
     privateApi.get<ZoneWorkout[]>('/workouts/by-zone', { params: { zone, limit } }),
+  getDraft: () => privateApi.get<{ success: boolean; data: Record<string, any> | null }>('/workouts/draft'),
+  saveDraft: (payload: Record<string, any>) => privateApi.put('/workouts/draft', payload),
+  clearDraft: () => privateApi.delete('/workouts/draft'),
 };

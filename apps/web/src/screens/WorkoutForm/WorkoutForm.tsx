@@ -10,6 +10,7 @@ import { workoutsApi, type WorkoutExercise } from '@/api/workouts';
 import { checkForNewAchievements } from '@/hooks/useAchievementToast';
 import type { ExerciseData } from '@/api/trainer';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
+import { useAuth } from '@/contexts/AuthContext';
 
 function toWorkoutExercise(ex: ExerciseData, workoutType: WorkoutType): WorkoutExercise {
   if (workoutType === 'cardio') {
@@ -40,9 +41,11 @@ function toWorkoutExercise(ex: ExerciseData, workoutType: WorkoutType): WorkoutE
 export default function WorkoutForm() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const prefillDate = (location.state as { date?: string } | null)?.date;
 
   const initialDate = prefillDate ? parseLocalDate(prefillDate) : undefined;
+  const storageKey = user ? `workout_draft_${user.id}` : undefined;
 
   const handleSubmit = async (data: WorkoutFormData) => {
     if (!data.exercises.length) {
@@ -87,6 +90,7 @@ export default function WorkoutForm() {
 
         <WorkoutFormBase
           initialDate={initialDate}
+          storageKey={storageKey}
           notesLabel="Заметки (опционально)"
           notesPlaceholder="Как прошла тренировка, самочувствие..."
           submitLabel="Сохранить"

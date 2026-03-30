@@ -22,6 +22,7 @@ function DialogRow({ dialog, onOpen }: { dialog: DialogItem; onOpen: () => void 
   const preview = dialog.lastMessage
     ? (dialog.lastMessage.isOwnMessage ? 'Вы: ' : '') + (isWorkout ? '🏋️ Тренировка' : rawContent)
     : 'Нет сообщений'
+  const displayName = dialog.nickname || dialog.name
 
   return (
     <div
@@ -34,14 +35,14 @@ function DialogRow({ dialog, onOpen }: { dialog: DialogItem; onOpen: () => void 
             <UserGroupIcon className="w-6 h-6 text-(--color_primary_icon)" />
           </div>
         ) : (
-          <UserAvatar photoUrl={dialog.avatarUrl} name={dialog.name} size={50} />
+          <UserAvatar photoUrl={dialog.avatarUrl} name={displayName} size={50} />
         )}
       </div>
       <div className="flex-1 min-w-0 flex items-center gap-2 py-3 border-b border-(--color_border)/50">
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline justify-between gap-2">
             <span className="text-[15px] font-semibold text-white truncate leading-snug">
-              {dialog.name}
+              {displayName}
             </span>
             {dialog.lastMessage && (
               <span className="text-[11px] text-(--color_text_muted) shrink-0">
@@ -73,7 +74,9 @@ export default function DialogsScreen() {
   const [activeTab, setActiveTab] = useState<DialogTab>('all')
 
   const filteredDialogs = dialogs?.filter((d) => {
-    if (!d.name.toLowerCase().includes(search.toLowerCase())) return false
+    const searchLower = search.toLowerCase()
+    const matchesSearch = (d.nickname || d.name).toLowerCase().includes(searchLower)
+    if (!matchesSearch) return false
     if (activeTab === 'personal') return d.type === 'personal'
     if (activeTab === 'group') return d.type === 'group'
     return true

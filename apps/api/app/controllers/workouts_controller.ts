@@ -1,6 +1,7 @@
 import type { HttpContext } from '@adonisjs/core/http';
 import { DateTime } from 'luxon';
 import Workout from '#models/workout';
+import WorkoutDraft from '#models/workout_draft';
 import { WorkoutCalculator } from '#services/WorkoutCalculator';
 import { StreakService } from '#services/StreakService';
 import { createWorkoutValidator, updateWorkoutValidator } from '#validators/workout_validator';
@@ -176,6 +177,34 @@ export default class WorkoutsController {
       });
 
     return response.ok(filtered);
+  }
+
+  /**
+   * Получить черновик тренировки
+   */
+  async getDraft({ auth, response }: HttpContext) {
+    const user = auth.user!;
+    const draft = await WorkoutDraft.findBy('userId', user.id);
+    return response.ok({ success: true, data: draft?.payload ?? null });
+  }
+
+  /**
+   * Сохранить черновик тренировки
+   */
+  async saveDraft({ auth, request, response }: HttpContext) {
+    const user = auth.user!;
+    const payload = request.body();
+    await WorkoutDraft.updateOrCreate({ userId: user.id }, { payload });
+    return response.ok({ success: true });
+  }
+
+  /**
+   * Удалить черновик тренировки
+   */
+  async clearDraft({ auth, response }: HttpContext) {
+    const user = auth.user!;
+    await WorkoutDraft.query().where('userId', user.id).delete();
+    return response.ok({ success: true });
   }
 
   /**

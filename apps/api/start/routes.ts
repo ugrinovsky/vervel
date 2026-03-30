@@ -50,6 +50,9 @@ router
   .group(() => {
     router.get('workouts/stats', '#controllers/workouts_controller.stats');
     router.get('workouts/by-zone', '#controllers/workouts_controller.byZone');
+    router.get('workouts/draft', '#controllers/workouts_controller.getDraft');
+    router.put('workouts/draft', '#controllers/workouts_controller.saveDraft');
+    router.delete('workouts/draft', '#controllers/workouts_controller.clearDraft');
     router.resource('workouts', WorkoutsController).apiOnly();
 
     router.get('avatar/stats', '#controllers/avatars_controller.getZoneIntensities');

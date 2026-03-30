@@ -146,14 +146,17 @@ export default function WorkoutExercisesEditor({
     if (workoutType === 'cardio') {
       data = { exerciseId: String(ex.exerciseId), name: ex.title, duration: ex.duration ?? 20 };
     } else if (workoutType === 'crossfit') {
-      data = { exerciseId: String(ex.exerciseId), name: ex.title, reps: 10 };
+      data = { exerciseId: String(ex.exerciseId), name: ex.title, reps: ex.sets?.[0]?.reps ?? 10 };
     } else {
+      const setsDetail = ex.sets?.length
+        ? ex.sets.map((s) => ({ reps: s.reps, weight: s.weight || undefined }))
+        : [{ reps: 10 }, { reps: 10 }, { reps: 10 }];
       data = {
         exerciseId: String(ex.exerciseId),
         name: ex.title,
-        sets: 3,
-        reps: 10,
-        setsDetail: [{ reps: 10 }, { reps: 10 }, { reps: 10 }],
+        sets: setsDetail.length,
+        reps: setsDetail[0]?.reps ?? 10,
+        setsDetail,
       };
     }
     onChange([...exercises, data]);

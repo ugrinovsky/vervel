@@ -8,7 +8,7 @@
  * Manages: date, time, workoutType, notes, exercises, template selection.
  * Callers supply: submit logic, optional assignee UI (headerSlot), optional templates list.
  */
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import WorkoutTypeTabs, { type WorkoutType } from '@/components/WorkoutTypeTabs';
 import WorkoutDateTimeRow from '@/components/WorkoutDateTimeRow';
@@ -23,6 +23,7 @@ import type { ExerciseData, WorkoutTemplate } from '@/api/trainer';
 import type { AiWorkoutResult } from '@/api/ai';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
 import { convertExercisesForType, convertAiResult } from './workoutTypeConversion';
+import { workoutsApi } from '@/api/workouts';
 
 export interface WorkoutFormData {
   date: Date;
@@ -34,12 +35,34 @@ export interface WorkoutFormData {
   selectedTemplateId: number | null;
 }
 
+interface WorkoutFormDraft {
+  workoutType: WorkoutType;
+  notes: string;
+  exercises: ExerciseData[];
+  date: string;
+  time: string;
+  savedAt: number;
+}
+
+function loadLocalDraft(key: string): WorkoutFormDraft | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw) as WorkoutFormDraft;
+  } catch {
+    return null;
+  }
+}
+
 interface Props {
   initialDate?: Date;
   initialTime?: Date;
   initialType?: WorkoutType;
   initialNotes?: string;
   initialExercises?: ExerciseData[];
+
+  /** If provided, enables localStorage + DB auto-save as a draft */
+  storageKey?: string;
 
   /** If provided, renders a template picker section */
   templates?: WorkoutTemplate[];
@@ -62,6 +85,7 @@ export default function WorkoutFormBase({
   initialType = 'crossfit',
   initialNotes = '',
   initialExercises = [],
+  storageKey,
   templates,
   headerSlot,
   submitLabel = 'Сохранить',
@@ -70,20 +94,113 @@ export default function WorkoutFormBase({
   onSubmit,
   onCancel,
 }: Props) {
-  const [date, setDate] = useState<Date>(() => initialDate ?? new Date());
+  // ── Draft state ───────────────────────────────────────────────────
+  const localDraft = storageKey ? loadLocalDraft(storageKey) : null;
+  const hasMeaningfulDraft = !!localDraft && (localDraft.exercises.length > 0 || !!localDraft.notes);
+
+  const [draftRestored, setDraftRestored] = useState(hasMeaningfulDraft);
+
+  // ── Form state (initialized from draft or props) ──────────────────
+  const [date, setDate] = useState<Date>(() => {
+    if (initialDate) return initialDate;
+    if (localDraft?.date) return new Date(localDraft.date);
+    return new Date();
+  });
+
   const [time, setTime] = useState<Date>(() => {
+    if (localDraft?.time) {
+      const d = new Date();
+      const [h, m] = localDraft.time.split(':').map(Number);
+      d.setHours(h, m, 0, 0);
+      return d;
+    }
     if (initialTime) return initialTime;
     const d = new Date();
     d.setHours(9, 0, 0, 0);
     return d;
   });
-  const [workoutType, setWorkoutType] = useState<WorkoutType>(initialType);
-  const [notes, setNotes] = useState(initialNotes);
-  const [exercises, setExercises] = useState<ExerciseData[]>(initialExercises);
+
+  const [workoutType, setWorkoutType] = useState<WorkoutType>(localDraft?.workoutType ?? initialType);
+  const [notes, setNotes] = useState(localDraft?.notes ?? initialNotes);
+  const [exercises, setExercises] = useState<ExerciseData[]>(localDraft?.exercises ?? initialExercises);
   const [saving, setSaving] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [aiGenerated, setAiGenerated] = useState(false);
+
+  // ── Auto-save to localStorage (immediate) + DB (debounced) ───────
+  const dbSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!storageKey) return;
+
+    const draft: WorkoutFormDraft = {
+      workoutType,
+      notes,
+      exercises,
+      date: date.toISOString(),
+      time: `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`,
+      savedAt: Date.now(),
+    };
+
+    // Immediate localStorage save
+    localStorage.setItem(storageKey, JSON.stringify(draft));
+
+    // Debounced DB save (3 seconds after last change)
+    if (dbSaveTimer.current) clearTimeout(dbSaveTimer.current);
+    dbSaveTimer.current = setTimeout(() => {
+      workoutsApi.saveDraft(draft).catch(() => {/* silent */});
+    }, 3000);
+
+    return () => {
+      if (dbSaveTimer.current) clearTimeout(dbSaveTimer.current);
+    };
+  }, [workoutType, notes, exercises, date, time, storageKey]);
+
+  // ── Load draft from DB on mount (in background, update if newer) ──
+  useEffect(() => {
+    if (!storageKey) return;
+    workoutsApi.getDraft().then((res) => {
+      const dbDraft = res.data?.data as WorkoutFormDraft | null;
+      if (!dbDraft) return;
+      const localSavedAt = localDraft?.savedAt ?? 0;
+      if (dbDraft.savedAt > localSavedAt) {
+        // DB draft is newer — silently apply it
+        if (dbDraft.workoutType) setWorkoutType(dbDraft.workoutType);
+        if (dbDraft.notes != null) setNotes(dbDraft.notes);
+        if (dbDraft.exercises?.length) setExercises(dbDraft.exercises);
+        if (dbDraft.date && !initialDate) setDate(new Date(dbDraft.date));
+        if (dbDraft.time) {
+          const d = new Date();
+          const [h, m] = dbDraft.time.split(':').map(Number);
+          d.setHours(h, m, 0, 0);
+          setTime(d);
+        }
+        if (dbDraft.exercises?.length > 0 || dbDraft.notes) setDraftRestored(true);
+      }
+    }).catch(() => {/* silent */});
+  }, [storageKey]);
+
+  // ── Clear draft (localStorage + DB) ──────────────────────────────
+  const clearDraft = () => {
+    if (!storageKey) return;
+    localStorage.removeItem(storageKey);
+    workoutsApi.clearDraft().catch(() => {/* silent */});
+    setDraftRestored(false);
+  };
+
+  // ── Reset form to initial state ───────────────────────────────────
+  const resetToInitial = () => {
+    clearDraft();
+    setWorkoutType(initialType);
+    setNotes(initialNotes);
+    setExercises(initialExercises);
+    setDate(initialDate ?? new Date());
+    const d = new Date();
+    d.setHours(9, 0, 0, 0);
+    setTime(initialTime ?? d);
+    setSelectedTemplateId(null);
+  };
 
   // ── Type change with exercise normalization ───────────────────────
 
@@ -140,6 +257,7 @@ export default function WorkoutFormBase({
     setSaving(true);
     try {
       await onSubmit({ date, time, workoutType, notes, exercises, selectedTemplateId });
+      clearDraft();
     } catch {
       // onSubmit handles its own error toasts
     } finally {
@@ -151,6 +269,20 @@ export default function WorkoutFormBase({
 
   return (
     <div className="space-y-5">
+
+      {/* Draft banner */}
+      {draftRestored && storageKey && (
+        <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
+          <span className="text-sm text-amber-300">Восстановлен черновик</span>
+          <button
+            type="button"
+            onClick={resetToInitial}
+            className="text-xs text-amber-400 hover:text-amber-200 font-medium transition-colors underline shrink-0"
+          >
+            Сбросить
+          </button>
+        </div>
+      )}
 
       {/* Когда */}
       <div>
