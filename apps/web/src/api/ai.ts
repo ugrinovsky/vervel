@@ -76,7 +76,7 @@ export const aiApi = {
   parseWorkoutNotes: (workoutId: number) =>
     privateApi.post<{
       workoutType: 'crossfit' | 'bodybuilding' | 'cardio'
-      previewItems: Array<{ exerciseId: string; name: string; sets: number; reps?: number; weight?: number }>
+      previewItems: Array<{ exerciseId: string; name: string; sets: number; reps?: number; weight?: number; weightMax?: number }>
       exercises: Array<{ exerciseId: string; type: string; sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>; blockId?: string }>
       warning: string | null
       balance: number

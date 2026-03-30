@@ -193,30 +193,39 @@ export default class AiController {
       const matched = await matchExercisesToCatalog(result)
       const workoutExercises = aiExercisesToWorkoutExercises(matched.exercises, matched.workoutType)
 
-      // Проверка качества: дубликаты или слишком мало уникальных упражнений
+      // Проверка качества: дубликаты или слишком мало упражнений
       const uniqueIds = new Set(workoutExercises.map((e) => e.exerciseId))
       const hasDuplicates = uniqueIds.size < workoutExercises.length
-      const tooFew = workoutExercises.length < 2
+      const tooFew = workoutExercises.length === 0
 
       // Превью: имена из каталога + данные подходов
       const catalog = ExerciseCatalog.all()
       const catalogMap = new Map(catalog.map((e) => [e.id, e.title]))
-      const previewItems = workoutExercises.map((ex) => ({
-        exerciseId: ex.exerciseId,
-        name: catalogMap.get(ex.exerciseId) ?? ex.exerciseId.replace(/_/g, ' '),
-        sets: ex.sets?.length ?? 0,
-        reps: ex.sets?.[0]?.reps,
-        weight: ex.sets?.[0]?.weight,
-      }))
+      const previewItems = workoutExercises.map((ex) => {
+        const allSets = ex.sets ?? []
+        const weights = allSets.map((s) => s.weight).filter((w): w is number => w != null)
+        const weightMin = weights.length ? Math.min(...weights) : undefined
+        const weightMax = weights.length ? Math.max(...weights) : undefined
+        return {
+          exerciseId: ex.exerciseId,
+          name: catalogMap.get(ex.exerciseId) ?? ex.exerciseId.replace(/_/g, ' '),
+          sets: allSets.length,
+          reps: allSets[0]?.reps,
+          weight: weightMin,
+          weightMax: weightMax !== weightMin ? weightMax : undefined,
+        }
+      })
 
       const balance = await AiBalanceService.getBalance(userId)
       return response.ok({
         workoutType: matched.workoutType,
         previewItems,
         exercises: workoutExercises,
-        warning: hasDuplicates || tooFew
-          ? 'AI не смог точно разобрать программу — в заметках недостаточно конкретных упражнений'
-          : null,
+        warning: tooFew
+          ? 'AI не нашёл ни одного упражнения в заметках'
+          : hasDuplicates
+            ? 'Некоторые упражнения определились как одинаковые — проверьте список перед сохранением'
+            : null,
         balance,
       })
     } catch (err: any) {
@@ -373,11 +382,17 @@ function aiExercisesToWorkoutExercises(
           blockId: ex.supersetGroup ?? undefined,
         }
       }
-      const sets: WorkoutSet[] = Array.from({ length: ex.sets ?? 3 }, () => ({
-        id: crypto.randomUUID(),
-        reps: ex.reps,
-        weight: ex.weight,
-      }))
+      const sets: WorkoutSet[] = ex.setData?.length
+        ? ex.setData.map((s) => ({
+            id: crypto.randomUUID(),
+            reps: s.reps,
+            weight: s.weight,
+          }))
+        : Array.from({ length: ex.sets ?? 3 }, () => ({
+            id: crypto.randomUUID(),
+            reps: ex.reps,
+            weight: ex.weight,
+          }))
       return {
         exerciseId: ex.exerciseId!,
         type: workoutType === 'crossfit' ? ('wod' as const) : ('strength' as const),

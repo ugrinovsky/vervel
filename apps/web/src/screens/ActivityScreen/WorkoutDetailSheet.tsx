@@ -423,7 +423,6 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate }: Props
     workout?.scheduledWorkoutId != null &&
     (fullWorkout?.exercises.length ?? 0) === 0 &&
     !!fullWorkout?.notes?.trim();
-  const currentRpeLevel = RPE_LEVELS.find((r) => r.value === rpe);
   // Прошлая тренировка — можно оценивать и редактировать
   const isPast = workout?.date ? new Date(workout.date) <= new Date() : false;
 
@@ -682,7 +681,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate }: Props
                     <span className="text-xs text-(--color_text_muted) shrink-0 tabular-nums">
                       {item.sets > 0 ? `${item.sets} × ` : ''}
                       {item.reps ? `${item.reps} повт.` : ''}
-                      {item.weight ? ` · ${item.weight} кг` : ''}
+                      {item.weight ? ` · ${item.weightMax ? `${item.weight}–${item.weightMax}` : item.weight} кг` : ''}
                     </span>
                   </div>
                 ))}
@@ -694,7 +693,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate }: Props
                 </GhostButton>
                 <button
                   onClick={handleApplyParsed}
-                  disabled={isApplying || !!parsePreview.warning}
+                  disabled={isApplying}
                   className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium bg-emerald-500 text-black hover:bg-emerald-400 transition-colors disabled:opacity-50"
                 >
                   {isApplying ? (
