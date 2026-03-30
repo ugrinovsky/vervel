@@ -167,7 +167,7 @@ export default class AiController {
       return response.badRequest({ message: 'У тренировки нет заметок для парсинга' })
     }
 
-    const cost = AiBalanceService.COST_RECOGNIZE
+    const cost = AiBalanceService.COST_PARSE_NOTES
 
     try {
       await AiBalanceService.charge(userId, cost, 'Разбор программы тренировки через AI')
@@ -183,7 +183,13 @@ export default class AiController {
     }
 
     try {
-      const result = await YandexAiService.parseWorkoutNotes(workout.notes)
+      // Инжектируем все non-cardio упражнения каталога в промпт — AI выбирает точные названия,
+      // matchExercisesToCatalog находит exact match без fuzzy-угадывания.
+      const catalogTitles = ExerciseCatalog.all()
+        .filter((ex) => ex.category !== 'cardio')
+        .map((ex) => ex.title)
+
+      const result = await YandexAiService.parseWorkoutNotes(workout.notes, catalogTitles)
       const matched = await matchExercisesToCatalog(result)
       const workoutExercises = aiExercisesToWorkoutExercises(matched.exercises, matched.workoutType)
 
@@ -272,6 +278,7 @@ export default class AiController {
       costs: {
         generate: AiBalanceService.COST_GENERATE,
         recognize: AiBalanceService.COST_RECOGNIZE,
+        parseNotes: AiBalanceService.COST_PARSE_NOTES,
         chatMinCharge: AiBalanceService.CHAT_MIN_CHARGE,
       },
       transactions,

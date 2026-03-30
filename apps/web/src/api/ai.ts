@@ -21,7 +21,7 @@ export interface AiWorkoutResult {
 
 export interface AiBalance {
   balance: number
-  costs: { generate: number; recognize: number; chatMinCharge: number }
+  costs: { generate: number; recognize: number; parseNotes: number; chatMinCharge: number }
   transactions: Array<{
     id: number
     amount: number

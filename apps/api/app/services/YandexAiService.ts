@@ -20,7 +20,7 @@ export interface AiWorkoutResult {
   notes?: string
 }
 
-// Системный промпт для парсинга текста тренировки в JSON
+// Системный промпт для парсинга текста тренировки в JSON (OCR / изображения)
 const PARSE_SYSTEM_PROMPT = `You are a fitness assistant. You are given text recognized from a photo of a workout board or sheet. Parse it into strict JSON format.
 
 Requirements:
@@ -38,6 +38,33 @@ Requirements:
 8. Interpret abbreviations: "5х10" = 5 sets of 10 reps, "x" or "×" = sets×reps
 9. For cardio exercises always set duration (in minutes); for strength/crossfit set reps
 10. notes field — write in Russian for user readability`
+
+// Системный промпт для парсинга заметок тренера (с каталогом упражнений)
+const PARSE_NOTES_SYSTEM_PROMPT = `Ты — фитнес-ассистент. Разбираешь заметки тренировки на русском языке в строгий JSON.
+
+Главная задача: для каждого упражнения из заметок найди наиболее подходящее название из списка AVAILABLE EXERCISES (в конце сообщения) и используй его ТОЧНО как есть в поле "name". Список содержит английские названия из базы данных приложения — это единственный источник истины.
+
+Алгоритм подбора названия:
+- Сопоставляй по смыслу и группе мышц, а не буквально
+- Примеры: "жим лёжа" → "Barbell Bench Press", "приседания" → "Barbell Squat", "тяга к поясу" → "Seated Cable Rows", "подтягивания" → "Pull-Up", "разгибания ног" → "Leg Extensions"
+- Если несколько вариантов подходят — выбери наиболее специфичный
+- Если упражнение совсем не поддаётся определению — подбери ближайшее по группе мышц
+
+Правила JSON:
+1. Возвращай только JSON, без какого-либо текста вокруг
+2. Формат: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"Barbell Bench Press","displayName":"Жим штанги лёжа","sets":3,"reps":10,"weight":80,"duration":null,"notes":null,"supersetGroup":null}],"notes":"общие заметки"}
+3. weight — в килограммах, duration — в МИНУТАХ (не секундах)
+4. Если параметр не указан — ставь null
+5. supersetGroup — если упражнения выполняются суперсетом, присваивай одну букву ("A"). Разные суперсеты — разные буквы. Не суперсет — null
+6. Тип тренировки:
+   - "crossfit" = WOD, AMRAP, For Time, EMOM, Tabata, круговые, функциональный фитнес, HIIT
+   - "bodybuilding" = силовые, изоляция, гипертрофия, пауэрлифтинг
+   - "cardio" = бег, велосипед, плавание, растяжка, йога, ходьба
+7. "name" — СТРОГО из списка AVAILABLE EXERCISES, точное название без изменений
+8. "displayName" — русское название из заметок тренера (как написал тренер, или переведи с английского если не указано)
+9. Аббревиатуры: "5х10" = 5 подходов по 10 повторений, "кг" = kg, "мин" = minutes
+10. Для кардио указывай duration (минуты); для силовых/кроссфит — reps
+11. Поле notes — на русском языке`
 
 // Системный промпт для AI-чата (фитнес-советник)
 const CHAT_SYSTEM_PROMPT = `Ты — AI-помощник фитнес-приложения Vervel. Ты разбираешься в тренировках, питании, восстановлении и спортивной науке.
@@ -117,16 +144,19 @@ export class YandexAiService {
 
   /**
    * Парсит текст заметок тренировки в структуру упражнений (для атлетов).
-   * Использует тот же промпт, что и OCR-путь, но без шага распознавания изображения.
+   * catalogTitles — список точных названий упражнений из каталога для инъекции в промпт.
+   * AI должен выбирать "name" только из этого списка → matchExercisesToCatalog даёт точное совпадение.
    */
-  static async parseWorkoutNotes(notes: string): Promise<AiWorkoutResult> {
+  static async parseWorkoutNotes(notes: string, catalogTitles: string[]): Promise<AiWorkoutResult> {
     const apiKey = env.get('YANDEX_CLOUD_API_KEY')!
     const folderId = env.get('YANDEX_FOLDER_ID')!
 
+    const catalogSection = `\nAVAILABLE EXERCISES (use these exact names in the "name" field):\n${catalogTitles.join(', ')}`
+
     const result = await this.callGpt(
       folderId,
-      PARSE_SYSTEM_PROMPT,
-      `Разбери следующий текст тренировки в JSON:\n\n${notes}`,
+      PARSE_NOTES_SYSTEM_PROMPT,
+      `Разбери следующий текст тренировки в JSON:\n\n${notes}${catalogSection}`,
       0.1,
       apiKey
     )
