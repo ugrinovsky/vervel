@@ -116,6 +116,25 @@ export class YandexAiService {
   }
 
   /**
+   * Парсит текст заметок тренировки в структуру упражнений (для атлетов).
+   * Использует тот же промпт, что и OCR-путь, но без шага распознавания изображения.
+   */
+  static async parseWorkoutNotes(notes: string): Promise<AiWorkoutResult> {
+    const apiKey = env.get('YANDEX_CLOUD_API_KEY')!
+    const folderId = env.get('YANDEX_FOLDER_ID')!
+
+    const result = await this.callGpt(
+      folderId,
+      PARSE_SYSTEM_PROMPT,
+      `Разбери следующий текст тренировки в JSON:\n\n${notes}`,
+      0.1,
+      apiKey
+    )
+
+    return this.parseWorkoutJson(result)
+  }
+
+  /**
    * Генерирует тренировку по текстовому описанию (для тренеров).
    * Использует YandexGPT — один запрос, без OCR.
    */

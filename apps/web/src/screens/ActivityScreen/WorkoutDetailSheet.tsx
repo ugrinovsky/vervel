@@ -6,6 +6,8 @@ import { getLocalDateISOString } from '@/util/exercise';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { workoutsApi, type WorkoutSet } from '@/api/workouts';
+import { aiApi } from '@/api/ai';
+import { parseApiDateTime } from '@/utils/date';
 import { exercisesApi } from '@/api/exercises';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
 import type { Exercise } from '@/types/Exercise';
@@ -91,7 +93,7 @@ function formatVolume(v: number): string {
 function extractTime(dateStr?: string): string | null {
   if (!dateStr) return null;
   try {
-    const d = new Date(dateStr);
+    const d = parseApiDateTime(dateStr);
     const h = d.getHours();
     const m = d.getMinutes();
     if (h === 0 && m === 0) return null;
@@ -253,11 +255,20 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate }: Props
   const [rpe, setRpe] = useState<number | null>(null);
   const [savingWeights, setSavingWeights] = useState(false);
   const [savingRpe, setSavingRpe] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
+  const [parsePreview, setParsePreview] = useState<{
+    workoutType: 'crossfit' | 'bodybuilding' | 'cardio';
+    previewItems: Array<{ exerciseId: string; name: string; sets: number; reps?: number; weight?: number }>;
+    exercises: Array<{ exerciseId: string; type: string; sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>; blockId?: string }>;
+    warning: string | null;
+  } | null>(null);
 
   useEffect(() => {
     if (!workout?.id) return;
     setFullWorkout(null);
     setIsEditing(false);
+    setParsePreview(null);
     setLoading(true);
 
     Promise.all([workoutsApi.get(workout.id), exercisesApi.list()])
@@ -318,6 +329,41 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate }: Props
     setIsEditing(false);
   };
 
+  const handleParseNotes = async () => {
+    if (!fullWorkout || !workout?.id) return;
+    setIsParsing(true);
+    try {
+      const res = await aiApi.parseWorkoutNotes(fullWorkout.id);
+      setParsePreview(res.data);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message;
+      toast.error(msg ?? 'Не удалось разобрать программу');
+    } finally {
+      setIsParsing(false);
+    }
+  };
+
+  const handleApplyParsed = async () => {
+    if (!fullWorkout || !parsePreview) return;
+    setIsApplying(true);
+    try {
+      const res = await aiApi.applyParsedWorkout(
+        fullWorkout.id,
+        parsePreview.workoutType,
+        parsePreview.exercises
+      );
+      const updated = res.data.data as FullWorkout;
+      setFullWorkout(updated);
+      setEditExercises(updated.exercises.map((ex) => ({ ...ex, sets: (ex.sets ?? []).map((s) => ({ ...s })) })));
+      setParsePreview(null);
+      toast.success('Программа сохранена');
+    } catch {
+      toast.error('Ошибка сохранения');
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
   // Конвертирует FullWorkout exercise → ExerciseWithSets для ExerciseDrawer
   const toExerciseWithSets = (ex: FullWorkout['exercises'][number], title: string): ExerciseWithSets => ({
     exerciseId: ex.exerciseId,
@@ -373,6 +419,10 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate }: Props
     : '';
 
   const hasMissingWeights = fullWorkout?.exercises.some(hasSetsNeedingWeight) ?? false;
+  const canParseNotes =
+    workout?.scheduledWorkoutId != null &&
+    (fullWorkout?.exercises.length ?? 0) === 0 &&
+    !!fullWorkout?.notes?.trim();
   const currentRpeLevel = RPE_LEVELS.find((r) => r.value === rpe);
   // Прошлая тренировка — можно оценивать и редактировать
   const isPast = workout?.date ? new Date(workout.date) <= new Date() : false;
@@ -594,10 +644,66 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate }: Props
           )}
 
           {/* ── Заметки ────────────────────────────────────────────── */}
-          {!isEditing && fullWorkout.notes && (
+          {!isEditing && fullWorkout.notes && !parsePreview && (
             <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border)">
               <SectionTitle>Заметки</SectionTitle>
-              <p className="text-sm text-(--color_text_secondary) leading-relaxed">{fullWorkout.notes}</p>
+              <p className="text-sm text-(--color_text_secondary) leading-relaxed whitespace-pre-line">{fullWorkout.notes}</p>
+              {canParseNotes && (
+                <GhostButton onClick={handleParseNotes} disabled={isParsing} className="mt-4">
+                  {isParsing ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/40 border-t-transparent rounded-full animate-spin" />
+                      Разбираю программу...
+                    </>
+                  ) : (
+                    <>✨ Разобрать программу через AI</>
+                  )}
+                </GhostButton>
+              )}
+            </div>
+          )}
+
+          {/* ── Превью AI-парсинга ──────────────────────────────────── */}
+          {!isEditing && parsePreview && (
+            <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) space-y-3">
+              <SectionTitle>Программа от AI · проверьте</SectionTitle>
+
+              {parsePreview.warning && (
+                <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
+                  <span className="shrink-0">⚠</span>
+                  <span>{parsePreview.warning}</span>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                {parsePreview.previewItems.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between gap-2 py-1.5 border-b border-(--color_border) last:border-0">
+                    <span className="text-sm text-white leading-tight">{item.name}</span>
+                    <span className="text-xs text-(--color_text_muted) shrink-0 tabular-nums">
+                      {item.sets > 0 ? `${item.sets} × ` : ''}
+                      {item.reps ? `${item.reps} повт.` : ''}
+                      {item.weight ? ` · ${item.weight} кг` : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <GhostButton variant="solid" onClick={() => setParsePreview(null)} className="flex-1">
+                  Отмена
+                </GhostButton>
+                <button
+                  onClick={handleApplyParsed}
+                  disabled={isApplying || !!parsePreview.warning}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium bg-emerald-500 text-black hover:bg-emerald-400 transition-colors disabled:opacity-50"
+                >
+                  {isApplying ? (
+                    <div className="w-4 h-4 border-2 border-black/40 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    'Сохранить'
+                  )}
+                </button>
+              </div>
             </div>
           )}
         </div>

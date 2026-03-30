@@ -128,9 +128,6 @@ export default function AvatarScreen() {
                     {' · '}
                     {todayWorkout.exerciseCount} упр.
                   </div>
-                  {todayWorkout.notes && (
-                    <div className="text-xs text-white/70 mt-0.5 truncate">{todayWorkout.notes}</div>
-                  )}
                 </div>
                 <div className="text-white/60 text-sm shrink-0">→</div>
               </div>

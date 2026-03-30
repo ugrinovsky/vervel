@@ -68,4 +68,27 @@ export const aiApi = {
    */
   chat: (messages: Array<{ role: 'user' | 'assistant'; content: string }>) =>
     privateApi.post<{ reply: string; balance: number; cost: number }>('/ai/chat', { messages }),
+
+  /**
+   * Парсит заметки тренировки через AI и возвращает превью — НЕ сохраняет.
+   * Возвращает previewItems для отображения, exercises для передачи в applyParsedWorkout.
+   */
+  parseWorkoutNotes: (workoutId: number) =>
+    privateApi.post<{
+      workoutType: 'crossfit' | 'bodybuilding' | 'cardio'
+      previewItems: Array<{ exerciseId: string; name: string; sets: number; reps?: number; weight?: number }>
+      exercises: Array<{ exerciseId: string; type: string; sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>; blockId?: string }>
+      warning: string | null
+      balance: number
+    }>('/ai/parse-workout-notes', { workoutId }),
+
+  /**
+   * Сохраняет упражнения после подтверждения превью (без повторного списания баланса).
+   */
+  applyParsedWorkout: (
+    workoutId: number,
+    workoutType: 'crossfit' | 'bodybuilding' | 'cardio',
+    exercises: Array<{ exerciseId: string; type: string; sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>; blockId?: string }>
+  ) =>
+    privateApi.post<{ data: unknown }>('/ai/apply-parsed-workout', { workoutId, workoutType, exercises }),
 }
