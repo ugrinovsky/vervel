@@ -52,31 +52,6 @@ const applyParsedWorkoutValidator = vine.compile(
   })
 )
 
-const applyParsedWorkoutValidator = vine.compile(
-  vine.object({
-    workoutId: vine.number().positive(),
-    workoutType: vine.enum(['crossfit', 'bodybuilding', 'cardio'] as const),
-    exercises: vine.array(
-      vine.object({
-        exerciseId: vine.string(),
-        type: vine.enum(['strength', 'cardio', 'wod'] as const),
-        sets: vine
-          .array(
-            vine.object({
-              id: vine.string(),
-              reps: vine.number().optional(),
-              weight: vine.number().optional(),
-              time: vine.number().optional(),
-              distance: vine.number().optional(),
-            })
-          )
-          .optional(),
-        blockId: vine.string().optional(),
-      })
-    ),
-  })
-)
-
 const chatValidator = vine.compile(
   vine.object({
     messages: vine
