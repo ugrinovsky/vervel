@@ -186,11 +186,7 @@ export default class AiController {
     }
 
     try {
-      // Инжектируем только релевантные упражнения каталога (по зонам мышц из заметок).
-      // ~50–120 упражнений вместо 736 — модель не захлёбывается, AI выбирает точные названия.
-      const catalogTitles = selectCatalogForNotes(workout.notes)
-
-      const result = await YandexAiService.parseWorkoutNotes(workout.notes, catalogTitles)
+      const result = await YandexAiService.parseWorkoutNotes(workout.notes)
       const matched = await matchExercisesToCatalog(result)
       const workoutExercises = aiExercisesToWorkoutExercises(matched.exercises, matched.workoutType)
 
@@ -481,53 +477,3 @@ async function matchExercisesToCatalog(result: AiWorkoutResult): Promise<AiWorko
   return { ...result, exercises: matched }
 }
 
-/**
- * Выбирает подмножество каталога для инъекции в промпт AI.
- * Определяет зоны мышц по ключевым словам из заметок (русский текст),
- * возвращает только релевантные упражнения (~50–120 вместо 736).
- * Предотвращает перегрузку YandexGPT Lite большим контекстом.
- */
-function selectCatalogForNotes(notes: string): string[] {
-  const catalog = ExerciseCatalog.all().filter((ex) => ex.category !== 'cardio')
-  const n = notes.toLowerCase()
-
-  const detectedZones = new Set<string>()
-
-  // Ключевые слова на русском → зоны каталога
-  const rules: Array<[string[], string[]]> = [
-    [['нога', 'ног', 'голен', 'присед', 'выпад', 'жим ногами', 'гакк', 'квадриц'], ['legs']],
-    [['икр', 'носк', 'голеностоп'], ['calves']],
-    [['ягодиц', 'мостик', 'разгибани бедр', 'отведени бедр', 'жопомах'], ['glutes']],
-    [['бедр', 'сведени', 'приводящ'], ['legs', 'glutes']],
-    [['спина', 'спин', 'широчайш', 'трапеци', 'поясниц', 'тяга', 'становая'], ['back']],
-    [['грудь', 'груд', 'жим лёж', 'жим штанг', 'отжима'], ['chests']],
-    [['плечи', 'плеч', 'дельт', 'жим стоя', 'махи', 'разводк'], ['shoulders']],
-    [['бицепс', 'подъём на бицепс', 'сгибани рук'], ['biceps']],
-    [['трицепс', 'разгибани рук', 'жим узким'], ['triceps']],
-    [['пресс', 'живот', 'скручиван', 'планк'], ['core', 'obliques']],
-    [['предплечь', 'запястье'], ['forearms']],
-  ]
-
-  for (const [keywords, zones] of rules) {
-    if (keywords.some((kw) => n.includes(kw))) {
-      for (const z of zones) detectedZones.add(z)
-    }
-  }
-
-  // Упражнения, где целевая зона — PRIMARY (первый элемент zones[])
-  const primary = catalog.filter(
-    (ex) => ex.zones.length > 0 && detectedZones.has(ex.zones[0])
-  )
-
-  if (primary.length >= 100) {
-    return primary.slice(0, 100).map((ex) => ex.title)
-  }
-
-  // Добираем вторичными, чтобы набрать до 100
-  const primaryIds = new Set(primary.map((ex) => ex.id))
-  const secondary = catalog
-    .filter((ex) => !primaryIds.has(ex.id) && ex.zones.some((z) => detectedZones.has(z)))
-    .slice(0, 100 - primary.length)
-
-  return [...primary, ...secondary].map((ex) => ex.title)
-}

@@ -47,34 +47,20 @@ Requirements:
 9. For cardio exercises always set duration (in minutes); for strength/crossfit set reps
 10. notes field — write in Russian for user readability`
 
-// Системный промпт для парсинга заметок тренера (с каталогом упражнений)
-const PARSE_NOTES_SYSTEM_PROMPT = `Ты — фитнес-ассистент. Разбираешь заметки тренировки на русском языке в строгий JSON.
+// Системный промпт для парсинга заметок тренера
+const PARSE_NOTES_SYSTEM_PROMPT = `Разбери текст тренировки в JSON. Верни только JSON, без текста вокруг.
 
-Главная задача: для каждого упражнения из заметок найди наиболее подходящее название из списка AVAILABLE EXERCISES (в конце сообщения) и используй его ТОЧНО как есть в поле "name". Список содержит английские названия из базы данных приложения — это единственный источник истины.
+Формат:
+{"workoutType":"bodybuilding","exercises":[{"name":"Разгибания ног","sets":4,"setData":[{"reps":20,"weight":32},{"reps":15,"weight":36},{"reps":15,"weight":41},{"reps":15,"weight":41}]}],"notes":null}
 
-Алгоритм подбора названия:
-- Сопоставляй по смыслу и группе мышц, а не буквально
-- Примеры: "жим лёжа" → "Barbell Bench Press", "приседания" → "Barbell Squat", "тяга к поясу" → "Seated Cable Rows", "подтягивания" → "Pull-Up", "разгибания ног" → "Leg Extensions", "сгибания ног" → "Leg Curls", "жим ногами" → "Leg Press"
-- Если несколько вариантов подходят — выбери наиболее специфичный
-- Если упражнение совсем не поддаётся определению — подбери ближайшее по группе мышц
-
-Правила JSON:
-1. Возвращай только JSON, без какого-либо текста вокруг
-2. Формат упражнения с одинаковыми подходами: {"name":"Barbell Bench Press","displayName":"Жим штанги лёжа","sets":3,"setData":[{"reps":10,"weight":80},{"reps":10,"weight":80},{"reps":10,"weight":80}],"duration":null,"notes":null,"supersetGroup":null}
-3. Формат упражнения с прогрессией весов: {"name":"Leg Extensions","displayName":"Разгибания голени","sets":4,"setData":[{"reps":20,"weight":32},{"reps":15,"weight":36},{"reps":15,"weight":41},{"reps":15,"weight":41}],"duration":null,"notes":null,"supersetGroup":null}
-4. ВСЕГДА используй setData — перечисляй каждый подход отдельно с его reps и weight. Поля reps и weight на верхнем уровне НЕ используй.
-5. Аббревиатуры: "2х15" = 2 подхода по 15 повторений (добавь 2 записи в setData), "кг" = kg
-6. weight — в килограммах, duration — в МИНУТАХ (не секундах)
-7. Если параметр не указан — ставь null
-8. supersetGroup — если упражнения выполняются суперсетом, присваивай одну букву ("A"). Разные суперсеты — разные буквы. Не суперсет — null
-9. Тип тренировки:
-   - "crossfit" = WOD, AMRAP, For Time, EMOM, Tabata, круговые, функциональный фитнес, HIIT
-   - "bodybuilding" = силовые, изоляция, гипертрофия, пауэрлифтинг
-   - "cardio" = бег, велосипед, плавание, растяжка, йога, ходьба
-10. "name" — СТРОГО из списка AVAILABLE EXERCISES, точное название без изменений
-11. "displayName" — русское название из заметок тренера (как написал тренер, или переведи с английского если не указано)
-12. Для кардио указывай duration (минуты) в setData вместо reps/weight
-13. Поле notes — на русском языке`
+Правила:
+- workoutType: "bodybuilding" (силовые, изоляция, тренажёры), "crossfit" (круговые, WOD, HIIT), "cardio" (бег, велосипед, растяжка)
+- name: СТАНДАРТНОЕ название упражнения, как в учебнике или фитнес-приложении. Нормализуй сленг и анатомические термины: "голени" = "ног", "икры" → "Подъём на носки", "гакк присед" → "Гакк-приседания", "выпады смит" → "Выпады в тренажёре Смита", "сведения бёдер" → "Сведение бёдер"
+- setData: каждый подход отдельно с reps и weight в кг
+- "2х15, 41кг" → два подхода: [{"reps":15,"weight":41},{"reps":15,"weight":41}]
+- "1х12+12, 21кг" → один подход: [{"reps":12,"weight":21}]
+- Для кардио: {"time": минуты} вместо reps/weight
+- sets = количество записей в setData`
 
 // Системный промпт для AI-чата (фитнес-советник)
 const CHAT_SYSTEM_PROMPT = `Ты — AI-помощник фитнес-приложения Vervel. Ты разбираешься в тренировках, питании, восстановлении и спортивной науке.
@@ -157,18 +143,18 @@ export class YandexAiService {
    * catalogTitles — список точных названий упражнений из каталога для инъекции в промпт.
    * AI должен выбирать "name" только из этого списка → matchExercisesToCatalog даёт точное совпадение.
    */
-  static async parseWorkoutNotes(notes: string, catalogTitles: string[]): Promise<AiWorkoutResult> {
+  static async parseWorkoutNotes(notes: string): Promise<AiWorkoutResult> {
     const apiKey = env.get('YANDEX_CLOUD_API_KEY')!
     const folderId = env.get('YANDEX_FOLDER_ID')!
-
-    const catalogSection = `\nAVAILABLE EXERCISES (use these exact names in the "name" field):\n${catalogTitles.join(', ')}`
 
     const result = await this.callGpt(
       folderId,
       PARSE_NOTES_SYSTEM_PROMPT,
-      `Разбери следующий текст тренировки в JSON:\n\n${notes}${catalogSection}`,
+      notes,
       0.1,
-      apiKey
+      apiKey,
+      // Для парсинга заметок используем полную модель — она надёжнее lite
+      env.get('YANDEX_GPT_PARSE_MODEL', 'yandexgpt')
     )
 
     return this.parseWorkoutJson(result)
@@ -328,8 +314,10 @@ export class YandexAiService {
     instructions: string,
     input: string,
     temperature: number,
-    apiKey: string
+    apiKey: string,
+    modelOverride?: string
   ): Promise<string> {
+    const model = modelOverride ?? env.get('YANDEX_GPT_MODEL', 'yandexgpt-lite')
     const response = await fetch(YANDEX_GPT_URL, {
       method: 'POST',
       headers: {
@@ -339,7 +327,7 @@ export class YandexAiService {
         'x-folder-id': folderId,
       },
       body: JSON.stringify({
-        model: `gpt://${folderId}/${env.get('YANDEX_GPT_MODEL', 'yandexgpt-lite')}/latest`,
+        model: `gpt://${folderId}/${model}/latest`,
         messages: [
           { role: 'system', content: instructions },
           { role: 'user', content: input },
