@@ -27,6 +27,12 @@ const parseWorkoutNotesValidator = vine.compile(
   })
 )
 
+const parseNotesTextValidator = vine.compile(
+  vine.object({
+    notes: vine.string().trim().minLength(5).maxLength(5000),
+  })
+)
+
 const applyParsedWorkoutValidator = vine.compile(
   vine.object({
     workoutId: vine.number().positive(),
@@ -196,6 +202,83 @@ export default class AiController {
       const tooFew = workoutExercises.length === 0
 
       // Превью: имена из каталога + данные подходов
+      const catalog = ExerciseCatalog.all()
+      const catalogMap = new Map(catalog.map((e) => [e.id, e.title]))
+      const previewItems = workoutExercises.map((ex) => {
+        const allSets = ex.sets ?? []
+        const weights = allSets.map((s) => s.weight).filter((w): w is number => w != null)
+        const weightMin = weights.length ? Math.min(...weights) : undefined
+        const weightMax = weights.length ? Math.max(...weights) : undefined
+        return {
+          exerciseId: ex.exerciseId,
+          name: catalogMap.get(ex.exerciseId) ?? ex.exerciseId.replace(/_/g, ' '),
+          sets: allSets.length,
+          reps: allSets[0]?.reps,
+          weight: weightMin,
+          weightMax: weightMax !== weightMin ? weightMax : undefined,
+        }
+      })
+
+      const balance = await AiBalanceService.getBalance(userId)
+      return response.ok({
+        workoutType: matched.workoutType,
+        previewItems,
+        exercises: workoutExercises,
+        warning: tooFew
+          ? 'AI не нашёл ни одного упражнения в заметках'
+          : hasDuplicates
+            ? 'Некоторые упражнения определились как одинаковые — проверьте список перед сохранением'
+            : null,
+        balance,
+      })
+    } catch (err: any) {
+      return response.internalServerError({
+        message: 'Не удалось разобрать программу тренировки',
+        detail: err?.message,
+      })
+    }
+  }
+
+  /**
+   * POST /ai/parse-notes-text
+   * Тренер: парсит произвольный текст (без workoutId) — для формы создания тренировки.
+   * Списывает баланс. Возвращает превью для подтверждения.
+   */
+  async parseNotesText({ auth, request, response }: HttpContext) {
+    if (!YandexAiService.isEnabled()) {
+      return response.forbidden({ message: 'AI-функция временно недоступна' })
+    }
+
+    const { notes } = await request.validateUsing(parseNotesTextValidator)
+    const userId = auth.user!.id
+
+    const isFree = auth.user!.aiNotesFree
+    const cost = isFree ? 0 : AiBalanceService.COST_PARSE_NOTES
+
+    if (!isFree) {
+      try {
+        await AiBalanceService.charge(userId, cost, 'Разбор программы тренировки через AI')
+      } catch (err) {
+        if (err instanceof InsufficientBalanceError) {
+          return response.paymentRequired({
+            message: `Недостаточно средств. Баланс: ${err.balance}₽, требуется: ${err.required}₽`,
+            balance: err.balance,
+            required: err.required,
+          })
+        }
+        throw err
+      }
+    }
+
+    try {
+      const result = await YandexAiService.parseWorkoutNotes(notes)
+      const matched = await matchExercisesToCatalog(result)
+      const workoutExercises = aiExercisesToWorkoutExercises(matched.exercises, matched.workoutType)
+
+      const uniqueIds = new Set(workoutExercises.map((e) => e.exerciseId))
+      const hasDuplicates = uniqueIds.size < workoutExercises.length
+      const tooFew = workoutExercises.length === 0
+
       const catalog = ExerciseCatalog.all()
       const catalogMap = new Map(catalog.map((e) => [e.id, e.title]))
       const previewItems = workoutExercises.map((ex) => {
@@ -447,12 +530,21 @@ async function matchExercisesToCatalog(result: AiWorkoutResult): Promise<AiWorko
     }
 
     // 4. Нечёткий поиск: token_set_ratio по title + keywords.
-    // token_set_ratio сортирует токены перед сравнением — устойчив к порядку слов.
+    // Сначала ищем среди записей с совпадением стема первого слова (различает
+    // "сгибания" от "разгибания"), при отсутствии результата — по всему каталогу.
     if (!found) {
+      const firstWord = nameLower.split(/\s+/)[0]
+      const stem = firstWord.length >= 5 ? firstWord.slice(0, firstWord.length - 2) : null
+      const candidatePool =
+        stem && stem.length >= 5
+          ? catalog.filter((ex) => ex.title.toLowerCase().split(/\s+/)[0].startsWith(stem))
+          : catalog
+      const searchPool = candidatePool.length > 0 ? candidatePool : catalog
+
       let bestScore = 0
       let bestMatch: (typeof catalog)[number] | undefined
 
-      for (const ex of catalog) {
+      for (const ex of searchPool) {
         let score = token_set_ratio(nameLower, ex.title.toLowerCase())
 
         for (const kw of ex.keywords ?? []) {

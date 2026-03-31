@@ -21,6 +21,7 @@ import AccentButton from '@/components/ui/AccentButton';
 import GhostButton from '@/components/ui/GhostButton';
 import type { ExerciseData, WorkoutTemplate } from '@/api/trainer';
 import type { AiWorkoutResult } from '@/api/ai';
+import { aiApi } from '@/api/ai';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
 import { convertExercisesForType, convertAiResult } from './workoutTypeConversion';
 import { workoutsApi } from '@/api/workouts';
@@ -127,6 +128,14 @@ export default function WorkoutFormBase({
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [aiGenerated, setAiGenerated] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
+  const [parseCost, setParseCost] = useState<number | null>(null);
+  const [parsePreview, setParsePreview] = useState<{
+    workoutType: 'crossfit' | 'bodybuilding' | 'cardio';
+    previewItems: Array<{ exerciseId: string; name: string; sets: number; reps?: number; weight?: number; weightMax?: number }>;
+    exercises: Array<{ exerciseId: string; type: string; sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>; blockId?: string }>;
+    warning: string | null;
+  } | null>(null);
 
   // ── Auto-save to localStorage (immediate) + DB (debounced) ───────
   const dbSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -202,6 +211,11 @@ export default function WorkoutFormBase({
     setSelectedTemplateId(null);
   };
 
+  // ── Fetch AI costs once on mount ─────────────────────────────────
+  useEffect(() => {
+    aiApi.getBalance().then((res) => setParseCost(res.data.costs.parseNotes)).catch(() => {});
+  }, []);
+
   // ── Type change with exercise normalization ───────────────────────
 
   const handleWorkoutTypeChange = (newType: WorkoutType) => {
@@ -233,6 +247,38 @@ export default function WorkoutFormBase({
     if (result.notes) setNotes(result.notes);
     setSelectedTemplateId(null);
     toast.success(`AI сгенерировал ${converted.length} упражнений`);
+  };
+
+  const handleParseNotes = async () => {
+    if (!notes.trim()) return;
+    setIsParsing(true);
+    try {
+      const res = await aiApi.parseNotesText(notes);
+      setParsePreview(res.data);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message;
+      toast.error(msg ?? 'Не удалось разобрать программу');
+    } finally {
+      setIsParsing(false);
+    }
+  };
+
+  const handleApplyParsed = () => {
+    if (!parsePreview) return;
+    const nameMap = new Map(parsePreview.previewItems.map((item) => [item.exerciseId, item.name]));
+    const converted: ExerciseData[] = parsePreview.exercises.map((ex) => ({
+      exerciseId: ex.exerciseId,
+      name: nameMap.get(ex.exerciseId) ?? ex.exerciseId.replace(/_/g, ' '),
+      setsDetail: ex.sets?.map((s) => ({ reps: s.reps ?? 10, weight: s.weight })) ?? [],
+      sets: ex.sets?.length ?? 3,
+      blockId: ex.blockId,
+    }));
+    setWorkoutType(parsePreview.workoutType);
+    setExercises(converted);
+    setAiGenerated(true);
+    setSelectedTemplateId(null);
+    setParsePreview(null);
+    toast.success(`AI разобрал ${converted.length} упражнений`);
   };
 
   // ── Template picker ───────────────────────────────────────────────
@@ -281,6 +327,82 @@ export default function WorkoutFormBase({
           >
             Сбросить
           </button>
+        </div>
+      )}
+
+      {/* Заметки / программа — сверху */}
+      {!parsePreview && (
+        <div>
+          <SectionLabel>{notesLabel}</SectionLabel>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder={notesPlaceholder}
+            rows={4}
+            className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none placeholder:text-(--color_text_muted) leading-relaxed"
+          />
+          {notes.trim() && (
+            <button
+              type="button"
+              onClick={handleParseNotes}
+              disabled={isParsing}
+              className="mt-2 flex items-center gap-1.5 text-sm text-(--color_primary_light) hover:opacity-80 transition-opacity disabled:opacity-40"
+            >
+              {isParsing ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  Разбираю программу...
+                </>
+              ) : (
+                <>
+                  ✨ Конвертировать в упражнения
+                  {parseCost != null && (
+                    <span className="opacity-50 text-xs">· {parseCost}₽</span>
+                  )}
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Превью AI-парсинга */}
+      {parsePreview && (
+        <div className="rounded-xl border border-(--color_border) p-4 space-y-3" style={{ backgroundColor: 'var(--color_bg_card)' }}>
+          <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest">Программа от AI · проверьте</p>
+
+          {parsePreview.warning && (
+            <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
+              <span className="shrink-0">⚠</span>
+              <span>{parsePreview.warning}</span>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            {parsePreview.previewItems.map((item, i) => (
+              <div key={i} className="flex items-center justify-between gap-2 py-1.5 border-b border-(--color_border) last:border-0">
+                <span className="text-sm text-white leading-tight">{item.name}</span>
+                <span className="text-xs text-(--color_text_muted) shrink-0 tabular-nums">
+                  {item.sets > 0 ? `${item.sets} × ` : ''}
+                  {item.reps ? `${item.reps} повт.` : ''}
+                  {item.weight ? ` · ${item.weightMax ? `${item.weight}–${item.weightMax}` : item.weight} кг` : ''}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            <GhostButton variant="solid" onClick={() => setParsePreview(null)} className="flex-1">
+              Отмена
+            </GhostButton>
+            <button
+              onClick={handleApplyParsed}
+              disabled={parsePreview.previewItems.length === 0}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium bg-emerald-500 text-black hover:bg-emerald-400 transition-colors disabled:opacity-50"
+            >
+              Применить
+            </button>
+          </div>
         </div>
       )}
 
@@ -375,18 +497,6 @@ export default function WorkoutFormBase({
               <AiWorkoutRecognizer onResult={handleAiResult} />
             </div>
           }
-        />
-      </div>
-
-      {/* Заметки */}
-      <div>
-        <SectionLabel>{notesLabel}</SectionLabel>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder={notesPlaceholder}
-          rows={6}
-          className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none placeholder:text-(--color_text_muted) leading-relaxed"
         />
       </div>
 

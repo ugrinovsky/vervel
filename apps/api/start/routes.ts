@@ -131,6 +131,7 @@ router
     router.get('transactions', '#controllers/ai_controller.transactions')
     router.post('recognize-workout', '#controllers/ai_controller.recognizeWorkout')
     router.post('parse-workout-notes', '#controllers/ai_controller.parseWorkoutNotes')
+    router.post('parse-notes-text', '#controllers/ai_controller.parseNotesText')
     router.post('apply-parsed-workout', '#controllers/ai_controller.applyParsedWorkout')
     router.post('generate-workout', '#controllers/ai_controller.generateWorkout')
     router.post('chat', '#controllers/ai_controller.chat')

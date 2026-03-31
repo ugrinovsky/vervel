@@ -173,7 +173,8 @@ export class YandexAiService {
       GENERATE_SYSTEM_PROMPT,
       `Создай тренировку: ${prompt}`,
       0.4,
-      apiKey
+      apiKey,
+      env.get('YANDEX_GPT_PARSE_MODEL', 'yandexgpt')
     )
 
     return this.parseWorkoutJson(result)

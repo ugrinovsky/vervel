@@ -307,8 +307,8 @@ export default function WorkoutInlineForm({
       templates={templates}
       headerSlot={assigneePicker}
       submitLabel={editWorkout ? 'Сохранить' : 'Создать тренировку'}
-      notesLabel="Заметки тренера"
-      notesPlaceholder="Общие рекомендации по тренировке..."
+      notesLabel="Программа или комментарий"
+      notesPlaceholder="Напишите программу тренировки или комментарий — можно сконвертировать в упражнения через AI"
       onSubmit={handleSubmit}
       onCancel={onCancel}
     />

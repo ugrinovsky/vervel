@@ -83,6 +83,18 @@ export const aiApi = {
     }>('/ai/parse-workout-notes', { workoutId }),
 
   /**
+   * Парсит произвольный текст (без workoutId) — для формы создания тренировки.
+   */
+  parseNotesText: (notes: string) =>
+    privateApi.post<{
+      workoutType: 'crossfit' | 'bodybuilding' | 'cardio'
+      previewItems: Array<{ exerciseId: string; name: string; sets: number; reps?: number; weight?: number; weightMax?: number }>
+      exercises: Array<{ exerciseId: string; type: string; sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>; blockId?: string }>
+      warning: string | null
+      balance: number
+    }>('/ai/parse-notes-text', { notes }),
+
+  /**
    * Сохраняет упражнения после подтверждения превью (без повторного списания баланса).
    */
   applyParsedWorkout: (
