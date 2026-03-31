@@ -24,9 +24,8 @@ export class AiBalanceService {
     return Number(env.get('AI_COST_RECOGNIZE', '9'))
   }
 
-  /** Парсинг заметок тренера с инъекцией каталога (2× тяжелее запрос) */
   static get COST_PARSE_NOTES(): number {
-    return Number(env.get('AI_COST_PARSE_NOTES', String(this.COST_RECOGNIZE * 2)))
+    return Number(env.get('AI_COST_PARSE_NOTES', '10'))
   }
 
   /** YandexGPT Lite: ₽ per 1000 input tokens */

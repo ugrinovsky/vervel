@@ -367,7 +367,7 @@ export default class AiController {
       costs: {
         generate: AiBalanceService.COST_GENERATE,
         recognize: AiBalanceService.COST_RECOGNIZE,
-        parseNotes: AiBalanceService.COST_PARSE_NOTES,
+        parseNotes: auth.user!.aiNotesFree ? 0 : AiBalanceService.COST_PARSE_NOTES,
         chatMinCharge: AiBalanceService.CHAT_MIN_CHARGE,
       },
       transactions,

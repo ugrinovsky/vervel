@@ -357,7 +357,9 @@ export default function WorkoutFormBase({
                 <>
                   ✨ Конвертировать в упражнения
                   {parseCost != null && (
-                    <span className="opacity-50 text-xs">· {parseCost}₽</span>
+                    <span className="opacity-50 text-xs">
+                      · {parseCost === 0 ? 'бесплатно' : `${parseCost}₽`}
+                    </span>
                   )}
                 </>
               )}
