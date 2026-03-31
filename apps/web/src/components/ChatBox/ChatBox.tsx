@@ -10,7 +10,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { checkForNewAchievements } from '@/hooks/useAchievementToast';
 import { WorkoutPreviewCard, parseWorkoutPreview } from './WorkoutPreviewCard';
 import type { WorkoutPreviewData } from './WorkoutPreviewCard';
-import { WorkoutDetailSheet } from './WorkoutDetailSheet';
+import WorkoutDetailSheet from '@/screens/ActivityScreen/WorkoutDetailSheet';
+import type { WorkoutTimelineEntry } from '@/types/Analytics';
+import { workoutsApi } from '@/api/workouts';
 
 const PAGE_SIZE = 20;
 
@@ -29,7 +31,23 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [hasOlder, setHasOlder] = useState(false);
   const [sending, setSending] = useState(false);
-  const [openPreview, setOpenPreview] = useState<WorkoutPreviewData | null>(null);
+  const [openWorkout, setOpenWorkout] = useState<WorkoutTimelineEntry | null>(null);
+
+  const handlePreviewClick = async (preview: WorkoutPreviewData) => {
+    if (!preview.scheduledWorkoutId) return;
+    try {
+      const res = await workoutsApi.getByScheduledId(preview.scheduledWorkoutId);
+      const w = res.data as any;
+      setOpenWorkout({
+        id: w.id,
+        date: w.date ?? preview.date,
+        type: w.workoutType ?? preview.workoutType,
+        scheduledWorkoutId: preview.scheduledWorkoutId,
+      });
+    } catch {
+      // workout not yet created for this athlete (future workout) — show nothing
+    }
+  };
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -264,7 +282,10 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
                         {message.sender.fullName || 'Тренер'}
                       </div>
                     )}
-                    <WorkoutPreviewCard data={preview} onClick={() => setOpenPreview(preview)} />
+                    <WorkoutPreviewCard
+                      data={preview}
+                      onClick={preview.scheduledWorkoutId ? () => handlePreviewClick(preview) : undefined}
+                    />
                     <div className="text-xs text-(--color_text_muted) mt-1 px-1">
                       {formatTime(message.createdAt)}
                     </div>
@@ -380,9 +401,8 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
       )}
 
       <WorkoutDetailSheet
-        data={openPreview}
-        open={!!openPreview}
-        onClose={() => setOpenPreview(null)}
+        workout={openWorkout}
+        onClose={() => setOpenWorkout(null)}
       />
     </div>
   );

@@ -50,6 +50,7 @@ router
   .group(() => {
     router.get('workouts/stats', '#controllers/workouts_controller.stats');
     router.get('workouts/by-zone', '#controllers/workouts_controller.byZone');
+    router.get('workouts/by-scheduled/:scheduledWorkoutId', '#controllers/workouts_controller.getByScheduledId')
     router.get('workouts/draft', '#controllers/workouts_controller.getDraft');
     router.put('workouts/draft', '#controllers/workouts_controller.saveDraft');
     router.delete('workouts/draft', '#controllers/workouts_controller.clearDraft');

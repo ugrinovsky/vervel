@@ -206,20 +206,39 @@ function DroppableHour({
 // ── Intro session form ────────────────────────────────────────────────────────
 
 function IntroSessionForm({
-  selectedDate,
-  selectedTime,
+  scheduledAt,
   onSuccess,
   onCancel,
+  draftKey,
 }: {
-  selectedDate: string;
-  selectedTime: string;
+  scheduledAt: string;
   onSuccess: () => void;
   onCancel: () => void;
+  draftKey?: string;
 }) {
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!draftKey) return;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d.clientName) setClientName(d.clientName);
+        if (d.clientPhone) setClientPhone(d.clientPhone);
+      }
+    } catch {}
+  }, [draftKey]);
+
+  useEffect(() => {
+    if (!draftKey || (!clientName && !clientPhone)) return;
+    try {
+      localStorage.setItem(draftKey, JSON.stringify({ clientName, clientPhone }));
+    } catch {}
+  }, [clientName, clientPhone, draftKey]);
 
   const formatPhone = (raw: string): string => {
     // Keep only digits and leading +
@@ -264,10 +283,11 @@ function IntroSessionForm({
     setSaving(true);
     try {
       await trainerApi.createScheduledWorkout({
-        scheduledDate: `${selectedDate}T${selectedTime}:00`,
+        scheduledDate: scheduledAt,
         workoutData: { type: 'intro', clientName: clientName.trim(), clientPhone: clientPhone.trim() || undefined, exercises: [] },
         assignedTo: [],
       });
+      if (draftKey) localStorage.removeItem(draftKey);
       toast.success('Вводная добавлена');
       onSuccess();
     } catch {
@@ -327,7 +347,7 @@ function IntroSessionForm({
 
       {/* Buttons */}
       <div className="flex gap-2 pt-1">
-        <GhostButton variant="solid" type="button" onClick={onCancel} className="flex-1">
+        <GhostButton variant="solid" type="button" onClick={() => { if (draftKey) localStorage.removeItem(draftKey); onCancel(); }} className="flex-1">
           Отмена
         </GhostButton>
         <button
@@ -348,6 +368,7 @@ function IntroSessionForm({
 export default function TrainerCalendarScreen() {
   const today = new Date();
   const { user } = useAuth();
+  const introDraftKey = user ? `trainer_intro_draft_${user.id}` : undefined;
 
   const trainerDraft = useMemo(() => {
     if (!user) return null;
@@ -769,8 +790,7 @@ export default function TrainerCalendarScreen() {
           editingWorkout.workoutData.type === 'intro' ? (
             <IntroSessionForm
               key={editingWorkout.id}
-              selectedDate={selectedDateStr}
-              selectedTime={selectedTime ?? getWorkoutMinutes(editingWorkout.scheduledDate).replace(':', ':')}
+              scheduledAt={editingWorkout.scheduledDate}
               onSuccess={() => { setEditingWorkout(null); loadWorkouts(currentMonth); }}
               onCancel={() => setEditingWorkout(null)}
             />
@@ -826,8 +846,8 @@ export default function TrainerCalendarScreen() {
             ) : (
               <IntroSessionForm
                 key={`intro-${selectedDateStr}-${selectedTime}`}
-                selectedDate={selectedDateStr}
-                selectedTime={selectedTime}
+                scheduledAt={`${selectedDateStr}T${selectedTime}:00`}
+                draftKey={introDraftKey}
                 onSuccess={() => { setSelectedTime(null); loadWorkouts(currentMonth); }}
                 onCancel={() => setSelectedTime(null)}
               />

@@ -181,7 +181,7 @@ export default function ActivityScreen() {
               transition={{ duration: 0.2 }}
               className="mb-4"
             >
-              <DayDetails date={selectedDate} workouts={dayWorkouts} onDeleted={refetch} draft={draft} />
+              <DayDetails date={selectedDate} workouts={dayWorkouts} onDeleted={refetch} onRefresh={refetch} draft={draft} />
             </motion.div>
           )}
         </AnimatePresence>

@@ -101,17 +101,30 @@ export function WorkoutDetailSheet({ data, open, onClose }: Props) {
                     >
                       <div className="flex items-baseline justify-between gap-2 px-3 py-2.5">
                         <span className="text-sm font-medium text-white">{ex.name}</span>
-                        <span className="text-sm text-white/60 shrink-0">
-                          {ex.duration
-                            ? `${ex.duration} мин`
-                            : [
-                                ex.sets && ex.reps ? `${ex.sets}×${ex.reps}` : null,
-                                ex.weight ? `${ex.weight} кг` : null,
-                              ]
-                                .filter(Boolean)
-                                .join(' · ')}
-                        </span>
+                        {ex.duration && (
+                          <span className="text-sm text-white/60 shrink-0">{ex.duration} мин</span>
+                        )}
                       </div>
+                      {ex.setsDetail && ex.setsDetail.length > 0 ? (
+                        <div className="px-3 pb-2.5 space-y-1 border-t border-white/5 pt-2">
+                          {ex.setsDetail.map((s, si) => (
+                            <div key={si} className="flex items-center justify-between text-xs text-white/50">
+                              <span>{si + 1}</span>
+                              <span className="tabular-nums">
+                                {s.reps ? `${s.reps} повт.` : ''}
+                                {s.weight ? ` · ${s.weight} кг` : ''}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (ex.sets || ex.reps || ex.weight) && !ex.duration ? (
+                        <div className="px-3 pb-2.5 text-xs text-white/50 border-t border-white/5 pt-1.5 tabular-nums">
+                          {[
+                            ex.sets && ex.reps ? `${ex.sets}×${ex.reps} повт.` : ex.sets ? `${ex.sets} подх.` : null,
+                            ex.weight ? `${ex.weight} кг` : null,
+                          ].filter(Boolean).join(' · ')}
+                        </div>
+                      ) : null}
                       {ex.notes && (
                         <div className="px-3 pb-2.5 text-xs text-white/50 italic border-t border-white/5 pt-1.5">
                           💬 {ex.notes}

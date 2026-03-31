@@ -10,6 +10,7 @@ export interface WorkoutPreviewData {
   workoutType: 'crossfit' | 'bodybuilding' | 'cardio';
   exercises: ExerciseData[];
   notes?: string;
+  scheduledWorkoutId?: number;
 }
 
 export function parseWorkoutPreview(content: string): WorkoutPreviewData | null {
@@ -59,12 +60,6 @@ export function WorkoutPreviewCard({ data, onClick }: { data: WorkoutPreviewData
               </span>
             </div>
           ))}
-        </div>
-      )}
-
-      {data.notes && (
-        <div className="px-4 py-2.5 border-t border-white/10 text-xs text-white/50 italic">
-          📝 {data.notes}
         </div>
       )}
 

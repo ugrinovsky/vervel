@@ -24,6 +24,7 @@ function buildWorkoutPreviewMessage(
   type: 'crossfit' | 'bodybuilding' | 'cardio',
   exercises: ExerciseData[],
   notes?: string,
+  scheduledWorkoutId?: number,
 ): string {
   return JSON.stringify({
     __type: 'workout_preview',
@@ -32,6 +33,7 @@ function buildWorkoutPreviewMessage(
     workoutType: type,
     exercises,
     notes: notes || undefined,
+    scheduledWorkoutId,
   });
 }
 
@@ -181,14 +183,15 @@ export default function WorkoutInlineForm({
         });
         toast.success('Тренировка обновлена');
       } else {
-        await trainerApi.createScheduledWorkout({
+        const created = await trainerApi.createScheduledWorkout({
           scheduledDate,
           workoutData,
           assignedTo,
           notes: data.notes || undefined,
           templateId: data.selectedTemplateId ?? undefined,
         });
-        const previewMessage = buildWorkoutPreviewMessage(data.date, data.time, data.workoutType, data.exercises, data.notes);
+        const scheduledWorkoutId = created.data.data.id;
+        const previewMessage = buildWorkoutPreviewMessage(data.date, data.time, data.workoutType, data.exercises, data.notes, scheduledWorkoutId);
         await Promise.all(assignedTo.map(async (a) => {
           try {
             const chatRes = a.type === 'group'

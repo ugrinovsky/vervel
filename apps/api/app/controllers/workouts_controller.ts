@@ -201,6 +201,15 @@ export default class WorkoutsController {
   /**
    * Удалить черновик тренировки
    */
+  async getByScheduledId({ auth, params, response }: HttpContext) {
+    const workout = await Workout.query()
+      .where('scheduledWorkoutId', params.scheduledWorkoutId)
+      .where('userId', auth.user!.id)
+      .first();
+    if (!workout) return response.notFound({ message: 'Тренировка не найдена' });
+    return response.ok(workout);
+  }
+
   async clearDraft({ auth, response }: HttpContext) {
     const user = auth.user!;
     await WorkoutDraft.query().where('userId', user.id).delete();

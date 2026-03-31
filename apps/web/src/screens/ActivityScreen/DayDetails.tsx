@@ -23,6 +23,7 @@ interface DayDetailsProps {
   date: Date;
   workouts: WorkoutTimelineEntry[];
   onDeleted: () => void;
+  onRefresh?: () => void;
   readOnly?: boolean;
   draft?: DraftData | null;
 }
@@ -163,7 +164,7 @@ function SectionDivider({ label }: { label: string }) {
   );
 }
 
-export default function DayDetails({ date, workouts, onDeleted, readOnly = false, draft }: DayDetailsProps) {
+export default function DayDetails({ date, workouts, onDeleted, onRefresh, readOnly = false, draft }: DayDetailsProps) {
   const [activeWorkout, setActiveWorkout] = useState<WorkoutTimelineEntry | null>(null);
   const [localIntensities, setLocalIntensities] = useState<Record<number, number>>({});
   const navigate = useNavigate();
@@ -290,6 +291,7 @@ export default function DayDetails({ date, workouts, onDeleted, readOnly = false
         workout={activeWorkout}
         onClose={() => setActiveWorkout(null)}
         onUpdate={(id, intensity) => setLocalIntensities((prev) => ({ ...prev, [id]: intensity }))}
+        onRefresh={onRefresh}
       />
     </>
   );

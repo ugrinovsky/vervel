@@ -48,6 +48,7 @@ interface Props {
   workout: WorkoutTimelineEntry | null;
   onClose: () => void;
   onUpdate?: (workoutId: number, intensity: number) => void;
+  onRefresh?: () => void;
 }
 
 /* ─── Константы ─────────────────────────────────────────────────────── */
@@ -242,7 +243,7 @@ function ZonesSection({ zonesLoad }: { zonesLoad: Record<string, number> }) {
 
 /* ─── Основной компонент ────────────────────────────────────────────── */
 
-export default function WorkoutDetailSheet({ workout, onClose, onUpdate }: Props) {
+export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefresh }: Props) {
   const [fullWorkout, setFullWorkout] = useState<FullWorkout | null>(null);
   const [exerciseMap, setExerciseMap] = useState<Map<string, Exercise>>(new Map());
   const [loading, setLoading] = useState(false);
@@ -257,9 +258,10 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate }: Props
   const [savingRpe, setSavingRpe] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
+  const [notesHidden, setNotesHidden] = useState(false);
   const [parsePreview, setParsePreview] = useState<{
     workoutType: 'crossfit' | 'bodybuilding' | 'cardio';
-    previewItems: Array<{ exerciseId: string; name: string; sets: number; reps?: number; weight?: number }>;
+    previewItems: Array<{ exerciseId: string; name: string; sets: number; reps?: number; weight?: number; weightMax?: number }>;
     exercises: Array<{ exerciseId: string; type: string; sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>; blockId?: string }>;
     warning: string | null;
   } | null>(null);
@@ -269,6 +271,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate }: Props
     setFullWorkout(null);
     setIsEditing(false);
     setParsePreview(null);
+    setNotesHidden(false);
     setLoading(true);
 
     Promise.all([workoutsApi.get(workout.id), exercisesApi.list()])
@@ -297,8 +300,11 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate }: Props
     const rpeVal = 'rpe' in overrides
       ? (overrides.rpe ?? undefined)
       : (fullWorkout!.rpe ?? undefined);
+    const dateStr = isEditing
+      ? `${getLocalDateISOString(editDate)}T${format(editTime, 'HH:mm')}:00`
+      : workout!.date;
     return {
-      date: `${getLocalDateISOString(editDate)}T${format(editTime, 'HH:mm')}:00`,
+      date: dateStr,
       workoutType: fullWorkout!.workoutType as 'crossfit' | 'bodybuilding' | 'cardio',
       exercises,
       notes: fullWorkout!.notes,
@@ -355,7 +361,10 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate }: Props
       const updated = res.data.data as FullWorkout;
       setFullWorkout(updated);
       setEditExercises(updated.exercises.map((ex) => ({ ...ex, sets: (ex.sets ?? []).map((s) => ({ ...s })) })));
+      setRpe(updated.rpe ?? null);
+      setNotesHidden(true);
       setParsePreview(null);
+      onRefresh?.();
       toast.success('Программа сохранена');
     } catch {
       toast.error('Ошибка сохранения');
@@ -468,7 +477,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate }: Props
                 ⚠ нет весов
               </span>
             )}
-            {isPast && !isEditing && (
+            {!isEditing && (
               <button
                 onClick={() => {
               const raw = workout?.date ?? '';
@@ -643,7 +652,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate }: Props
           )}
 
           {/* ── Заметки ────────────────────────────────────────────── */}
-          {!isEditing && fullWorkout.notes && !parsePreview && (
+          {!isEditing && fullWorkout.notes && !parsePreview && !notesHidden && (
             <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border)">
               <SectionTitle>Заметки</SectionTitle>
               <p className="text-sm text-(--color_text_secondary) leading-relaxed whitespace-pre-line">{fullWorkout.notes}</p>
