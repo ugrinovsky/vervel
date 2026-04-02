@@ -1,5 +1,15 @@
 declare module '@adonisjs/core/types' {
   interface EventsList {
+    'chat:new_message': {
+      chatId: number
+      message: {
+        id: number
+        content: string
+        senderId: number
+        sender: { id: number; fullName: string | null; email: string }
+        createdAt: unknown
+      }
+    }
     'push:message': {
       senderName: string
       content: string

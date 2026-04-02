@@ -8,6 +8,7 @@ import AccentButton from '@/components/ui/AccentButton';
 import AppInput from '@/components/ui/AppInput';
 import { useAuth } from '@/contexts/AuthContext';
 import { checkForNewAchievements } from '@/hooks/useAchievementToast';
+import { refreshDialogs } from '@/hooks/useDialogs';
 import { WorkoutPreviewCard, parseWorkoutPreview } from './WorkoutPreviewCard';
 import type { WorkoutPreviewData } from './WorkoutPreviewCard';
 import WorkoutDetailSheet from '@/screens/ActivityScreen/WorkoutDetailSheet';
@@ -102,7 +103,7 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
           oldestIdRef.current = data[0].id;
           newestIdRef.current = data[data.length - 1].id;
         }
-        chatApi.markAsRead(chatId).catch(() => {});
+        chatApi.markAsRead(chatId).then(() => refreshDialogs()).catch(() => {});
         scrollNeededRef.current = 'instant';
       } catch {
         if (!cancelled) toast.error('Ошибка загрузки сообщений');
@@ -180,7 +181,7 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
           newestIdRef.current = msg.data.id;
           return [...prev, msg.data];
         });
-        chatApi.markAsRead(chatId).catch(() => {});
+        chatApi.markAsRead(chatId).then(() => refreshDialogs()).catch(() => {});
         scrollNeededRef.current = 'smooth';
       } catch { /* ignore */ }
     };
@@ -194,11 +195,8 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
     setNewMessage('');
     setSending(true);
     try {
-      const res = await chatApi.sendMessage(chatId, content);
-      const msg = res.data.data;
-      scrollNeededRef.current = 'smooth';
-      setMessages((prev) => [...prev, msg]);
-      newestIdRef.current = msg.id;
+      await chatApi.sendMessage(chatId, content);
+      refreshDialogs();
       checkForNewAchievements();
     } catch {
       toast.error('Ошибка отправки сообщения');

@@ -10,7 +10,7 @@ export default function Navigation() {
   const { isTrainer, isAthlete, activeMode } = useActiveMode();
   const showTrainerNav = isTrainer && (!isAthlete || activeMode === 'trainer');
 
-  const { data: dialogs } = useDialogs(30_000);
+  const { data: dialogs } = useDialogs(5_000);
   const totalUnread = dialogs?.reduce((s, d) => s + d.unreadCount, 0) ?? 0;
 
   const getUnread = (path: string) => {

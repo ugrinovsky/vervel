@@ -156,6 +156,16 @@ export default class ChatController {
       query.select('id', 'fullName', 'email')
     })
 
+    const messageData = {
+      id: message.id,
+      content: message.content,
+      senderId: message.senderId,
+      sender: { id: message.sender.id, fullName: message.sender.fullName, email: message.sender.email },
+      createdAt: message.createdAt,
+    }
+
+    emitter.emit('chat:new_message', { chatId: Number(params.chatId), message: messageData })
+
     // Notify recipients via push
     let recipientIds: number[] = []
     if (chat.type === 'personal' && chat.athleteId) {
@@ -173,20 +183,7 @@ export default class ChatController {
       })
     }
 
-    return response.created({
-      success: true,
-      data: {
-        id: message.id,
-        content: message.content,
-        senderId: message.senderId,
-        sender: {
-          id: message.sender.id,
-          fullName: message.sender.fullName,
-          email: message.sender.email,
-        },
-        createdAt: message.createdAt,
-      },
-    })
+    return response.created({ success: true, data: messageData })
   }
 
   /**
@@ -424,31 +421,33 @@ export default class ChatController {
       }
     }
 
-    const poll = setInterval(async () => {
-      if (closed) return
-      try {
-        const messages = await Message.query()
-          .where('chatId', chatId)
-          .where('id', '>', latestId)
-          .preload('sender', (q) => q.select('id', 'fullName', 'email'))
-          .orderBy('id', 'asc')
-          .limit(20)
+    // Initial catch-up: deliver messages sent since latestId (e.g. after reconnect)
+    try {
+      const pending = await Message.query()
+        .where('chatId', chatId)
+        .where('id', '>', latestId)
+        .preload('sender', (q) => q.select('id', 'fullName', 'email'))
+        .orderBy('id', 'asc')
+        .limit(50)
 
-        for (const m of messages) {
-          sendEvent(m.id, {
-            type: 'message',
-            data: {
-              id: m.id,
-              content: m.content,
-              senderId: m.senderId,
-              sender: { id: m.sender.id, fullName: m.sender.fullName, email: m.sender.email },
-              createdAt: m.createdAt,
-            },
-          })
-          latestId = m.id
-        }
-      } catch { /* ignore */ }
-    }, 2000)
+      for (const m of pending) {
+        sendEvent(m.id, {
+          type: 'message',
+          data: { id: m.id, content: m.content, senderId: m.senderId,
+            sender: { id: m.sender.id, fullName: m.sender.fullName, email: m.sender.email },
+            createdAt: m.createdAt },
+        })
+        latestId = m.id
+      }
+    } catch { /* ignore */ }
+
+    // Subscribe to new messages via emitter (zero DB polling)
+    const onNewMessage = (event: { chatId: number; message: { id: number; content: string; senderId: number; sender: { id: number; fullName: string | null; email: string }; createdAt: unknown } }) => {
+      if (event.chatId !== chatId) return
+      sendEvent(event.message.id, { type: 'message', data: event.message })
+    }
+
+    emitter.on('chat:new_message', onNewMessage)
 
     // Keepalive comment every 25s to prevent proxy timeouts
     const ping = setInterval(() => {
@@ -457,7 +456,7 @@ export default class ChatController {
 
     const cleanup = () => {
       closed = true
-      clearInterval(poll)
+      emitter.off('chat:new_message', onNewMessage)
       clearInterval(ping)
     }
 
@@ -492,6 +491,16 @@ export default class ChatController {
     })
 
     await message.load('sender', (q) => q.select('id', 'fullName', 'email'))
+
+    const messageData = {
+      id: message.id,
+      content: message.content,
+      senderId: message.senderId,
+      sender: { id: message.sender.id, fullName: message.sender.fullName, email: message.sender.email },
+      createdAt: message.createdAt,
+    }
+
+    emitter.emit('chat:new_message', { chatId: Number(params.chatId), message: messageData })
 
     // Проверяем ачивки на сообщения тренеру (не блокирует ответ)
     if (chat.type === 'personal' && user.id !== chat.trainerId) {
@@ -528,15 +537,6 @@ export default class ChatController {
       })
     }
 
-    return response.created({
-      success: true,
-      data: {
-        id: message.id,
-        content: message.content,
-        senderId: message.senderId,
-        sender: { id: message.sender.id, fullName: message.sender.fullName, email: message.sender.email },
-        createdAt: message.createdAt,
-      },
-    })
+    return response.created({ success: true, data: messageData })
   }
 }

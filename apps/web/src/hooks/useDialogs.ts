@@ -6,7 +6,7 @@ let cachedData: DialogItem[] | null = null
 let lastFetch = 0
 const listeners = new Set<(data: DialogItem[] | null) => void>()
 
-async function fetchAndNotify() {
+export async function refreshDialogs() {
   try {
     const res = await chatApi.listDialogs()
     cachedData = res.data.data
@@ -24,17 +24,17 @@ export function useDialogs(pollInterval?: number) {
     listeners.add(setData)
 
     if (Date.now() - lastFetch > 5_000) {
-      fetchAndNotify()
+      refreshDialogs()
     } else {
       setData(cachedData)
     }
 
-    const interval = setInterval(fetchAndNotify, pollInterval)
+    const interval = setInterval(refreshDialogs, pollInterval)
     return () => {
       listeners.delete(setData)
       clearInterval(interval)
     }
   }, [pollInterval])
 
-  return { data, refresh: fetchAndNotify }
+  return { data, refresh: refreshDialogs }
 }
