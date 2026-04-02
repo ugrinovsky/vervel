@@ -6,8 +6,31 @@ import { aiApi, type AiWorkoutResult } from '@/api/ai';
 import { useBalance } from '@/contexts/AuthContext';
 
 const COST_RECOGNIZE = 10;
-const MAX_FILE_SIZE_MB = 5;
-const ALLOWED_TYPES = ['image/jpeg', 'image/png'] as const;
+const MAX_FILE_SIZE_MB = 10;
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/heic', 'image/heif', 'image/webp'] as const;
+const MAX_DIMENSION = 1920;
+
+async function compressImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, MAX_DIMENSION / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 interface Props {
   onResult: (result: AiWorkoutResult) => void;
@@ -102,8 +125,9 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
   const handleFile = (file: File) => {
     setError(null);
 
-    if (!ALLOWED_TYPES.includes(file.type as any)) {
-      setError('Поддерживаются только JPG и PNG');
+    const mimeOk = ALLOWED_TYPES.includes(file.type as any) || file.type === '' || file.name.match(/\.(jpe?g|png|heic|heif|webp)$/i);
+    if (!mimeOk) {
+      setError('Поддерживаются JPG, PNG, HEIC, WebP');
       return;
     }
     if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
@@ -111,12 +135,14 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      setPreview(dataUrl);
-    };
-    reader.readAsDataURL(file);
+    compressImage(file)
+      .then((dataUrl) => setPreview(dataUrl))
+      .catch(() => {
+        // fallback: read as-is
+        const reader = new FileReader();
+        reader.onload = (e) => setPreview(e.target?.result as string);
+        reader.readAsDataURL(file);
+      });
   };
 
   const handleRecognize = async () => {
@@ -203,7 +229,7 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
                 >
                   <CameraIcon className="w-10 h-10" />
                   <span className="text-sm">Нажмите, чтобы выбрать фото</span>
-                  <span className="text-xs text-white/30">JPG, PNG · до {MAX_FILE_SIZE_MB} МБ</span>
+                  <span className="text-xs text-white/30">JPG, PNG, HEIC · до {MAX_FILE_SIZE_MB} МБ</span>
                 </button>
               ) : (
                 <div className="relative">
@@ -225,8 +251,7 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
               <input
                 ref={inputRef}
                 type="file"
-                accept=".jpg,.jpeg,.png,image/jpeg,image/png"
-                capture="environment"
+                accept=".jpg,.jpeg,.png,.heic,.heif,.webp,image/jpeg,image/png,image/heic,image/heif,image/webp"
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];

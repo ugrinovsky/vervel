@@ -65,7 +65,9 @@ export function convertAiResult(result: AiWorkoutResult): ExerciseData[] {
       return { ...base, reps: ex.reps ?? 10, weight: ex.weight }
     }
     // bodybuilding
-    const setsDetail = Array.from({ length: ex.sets ?? 3 }, () => ({ reps: ex.reps ?? 10, weight: ex.weight }))
-    return { ...base, sets: ex.sets, reps: ex.reps, weight: ex.weight, setsDetail }
+    const setsDetail = ex.setData && ex.setData.length > 0
+      ? ex.setData.map((s) => ({ reps: s.reps ?? ex.reps ?? 10, weight: s.weight ?? ex.weight }))
+      : Array.from({ length: ex.sets ?? 3 }, () => ({ reps: ex.reps ?? 10, weight: ex.weight }))
+    return { ...base, sets: setsDetail.length, reps: ex.reps, weight: ex.weight, setsDetail }
   })
 }

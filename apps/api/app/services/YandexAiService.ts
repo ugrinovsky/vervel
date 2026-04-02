@@ -33,19 +33,21 @@ const PARSE_SYSTEM_PROMPT = `You are a fitness assistant. You are given text rec
 
 Requirements:
 1. Return only JSON, no surrounding text
-2. Format: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"Barbell Bench Press","displayName":"Жим штанги лёжа","sets":3,"reps":10,"weight":80,"duration":null,"notes":null,"supersetGroup":null}],"notes":"general notes"}
+2. Format: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"Barbell Bench Press","displayName":"Жим штанги лёжа","sets":3,"reps":10,"weight":null,"setData":[{"reps":15},{"reps":12},{"reps":10}],"duration":null,"notes":null,"supersetGroup":null}],"notes":"general notes"}
 3. weight — in kilograms, duration — in MINUTES (not seconds)
 4. If a parameter is not specified — use null
 5. supersetGroup — if exercises are performed as a superset, assign them the same letter (e.g. "A"). Different superset pairs use different letters ("A", "B", etc.). If not a superset — use null
-5. Determine workout type strictly:
+6. Determine workout type strictly:
    - "crossfit" = WOD, AMRAP, For Time, EMOM, Tabata, circuit training, functional fitness, HIIT with barbell/bodyweight
    - "bodybuilding" = strength training, weightlifting, isolation exercises, hypertrophy, powerlifting, muscle building (bench press, squats, curls, etc.)
    - "cardio" = running, cycling, swimming, rowing, stretching, yoga, mobility, flexibility, pilates, walking, any low-intensity or duration-based activity
-6. "name" — standard English gym terminology for catalog matching (e.g. "Barbell Bench Press", "Back Squat", "Pull-Up", "Deadlift")
-7. "displayName" — Russian name shown to the user (e.g. "Жим штанги лёжа", "Приседания со штангой", "Подтягивания", "Становая тяга"). For non-standard CrossFit exercises write the Russian transliteration or translation.
-8. Interpret abbreviations: "5х10" = 5 sets of 10 reps, "x" or "×" = sets×reps
-9. For cardio exercises always set duration (in minutes); for strength/crossfit set reps
-10. notes field — write in Russian for user readability`
+7. "name" — standard English gym terminology for catalog matching (e.g. "Barbell Bench Press", "Back Squat", "Pull-Up", "Deadlift")
+8. "displayName" — Russian name shown to the user (e.g. "Жим штанги лёжа", "Приседания со штангой", "Подтягивания", "Становая тяга"). For non-standard CrossFit exercises write the Russian transliteration or translation.
+9. Interpret abbreviations: "5х10" = 5 sets of 10 reps, "x" or "×" = sets×reps
+10. For cardio exercises always set duration (in minutes); for strength/crossfit set reps
+11. notes field — write in Russian for user readability
+12. CRITICAL — progressive/varied sets: if the same exercise name is followed by multiple "1×N" or "1×N-M" lines (e.g. "Bench Press / 1×15 / 1×12-10 / 1×10-8 / 1×8-6"), treat them as ONE exercise with setData listing each set. For ranges like "12-10" use the first (higher) number as reps. sets = number of setData entries. Do NOT create a separate exercise for each set line.
+13. setData: for each set provide {reps, weight} — include weight if known, otherwise omit it. Use setData whenever sets have different rep counts or when individual set lines are listed explicitly.`
 
 // Системный промпт для парсинга заметок тренера
 const PARSE_NOTES_SYSTEM_PROMPT = `Разбери текст тренировки в JSON. Верни только JSON, без текста вокруг.
