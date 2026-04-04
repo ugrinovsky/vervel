@@ -748,7 +748,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
         <div className="space-y-4 pt-2">
           <div>
             <span className="text-xs text-(--color_text_muted) mb-1 block">Интенсивность</span>
-            <IntensityBar value={workout?.intensity ?? 0} />
+            <WorkoutIntensityBar intensity={workout?.intensity ?? 0} />
           </div>
           {(workout?.volume ?? 0) > 0 && (
             <div>
