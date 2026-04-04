@@ -98,6 +98,9 @@ export class AiBalanceService {
   /** Сумма реферального бонуса */
   static readonly REFERRAL_BONUS = 50
 
+  /** Максимальное кол-во рефералов, за которых начисляется бонус */
+  static readonly REFERRAL_CAP = 2
+
   /**
    * Начисляет средства на баланс пользователя (бонус/пополнение).
    * @returns новый баланс

@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import CloseButton from '@/components/ui/CloseButton';
 
 interface Props extends PropsWithChildren {
+  id?: string;
   open: boolean;
   onClose: () => void;
   /** Convenience: emoji + text title. Ignored if `header` is provided. */
@@ -40,7 +41,7 @@ function AnimatedHeight({ children }: { children: ReactNode }) {
   );
 }
 
-export default function BottomSheet({ open, onClose, title, emoji, header, children }: Props) {
+export default function BottomSheet({ id, open, onClose, title, emoji, header, children }: Props) {
   const dragControls = useDragControls();
 
   useEffect(() => {
@@ -68,6 +69,7 @@ export default function BottomSheet({ open, onClose, title, emoji, header, child
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          id={id}
           className="bottom-sheet fixed inset-0 z-60 flex items-end"
           onClick={onClose}
         >

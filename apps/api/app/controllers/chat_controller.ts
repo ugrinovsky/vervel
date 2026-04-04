@@ -172,7 +172,7 @@ export default class ChatController {
       recipientIds = [chat.athleteId]
     } else if (chat.type === 'group' && chat.groupId) {
       const rows = await db.from('group_athletes').where('group_id', chat.groupId)
-      recipientIds = rows.map((r: any) => r.athlete_id as number)
+      recipientIds = rows.map((r: { athlete_id: number }) => r.athlete_id)
     }
     if (recipientIds.length > 0) {
       emitter.emit('push:message', {
@@ -330,54 +330,40 @@ export default class ChatController {
   async getUnreadCounts({ auth, response }: HttpContext) {
     const trainer = auth.user!
 
-    // All trainer chats
-    const chats = await Chat.query().where('trainerId', trainer.id)
+    // Single query: join chats + messages + chat_reads, group by chat
+    const rows = await db.rawQuery<{
+      rows: Array<{ chat_id: number; type: string; group_id: number | null; athlete_id: number | null; unread: number }>
+    }>(
+      `SELECT
+         c.id          AS chat_id,
+         c.type,
+         c.group_id,
+         c.athlete_id,
+         COUNT(m.id)::int AS unread
+       FROM chats c
+       LEFT JOIN messages m
+         ON m.chat_id = c.id
+        AND m.sender_id != :trainerId
+       LEFT JOIN chat_reads cr
+         ON cr.chat_id = c.id
+        AND cr.user_id = :trainerId
+       WHERE c.trainer_id = :trainerId
+         AND (m.id IS NULL OR cr.last_read_at IS NULL OR m.created_at > cr.last_read_at)
+       GROUP BY c.id, c.type, c.group_id, c.athlete_id`,
+      { trainerId: trainer.id }
+    )
 
-    if (chats.length === 0) {
-      return response.ok({ success: true, data: { total: 0, groups: [], athletes: [] } })
-    }
+    const chats = rows.rows
 
-    const chatIds = chats.map((c) => c.id)
+    const groups = chats
+      .filter((r) => r.type === 'group' && r.group_id)
+      .map((r) => ({ groupId: r.group_id!, chatId: r.chat_id, unread: r.unread }))
 
-    // Last read timestamps for trainer
-    const reads = await ChatRead.query()
-      .whereIn('chatId', chatIds)
-      .where('userId', trainer.id)
+    const athletes = chats
+      .filter((r) => r.type === 'personal' && r.athlete_id)
+      .map((r) => ({ athleteId: r.athlete_id!, chatId: r.chat_id, unread: r.unread }))
 
-    const readMap = new Map(reads.map((r) => [r.chatId, r.lastReadAt]))
-
-    // Count unread per chat (messages not sent by trainer, after lastReadAt)
-    const results: Array<{ type: 'group' | 'personal'; refId: number; chatId: number; unread: number }> = []
-
-    for (const chat of chats) {
-      const lastRead = readMap.get(chat.id)
-      let query = Message.query()
-        .where('chatId', chat.id)
-        .whereNot('senderId', trainer.id)
-
-      if (lastRead) {
-        query = query.where('createdAt', '>', lastRead.toISO()!)
-      }
-
-      const count = await query.count('* as total')
-      const unread = Number(count[0].$extras.total)
-
-      if (chat.type === 'group' && chat.groupId) {
-        results.push({ type: 'group', refId: chat.groupId, chatId: chat.id, unread })
-      } else if (chat.type === 'personal' && chat.athleteId) {
-        results.push({ type: 'personal', refId: chat.athleteId, chatId: chat.id, unread })
-      }
-    }
-
-    const groups = results
-      .filter((r) => r.type === 'group')
-      .map((r) => ({ groupId: r.refId, chatId: r.chatId, unread: r.unread }))
-
-    const athletes = results
-      .filter((r) => r.type === 'personal')
-      .map((r) => ({ athleteId: r.refId, chatId: r.chatId, unread: r.unread }))
-
-    const total = results.reduce((sum, r) => sum + r.unread, 0)
+    const total = chats.reduce((sum, r) => sum + r.unread, 0)
 
     return response.ok({ success: true, data: { total, groups, athletes } })
   }
@@ -454,16 +440,13 @@ export default class ChatController {
       if (!closed && !raw.writableEnded) raw.write(': ping\n\n')
     }, 25000)
 
-    const cleanup = () => {
-      closed = true
-      emitter.off('chat:new_message', onNewMessage)
-      clearInterval(ping)
-    }
-
-    request.request.on('close', cleanup)
-
     return new Promise<void>((resolve) => {
-      request.request.on('close', resolve)
+      request.request.on('close', () => {
+        closed = true
+        emitter.off('chat:new_message', onNewMessage)
+        clearInterval(ping)
+        resolve()
+      })
     })
   }
 
@@ -520,7 +503,7 @@ export default class ChatController {
         recipientIds = [chat.athleteId]
       } else if (chat.type === 'group' && chat.groupId) {
         const rows = await db.from('group_athletes').where('group_id', chat.groupId)
-        recipientIds = rows.map((r: any) => r.athlete_id as number)
+        recipientIds = rows.map((r: { athlete_id: number }) => r.athlete_id)
       }
     } else {
       senderLabel = message.sender.fullName ?? message.sender.email

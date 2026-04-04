@@ -38,7 +38,7 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
     if (!preview.scheduledWorkoutId) return;
     try {
       const res = await workoutsApi.getByScheduledId(preview.scheduledWorkoutId);
-      const w = res.data as any;
+      const w = res.data;
       setOpenWorkout({
         id: w.id,
         date: w.date ?? preview.date,
@@ -184,6 +184,14 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
         chatApi.markAsRead(chatId).then(() => refreshDialogs()).catch(() => {});
         scrollNeededRef.current = 'smooth';
       } catch { /* ignore */ }
+    };
+
+    source.onerror = () => {
+      // EventSource reconnects automatically — close only if response is not 2xx
+      // (e.g. 401 auth expired). readyState 2 = CLOSED by browser after fatal error.
+      if (source.readyState === EventSource.CLOSED) {
+        toast.error('Соединение с чатом прервано. Обновите страницу.');
+      }
     };
 
     return () => source.close();

@@ -82,13 +82,19 @@ export default class Workout extends compose(BaseModel, SoftDeletes) {
 
   @column({
     prepare: (value) => JSON.stringify(value),
-    consume: (value) => (typeof value === 'string' ? JSON.parse(value) : value),
+    consume: (value) => {
+      if (typeof value !== 'string') return value
+      try { return JSON.parse(value) } catch { return [] }
+    },
   })
   declare exercises: WorkoutExercise[];
 
   @column({
     prepare: (value) => JSON.stringify(value),
-    consume: (value) => (typeof value === 'string' ? JSON.parse(value) : value),
+    consume: (value) => {
+      if (typeof value !== 'string') return value
+      try { return JSON.parse(value) } catch { return {} }
+    },
   })
   declare zonesLoad: Record<string, number>;
 

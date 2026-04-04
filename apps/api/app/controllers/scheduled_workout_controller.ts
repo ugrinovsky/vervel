@@ -1,5 +1,6 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
+import logger from '@adonisjs/core/services/logger'
 import db from '@adonisjs/lucid/services/db'
 import emitter from '@adonisjs/core/services/emitter'
 import ScheduledWorkout from '#models/scheduled_workout'
@@ -83,8 +84,8 @@ async function createAthleteWorkouts(
   if (workoutExercises.length > 0) {
     try {
       calculated = await WorkoutCalculator.calculateZoneLoads(workoutExercises, workoutData.type)
-    } catch {
-      // zone calculation failed — create workout with empty zones
+    } catch (err) {
+      logger.warn({ err }, 'scheduled_workout:calculateZoneLoads failed — using empty zones')
     }
   }
 

@@ -90,6 +90,7 @@ export default function AnalyticsCards({ stats, monthStats, periodization, timeR
       </div>
 
       <BottomSheet
+        id="analytics-card"
         open={activeCard !== null}
         onClose={() => setActiveCard(null)}
         title={openCard?.title}

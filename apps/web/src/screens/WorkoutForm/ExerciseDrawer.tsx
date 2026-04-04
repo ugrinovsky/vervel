@@ -156,7 +156,7 @@ export default function ExerciseDrawer({ open, exercise, workoutType = 'bodybuil
   /* ─── Render ─────────────────────────────────────────────────────── */
 
   return (
-    <BottomSheet open={open} onClose={onClose} title={currentExercise.title}>
+    <BottomSheet id="exercise-drawer" open={open} onClose={onClose} title={currentExercise.title}>
       <div className="space-y-4">
 
         {/* Replace exercise */}

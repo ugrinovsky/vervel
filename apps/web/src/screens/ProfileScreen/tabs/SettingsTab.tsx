@@ -195,7 +195,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
 
   return (
     <AnimatedBlock key="settings" className="space-y-4">
-      <BottomSheet open={feedbackOpen} onClose={() => setFeedbackOpen(false)} emoji="💬" title="Написать нам">
+      <BottomSheet id="settings-feedback" open={feedbackOpen} onClose={() => setFeedbackOpen(false)} emoji="💬" title="Написать нам">
         <div className="space-y-3">
           <ToggleGroup
             cols={2}

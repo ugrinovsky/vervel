@@ -29,6 +29,7 @@ export function WorkoutDetailSheet({ data, open, onClose }: Props) {
 
   return (
     <BottomSheet
+      id="chat-workout-detail"
       open={open}
       onClose={onClose}
       header={

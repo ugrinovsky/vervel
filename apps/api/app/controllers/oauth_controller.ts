@@ -5,13 +5,15 @@ import type { ProviderName } from '#models/oauth_provider'
 import { DateTime } from 'luxon'
 import env from '#start/env'
 
+const COOKIE_TTL = 60 * 60 * 24 * 30 // 30 days in seconds
+
 export default class OAuthController {
   private setAuthCookie(response: HttpContext['response'], tokenValue: string) {
     response.cookie('auth_token', tokenValue, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30,
+      maxAge: COOKIE_TTL,
       path: '/',
     })
   }

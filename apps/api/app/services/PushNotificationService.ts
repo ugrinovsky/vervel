@@ -9,12 +9,9 @@ function ensureVapid() {
   if (vapidConfigured) return
   const publicKey = env.get('VAPID_PUBLIC_KEY')
   const privateKey = env.get('VAPID_PRIVATE_KEY')
-  if (!publicKey || !privateKey) return
-  webpush.setVapidDetails(
-    env.get('VAPID_SUBJECT') || 'mailto:nazar9505@yandex.ru',
-    publicKey,
-    privateKey
-  )
+  const subject = env.get('VAPID_SUBJECT')
+  if (!publicKey || !privateKey || !subject) return
+  webpush.setVapidDetails(subject, publicKey, privateKey)
   vapidConfigured = true
 }
 

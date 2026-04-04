@@ -109,7 +109,7 @@ export default function ProfileTab({ data, trainerStats }: Props) {
       key="profile"
       className="space-y-4"
     >
-      <BottomSheet open={qrOpen} onClose={() => setQrOpen(false)} emoji="📲" title="QR-код для тренера">
+      <BottomSheet id="profile-qr" open={qrOpen} onClose={() => setQrOpen(false)} emoji="📲" title="QR-код для тренера">
         <p className="text-sm text-(--color_text_muted) mb-5">
           Покажите этот код тренеру, чтобы он мог добавить вас в команду
         </p>

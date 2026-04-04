@@ -223,7 +223,7 @@ export default function ExerciseDetailSheet({
 
   return (
     <div className={`fixed inset-0 z-[60] ${open ? '' : 'pointer-events-none'}`}>
-      <BottomSheet open={open} onClose={onClose} title={exercise.title}>
+      <BottomSheet id="exercise-detail" open={open} onClose={onClose} title={exercise.title}>
         <ExerciseDetailContent
           exercise={exercise}
           full={full}

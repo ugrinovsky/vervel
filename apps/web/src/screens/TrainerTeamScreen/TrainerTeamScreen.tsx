@@ -123,6 +123,7 @@ export default function TrainerTeamScreen() {
         onAdded={loadData}
       />
       <BottomSheet
+        id="trainer-team-create-group"
         open={showCreateGroup}
         onClose={() => { setShowCreateGroup(false); setNewGroupName('') }}
         emoji="👥"

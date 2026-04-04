@@ -445,6 +445,7 @@ export default function AvatarView({
 
         {/* Zone detail BottomSheet */}
         <BottomSheet
+          id="avatar-zone-detail"
           open={!!(selectedZone && normalizedZones[selectedZone])}
           onClose={() => setSelectedZone(null)}
           title={selectedZone ? getZoneLabel(selectedZone) : ''}

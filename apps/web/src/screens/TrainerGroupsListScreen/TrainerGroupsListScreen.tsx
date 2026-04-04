@@ -195,6 +195,7 @@ export default function TrainerGroupsListScreen() {
       </div>
 
       <BottomSheet
+        id="trainer-groups-list-create-group"
         open={showCreateSheet}
         onClose={() => { setShowCreateSheet(false); setNewGroupName(''); }}
         emoji="👥"

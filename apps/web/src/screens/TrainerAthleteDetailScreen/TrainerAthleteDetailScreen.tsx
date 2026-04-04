@@ -169,6 +169,7 @@ export default function TrainerAthleteDetailScreen() {
 
       {/* ── Create workout overlay ────────────────────────────────────────── */}
       <BottomSheet
+        id="trainer-athlete-create-workout"
         open={showCreate}
         onClose={() => setShowCreate(false)}
         emoji="🏋️"

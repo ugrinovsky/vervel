@@ -1,5 +1,6 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import logger from '@adonisjs/core/services/logger'
+import limiter from '@adonisjs/limiter/services/main'
 import vine from '@vinejs/vine'
 import { YandexAiService, type AiExercise, type AiWorkoutResult } from '#services/YandexAiService'
 import { AiBalanceService, InsufficientBalanceError } from '#services/AiBalanceService'
@@ -401,6 +402,13 @@ export default class AiController {
     const data = await request.validateUsing(chatValidator)
     const userId = auth.user!.id
 
+    // Rate limit: 30 chat requests per user per hour
+    const chatLimit = limiter.use({ requests: 30, duration: '1 hour' })
+    const allowed = await chatLimit.attempt(`ai_chat_${userId}`, async () => true)
+    if (allowed === null) {
+      return response.tooManyRequests({ message: 'Слишком много запросов. Попробуйте позже.' })
+    }
+
     // Pre-check: нужно хотя бы CHAT_MIN_CHARGE на балансе
     const currentBalance = await AiBalanceService.getBalance(userId)
     if (currentBalance < AiBalanceService.CHAT_MIN_CHARGE) {
@@ -424,10 +432,13 @@ export default class AiController {
         )
       } catch (chargeErr) {
         if (chargeErr instanceof InsufficientBalanceError) {
-          newBalance = chargeErr.balance
-        } else {
-          throw chargeErr
+          return response.paymentRequired({
+            message: `Недостаточно средств для оплаты ответа`,
+            balance: chargeErr.balance,
+            required: cost,
+          })
         }
+        throw chargeErr
       }
 
       // Проверяем достижения (огрехи не должны ломать ответ)

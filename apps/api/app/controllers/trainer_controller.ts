@@ -23,6 +23,45 @@ import {
 } from '#validators/trainer_validator'
 
 export default class TrainerController {
+  private async linkAthlete(
+    trainer: User,
+    athlete: User,
+    response: HttpContext['response']
+  ) {
+    const existing = await TrainerAthlete.query()
+      .where('trainerId', trainer.id)
+      .where('athleteId', athlete.id)
+      .first()
+
+    if (existing) {
+      if (existing.status === 'active') {
+        return response.conflict({ message: 'Атлет уже привязан' })
+      }
+      existing.status = 'active'
+      await existing.save()
+    } else {
+      await TrainerAthlete.create({
+        trainerId: trainer.id,
+        athleteId: athlete.id,
+        status: 'active',
+      })
+    }
+
+    emitter.emit('push:athlete_added', {
+      athleteId: athlete.id,
+      trainerName: trainer.fullName ?? trainer.email,
+    })
+
+    return response.created({
+      success: true,
+      data: {
+        id: athlete.id,
+        fullName: athlete.fullName,
+        email: athlete.email,
+        status: 'active',
+      },
+    })
+  }
   /**
    * Get today overview for trainer
    * GET /trainer/today
@@ -103,40 +142,7 @@ export default class TrainerController {
       return response.badRequest({ message: 'Нельзя добавить самого себя' })
     }
 
-    const existing = await TrainerAthlete.query()
-      .where('trainerId', trainer.id)
-      .where('athleteId', athlete.id)
-      .first()
-
-    if (existing) {
-      if (existing.status === 'active') {
-        return response.conflict({ message: 'Атлет уже привязан' })
-      }
-      // Реактивация ранее удалённого атлета
-      existing.status = 'active'
-      await existing.save()
-    } else {
-      await TrainerAthlete.create({
-        trainerId: trainer.id,
-        athleteId: athlete.id,
-        status: 'active',
-      })
-    }
-
-    emitter.emit('push:athlete_added', {
-      athleteId: athlete.id,
-      trainerName: trainer.fullName ?? trainer.email,
-    })
-
-    return response.created({
-      success: true,
-      data: {
-        id: athlete.id,
-        fullName: athlete.fullName,
-        email: athlete.email,
-        status: 'active',
-      },
-    })
+    return this.linkAthlete(trainer, athlete, response)
   }
 
   async generateInviteLink({ auth, response }: HttpContext) {
@@ -173,40 +179,7 @@ export default class TrainerController {
       return response.badRequest({ message: 'Нельзя добавить самого себя' })
     }
 
-    const existing = await TrainerAthlete.query()
-      .where('trainerId', trainer.id)
-      .where('athleteId', athlete.id)
-      .first()
-
-    if (existing) {
-      if (existing.status === 'active') {
-        return response.conflict({ message: 'Атлет уже привязан' })
-      }
-      // Реактивация ранее удалённого атлета
-      existing.status = 'active'
-      await existing.save()
-    } else {
-      await TrainerAthlete.create({
-        trainerId: trainer.id,
-        athleteId: athlete.id,
-        status: 'active',
-      })
-    }
-
-    emitter.emit('push:athlete_added', {
-      athleteId: athlete.id,
-      trainerName: trainer.fullName ?? trainer.email,
-    })
-
-    return response.created({
-      success: true,
-      data: {
-        id: athlete.id,
-        fullName: athlete.fullName,
-        email: athlete.email,
-        status: 'active',
-      },
-    })
+    return this.linkAthlete(trainer, athlete, response)
   }
 
   async removeAthlete({ auth, params, response }: HttpContext) {

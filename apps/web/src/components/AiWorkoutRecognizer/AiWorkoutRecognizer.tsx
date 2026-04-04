@@ -197,7 +197,7 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
         <span className="text-white/40">{COST_RECOGNIZE}₽</span>
       </button>
 
-      <BottomSheet open={open} onClose={handleClose} header={sheetHeader}>
+      <BottomSheet id="ai-workout-recognizer" open={open} onClose={handleClose} header={sheetHeader}>
         <AnimatePresence mode="wait">
           {loading ? (
             <AiLoadingView key="loading" />

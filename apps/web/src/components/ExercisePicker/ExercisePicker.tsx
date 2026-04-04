@@ -130,7 +130,7 @@ export default function ExercisePicker({ onSelect, workoutType, open: controlled
         </GhostButton>
       )}
 
-      <BottomSheet open={isOpen} onClose={handleClose} header={headerContent}>
+      <BottomSheet id="exercise-picker" open={isOpen} onClose={handleClose} header={headerContent}>
         <AnimatePresence mode="wait" initial={false}>
           {view === 'list' ? (
             <motion.div

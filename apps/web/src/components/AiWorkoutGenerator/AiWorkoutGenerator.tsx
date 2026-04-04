@@ -152,7 +152,7 @@ export default function AiWorkoutGenerator({ onResult }: Props) {
         Сгенерировать AI
       </button>
 
-      <BottomSheet open={open} onClose={handleClose} header={sheetHeader}>
+      <BottomSheet id="ai-workout-generator" open={open} onClose={handleClose} header={sheetHeader}>
         <AnimatePresence mode="wait">
           {loading ? (
             <AiLoadingView key="loading" />

@@ -216,6 +216,7 @@ export default function TrainerGroupDetailScreen() {
         )}
 
         <BottomSheet
+          id="trainer-group-create-workout"
           open={showCreateSheet}
           onClose={() => setShowCreateSheet(false)}
           emoji="🏋️"

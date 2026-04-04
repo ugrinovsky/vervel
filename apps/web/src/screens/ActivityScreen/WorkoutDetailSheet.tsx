@@ -7,7 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { workoutsApi, type WorkoutSet } from '@/api/workouts';
 import { aiApi } from '@/api/ai';
-import { parseApiDateTime, parseLocalDate } from '@/utils/date';
+import { parseApiDateTime, parseLocalDate, nowRoundedToHour, today } from '@/utils/date';
 import { exercisesApi } from '@/api/exercises';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
 import type { Exercise } from '@/types/Exercise';
@@ -243,8 +243,8 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
   const [isEditing, setIsEditing] = useState(false);
   const [editExercises, setEditExercises] = useState<FullWorkout['exercises']>([]);
   const [editingExIdx, setEditingExIdx] = useState<number | null>(null);
-  const [editDate, setEditDate] = useState<Date>(new Date());
-  const [editTime, setEditTime] = useState<Date>(new Date());
+  const [editDate, setEditDate] = useState<Date>(today);
+  const [editTime, setEditTime] = useState<Date>(nowRoundedToHour);
   const [rpe, setRpe] = useState<number | null>(null);
   const [savingWeights, setSavingWeights] = useState(false);
   const [savingRpe, setSavingRpe] = useState(false);
@@ -427,10 +427,11 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
     (fullWorkout?.exercises.length ?? 0) === 0 &&
     !!fullWorkout?.notes?.trim();
   // Прошлая тренировка — можно оценивать и редактировать
-  const isPast = workout?.date ? parseApiDateTime(workout.date) <= new Date() : false;
+  const isPast = workout?.date ? parseApiDateTime(workout.date) <= today() : false;
 
   return (
     <BottomSheet
+      id="activity-workout-detail"
       open={workout !== null}
       onClose={onClose}
       header={
@@ -474,14 +475,9 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
             {!isEditing && (
               <button
                 onClick={() => {
-              const raw = workout?.date ?? '';
-              const [y, m, d] = raw.slice(0, 10).split('-').map(Number);
-              setEditDate(new Date(y, m - 1, d));
-              const t = new Date();
-              const timeStr = extractTime(raw);
-              if (timeStr) { const [h, min] = timeStr.split(':').map(Number); t.setHours(h, min, 0, 0); }
-              else t.setHours(9, 0, 0, 0);
-              setEditTime(t);
+              const dt = workout?.date ? parseApiDateTime(workout.date) : nowRoundedToHour();
+              setEditDate(dt);
+              setEditTime(dt);
               setIsEditing(true);
             }}
                 className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-(--color_bg_card_hover) text-(--color_text_muted) border border-(--color_border) hover:text-white transition-colors"

@@ -140,7 +140,7 @@ export default function AddAthleteDrawer({ open, onClose, onAdded }: Props) {
   ];
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Добавить атлета" emoji="➕">
+    <BottomSheet id="add-athlete" open={open} onClose={onClose} title="Добавить атлета" emoji="➕">
       <div className="space-y-4">
         <Tabs tabs={tabs} active={tab} onChange={setTab} />
 

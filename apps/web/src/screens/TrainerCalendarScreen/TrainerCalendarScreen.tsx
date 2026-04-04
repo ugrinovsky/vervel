@@ -778,6 +778,7 @@ export default function TrainerCalendarScreen() {
       </div>
 
       <BottomSheet
+        id="trainer-calendar-workout-form"
         open={selectedTime !== null || editingWorkout !== null}
         onClose={() => {
           setSelectedTime(null);

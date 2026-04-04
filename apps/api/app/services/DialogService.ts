@@ -23,6 +23,30 @@ export interface DialogItem {
   unreadCount: number
 }
 
+interface RawDialogRow {
+  chat_id: number
+  type: 'personal' | 'group'
+  trainer_id: number
+  group_id: number | null
+  athlete_id: number | null
+  trainer_name: string | null
+  trainer_email: string | null
+  trainer_photo_url: string | null
+  group_name: string | null
+  group_member_count: number
+  topic_count: number
+  athlete_name: string | null
+  athlete_email: string | null
+  athlete_photo_url: string | null
+  athlete_nickname: string | null
+  last_msg_id: number | null
+  last_msg_content: string | null
+  last_msg_sender_id: number | null
+  last_msg_sender_name: string | null
+  last_msg_at: string | null
+  unread_count: number
+}
+
 const LIST_DIALOGS_SQL = `
   WITH user_chats AS (
     SELECT c.id, c.type, c.trainer_id, c.group_id, c.athlete_id
@@ -59,6 +83,16 @@ const LIST_DIALOGS_SQL = `
       AND m.sender_id != :userId
       AND (cr.last_read_at IS NULL OR m.created_at > cr.last_read_at)
     GROUP BY m.chat_id
+  ),
+  group_member_counts AS (
+    SELECT group_id, COUNT(*)::int AS cnt
+    FROM group_athletes
+    GROUP BY group_id
+  ),
+  topic_counts AS (
+    SELECT group_id, COUNT(*)::int AS cnt
+    FROM topics
+    GROUP BY group_id
   )
   SELECT
     uc.id                  AS chat_id,
@@ -70,10 +104,8 @@ const LIST_DIALOGS_SQL = `
     t.email                AS trainer_email,
     t.photo_url            AS trainer_photo_url,
     g.name                 AS group_name,
-    (SELECT COUNT(*)::int FROM group_athletes ga2 WHERE ga2.group_id = uc.group_id)
-                           AS group_member_count,
-    (SELECT COUNT(*)::int FROM topics tp WHERE tp.group_id = uc.group_id)
-                           AS topic_count,
+    COALESCE(gmc.cnt, 0)   AS group_member_count,
+    COALESCE(tc.cnt, 0)    AS topic_count,
     a.full_name            AS athlete_name,
     a.email                AS athlete_email,
     a.photo_url            AS athlete_photo_url,
@@ -89,8 +121,10 @@ const LIST_DIALOGS_SQL = `
   LEFT JOIN trainer_groups g  ON g.id = uc.group_id AND g.deleted_at IS NULL
   LEFT JOIN users a           ON a.id = uc.athlete_id
   LEFT JOIN trainer_athletes ta ON ta.trainer_id = uc.trainer_id AND ta.athlete_id = uc.athlete_id
-  LEFT JOIN last_messages lm  ON lm.chat_id = uc.id
-  LEFT JOIN unread_counts un  ON un.chat_id = uc.id
+  LEFT JOIN last_messages lm       ON lm.chat_id = uc.id
+  LEFT JOIN unread_counts un       ON un.chat_id = uc.id
+  LEFT JOIN group_member_counts gmc ON gmc.group_id = uc.group_id
+  LEFT JOIN topic_counts tc        ON tc.group_id = uc.group_id
   ORDER BY COALESCE(lm.created_at, '1970-01-01'::timestamp) DESC
 `
 
@@ -108,7 +142,7 @@ export default class DialogService {
   static async listForUser(userId: number): Promise<DialogItem[]> {
     const result = await db.rawQuery(LIST_DIALOGS_SQL, { userId })
 
-    return result.rows.map((row: any): DialogItem => {
+    return result.rows.map((row: RawDialogRow): DialogItem => {
       let name: string
       let avatarUrl: string | null
       let avatarInitials: string
@@ -144,11 +178,11 @@ export default class DialogService {
         lastMessage: row.last_msg_id
           ? {
               id: row.last_msg_id,
-              content: row.last_msg_content,
-              senderId: row.last_msg_sender_id,
-              senderName: row.last_msg_sender_name,
+              content: row.last_msg_content!,
+              senderId: row.last_msg_sender_id!,
+              senderName: row.last_msg_sender_name!,
               isOwnMessage: row.last_msg_sender_id === userId,
-              sentAt: row.last_msg_at,
+              sentAt: row.last_msg_at!,
             }
           : null,
         unreadCount: row.unread_count,

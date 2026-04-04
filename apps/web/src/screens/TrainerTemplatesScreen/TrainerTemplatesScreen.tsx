@@ -245,6 +245,7 @@ export default function TrainerTemplatesScreen() {
 
       {/* ── Form BottomSheet ── */}
       <BottomSheet
+        id="trainer-templates-form"
         open={showForm}
         onClose={closeForm}
         emoji="📋"

@@ -1,5 +1,6 @@
 import type { HttpContext } from '@adonisjs/core/http';
 import hash from '@adonisjs/core/services/hash';
+import logger from '@adonisjs/core/services/logger';
 import limiter from '@adonisjs/limiter/services/main';
 import db from '@adonisjs/lucid/services/db';
 
@@ -11,13 +12,15 @@ import { AiBalanceService } from '#services/AiBalanceService';
 
 const disposableSet: Set<string> = new Set(disposableDomains);
 
+const COOKIE_TTL = 60 * 60 * 24 * 30 // 30 days in seconds
+
 export default class AuthController {
   private setAuthCookie(response: HttpContext['response'], tokenValue: string) {
     response.cookie('auth_token', tokenValue, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 30, // 30 days
+      maxAge: COOKIE_TTL,
       path: '/',
     })
   }
@@ -149,7 +152,7 @@ export default class AuthController {
           .count('* as total')
           .first();
         const count = Number(referralCount?.total ?? 0);
-        if (count < 2) {
+        if (count < AiBalanceService.REFERRAL_CAP) {
           validRefId = referrer.id;
         }
       }
@@ -170,7 +173,9 @@ export default class AuthController {
         AiBalanceService.REFERRAL_BONUS,
         'bonus',
         `Реферальный бонус за приглашение пользователя ${user.email}`
-      ).catch(() => {});
+      ).catch((err: unknown) => {
+        logger.error({ userId: validRefId, err }, 'auth:referral_bonus failed')
+      });
     }
 
     const token = await User.accessTokens.create(user);
