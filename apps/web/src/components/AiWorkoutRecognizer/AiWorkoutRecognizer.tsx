@@ -8,31 +8,13 @@ import { useBalance } from '@/contexts/AuthContext';
 const COST_RECOGNIZE = 10;
 const MAX_FILE_SIZE_MB = 10;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/heic', 'image/heif', 'image/webp'] as const;
-const MAX_DIMENSION = 1920;
 
-async function compressImage(file: File): Promise<string> {
+function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
-    const objectUrl = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(objectUrl);
-      try {
-        const scale = Math.min(1, MAX_DIMENSION / Math.max(img.width, img.height));
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.round(img.width * scale);
-        canvas.height = Math.round(img.height * scale);
-        const ctx = canvas.getContext('2d')!;
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.85));
-      } catch (e) {
-        reject(e);
-      }
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
-      reject(new Error('Image load failed'));
-    };
-    img.src = objectUrl;
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target?.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
   });
 }
 
@@ -139,14 +121,7 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
       return;
     }
 
-    compressImage(file)
-      .then((dataUrl) => setPreview(dataUrl))
-      .catch(() => {
-        // fallback: read as-is
-        const reader = new FileReader();
-        reader.onload = (e) => setPreview(e.target?.result as string);
-        reader.readAsDataURL(file);
-      });
+    readFileAsDataUrl(file).then(setPreview).catch(() => setError('Не удалось прочитать файл'));
   };
 
   const handleRecognize = async () => {
