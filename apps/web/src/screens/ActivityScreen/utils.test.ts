@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatVolume, formatVolumeCompact, getWorkoutTypeLabel } from './utils'
+import { formatVolume, formatVolumeCompact, getWorkoutTypeLabel, exerciseIdToLabel } from './utils'
 
 describe('formatVolume', () => {
   it('показывает кг при значении < 1000', () => {
@@ -40,5 +40,22 @@ describe('getWorkoutTypeLabel', () => {
   it('возвращает fallback для неизвестного типа', () => {
     expect(getWorkoutTypeLabel('unknown')).toBe('Тренировка')
     expect(getWorkoutTypeLabel('')).toBe('Тренировка')
+  })
+})
+
+describe('exerciseIdToLabel', () => {
+  it('убирает префикс custom: у кастомных упражнений', () => {
+    expect(exerciseIdToLabel('custom:Берпи')).toBe('Берпи')
+    expect(exerciseIdToLabel('custom:НКП')).toBe('НКП')
+    expect(exerciseIdToLabel('custom:Взятие и толчок 2-х гирь')).toBe('Взятие и толчок 2-х гирь')
+  })
+
+  it('заменяет подчёркивания на пробелы у каталожных упражнений', () => {
+    expect(exerciseIdToLabel('Romanian_Deadlift')).toBe('Romanian Deadlift')
+    expect(exerciseIdToLabel('Double_Kettlebell_Jerk')).toBe('Double Kettlebell Jerk')
+  })
+
+  it('не трогает обычное имя без префикса и подчёркиваний', () => {
+    expect(exerciseIdToLabel('Берпи')).toBe('Берпи')
   })
 })

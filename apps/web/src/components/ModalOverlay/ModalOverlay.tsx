@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ModalOverlayProps {
@@ -15,17 +15,7 @@ export default function ModalOverlay({
   variant = 'form',
   onClose,
 }: ModalOverlayProps) {
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [open]);
-
+  useBodyScrollLock(open);
   useEscapeKey(onClose ?? (() => {}), open && !!onClose);
 
   return (

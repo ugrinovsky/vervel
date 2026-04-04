@@ -11,6 +11,7 @@ import {
   Cell,
 } from 'recharts';
 import { WorkoutStats } from '@/types/Analytics';
+import { formatVolume } from '@/constants/AnalyticsConstants';
 
 interface Props {
   period: 'week' | 'month' | 'year';
@@ -25,11 +26,6 @@ function formatDate(iso: string, period: string) {
   return `${d} ${RU_MONTHS[m - 1]}`;
 }
 
-function formatVolume(v: number) {
-  if (v === 0) return '—';
-  if (v >= 1000) return `${(v / 1000).toFixed(1)}т`;
-  return `${Math.round(v)} кг`;
-}
 
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;

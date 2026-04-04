@@ -150,6 +150,57 @@ export default function TrainerTodayScreen() {
           </>
         )}
 
+        {/* Getting started guide — показываем пока нет атлетов */}
+        {overview && overview.stats.athleteCount === 0 && (
+          <AnimatedBlock className="rounded-2xl p-5 bg-(--color_bg_card) border border-amber-500/20 mb-6">
+            <h3 className="text-base font-semibold text-white mb-1">🚀 С чего начать</h3>
+            <p className="text-xs text-(--color_text_muted) mb-4">
+              Добавьте атлетов — и всё заработает: статистика, расписание, чаты, аналитика прогресса
+            </p>
+            <div className="space-y-3">
+              {([
+                {
+                  step: '1',
+                  title: 'Добавьте атлетов',
+                  desc: 'По email, QR-коду или пригласительной ссылке',
+                  to: '/trainer/athletes',
+                  label: 'Добавить',
+                },
+                {
+                  step: '2',
+                  title: 'Создайте шаблоны тренировок',
+                  desc: 'Готовые схемы — быстро назначаете, не тратите время',
+                  to: '/trainer/templates',
+                  label: 'Создать',
+                },
+                {
+                  step: '3',
+                  title: 'Запланируйте занятия',
+                  desc: 'Назначьте тренировки в Календаре — атлеты увидят их у себя',
+                  to: '/trainer/calendar',
+                  label: 'Открыть',
+                },
+              ] as const).map(({ step, title, desc, to, label }) => (
+                <div key={step} className="flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-full bg-(--color_primary_light)/30 text-(--color_primary) flex items-center justify-center text-sm font-bold shrink-0">
+                    {step}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-white">{title}</div>
+                    <div className="text-xs text-(--color_text_muted) mt-0.5">{desc}</div>
+                  </div>
+                  <button
+                    onClick={() => navigate(to)}
+                    className="shrink-0 text-xs px-3 py-1.5 rounded-lg bg-(--color_primary_light)/20 text-(--color_primary) font-medium hover:bg-(--color_primary_light)/30 transition-colors"
+                  >
+                    {label}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </AnimatedBlock>
+        )}
+
         {overview && <>
         {/* Stats */}
         <AnimatedBlock className="grid grid-cols-3 gap-3 mb-6">

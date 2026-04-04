@@ -1,5 +1,6 @@
 import Workout from '#models/workout';
 import { WorkoutCalculator } from '#services/WorkoutCalculator';
+import { getWeekStart } from '#utils/date';
 import { HttpContext } from '@adonisjs/core/http';
 
 export default class AvatarsController {
@@ -20,18 +21,27 @@ export default class AvatarsController {
         const now = new Date();
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - 14);
+        const weekStart = getWeekStart(now);
 
-        const workouts = await Workout.query()
-          .where('userId', user.id)
-          .where('date', '>=', startDate)
-          .where('date', '<=', now)
-          .orderBy('date', 'asc');
+        const [workouts, allTimeRows, thisWeekRows] = await Promise.all([
+          Workout.query()
+            .where('userId', user.id)
+            .where('date', '>=', startDate)
+            .where('date', '<=', now)
+            .orderBy('date', 'asc'),
+          Workout.query().where('userId', user.id).where('date', '<=', now).count('* as total'),
+          Workout.query().where('userId', user.id).where('date', '>=', weekStart).where('date', '<=', now).count('* as total'),
+        ]);
 
         const stats = WorkoutCalculator.calculateRecoveryState(workouts);
 
         return response.json({
           success: true,
-          data: stats,
+          data: {
+            ...stats,
+            allTimeWorkouts: Number((allTimeRows[0] as any).$extras.total ?? 0),
+            thisWeekWorkouts: Number((thisWeekRows[0] as any).$extras.total ?? 0),
+          },
         });
       }
 

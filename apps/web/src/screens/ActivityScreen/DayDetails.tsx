@@ -4,6 +4,7 @@ import { ru } from 'date-fns/locale';
 import { useNavigate } from 'react-router';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { getWorkoutTypeLabel } from './utils';
+import { formatVolume } from '@/constants/AnalyticsConstants';
 import WorkoutDetailSheet from './WorkoutDetailSheet';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
 import { workoutsApi } from '@/api/workouts';
@@ -60,7 +61,7 @@ function WorkoutTile({
 }) {
   const hasVolume = (workout.volume ?? 0) > 0;
   const volumeKg = workout.volume ?? 0;
-  const volumeLabel = volumeKg >= 1000 ? `${(volumeKg / 1000).toFixed(1)} т` : `${volumeKg} кг`;
+  const volumeLabel = formatVolume(volumeKg);
 const timeLabel = extractTime(workout.date);
   const fromTrainer = workout.scheduledWorkoutId != null;
 

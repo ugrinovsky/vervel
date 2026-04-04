@@ -1,6 +1,6 @@
 import { WorkoutStats } from '@/types/Analytics';
 import { useMemo } from 'react';
-import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
+import { WORKOUT_TYPE_CONFIG, formatVolume } from '@/constants/AnalyticsConstants';
 import {
   BarChart,
   Bar,
@@ -27,11 +27,6 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 
-function formatVolume(v?: number) {
-  if (!v || v === 0) return '—';
-  if (v >= 1000) return `${(v / 1000).toFixed(1)}т`;
-  return `${Math.round(v)} кг`;
-}
 
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;

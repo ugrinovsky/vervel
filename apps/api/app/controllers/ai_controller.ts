@@ -2,12 +2,13 @@ import type { HttpContext } from '@adonisjs/core/http'
 import logger from '@adonisjs/core/services/logger'
 import limiter from '@adonisjs/limiter/services/main'
 import vine from '@vinejs/vine'
-import { YandexAiService, type AiExercise, type AiWorkoutResult } from '#services/YandexAiService'
+import { YandexAiService, type AiWorkoutResult } from '#services/YandexAiService'
 import { AiBalanceService, InsufficientBalanceError } from '#services/AiBalanceService'
 import { ExerciseCatalog } from '#services/ExerciseCatalog'
 import AchievementService from '#services/AchievementService'
-import Workout, { type WorkoutExercise, type WorkoutSet } from '#models/workout'
+import Workout from '#models/workout'
 import { WorkoutCalculator } from '#services/WorkoutCalculator'
+import { aiExercisesToWorkoutExercises } from '#services/WorkoutConverter'
 
 const recognizeValidator = vine.compile(
   vine.object({
@@ -87,18 +88,7 @@ export default class AiController {
     const userId = auth.user!.id
     const cost = AiBalanceService.COST_RECOGNIZE
 
-    try {
-      await AiBalanceService.charge(userId, cost, 'Распознавание тренировки по фото')
-    } catch (err) {
-      if (err instanceof InsufficientBalanceError) {
-        return response.paymentRequired({
-          message: `Недостаточно средств. Баланс: ${err.balance}₽, требуется: ${err.required}₽`,
-          balance: err.balance,
-          required: err.required,
-        })
-      }
-      throw err
-    }
+    if (!(await this.chargeOrFail(userId, cost, 'Распознавание тренировки по фото', response))) return
 
     logger.info({ userId, mimeType: data.mimeType, base64Kb: Math.round(data.imageBase64.length / 1024) }, 'ai:recognize start')
     try {
@@ -128,18 +118,7 @@ export default class AiController {
     const userId = auth.user!.id
     const cost = AiBalanceService.COST_GENERATE
 
-    try {
-      await AiBalanceService.charge(userId, cost, 'Генерация тренировки AI')
-    } catch (err) {
-      if (err instanceof InsufficientBalanceError) {
-        return response.paymentRequired({
-          message: `Недостаточно средств. Баланс: ${err.balance}₽, требуется: ${err.required}₽`,
-          balance: err.balance,
-          required: err.required,
-        })
-      }
-      throw err
-    }
+    if (!(await this.chargeOrFail(userId, cost, 'Генерация тренировки AI', response))) return
 
     try {
       const result = await YandexAiService.generateFromText(data.prompt)
@@ -178,20 +157,7 @@ export default class AiController {
     const isFree = auth.user!.aiNotesFree
     const cost = isFree ? 0 : AiBalanceService.COST_PARSE_NOTES
 
-    if (!isFree) {
-      try {
-        await AiBalanceService.charge(userId, cost, 'Разбор программы тренировки через AI')
-      } catch (err) {
-        if (err instanceof InsufficientBalanceError) {
-          return response.paymentRequired({
-            message: `Недостаточно средств. Баланс: ${err.balance}₽, требуется: ${err.required}₽`,
-            balance: err.balance,
-            required: err.required,
-          })
-        }
-        throw err
-      }
-    }
+    if (!isFree && !(await this.chargeOrFail(userId, cost, 'Разбор программы тренировки через AI', response))) return
 
     try {
       const result = await YandexAiService.parseWorkoutNotes(workout.notes)
@@ -204,8 +170,7 @@ export default class AiController {
       const tooFew = workoutExercises.length === 0
 
       // Превью: имена из каталога + данные подходов
-      const catalog = ExerciseCatalog.all()
-      const catalogMap = new Map(catalog.map((e) => [e.id, e.title]))
+      const catalogMap = ExerciseCatalog.getIdToTitleMap()
       const previewItems = workoutExercises.map((ex) => {
         const allSets = ex.sets ?? []
         const weights = allSets.map((s) => s.weight).filter((w): w is number => w != null)
@@ -257,20 +222,7 @@ export default class AiController {
     const isFree = auth.user!.aiNotesFree
     const cost = isFree ? 0 : AiBalanceService.COST_PARSE_NOTES
 
-    if (!isFree) {
-      try {
-        await AiBalanceService.charge(userId, cost, 'Разбор программы тренировки через AI')
-      } catch (err) {
-        if (err instanceof InsufficientBalanceError) {
-          return response.paymentRequired({
-            message: `Недостаточно средств. Баланс: ${err.balance}₽, требуется: ${err.required}₽`,
-            balance: err.balance,
-            required: err.required,
-          })
-        }
-        throw err
-      }
-    }
+    if (!isFree && !(await this.chargeOrFail(userId, cost, 'Разбор программы тренировки через AI', response))) return
 
     try {
       const result = await YandexAiService.parseWorkoutNotes(notes)
@@ -281,8 +233,7 @@ export default class AiController {
       const hasDuplicates = uniqueIds.size < workoutExercises.length
       const tooFew = workoutExercises.length === 0
 
-      const catalog = ExerciseCatalog.all()
-      const catalogMap = new Map(catalog.map((e) => [e.id, e.title]))
+      const catalogMap = ExerciseCatalog.getIdToTitleMap()
       const previewItems = workoutExercises.map((ex) => {
         const allSets = ex.sets ?? []
         const weights = allSets.map((s) => s.weight).filter((w): w is number => w != null)
@@ -452,55 +403,28 @@ export default class AiController {
       })
     }
   }
-}
 
-/**
- * Конвертирует AiExercise[] (после матчинга) в WorkoutExercise[] для сохранения в Workout.
- * Логика аналогична toWorkoutExercises в scheduled_workout_controller.
- */
-function aiExercisesToWorkoutExercises(
-  exercises: AiExercise[],
-  workoutType: 'crossfit' | 'bodybuilding' | 'cardio'
-): WorkoutExercise[] {
-  return exercises.map((ex) => {
-      // exerciseId обязателен для схемы — используем каталожный если нашли,
-      // иначе "custom:<displayName>" (зоны = 0, но упражнение не теряется)
-      const exerciseId = ex.exerciseId ?? `custom:${ex.displayName ?? ex.name}`
-      const name = ex.displayName ?? ex.name
-
-      const zones = ex.zones && ex.zones.length > 0 ? ex.zones : undefined
-
-      if (workoutType === 'cardio') {
-        const set: WorkoutSet = { id: crypto.randomUUID(), time: (ex.duration ?? 20) * 60 }
-        return {
-          exerciseId,
-          name,
-          zones,
-          type: 'cardio' as const,
-          sets: [set],
-          blockId: ex.supersetGroup ?? undefined,
-        }
+  private async chargeOrFail(
+    userId: number,
+    cost: number,
+    description: string,
+    response: HttpContext['response']
+  ): Promise<boolean> {
+    try {
+      await AiBalanceService.charge(userId, cost, description)
+      return true
+    } catch (err) {
+      if (err instanceof InsufficientBalanceError) {
+        response.paymentRequired({
+          message: `Недостаточно средств. Баланс: ${err.balance}₽, требуется: ${err.required}₽`,
+          balance: err.balance,
+          required: err.required,
+        })
+        return false
       }
-      const sets: WorkoutSet[] = ex.setData?.length
-        ? ex.setData.map((s) => ({
-            id: crypto.randomUUID(),
-            reps: s.reps,
-            weight: s.weight,
-          }))
-        : Array.from({ length: ex.sets ?? 3 }, () => ({
-            id: crypto.randomUUID(),
-            reps: ex.reps,
-            weight: ex.weight,
-          }))
-      return {
-        exerciseId,
-        name,
-        zones,
-        type: workoutType === 'crossfit' ? ('wod' as const) : ('strength' as const),
-        sets,
-        blockId: ex.supersetGroup ?? undefined,
-      }
-    })
+      throw err
+    }
+  }
 }
 
 /**

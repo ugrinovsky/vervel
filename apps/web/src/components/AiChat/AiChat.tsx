@@ -5,7 +5,8 @@ import ModalOverlay from '@/components/ModalOverlay/ModalOverlay';
 import ReactMarkdown from 'react-markdown';
 import { aiApi } from '@/api/ai';
 import { checkForNewAchievements } from '@/hooks/useAchievementToast';
-import { useAuth, useActiveMode, useBalance } from '@/contexts/AuthContext';
+import { useAuth, useActiveMode } from '@/contexts/AuthContext';
+import { useAiBalance } from '@/hooks/useAiBalance';
 import { AI_CHAT_MIN_BALANCE as MIN_BALANCE } from '@/constants/ai';
 const DISPLAY_STEP = 20;
 const MAX_INPUT_LENGTH = 1000;
@@ -39,10 +40,9 @@ interface Props {
 export default function AiChat({ open, onClose }: Props) {
   const { user } = useAuth();
   const { isTrainer, isAthlete, activeMode } = useActiveMode();
-  const { balance, setBalance } = useBalance();
+  const { balance, setBalance, hasEnoughBalance } = useAiBalance(MIN_BALANCE);
   const inTrainerMode = isTrainer && (!isAthlete || activeMode === 'trainer');
   const suggestions = inTrainerMode ? TRAINER_SUGGESTIONS : ATHLETE_SUGGESTIONS;
-  const hasEnoughBalance = balance === null || balance >= MIN_BALANCE;
 
   const storageKey = user?.id ? `aiChat_${user.id}` : null;
 
@@ -111,7 +111,7 @@ export default function AiChat({ open, onClose }: Props) {
     const greeting: Message = {
       role: 'assistant',
       content:
-        'Привет! Я AI-помощник Vervel. Задавай вопросы про тренировки, питание или восстановление — помогу разобраться 💪',
+        'Привет! Я ИИ-помощник Vervel. Задавай вопросы про тренировки, питание или восстановление — помогу разобраться 💪',
     };
 
     if (history.length > 0) {
@@ -198,7 +198,7 @@ export default function AiChat({ open, onClose }: Props) {
     const greeting: Message = {
       role: 'assistant',
       content:
-        'Привет! Я AI-помощник Vervel. Задавай вопросы про тренировки, питание или восстановление — помогу разобраться 💪',
+        'Привет! Я ИИ-помощник Vervel. Задавай вопросы про тренировки, питание или восстановление — помогу разобраться 💪',
     };
     setMessages([greeting]);
     setDisplayCount(DISPLAY_STEP);
@@ -215,7 +215,7 @@ export default function AiChat({ open, onClose }: Props) {
                   <SparklesIcon className="w-4 h-4 text-emerald-400" />
                 </div>
                 <div className="min-w-0">
-                  <span className="text-base font-semibold text-white truncate block">AI-помощник</span>
+                  <span className="text-base font-semibold text-white truncate block">ИИ-помощник</span>
                   {balance !== null && (
                     <p className={`text-xs ${hasEnoughBalance ? 'text-(--color_text_muted)' : 'text-red-400'}`}>
                       {hasEnoughBalance

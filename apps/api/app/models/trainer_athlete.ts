@@ -33,4 +33,13 @@ export default class TrainerAthlete extends BaseModel {
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime | null
+
+  static async isActiveBinding(trainerId: number, athleteId: number): Promise<boolean> {
+    const binding = await TrainerAthlete.query()
+      .where('trainerId', trainerId)
+      .where('athleteId', athleteId)
+      .where('status', 'active')
+      .first()
+    return !!binding
+  }
 }

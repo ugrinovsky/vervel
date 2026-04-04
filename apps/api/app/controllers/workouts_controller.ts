@@ -132,8 +132,7 @@ export default class WorkoutsController {
 
     if (!zone) return response.badRequest({ message: 'zone is required' });
 
-    const catalog = ExerciseCatalog.all();
-    const catalogMap = new Map(catalog.map((e) => [e.id, e.title]));
+    const catalogMap = ExerciseCatalog.getIdToTitleMap();
 
     // Алиасы зон (как в AvatarView ZONE_NORMALIZE)
     const ZONE_ALIASES: Record<string, string[]> = {

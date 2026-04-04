@@ -143,8 +143,8 @@ describe('convertAiResult: bodybuilding', () => {
     expect(result[0].name).toBe('Жим лёжа')
   })
 
-  it('генерирует ai-N exerciseId если нет реального', () => {
+  it('генерирует custom:name exerciseId если нет реального совпадения', () => {
     const result = convertAiResult({ workoutType: 'bodybuilding', exercises: [{ name: 'x', sets: 3 }]})
-    expect(result[0].exerciseId).toBe('ai-0')
+    expect(result[0].exerciseId).toBe('custom:x')
   })
 })

@@ -11,7 +11,8 @@ import { parseApiDateTime, parseLocalDate, nowRoundedToHour, today } from '@/uti
 import { exercisesApi } from '@/api/exercises';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
 import type { Exercise } from '@/types/Exercise';
-import { getWorkoutTypeLabel } from './utils';
+import { getWorkoutTypeLabel, exerciseIdToLabel } from './utils';
+import { formatVolume } from '@/constants/AnalyticsConstants';
 import { WOD_CONFIG, type WodType } from '@/constants/workoutTypes';
 import { getZoneLabel } from '@/util/zones';
 import toast from 'react-hot-toast';
@@ -38,6 +39,7 @@ interface FullWorkout {
     wodType?: string;
     distance?: number;
     blockId?: string;
+    zones?: string[];
   }>;
   zonesLoad: Record<string, number>;
   totalIntensity: number;
@@ -89,9 +91,6 @@ function formatSet(set: WorkoutSet, type: string): string {
 
 function exerciseVolume(sets?: WorkoutSet[]): number {
   return (sets ?? []).reduce((acc, s) => acc + (s.reps ?? 0) * (s.weight ?? 0), 0);
-}
-function formatVolume(v: number): string {
-  return v >= 1000 ? `${(v / 1000).toFixed(1)} т` : `${v} кг`;
 }
 function extractTime(dateStr?: string): string | null {
   if (!dateStr) return null;
@@ -289,6 +288,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
       duration: ex.duration,
       wodType: ex.wodType as 'amrap' | 'fortime' | 'emom' | 'tabata' | undefined,
       blockId: ex.blockId,
+      zones: ex.zones,
     }));
     const rpeVal = 'rpe' in overrides
       ? (overrides.rpe ?? undefined)
@@ -563,7 +563,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
               <SectionTitle>Упражнения · {fullWorkout.exercises.length}</SectionTitle>
               <div className="flex flex-col">
                 {(isEditing ? editExercises : fullWorkout.exercises).map((ex, i, arr) => {
-                  const name = ex.name ?? exerciseMap.get(ex.exerciseId)?.title ?? ex.exerciseId.replace(/_/g, ' ');
+                  const name = ex.name ?? exerciseMap.get(ex.exerciseId)?.title ?? exerciseIdToLabel(ex.exerciseId);
                   const isLinkedToNext = i < arr.length - 1 && !!ex.blockId && ex.blockId === arr[i + 1].blockId;
                   const isLast = i === arr.length - 1;
                   return (
@@ -731,7 +731,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
             editExercises[editingExIdx],
             editExercises[editingExIdx].name
               ?? exerciseMap.get(editExercises[editingExIdx].exerciseId)?.title
-              ?? editExercises[editingExIdx].exerciseId.replace(/_/g, ' ')
+              ?? exerciseIdToLabel(editExercises[editingExIdx].exerciseId)
           )}
           workoutType={(fullWorkout?.workoutType ?? 'bodybuilding') as any}
           onClose={() => setEditingExIdx(null)}

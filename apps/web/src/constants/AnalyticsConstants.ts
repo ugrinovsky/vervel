@@ -189,6 +189,15 @@ export function normalizeIntensity(intensity: number): number {
  */
 export function formatVolume(value: number): string {
   return value >= DISPLAY.VOLUME_TO_TONS_THRESHOLD
-    ? `${Math.round(value / DISPLAY.VOLUME_TO_TONS_DIVIDER)}т`
+    ? `${(value / DISPLAY.VOLUME_TO_TONS_DIVIDER).toFixed(1)} т`
+    : `${value} кг`;
+}
+
+/**
+ * Форматировать объем без пробелов (для компактного отображения)
+ */
+export function formatVolumeCompact(value: number): string {
+  return value >= DISPLAY.VOLUME_TO_TONS_THRESHOLD
+    ? `${(value / DISPLAY.VOLUME_TO_TONS_DIVIDER).toFixed(1)}т`
     : `${value}кг`;
 }

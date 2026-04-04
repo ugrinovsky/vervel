@@ -51,9 +51,9 @@ test.group('YandexAiService: parseWorkoutJson', () => {
     assert.throws(() => svc.parseWorkoutJson('not json at all'), /некорректный JSON/)
   })
 
-  test('использует crossfit как дефолт при неизвестном workoutType', ({ assert }) => {
+  test('использует bodybuilding как дефолт при неизвестном workoutType', ({ assert }) => {
     const json = JSON.stringify({ workoutType: 'powerlifting', exercises: [] })
-    assert.equal(svc.parseWorkoutJson(json).workoutType, 'crossfit')
+    assert.equal(svc.parseWorkoutJson(json).workoutType, 'bodybuilding')
   })
 
   test('принимает все три валидных типа тренировки', ({ assert }) => {

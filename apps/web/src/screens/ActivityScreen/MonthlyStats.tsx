@@ -1,7 +1,7 @@
 import { CalendarIcon, ChartBarIcon, ChartPieIcon, FireIcon, ClockIcon } from '@heroicons/react/24/outline';
 import StatCard from './StatCard';
 import InfoRow from './InfoRow';
-import { formatVolume, formatVolumeCompact } from './utils';
+import { formatVolume, formatVolumeCompact } from '@/constants/AnalyticsConstants';
 import type { MonthlyStatsData } from './useActivityData';
 
 interface MonthlyStatsProps {

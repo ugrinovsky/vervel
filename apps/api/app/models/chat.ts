@@ -40,4 +40,18 @@ export default class Chat extends BaseModel {
 
   @hasMany(() => Message, { foreignKey: 'chatId' })
   declare messages: HasMany<typeof Message>
+
+  static async findOrCreatePersonal(trainerId: number, athleteId: number): Promise<Chat> {
+    let chat = await Chat.query()
+      .where('type', 'personal')
+      .where('trainerId', trainerId)
+      .where('athleteId', athleteId)
+      .first()
+
+    if (!chat) {
+      chat = await Chat.create({ type: 'personal', trainerId, groupId: null, athleteId })
+    }
+
+    return chat
+  }
 }

@@ -274,7 +274,9 @@ export default function WorkoutFormBase({
     try {
       const res = await aiApi.parseNotesText(notes);
       const { workoutType: parsedType, exercises: parsedExercises, warning } = res.data;
-      const nameMap = new Map(res.data.previewItems.map((item: any) => [item.exerciseId, item.name]));
+      const nameMap = new Map(
+        res.data.previewItems.map((item: any) => [item.exerciseId, item.name])
+      );
       const converted: ExerciseData[] = parsedExercises.map((ex: any) => ({
         exerciseId: ex.exerciseId,
         name: nameMap.get(ex.exerciseId) ?? ex.exerciseId.replace(/_/g, ' '),
@@ -479,8 +481,46 @@ export default function WorkoutFormBase({
             </span>
           )}
         </div>
+
+        {/* Пустое состояние: показываем способы ввода */}
+        {exercises.length === 0 && !aiPhotoUrl && (
+          <div className="rounded-2xl bg-(--color_bg_card) border border-(--color_border) p-4 mb-3 space-y-2">
+            <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-3">
+              Как добавить упражнения?
+            </p>
+
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+              <div className="text-xl shrink-0">📸</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white">По фото</p>
+                <p className="text-xs text-(--color_text_muted)">AI распознает упражнения с фото</p>
+              </div>
+              <AiWorkoutRecognizer onResult={handleAiResult} />
+            </div>
+
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-violet-500/10 border border-violet-500/20">
+              <div className="text-xl shrink-0">✨</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white">Из текста</p>
+                <p className="text-xs text-(--color_text_muted)">
+                  Опишите тренировку — AI заполнит
+                </p>
+              </div>
+              <AiWorkoutGenerator onResult={handleAiResult} />
+            </div>
+
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border)">
+              <div className="text-xl shrink-0">✏️</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white/70">Вручную из каталога</p>
+                <p className="text-xs text-(--color_text_muted)">Добавьте упражнения по одному</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {aiPhotoUrl && (
-          <div className="rounded-xl border border-white/10 overflow-hidden">
+          <div className="rounded-xl border border-white/10 overflow-hidden mb-3">
             <button
               type="button"
               onClick={() => setAiPhotoExpanded((v) => !v)}
@@ -514,10 +554,12 @@ export default function WorkoutFormBase({
             setAiGenerated(false);
           }}
           toolbar={
-            <div className="flex flex-wrap gap-3 mb-1">
-              <AiWorkoutGenerator onResult={handleAiResult} />
-              <AiWorkoutRecognizer onResult={handleAiResult} />
-            </div>
+            exercises.length > 0 ? (
+              <div className="flex flex-wrap gap-3 mb-1">
+                <AiWorkoutGenerator onResult={handleAiResult} />
+                <AiWorkoutRecognizer onResult={handleAiResult} />
+              </div>
+            ) : undefined
           }
         />
       </div>

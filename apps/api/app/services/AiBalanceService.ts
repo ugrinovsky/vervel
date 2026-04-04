@@ -112,7 +112,7 @@ export class AiBalanceService {
         .forUpdate()
         .firstOrFail()
 
-      user.balance = Math.round((user.balance + amount) * 100) / 100
+      user.balance = Math.round((Number(user.balance) + amount) * 100) / 100
       user.useTransaction(trx)
       await user.save()
 
@@ -134,7 +134,7 @@ export class AiBalanceService {
    */
   static async getBalance(userId: number): Promise<number> {
     const user = await User.findOrFail(userId)
-    return user.balance
+    return Number(user.balance)
   }
 
   /**

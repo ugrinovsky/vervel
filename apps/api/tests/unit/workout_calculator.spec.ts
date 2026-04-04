@@ -202,19 +202,86 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     assert.equal(result.totalIntensity, 0);
   });
 
+  test('кастомное упражнение: использует input.zones если нет в каталоге', async ({ assert }) => {
+    // Симулируем ситуацию: упражнение не найдено в каталоге (как custom:Берпи),
+    // но zones хранятся прямо в объекте упражнения (записаны AI при создании).
+    // После редактирования с RPE эти zones должны сохраняться в zonesLoad.
+    WorkoutCalculator['loadExercises'] = async () => new Map(); // каталог пуст
+
+    const result = await WorkoutCalculator.calculateZoneLoads(
+      [{
+        exerciseId: 'custom:Берпи',
+        name: 'Берпи',
+        type: 'wod' as const,
+        zones: ['legs', 'core'],
+        sets: [{ id: '1', reps: 10 }],
+      }],
+      'crossfit'
+    );
+
+    assert.isTrue('legs' in result.zonesLoad, 'legs должна быть в zonesLoad');
+    assert.isTrue('core' in result.zonesLoad, 'core должна быть в zonesLoad');
+    assert.isAbove(result.totalIntensity, 0);
+  });
+
+  test('кастомное упражнение: без zones и без каталога — зоны не добавляются', async ({ assert }) => {
+    WorkoutCalculator['loadExercises'] = async () => new Map();
+
+    const result = await WorkoutCalculator.calculateZoneLoads(
+      [{
+        exerciseId: 'custom:НКП',
+        name: 'НКП',
+        type: 'wod' as const,
+        sets: [{ id: '1', reps: 10 }],
+      }],
+      'crossfit'
+    );
+
+    assert.deepEqual(result.zonesLoad, {});
+  });
+
+  test('кастомное и каталожное упражнения вместе: zones считаются корректно', async ({ assert }) => {
+    const catalogEx = createExercise('Romanian_Deadlift', ['back', 'glutes', 'legs'], 0.7);
+    WorkoutCalculator['loadExercises'] = async () => new Map([['Romanian_Deadlift', catalogEx]]);
+
+    const result = await WorkoutCalculator.calculateZoneLoads(
+      [
+        {
+          exerciseId: 'Romanian_Deadlift',
+          type: 'wod' as const,
+          sets: [{ id: '1', reps: 12 }],
+        },
+        {
+          exerciseId: 'custom:Берпи',
+          name: 'Берпи',
+          type: 'wod' as const,
+          zones: ['legs', 'core'],
+          sets: [{ id: '2', reps: 10 }],
+        },
+      ],
+      'crossfit'
+    );
+
+    assert.isTrue('core' in result.zonesLoad, 'core от кастомного Берпи должен быть в zonesLoad');
+    assert.isTrue('back' in result.zonesLoad, 'back от каталожного RDL должен быть в zonesLoad');
+    assert.isTrue('legs' in result.zonesLoad);
+  });
+
   /* -------------------------------- RPE -------------------------------- */
-  test('rpe масштабирует нагрузку: rpe=10 → 100%, rpe=5 → 50%', async ({ assert }) => {
+  test('rpe масштабирует нагрузку: factor = rpe/5 (rpe=5 → без изменений, rpe=2.5 → половина)', async ({ assert }) => {
     const exercise = createExercise('ex1', ['грудь'], 1.0);
     WorkoutCalculator['loadExercises'] = async () => new Map([['ex1', exercise]]);
 
     const input = [{ exerciseId: 'ex1', type: 'strength' as const, sets: [{ id: '1', reps: 10, weight: 100 }] }];
 
-    const full = await WorkoutCalculator.calculateZoneLoads(input, 'bodybuilding', 10);
-    const half = await WorkoutCalculator.calculateZoneLoads(input, 'bodybuilding', 5);
-    const none = await WorkoutCalculator.calculateZoneLoads(input, 'bodybuilding');
+    // rpe=5 → factor=1 → результат совпадает с отсутствием rpe
+    const noRpe  = await WorkoutCalculator.calculateZoneLoads(input, 'bodybuilding');
+    const rpe5   = await WorkoutCalculator.calculateZoneLoads(input, 'bodybuilding', 5);
+    // rpe=2.5 → factor=0.5 → половина от базовой нагрузки
+    const rpe2_5 = await WorkoutCalculator.calculateZoneLoads(input, 'bodybuilding', 2.5);
 
-    assert.closeTo(full.totalIntensity, none.totalIntensity, 0.001);
-    assert.closeTo(half.totalIntensity, none.totalIntensity * 0.5, 0.001);
+    assert.closeTo(rpe5.totalIntensity, noRpe.totalIntensity, 0.001);
+    assert.closeTo(rpe2_5.totalIntensity, noRpe.totalIntensity * 0.5, 0.001);
   });
 
   test('rpe=null не меняет результат', async ({ assert }) => {

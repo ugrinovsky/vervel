@@ -5,7 +5,8 @@
     "baseUrl": ".",
     "outDir": "./build",
     "paths": {
-      "#services/*": ["app/services/*"]
+      "#services/*": ["app/services/*"],
+      "#utils/*": ["app/utils/*"]
     }
   }
 }

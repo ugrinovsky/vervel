@@ -236,16 +236,10 @@ export const trainerApi = {
     privateApi.get<{ success: boolean; data: { chatId: number } }>(
       `/trainer/chats/athlete/${athleteId}`
     ),
-  getChatMessages: (chatId: number, limit = 50, offset = 0) =>
-    privateApi.get<{ success: boolean; data: ChatMessage[] }>(`/trainer/chats/${chatId}/messages`, {
-      params: { limit, offset },
-    }),
   sendMessage: (chatId: number, content: string) =>
     privateApi.post<{ success: boolean; data: ChatMessage }>(`/trainer/chats/${chatId}/messages`, {
       content,
     }),
-  getLastMessage: (chatId: number) =>
-    privateApi.get<{ success: boolean; data: ChatMessage | null }>(`/trainer/chats/${chatId}/last`),
 
   // Scheduled workouts
   getScheduledWorkouts: (from: string, to: string) =>

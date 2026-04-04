@@ -6,47 +6,8 @@ import emitter from '@adonisjs/core/services/emitter'
 import ScheduledWorkout from '#models/scheduled_workout'
 import Workout from '#models/workout'
 import { WorkoutCalculator } from '#services/WorkoutCalculator'
-import type { WorkoutExercise, WorkoutSet } from '#models/workout'
-
-// ExerciseData as sent from the frontend (ScheduledWorkout format)
-interface ExerciseData {
-  exerciseId?: string
-  name: string
-  sets?: number
-  reps?: number
-  weight?: number
-  duration?: number
-  notes?: string
-  blockId?: string
-}
-
-/**
- * Convert simplified ExerciseData (from trainer form) to WorkoutExercise format
- * required by WorkoutCalculator. Skips exercises without exerciseId.
- */
-function toWorkoutExercises(
-  exercises: ExerciseData[],
-  workoutType: 'crossfit' | 'bodybuilding' | 'cardio'
-): WorkoutExercise[] {
-  return exercises
-    .filter((ex) => !!ex.exerciseId)
-    .map((ex) => {
-      if (workoutType === 'cardio') {
-        const set: WorkoutSet = { id: crypto.randomUUID(), time: (ex.duration ?? 20) * 60 }
-        return { exerciseId: ex.exerciseId!, type: 'cardio' as const, sets: [set] }
-      }
-      const sets: WorkoutSet[] = Array.from({ length: ex.sets ?? 3 }, () => ({
-        id: crypto.randomUUID(),
-        reps: ex.reps,
-        weight: ex.weight,
-      }))
-      return {
-        exerciseId: ex.exerciseId!,
-        type: workoutType === 'crossfit' ? ('wod' as const) : ('strength' as const),
-        sets,
-      }
-    })
-}
+import { toWorkoutExercises } from '#services/WorkoutConverter'
+import { parseDateRange } from '#utils/date'
 
 /**
  * Resolve assignedTo list to a flat array of athlete user IDs.
@@ -113,12 +74,9 @@ export default class ScheduledWorkoutController {
    */
   async list({ auth, request, response }: HttpContext) {
     const trainer = auth.user!
-    const from = request.input('from')
-    const to = request.input('to')
-
-    if (!from || !to) {
-      return response.badRequest({ message: 'Параметры "from" и "to" обязательны' })
-    }
+    const range = parseDateRange(request.input('from'), request.input('to'), response)
+    if (!range) return
+    const { from, to } = range
 
     const workouts = await ScheduledWorkout.query()
       .where('trainerId', trainer.id)

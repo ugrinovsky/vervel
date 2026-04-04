@@ -28,4 +28,14 @@ export default class Message extends BaseModel {
 
   @belongsTo(() => User, { foreignKey: 'senderId' })
   declare sender: BelongsTo<typeof User>
+
+  serialize() {
+    return {
+      id: this.id,
+      content: this.content,
+      senderId: this.senderId,
+      sender: { id: this.sender.id, fullName: this.sender.fullName, email: this.sender.email },
+      createdAt: this.createdAt,
+    }
+  }
 }

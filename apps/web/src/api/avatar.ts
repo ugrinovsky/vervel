@@ -10,6 +10,8 @@ export interface AvatarRecoveryStats {
   zones: Record<string, ZoneState>;
   totalWorkouts: number;
   lastWorkoutDaysAgo: number | null;
+  allTimeWorkouts: number;
+  thisWeekWorkouts: number;
 }
 
 export interface AvatarPeriodStats {

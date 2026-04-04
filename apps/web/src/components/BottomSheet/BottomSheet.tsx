@@ -1,5 +1,6 @@
 import { type PropsWithChildren, type ReactNode, useEffect, useRef, useState } from 'react';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import CloseButton from '@/components/ui/CloseButton';
@@ -36,7 +37,9 @@ function AnimatedHeight({ children }: { children: ReactNode }) {
       transition={{ type: 'spring', damping: 30, stiffness: 250 }}
       style={{ overflow: 'hidden' }}
     >
-      <div ref={contentRef} className="p-px">{children}</div>
+      <div ref={contentRef} className="p-px">
+        {children}
+      </div>
     </motion.div>
   );
 }
@@ -44,15 +47,7 @@ function AnimatedHeight({ children }: { children: ReactNode }) {
 export default function BottomSheet({ id, open, onClose, title, emoji, header, children }: Props) {
   const dragControls = useDragControls();
 
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [open]);
-
+  useBodyScrollLock(open);
   useEscapeKey(onClose, open);
 
   const headerContent = header ?? (
@@ -73,10 +68,7 @@ export default function BottomSheet({ id, open, onClose, title, emoji, header, c
           className="bottom-sheet fixed inset-0 z-60 flex items-end"
           onClick={onClose}
         >
-          <div
-            className="absolute inset-0 bg-black/60"
-            onTouchMove={(e) => e.preventDefault()}
-          />
+          <div className="absolute inset-0 bg-black/60" onTouchMove={(e) => e.preventDefault()} />
 
           <motion.div
             initial={{ y: '100%' }}
@@ -93,7 +85,11 @@ export default function BottomSheet({ id, open, onClose, title, emoji, header, c
             }}
             onClick={(e) => e.stopPropagation()}
             className="background relative w-full rounded-t-3xl p-6 pb-6 max-h-[90dvh] overflow-y-auto overscroll-contain justify-center flex"
-            style={{ backgroundColor: 'var(--color_bg_card)', borderTop: '1px solid var(--color_border)', boxShadow: '0 -4px 20px rgba(0,0,0,0.2)' }}
+            style={{
+              backgroundColor: 'var(--color_bg_card)',
+              borderTop: '1px solid var(--color_border)',
+              boxShadow: '0 -4px 20px rgba(0,0,0,0.2)',
+            }}
           >
             <div className={'max-w-[798px] w-full h-max'}>
               {/* Handle — расширенная touch-зона */}

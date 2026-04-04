@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
 import { SparklesIcon } from '@heroicons/react/24/outline';
+import { motion, AnimatePresence } from 'framer-motion';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
+import AiLoadingView from '@/components/ui/AiLoadingView';
 import { aiApi, type AiWorkoutResult } from '@/api/ai';
-import { useBalance } from '@/contexts/AuthContext';
+import { useAiBalance } from '@/hooks/useAiBalance';
 
 const COST_GENERATE = 10;
 const MAX_PROMPT_LENGTH = 600;
@@ -26,74 +27,9 @@ const LOADING_STEPS = [
   'Финальные штрихи…',
 ];
 
-function AiLoadingView() {
-  const [stepIndex, setStepIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setStepIndex((i) => (i + 1) % LOADING_STEPS.length);
-    }, 1800);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <motion.div
-      key="loader"
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      className="flex flex-col items-center justify-center gap-5 py-12"
-    >
-      <div className="relative flex items-center justify-center">
-        <motion.div
-          animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.1, 0.3] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute w-20 h-20 rounded-full bg-emerald-500/30"
-        />
-        <motion.div
-          animate={{ scale: [1, 1.15, 1], opacity: [0.4, 0.15, 0.4] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: 0.3 }}
-          className="absolute w-14 h-14 rounded-full bg-emerald-400/30"
-        />
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-          className="relative z-10 w-10 h-10 flex items-center justify-center rounded-full bg-linear-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/40"
-        >
-          <SparklesIcon className="w-5 h-5 text-white" />
-        </motion.div>
-      </div>
-
-      <AnimatePresence mode="wait">
-        <motion.p
-          key={stepIndex}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.3 }}
-          className="text-sm text-emerald-300 font-medium"
-        >
-          {LOADING_STEPS[stepIndex]}
-        </motion.p>
-      </AnimatePresence>
-
-      <div className="flex gap-1.5">
-        {LOADING_STEPS.map((_, i) => (
-          <motion.div
-            key={i}
-            animate={{ opacity: i === stepIndex ? 1 : 0.25 }}
-            transition={{ duration: 0.3 }}
-            className="w-1.5 h-1.5 rounded-full bg-emerald-400"
-          />
-        ))}
-      </div>
-    </motion.div>
-  );
-}
 
 export default function AiWorkoutGenerator({ onResult }: Props) {
-  const { balance, setBalance } = useBalance();
-  const hasEnoughBalance = balance === null || balance >= COST_GENERATE;
+  const { balance, setBalance, hasEnoughBalance } = useAiBalance(COST_GENERATE);
 
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
@@ -132,7 +68,7 @@ export default function AiWorkoutGenerator({ onResult }: Props) {
       <div className="w-8 h-8 flex items-center justify-center rounded-full bg-emerald-500/20">
         <SparklesIcon className="w-4 h-4 text-emerald-400" />
       </div>
-      <span className="text-lg font-bold text-white">AI-генерация</span>
+      <span className="text-lg font-bold text-white">ИИ-генерация</span>
       {balance !== null && (
         <span className={`ml-1 text-xs px-2 py-0.5 rounded-full ${hasEnoughBalance ? 'bg-white/10 text-white/50' : 'bg-red-500/20 text-red-400'}`}>
           баланс: {balance}₽
@@ -149,13 +85,13 @@ export default function AiWorkoutGenerator({ onResult }: Props) {
         className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
       >
         <SparklesIcon className="w-4 h-4" />
-        Сгенерировать AI
+        Сгенерировать ИИ
       </button>
 
       <BottomSheet id="ai-workout-generator" open={open} onClose={handleClose} header={sheetHeader}>
         <AnimatePresence mode="wait">
           {loading ? (
-            <AiLoadingView key="loading" />
+            <AiLoadingView key="loading" steps={LOADING_STEPS} />
           ) : (
             <motion.div
               key="form"
@@ -165,7 +101,7 @@ export default function AiWorkoutGenerator({ onResult }: Props) {
               className="space-y-4"
             >
               <p className="text-sm text-(--color_text_muted)">
-                Опишите тренировку — AI подберёт упражнения, подходы и веса.
+                Опишите тренировку — ИИ подберёт упражнения, подходы и веса.
               </p>
 
               <div className="relative">

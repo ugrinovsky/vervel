@@ -3,13 +3,8 @@ import { randomUUID } from 'node:crypto'
 import { DateTime } from 'luxon'
 import emitter from '@adonisjs/core/services/emitter'
 
-/** Returns "YYYY-MM-DD" using the LOCAL timezone of the Date object. */
-function toLocalDateKey(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
+import { PeriodizationService } from '#services/PeriodizationService'
+import { parseDateRange } from '#utils/date'
 import User from '#models/user'
 import Workout from '#models/workout'
 import TrainerAthlete from '#models/trainer_athlete'
@@ -231,12 +226,9 @@ export default class TrainerController {
       return response.forbidden({ message: 'Нет доступа к этому атлету' })
     }
 
-    const from = request.input('from')
-    const to = request.input('to')
-
-    if (!from || !to) {
-      return response.badRequest({ message: 'Параметры "from" и "to" обязательны' })
-    }
+    const range = parseDateRange(request.input('from'), request.input('to'), response)
+    if (!range) return
+    const { from, to } = range
 
     const workouts = await Workout.query()
       .where('userId', athleteId)
@@ -256,12 +248,9 @@ export default class TrainerController {
       return response.forbidden({ message: 'Нет доступа к этому атлету' })
     }
 
-    const from = request.input('from')
-    const to = request.input('to')
-
-    if (!from || !to) {
-      return response.badRequest({ message: 'Параметры "from" и "to" обязательны' })
-    }
+    const range = parseDateRange(request.input('from'), request.input('to'), response)
+    if (!range) return
+    const { from, to } = range
 
     const workouts = await Workout.query()
       .where('userId', athleteId)
@@ -490,150 +479,14 @@ export default class TrainerController {
       return response.forbidden({ message: 'Нет доступа к этому атлету' })
     }
 
-    // Берём 90 дней + ещё 42 дня "прогрева" CTL = 132 дня итого
-    const DAYS = 132
-    const today = new Date()
-    const startDate = new Date(today)
-    startDate.setDate(today.getDate() - DAYS)
-
-    const workouts = await Workout.query()
-      .where('userId', athleteId)
-      .where('date', '>=', startDate)
-      .orderBy('date', 'asc')
-
-    // Строим карту: dateKey → суммарный TL (в день может быть несколько тренировок)
-    const tlByDay = new Map<string, number>()
-    for (const w of workouts) {
-      const dateObj = w.date.toJSDate ? w.date.toJSDate() : new Date(w.date.toString())
-      const key = toLocalDateKey(dateObj)
-      const intensity = typeof w.totalIntensity === 'string' ? parseFloat(w.totalIntensity) : (w.totalIntensity || 0)
-      const volume = Number(w.totalVolume) || 0
-      const tl = (intensity * 0.7 + Math.min(volume / 5000, 1) * 0.3) * 100
-      tlByDay.set(key, (tlByDay.get(key) ?? 0) + tl)
-    }
-
-    // Итерируем каждый день и считаем ATL/CTL/TSB
-    let atl = 0
-    let ctl = 0
-    const series: { date: string; atl: number; ctl: number; tsb: number }[] = []
-    const weeklyMap = new Map<string, { load: number; workouts: number }>()
-
-    for (let d = 0; d < DAYS; d++) {
-      const date = new Date(startDate)
-      date.setDate(startDate.getDate() + d)
-      const key = toLocalDateKey(date)
-      const tl = tlByDay.get(key) ?? 0
-
-      // EWMA
-      atl = atl * (6 / 7) + tl * (1 / 7)
-      ctl = ctl * (41 / 42) + tl * (1 / 42)
-      const tsb = ctl - atl
-
-      // Только последние 90 дней (после прогрева) идут в series
-      if (d >= DAYS - 90) {
-        series.push({
-          date: key,
-          atl: Math.round(atl * 10) / 10,
-          ctl: Math.round(ctl * 10) / 10,
-          tsb: Math.round(tsb * 10) / 10,
-        })
-      }
-
-      // Недельная нагрузка (ISO неделя: понедельник)
-      const dayOfWeek = date.getDay() === 0 ? 7 : date.getDay()
-      const monday = new Date(date)
-      monday.setDate(date.getDate() - (dayOfWeek - 1))
-      const weekKey = toLocalDateKey(monday)
-      if (tl > 0) {
-        const prev = weeklyMap.get(weekKey) ?? { load: 0, workouts: 0 }
-        weeklyMap.set(weekKey, { load: prev.load + tl, workouts: prev.workouts + 1 })
-      }
-    }
-
-    const current = series[series.length - 1] ?? { atl: 0, ctl: 0, tsb: 0 }
-
-    // Определяем фазу по тренду за 14 дней
-    const twoWeeksAgo = series[series.length - 15] ?? series[0] ?? { ctl: 0, atl: 0 }
-    const trendCtl = current.ctl - twoWeeksAgo.ctl
-    const tsb = current.tsb
-
-    let phase: { name: string; emoji: string; advice: string }
-    if (tsb > 15) {
-      phase = {
-        name: 'Деload / Восстановление',
-        emoji: '🔄',
-        advice: 'Атлет хорошо отдохнул. Пора добавить нагрузку — иначе форма начнёт снижаться.',
-      }
-    } else if (trendCtl > 2 && tsb < -5) {
-      phase = {
-        name: 'Накопление',
-        emoji: '📈',
-        advice: 'Форма растёт. Продуктивная усталость — держите интенсивность, дайте телу адаптироваться.',
-      }
-    } else if (trendCtl > 0 && tsb >= -5 && tsb <= 5) {
-      phase = {
-        name: 'Интенсификация',
-        emoji: '⚡',
-        advice: 'Хороший баланс нагрузки и восстановления. Можно добавить интенсивные сессии.',
-      }
-    } else if (tsb >= 5 && tsb <= 15) {
-      phase = {
-        name: 'Пик / Реализация',
-        emoji: '🏆',
-        advice: 'Атлет свеж и в форме. Оптимальный момент для соревнований или максимальных попыток.',
-      }
-    } else if (tsb < -20) {
-      phase = {
-        name: 'Перегрузка',
-        emoji: '⚠️',
-        advice: 'Усталость критическая. Необходима разгрузочная неделя или полный отдых.',
-      }
-    } else {
-      phase = {
-        name: 'Поддержание',
-        emoji: '→',
-        advice: 'Нагрузка стабильна. Поддерживайте текущий режим или ставьте новый цикл.',
-      }
-    }
-
-    // Недельная нагрузка — последние 12 недель
-    const sortedWeeks = [...weeklyMap.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .slice(-12)
-      .map(([weekStart, data]) => {
-        const d = new Date(weekStart)
-        const label = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
-        return {
-          week: label,
-          load: Math.round(data.load),
-          workouts: data.workouts,
-        }
-      })
-
-    return response.ok({
-      success: true,
-      data: {
-        current: {
-          atl: Math.round(current.atl * 10) / 10,
-          ctl: Math.round(current.ctl * 10) / 10,
-          tsb: Math.round(current.tsb * 10) / 10,
-        },
-        phase,
-        series,
-        weeklyLoad: sortedWeeks,
-      },
-    })
+    const data = await PeriodizationService.calculate(athleteId, 'trainer')
+    return response.ok({ success: true, data })
   }
 
   // ─── Helpers ───
 
   private async verifyAthleteAccess(trainerId: number, athleteId: number): Promise<boolean> {
-    const binding = await TrainerAthlete.query()
-      .where('trainerId', trainerId)
-      .where('athleteId', athleteId)
-      .where('status', 'active')
-      .first()
-    return !!binding
+    return TrainerAthlete.isActiveBinding(trainerId, athleteId)
   }
 
   private calculateStartDate(period: string): Date {

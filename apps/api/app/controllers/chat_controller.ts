@@ -55,33 +55,11 @@ export default class ChatController {
   async getOrCreateAthleteChat({ auth, params, response }: HttpContext) {
     const trainer = auth.user!
 
-    // Verify trainer has access to athlete
-    const binding = await TrainerAthlete.query()
-      .where('trainerId', trainer.id)
-      .where('athleteId', params.athleteId)
-      .where('status', 'active')
-      .first()
-
-    if (!binding) {
+    if (!(await TrainerAthlete.isActiveBinding(trainer.id, Number(params.athleteId)))) {
       return response.forbidden({ message: 'Нет доступа к этому атлету' })
     }
 
-    // Find or create chat
-    let chat = await Chat.query()
-      .where('type', 'personal')
-      .where('trainerId', trainer.id)
-      .where('athleteId', params.athleteId)
-      .first()
-
-    if (!chat) {
-      chat = await Chat.create({
-        type: 'personal',
-        trainerId: trainer.id,
-        groupId: null,
-        athleteId: params.athleteId,
-      })
-    }
-
+    const chat = await Chat.findOrCreatePersonal(trainer.id, Number(params.athleteId))
     return response.ok({ success: true, data: { chatId: chat.id } })
   }
 
@@ -156,13 +134,7 @@ export default class ChatController {
       query.select('id', 'fullName', 'email')
     })
 
-    const messageData = {
-      id: message.id,
-      content: message.content,
-      senderId: message.senderId,
-      sender: { id: message.sender.id, fullName: message.sender.fullName, email: message.sender.email },
-      createdAt: message.createdAt,
-    }
+    const messageData = message.serialize()
 
     emitter.emit('chat:new_message', { chatId: Number(params.chatId), message: messageData })
 
@@ -289,16 +261,7 @@ export default class ChatController {
 
     const messages = await query
 
-    return response.ok({
-      success: true,
-      data: messages.reverse().map((m) => ({
-        id: m.id,
-        content: m.content,
-        senderId: m.senderId,
-        sender: { id: m.sender.id, fullName: m.sender.fullName, email: m.sender.email },
-        createdAt: m.createdAt,
-      })),
-    })
+    return response.ok({ success: true, data: messages.reverse().map((m) => m.serialize()) })
   }
 
   /**
@@ -475,13 +438,7 @@ export default class ChatController {
 
     await message.load('sender', (q) => q.select('id', 'fullName', 'email'))
 
-    const messageData = {
-      id: message.id,
-      content: message.content,
-      senderId: message.senderId,
-      sender: { id: message.sender.id, fullName: message.sender.fullName, email: message.sender.email },
-      createdAt: message.createdAt,
-    }
+    const messageData = message.serialize()
 
     emitter.emit('chat:new_message', { chatId: Number(params.chatId), message: messageData })
 

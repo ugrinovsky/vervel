@@ -167,4 +167,9 @@ export const ExerciseCatalog = {
     }
     return result
   },
+
+  /** Map id → title для быстрого отображения названий */
+  getIdToTitleMap(): Map<string, string> {
+    return new Map(catalogArray.map((e) => [e.id, e.title]))
+  },
 }
