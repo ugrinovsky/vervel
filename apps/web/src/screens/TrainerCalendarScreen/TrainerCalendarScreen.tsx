@@ -20,7 +20,7 @@ import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm'
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import Calendar, { type TrainerDayData } from '@/components/ui/Calendar';
 import { trainerApi, type ScheduledWorkout, type AthleteListItem, type TrainerGroupItem } from '@/api/trainer';
-import { toDateKey, parseApiDateTime, toApiDateTime } from '@/utils/date';
+import { toDateKey, parseApiDateTime, toApiDateTime, currentHourString } from '@/utils/date';
 import { PlusIcon, CalendarDaysIcon, UserPlusIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
@@ -567,7 +567,7 @@ export default function TrainerCalendarScreen() {
     setCurrentMonth(startOfMonth(draftDateObj));
     setEditingWorkout(null);
     setSheetTab('workout');
-    setSelectedTime(trainerDraft.time ?? '09:00');
+    setSelectedTime(trainerDraft.time ?? currentHourString());
   }, [trainerDraft]);
 
   const openEditForm = (workout: ScheduledWorkout) => {
@@ -656,7 +656,7 @@ export default function TrainerCalendarScreen() {
               </div>
             </div>
             {selectedTime === null && (
-              <AccentButton size="sm" onClick={() => openFormAt('09:00')}>
+              <AccentButton size="sm" onClick={() => openFormAt(currentHourString())}>
                 <PlusIcon className="w-4 h-4" />
                 Добавить
               </AccentButton>

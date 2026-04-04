@@ -16,13 +16,19 @@ import SectionLabel from '@/components/SectionLabel';
 import WorkoutExercisesEditor from '@/components/WorkoutExercisesEditor/WorkoutExercisesEditor';
 import AiWorkoutGenerator from '@/components/AiWorkoutGenerator/AiWorkoutGenerator';
 import AiWorkoutRecognizer from '@/components/AiWorkoutRecognizer/AiWorkoutRecognizer';
-import { ChevronDownIcon, ChevronUpIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  SparklesIcon,
+  PhotoIcon,
+} from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
 import GhostButton from '@/components/ui/GhostButton';
 import type { ExerciseData, WorkoutTemplate } from '@/api/trainer';
 import type { AiWorkoutResult } from '@/api/ai';
 import { aiApi } from '@/api/ai';
-import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
+import { WORKOUT_TYPE_CONFIG, DEFAULT_WORKOUT_TYPE } from '@/constants/workoutTypes';
+import { nowRoundedToHour, today, parseTimeString, parseLocalDate } from '@/utils/date';
 import { convertExercisesForType, convertAiResult } from './workoutTypeConversion';
 import { workoutsApi } from '@/api/workouts';
 
@@ -83,7 +89,7 @@ interface Props {
 export default function WorkoutFormBase({
   initialDate,
   initialTime,
-  initialType = 'bodybuilding',
+  initialType = DEFAULT_WORKOUT_TYPE,
   initialNotes = '',
   initialExercises = [],
   storageKey,
@@ -97,45 +103,39 @@ export default function WorkoutFormBase({
 }: Props) {
   // ── Draft state ───────────────────────────────────────────────────
   const localDraft = storageKey ? loadLocalDraft(storageKey) : null;
-  const hasMeaningfulDraft = !!localDraft && (localDraft.exercises.length > 0 || !!localDraft.notes);
+  const hasMeaningfulDraft =
+    !!localDraft && (localDraft.exercises.length > 0 || !!localDraft.notes);
 
   const [draftRestored, setDraftRestored] = useState(hasMeaningfulDraft);
 
   // ── Form state (initialized from draft or props) ──────────────────
   const [date, setDate] = useState<Date>(() => {
     if (initialDate) return initialDate;
-    if (localDraft?.date) return new Date(localDraft.date);
-    return new Date();
+    if (localDraft?.date) return parseLocalDate(localDraft.date.slice(0, 10));
+    return today();
   });
 
   const [time, setTime] = useState<Date>(() => {
-    if (localDraft?.time) {
-      const d = new Date();
-      const [h, m] = localDraft.time.split(':').map(Number);
-      d.setHours(h, m, 0, 0);
-      return d;
-    }
     if (initialTime) return initialTime;
-    const d = new Date();
-    d.setHours(9, 0, 0, 0);
-    return d;
+    if (localDraft?.time) return parseTimeString(localDraft.time);
+    return nowRoundedToHour();
   });
 
-  const [workoutType, setWorkoutType] = useState<WorkoutType>(localDraft?.workoutType ?? initialType);
+  const [workoutType, setWorkoutType] = useState<WorkoutType>(
+    localDraft?.workoutType ?? initialType
+  );
   const [notes, setNotes] = useState(localDraft?.notes ?? initialNotes);
-  const [exercises, setExercises] = useState<ExerciseData[]>(localDraft?.exercises ?? initialExercises);
+  const [exercises, setExercises] = useState<ExerciseData[]>(
+    localDraft?.exercises ?? initialExercises
+  );
   const [saving, setSaving] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [aiGenerated, setAiGenerated] = useState(false);
+  const [aiPhotoUrl, setAiPhotoUrl] = useState<string | null>(null);
+  const [aiPhotoExpanded, setAiPhotoExpanded] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
   const [parseCost, setParseCost] = useState<number | null>(null);
-  const [parsePreview, setParsePreview] = useState<{
-    workoutType: 'crossfit' | 'bodybuilding' | 'cardio';
-    previewItems: Array<{ exerciseId: string; name: string; sets: number; reps?: number; weight?: number; weightMax?: number }>;
-    exercises: Array<{ exerciseId: string; type: string; sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>; blockId?: string }>;
-    warning: string | null;
-  } | null>(null);
 
   // ── Auto-save to localStorage (immediate) + DB (debounced) ───────
   const dbSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -158,7 +158,9 @@ export default function WorkoutFormBase({
     // Debounced DB save (3 seconds after last change)
     if (dbSaveTimer.current) clearTimeout(dbSaveTimer.current);
     dbSaveTimer.current = setTimeout(() => {
-      workoutsApi.saveDraft(draft).catch(() => {/* silent */});
+      workoutsApi.saveDraft(draft).catch(() => {
+        /* silent */
+      });
     }, 3000);
 
     return () => {
@@ -169,32 +171,34 @@ export default function WorkoutFormBase({
   // ── Load draft from DB on mount (in background, update if newer) ──
   useEffect(() => {
     if (!storageKey) return;
-    workoutsApi.getDraft().then((res) => {
-      const dbDraft = res.data?.data as WorkoutFormDraft | null;
-      if (!dbDraft) return;
-      const localSavedAt = localDraft?.savedAt ?? 0;
-      if (dbDraft.savedAt > localSavedAt) {
-        // DB draft is newer — silently apply it
-        if (dbDraft.workoutType) setWorkoutType(dbDraft.workoutType);
-        if (dbDraft.notes != null) setNotes(dbDraft.notes);
-        if (dbDraft.exercises?.length) setExercises(dbDraft.exercises);
-        if (dbDraft.date && !initialDate) setDate(new Date(dbDraft.date));
-        if (dbDraft.time) {
-          const d = new Date();
-          const [h, m] = dbDraft.time.split(':').map(Number);
-          d.setHours(h, m, 0, 0);
-          setTime(d);
+    workoutsApi
+      .getDraft()
+      .then((res) => {
+        const dbDraft = res.data?.data as WorkoutFormDraft | null;
+        if (!dbDraft) return;
+        const localSavedAt = localDraft?.savedAt ?? 0;
+        if (dbDraft.savedAt > localSavedAt) {
+          // DB draft is newer — silently apply it
+          if (dbDraft.workoutType) setWorkoutType(dbDraft.workoutType);
+          if (dbDraft.notes != null) setNotes(dbDraft.notes);
+          if (dbDraft.exercises?.length) setExercises(dbDraft.exercises);
+          if (dbDraft.date && !initialDate) setDate(parseLocalDate(dbDraft.date.slice(0, 10)));
+          if (dbDraft.time) setTime(parseTimeString(dbDraft.time));
+          if (dbDraft.exercises?.length > 0 || dbDraft.notes) setDraftRestored(true);
         }
-        if (dbDraft.exercises?.length > 0 || dbDraft.notes) setDraftRestored(true);
-      }
-    }).catch(() => {/* silent */});
+      })
+      .catch(() => {
+        /* silent */
+      });
   }, [storageKey]);
 
   // ── Clear draft (localStorage + DB) ──────────────────────────────
   const clearDraft = () => {
     if (!storageKey) return;
     localStorage.removeItem(storageKey);
-    workoutsApi.clearDraft().catch(() => {/* silent */});
+    workoutsApi.clearDraft().catch(() => {
+      /* silent */
+    });
     setDraftRestored(false);
   };
 
@@ -205,47 +209,62 @@ export default function WorkoutFormBase({
     setNotes(initialNotes);
     setExercises(initialExercises);
     setDate(initialDate ?? new Date());
-    const d = new Date();
-    d.setHours(9, 0, 0, 0);
-    setTime(initialTime ?? d);
+    setTime(initialTime ?? nowRoundedToHour());
     setSelectedTemplateId(null);
   };
 
   // ── Fetch AI costs once on mount ─────────────────────────────────
   useEffect(() => {
-    aiApi.getBalance().then((res) => setParseCost(res.data.costs.parseNotes)).catch(() => {});
+    aiApi
+      .getBalance()
+      .then((res) => setParseCost(res.data.costs.parseNotes))
+      .catch(() => {});
   }, []);
 
   // ── Type change with exercise normalization ───────────────────────
 
   const handleWorkoutTypeChange = (newType: WorkoutType) => {
-    if (exercises.length === 0) { setWorkoutType(newType); return; }
+    if (exercises.length === 0) {
+      setWorkoutType(newType);
+      return;
+    }
 
     const oldType = workoutType;
     setWorkoutType(newType);
     setExercises((prev) => convertExercisesForType(prev, oldType, newType));
 
     if (newType === 'cardio') {
-      toast('Подходы убраны — для кардио оставлена длительность (20 мин)', { icon: '🏃' });
+      toast('Подходы убраны — для кардио остадлена длительность (20 мин)', { icon: '🏃' });
     } else if (oldType === 'cardio') {
       toast(
-        newType === 'crossfit' ? 'Длительность убрана — добавлены повторы (10)' : 'Длительность убрана — добавлены подходы (3×10)',
+        newType === 'crossfit'
+          ? 'Длительность убрана — добавлены повторы (10)'
+          : 'Длительность убрана — добавлены подходы (3×10)',
         { icon: '💪' }
       );
     } else {
-      toast(`Тип изменён на «${WORKOUT_TYPE_CONFIG[newType] ?? newType}». Упражнения адаптированы.`, { icon: 'ℹ️' });
+      toast(
+        `Тип изменён на «${WORKOUT_TYPE_CONFIG[newType] ?? newType}». Упражнения адаптированы.`,
+        { icon: 'ℹ️' }
+      );
     }
   };
 
   // ── AI result handler ─────────────────────────────────────────────
 
-  const handleAiResult = (result: AiWorkoutResult) => {
+  const handleAiResult = (result: AiWorkoutResult, photoUrl?: string) => {
     setWorkoutType(result.workoutType);
     const converted = convertAiResult(result);
     setExercises(converted);
     setAiGenerated(true);
-    if (result.notes) setNotes(result.notes);
     setSelectedTemplateId(null);
+    if (photoUrl) {
+      setAiPhotoUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return photoUrl;
+      });
+      setAiPhotoExpanded(false);
+    }
     toast.success(`AI сгенерировал ${converted.length} упражнений`);
   };
 
@@ -254,7 +273,21 @@ export default function WorkoutFormBase({
     setIsParsing(true);
     try {
       const res = await aiApi.parseNotesText(notes);
-      setParsePreview(res.data);
+      const { workoutType: parsedType, exercises: parsedExercises, warning } = res.data;
+      const nameMap = new Map(res.data.previewItems.map((item: any) => [item.exerciseId, item.name]));
+      const converted: ExerciseData[] = parsedExercises.map((ex: any) => ({
+        exerciseId: ex.exerciseId,
+        name: nameMap.get(ex.exerciseId) ?? ex.exerciseId.replace(/_/g, ' '),
+        setsDetail: ex.sets?.map((s: any) => ({ reps: s.reps ?? 10, weight: s.weight })) ?? [],
+        sets: ex.sets?.length ?? 3,
+        blockId: ex.blockId,
+      }));
+      setWorkoutType(parsedType);
+      setExercises(converted);
+      setAiGenerated(true);
+      setSelectedTemplateId(null);
+      if (warning) toast(warning, { icon: '⚠️' });
+      else toast.success(`AI разобрал ${converted.length} упражнений`);
     } catch (err: any) {
       const msg = err?.response?.data?.message;
       toast.error(msg ?? 'Не удалось разобрать программу');
@@ -263,33 +296,22 @@ export default function WorkoutFormBase({
     }
   };
 
-  const handleApplyParsed = () => {
-    if (!parsePreview) return;
-    const nameMap = new Map(parsePreview.previewItems.map((item) => [item.exerciseId, item.name]));
-    const converted: ExerciseData[] = parsePreview.exercises.map((ex) => ({
-      exerciseId: ex.exerciseId,
-      name: nameMap.get(ex.exerciseId) ?? ex.exerciseId.replace(/_/g, ' '),
-      setsDetail: ex.sets?.map((s) => ({ reps: s.reps ?? 10, weight: s.weight })) ?? [],
-      sets: ex.sets?.length ?? 3,
-      blockId: ex.blockId,
-    }));
-    setWorkoutType(parsePreview.workoutType);
-    setExercises(converted);
-    setAiGenerated(true);
-    setSelectedTemplateId(null);
-    setParsePreview(null);
-    toast.success(`AI разобрал ${converted.length} упражнений`);
-  };
-
   // ── Template picker ───────────────────────────────────────────────
 
   const applyTemplate = (template: WorkoutTemplate) => {
-    const normalized = template.exercises?.map((ex) => {
-      if (template.workoutType === 'bodybuilding' && !ex.setsDetail?.length) {
-        return { ...ex, setsDetail: Array.from({ length: ex.sets ?? 3 }, () => ({ reps: ex.reps ?? 10, weight: ex.weight })) };
-      }
-      return ex;
-    }) ?? [];
+    const normalized =
+      template.exercises?.map((ex) => {
+        if (template.workoutType === 'bodybuilding' && !ex.setsDetail?.length) {
+          return {
+            ...ex,
+            setsDetail: Array.from({ length: ex.sets ?? 3 }, () => ({
+              reps: ex.reps ?? 10,
+              weight: ex.weight,
+            })),
+          };
+        }
+        return ex;
+      }) ?? [];
     setWorkoutType(template.workoutType);
     setExercises(normalized);
     setAiGenerated(false);
@@ -315,7 +337,6 @@ export default function WorkoutFormBase({
 
   return (
     <div className="space-y-5">
-
       {/* Draft banner */}
       {draftRestored && storageKey && (
         <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
@@ -331,82 +352,40 @@ export default function WorkoutFormBase({
       )}
 
       {/* Заметки / программа — сверху */}
-      {!parsePreview && (
-        <div>
-          <SectionLabel>{notesLabel}</SectionLabel>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder={notesPlaceholder}
-            rows={4}
-            className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none placeholder:text-(--color_text_muted) leading-relaxed"
-          />
-          {notes.trim() && (
-            <button
-              type="button"
-              onClick={handleParseNotes}
-              disabled={isParsing}
-              className="mt-2 flex items-center gap-1.5 text-sm text-(--color_primary_light) hover:opacity-80 transition-opacity disabled:opacity-40"
-            >
-              {isParsing ? (
-                <>
-                  <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  Разбираю программу...
-                </>
-              ) : (
-                <>
-                  ✨ Конвертировать в упражнения
-                  {parseCost != null && (
-                    <span className="opacity-50 text-xs">
-                      · {parseCost === 0 ? 'бесплатно' : `${parseCost}₽`}
-                    </span>
-                  )}
-                </>
-              )}
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Превью AI-парсинга */}
-      {parsePreview && (
-        <div className="rounded-xl border border-(--color_border) p-4 space-y-3" style={{ backgroundColor: 'var(--color_bg_card)' }}>
-          <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest">Программа от AI · проверьте</p>
-
-          {parsePreview.warning && (
-            <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
-              <span className="shrink-0">⚠</span>
-              <span>{parsePreview.warning}</span>
-            </div>
-          )}
-
-          <div className="space-y-1.5">
-            {parsePreview.previewItems.map((item, i) => (
-              <div key={i} className="flex items-center justify-between gap-2 py-1.5 border-b border-(--color_border) last:border-0">
-                <span className="text-sm text-white leading-tight">{item.name}</span>
-                <span className="text-xs text-(--color_text_muted) shrink-0 tabular-nums">
-                  {item.sets > 0 ? `${item.sets} × ` : ''}
-                  {item.reps ? `${item.reps} повт.` : ''}
-                  {item.weight ? ` · ${item.weightMax ? `${item.weight}–${item.weightMax}` : item.weight} кг` : ''}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex gap-2 pt-1">
-            <GhostButton variant="solid" onClick={() => setParsePreview(null)} className="flex-1">
-              Отмена
-            </GhostButton>
-            <button
-              onClick={handleApplyParsed}
-              disabled={parsePreview.previewItems.length === 0}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium bg-emerald-500 text-black hover:bg-emerald-400 transition-colors disabled:opacity-50"
-            >
-              Применить
-            </button>
-          </div>
-        </div>
-      )}
+      <div>
+        <SectionLabel>{notesLabel}</SectionLabel>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder={notesPlaceholder}
+          rows={4}
+          className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none placeholder:text-(--color_text_muted) leading-relaxed"
+        />
+        {notes.trim() && (
+          <button
+            type="button"
+            onClick={handleParseNotes}
+            disabled={isParsing}
+            className="mt-2 flex items-center gap-1.5 text-sm text-(--color_primary_light) hover:opacity-80 transition-opacity disabled:opacity-40"
+          >
+            {isParsing ? (
+              <>
+                <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                Разбираю программу...
+              </>
+            ) : (
+              <>
+                ✨ Конвертировать в упражнения
+                {parseCost != null && (
+                  <span className="opacity-50 text-xs">
+                    · {parseCost === 0 ? 'бесплатно' : `${parseCost}₽`}
+                  </span>
+                )}
+              </>
+            )}
+          </button>
+        )}
+      </div>
 
       {/* Когда */}
       <div>
@@ -430,7 +409,10 @@ export default function WorkoutFormBase({
             <SectionLabel>Шаблон</SectionLabel>
             {selectedTemplateId && (
               <button
-                onClick={() => { setSelectedTemplateId(null); setExercises([]); }}
+                onClick={() => {
+                  setSelectedTemplateId(null);
+                  setExercises([]);
+                }}
                 className="text-[10px] text-(--color_text_muted) hover:text-white transition-colors"
               >
                 Сбросить
@@ -450,9 +432,11 @@ export default function WorkoutFormBase({
                 ? `📋 ${templates.find((t) => t.id === selectedTemplateId)?.name}`
                 : '📋 Выбрать шаблон'}
             </span>
-            {showTemplatePicker
-              ? <ChevronUpIcon className="w-4 h-4 shrink-0 opacity-50" />
-              : <ChevronDownIcon className="w-4 h-4 shrink-0 opacity-50" />}
+            {showTemplatePicker ? (
+              <ChevronUpIcon className="w-4 h-4 shrink-0 opacity-50" />
+            ) : (
+              <ChevronDownIcon className="w-4 h-4 shrink-0 opacity-50" />
+            )}
           </button>
           {showTemplatePicker && (
             <div className="mt-1 rounded-xl bg-(--color_bg_card_hover) divide-y divide-(--color_border) border border-(--color_border)">
@@ -463,11 +447,17 @@ export default function WorkoutFormBase({
                   className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left text-white hover:bg-(--color_border) transition-colors"
                 >
                   <span className="shrink-0 text-xs px-1.5 py-0.5 rounded bg-(--color_primary_light)">
-                    {t.workoutType === 'crossfit' ? 'CF' : t.workoutType === 'bodybuilding' ? 'Сил' : 'Кард'}
+                    {t.workoutType === 'crossfit'
+                      ? 'CF'
+                      : t.workoutType === 'bodybuilding'
+                        ? 'Сил'
+                        : 'Кард'}
                   </span>
                   <span className="flex-1 truncate">{t.name}</span>
                   {t.exercises?.length > 0 && (
-                    <span className="text-xs text-(--color_text_muted) shrink-0">{t.exercises.length} упр.</span>
+                    <span className="text-xs text-(--color_text_muted) shrink-0">
+                      {t.exercises.length} упр.
+                    </span>
                   )}
                 </button>
               ))}
@@ -489,10 +479,40 @@ export default function WorkoutFormBase({
             </span>
           )}
         </div>
+        {aiPhotoUrl && (
+          <div className="rounded-xl border border-white/10 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setAiPhotoExpanded((v) => !v)}
+              className="w-full flex items-center justify-between px-3 py-2 text-xs text-white/50 hover:text-white/70 transition-colors"
+            >
+              <span className="flex items-center gap-1.5">
+                <PhotoIcon className="w-3.5 h-3.5" />
+                Исходное фото
+              </span>
+              {aiPhotoExpanded ? (
+                <ChevronUpIcon className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronDownIcon className="w-3.5 h-3.5" />
+              )}
+            </button>
+            {aiPhotoExpanded && (
+              <img
+                src={aiPhotoUrl}
+                alt="Исходное фото тренировки"
+                className="w-full max-h-[70vh] object-contain bg-black/20"
+              />
+            )}
+          </div>
+        )}
+
         <WorkoutExercisesEditor
           workoutType={workoutType}
           exercises={exercises}
-          onChange={(exs) => { setExercises(exs); setAiGenerated(false); }}
+          onChange={(exs) => {
+            setExercises(exs);
+            setAiGenerated(false);
+          }}
           toolbar={
             <div className="flex flex-wrap gap-3 mb-1">
               <AiWorkoutGenerator onResult={handleAiResult} />

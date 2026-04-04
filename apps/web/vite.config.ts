@@ -9,6 +9,9 @@ import path from 'node:path';
 export default defineConfig({
   server: {
     allowedHosts: true,
+    headers: {
+      'Content-Security-Policy': "worker-src blob: 'self'",
+    },
   },
   plugins: [
     react(),

@@ -7,6 +7,7 @@ export interface WorkoutTimelineEntry {
   zones?: Record<string, number>; // Доля нагрузки по мышечным зонам, 0-1
   scheduledWorkoutId?: number | null; // Если назначено тренером
   loadLevel?: 'none' | 'low' | 'medium' | 'high'; // Вычисляется бэкендом
+  hasMissingWeights?: boolean;
 }
 
 export interface WorkoutStats {

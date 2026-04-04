@@ -14,11 +14,13 @@ import { useAuth } from '@/contexts/AuthContext';
 
 function toWorkoutExercise(ex: ExerciseData, workoutType: WorkoutType): WorkoutExercise {
   if (workoutType === 'cardio') {
-    return { exerciseId: ex.exerciseId!, type: 'cardio', duration: ex.duration };
+    return { exerciseId: ex.exerciseId!, name: ex.name, zones: ex.zones, type: 'cardio', duration: ex.duration };
   }
   if (workoutType === 'crossfit') {
     return {
       exerciseId: ex.exerciseId!,
+      name: ex.name,
+      zones: ex.zones,
       type: 'wod',
       wodType: ex.wodType,
       timeCap: ex.timeCap,
@@ -28,6 +30,8 @@ function toWorkoutExercise(ex: ExerciseData, workoutType: WorkoutType): WorkoutE
   }
   return {
     exerciseId: ex.exerciseId!,
+    name: ex.name,
+    zones: ex.zones,
     type: 'strength',
     sets: (ex.setsDetail ?? []).map((s) => ({
       id: crypto.randomUUID(),

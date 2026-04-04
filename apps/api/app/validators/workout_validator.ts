@@ -9,6 +9,7 @@ export const createWorkoutValidator = vine.compile(
     exercises: vine.array(
       vine.object({
         exerciseId: vine.string().trim(),
+        name: vine.string().trim().optional(),
         type: vine.enum(['strength', 'cardio', 'wod']),
         sets: vine
           .array(
@@ -27,6 +28,7 @@ export const createWorkoutValidator = vine.compile(
         duration: vine.number().min(1).max(86400).optional(),
         wodType: vine.enum(['amrap', 'emom', 'fortime', 'tabata']).optional(),
         blockId: vine.string().trim().optional(),
+        zones: vine.array(vine.string().trim()).optional(),
       })
     ),
   })

@@ -52,12 +52,25 @@ export function convertExercisesForType(
  * Pure function — no side effects.
  */
 export function convertAiResult(result: AiWorkoutResult): ExerciseData[] {
-  return result.exercises.map((ex, i) => {
+  // Map supersetGroup letter → shared blockId UUID
+  const supersetBlockIds = new Map<string, string>()
+
+  return result.exercises.map((ex) => {
     const base: ExerciseData = {
-      exerciseId: ex.exerciseId ?? `ai-${i}`,
+      exerciseId: ex.exerciseId ?? `custom:${ex.displayName ?? ex.name}`,
       name: ex.displayName ?? ex.name,
       notes: ex.notes,
+      zones: ex.zones && ex.zones.length > 0 ? ex.zones : undefined,
     }
+
+    // Assign blockId for superset grouping (bodybuilding only)
+    if (ex.supersetGroup && result.workoutType === 'bodybuilding') {
+      if (!supersetBlockIds.has(ex.supersetGroup)) {
+        supersetBlockIds.set(ex.supersetGroup, crypto.randomUUID())
+      }
+      base.blockId = supersetBlockIds.get(ex.supersetGroup)
+    }
+
     if (result.workoutType === 'cardio') {
       return { ...base, duration: ex.duration ?? 20 }
     }

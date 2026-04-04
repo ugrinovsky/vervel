@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { parseLocalDate, parseApiDateTime, toApiDateTime, toDateKey, toTimeKey } from '@/utils/date';
+import { parseLocalDate, parseApiDateTime, toApiDateTime, toDateKey, toTimeKey, nowRoundedToHour, parseTimeString } from '@/utils/date';
 import toast from 'react-hot-toast';
 import WorkoutFormBase, { type WorkoutFormData } from '@/components/WorkoutFormBase/WorkoutFormBase';
 import SectionLabel from '@/components/SectionLabel';
@@ -142,14 +142,8 @@ export default function WorkoutInlineForm({
 
   const initialTime = (() => {
     if (editWorkout) return parseApiDateTime(editWorkout.scheduledDate);
-    const d = new Date();
-    if (preselectedTime) {
-      const [h, m] = preselectedTime.split(':').map(Number);
-      d.setHours(h, m, 0, 0);
-    } else {
-      d.setHours(9, 0, 0, 0);
-    }
-    return d;
+    if (preselectedTime) return parseTimeString(preselectedTime);
+    return nowRoundedToHour();
   })();
 
   // ── Submit ────────────────────────────────────────────────────────

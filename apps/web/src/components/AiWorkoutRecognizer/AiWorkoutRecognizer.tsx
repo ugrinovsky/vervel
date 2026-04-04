@@ -6,20 +6,29 @@ import { aiApi, type AiWorkoutResult } from '@/api/ai';
 import { useBalance } from '@/contexts/AuthContext';
 
 const COST_RECOGNIZE = 10;
-const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_MB = 20;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/heic', 'image/heif', 'image/webp'] as const;
 
-function readFileAsDataUrl(file: File): Promise<string> {
+type ValidMime = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/heic';
+
+function getFileMime(file: File): ValidMime {
+  if (/\.heic$/i.test(file.name) || /\.heif$/i.test(file.name)) return 'image/heic';
+  const valid: ValidMime[] = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
+  return valid.includes(file.type as ValidMime) ? (file.type as ValidMime) : 'image/jpeg';
+}
+
+
+function readBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target?.result as string);
+    reader.onload = (e) => resolve((e.target!.result as string).split(',')[1]);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
 }
 
 interface Props {
-  onResult: (result: AiWorkoutResult) => void;
+  onResult: (result: AiWorkoutResult, photoUrl: string) => void;
 }
 
 const LOADING_STEPS = [
@@ -94,24 +103,30 @@ function AiLoadingView() {
   );
 }
 
-/**
- * Кнопка для атлета/тренера: сфотографировать/загрузить фото тренировки
- * и распознать упражнения через AI. Форма открывается в BottomSheet.
- */
 export default function AiWorkoutRecognizer({ onResult }: Props) {
   const { balance, setBalance } = useBalance();
   const hasEnoughBalance = balance === null || balance >= COST_RECOGNIZE;
 
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const clearFile = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setSelectedFile(null);
+    setPreviewUrl(null);
+  };
 
   const handleFile = (file: File) => {
     setError(null);
 
-    const mimeOk = ALLOWED_TYPES.includes(file.type as any) || file.type === '' || file.name.match(/\.(jpe?g|png|heic|heif|webp)$/i);
+    const mimeOk =
+      ALLOWED_TYPES.includes(file.type as (typeof ALLOWED_TYPES)[number]) ||
+      file.type === '' ||
+      /\.(jpe?g|png|heic|heif|webp)$/i.test(file.name);
     if (!mimeOk) {
       setError('Поддерживаются JPG, PNG, HEIC, WebP');
       return;
@@ -121,24 +136,22 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
       return;
     }
 
-    readFileAsDataUrl(file).then(setPreview).catch(() => setError('Не удалось прочитать файл'));
+    clearFile();
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
   };
 
   const handleRecognize = async () => {
-    if (!preview) return;
+    if (!selectedFile) return;
     setLoading(true);
     setError(null);
 
     try {
-      const [meta, base64] = preview.split(',');
-      const mimeType = meta.match(/data:([^;]+)/)?.[1] ?? 'image/jpeg';
-      const validMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'] as const;
-      const safeMime = validMimes.includes(mimeType as any)
-        ? (mimeType as 'image/jpeg' | 'image/png' | 'image/webp' | 'image/heic')
-        : 'image/jpeg';
-
-      const res = await aiApi.recognizeWorkout(base64, safeMime);
-      onResult(res.data.data);
+      const base64 = await readBase64(selectedFile);
+      const mimeType = getFileMime(selectedFile);
+      const res = await aiApi.recognizeWorkout(base64, mimeType);
+      const photoUrl = URL.createObjectURL(selectedFile);
+      onResult(res.data.data, photoUrl);
       aiApi.getBalance().then((r) => setBalance(r.data.balance)).catch(() => {});
       handleClose();
     } catch (err: any) {
@@ -152,8 +165,8 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
 
   const handleClose = () => {
     if (loading) return;
+    clearFile();
     setOpen(false);
-    setPreview(null);
     setError(null);
   };
 
@@ -200,32 +213,29 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
                 Сфотографируйте доску, листок или экран с тренировкой — AI распознает упражнения автоматически.
               </p>
 
-              {!preview ? (
-                <button
-                  type="button"
-                  onClick={() => inputRef.current?.click()}
-                  className="w-full h-36 rounded-xl border-2 border-dashed border-white/20 hover:border-emerald-400/60 flex flex-col items-center justify-center gap-3 text-white/50 hover:text-emerald-400 transition-colors"
-                >
-                  <CameraIcon className="w-10 h-10" />
-                  <span className="text-sm">Нажмите, чтобы выбрать фото</span>
-                  <span className="text-xs text-white/30">JPG, PNG, HEIC · до {MAX_FILE_SIZE_MB} МБ</span>
-                </button>
-              ) : (
-                <div className="relative">
-                  <img
-                    src={preview}
-                    alt="preview"
-                    className="w-full h-48 object-cover rounded-xl"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setPreview(null)}
-                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80 transition-colors"
+              <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                className={`w-full h-14 rounded-xl border-2 border-dashed flex items-center gap-3 px-4 transition-colors ${
+                  selectedFile
+                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
+                    : 'border-white/20 hover:border-emerald-400/60 text-white/50 hover:text-emerald-400'
+                }`}
+              >
+                <CameraIcon className="w-5 h-5 shrink-0" />
+                <span className="text-sm truncate flex-1 text-left">
+                  {selectedFile ? selectedFile.name : 'Нажмите, чтобы выбрать фото'}
+                </span>
+                {selectedFile && (
+                  <span
+                    role="button"
+                    onClick={(e) => { e.stopPropagation(); clearFile(); }}
+                    className="shrink-0 text-white/40 hover:text-white/70 cursor-pointer"
                   >
                     <XMarkIcon className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
+                  </span>
+                )}
+              </button>
 
               <input
                 ref={inputRef}
@@ -235,6 +245,7 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) handleFile(file);
+                  e.target.value = '';
                 }}
               />
 
@@ -257,7 +268,7 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
               <button
                 type="button"
                 onClick={handleRecognize}
-                disabled={!preview || !hasEnoughBalance}
+                disabled={!selectedFile || !hasEnoughBalance}
                 className="w-full py-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <SparklesIcon className="w-4 h-4" />

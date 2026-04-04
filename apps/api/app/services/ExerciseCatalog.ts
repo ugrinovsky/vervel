@@ -36,6 +36,10 @@ interface RawExercise {
 // Маппинги
 // ──────────────────────────────────────────────
 
+/** Все зоны мышц, используемые в системе (source of truth) */
+export const MUSCLE_ZONES = ['chests', 'back', 'shoulders', 'biceps', 'triceps', 'legs', 'glutes', 'core', 'obliques', 'calves', 'forearms'] as const
+export type MuscleZone = typeof MUSCLE_ZONES[number]
+
 const MUSCLE_TO_ZONE: Record<string, string> = {
   chest:          'chests',
   abdominals:     'core',

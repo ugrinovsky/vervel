@@ -1,5 +1,11 @@
 import { privateApi } from './http/privateApi'
 
+export interface AiSetData {
+  reps?: number
+  weight?: number
+  time?: number
+}
+
 export interface AiExercise {
   name: string
   /** Название на русском для отображения */
@@ -8,9 +14,14 @@ export interface AiExercise {
   reps?: number
   weight?: number
   duration?: number
+  setData?: AiSetData[]
   notes?: string
   /** Реальный ID из каталога упражнений (если AI-имя удалось смэтчить) */
   exerciseId?: string
+  /** Метка суперсета — упражнения с одинаковой меткой объединяются (напр. "A") */
+  supersetGroup?: string
+  /** Зоны мышц от AI (используются для аналитики, если упражнение не в каталоге) */
+  zones?: string[]
 }
 
 export interface AiWorkoutResult {

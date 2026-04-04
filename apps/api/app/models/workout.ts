@@ -30,6 +30,12 @@ export type WorkoutSet = {
 export type WorkoutExercise = {
   exerciseId: string;
 
+  /** Отображаемое название — от AI или пользователя; приоритет над каталогом при показе */
+  name?: string;
+
+  /** Зоны мышц, предоставленные AI (используются если упражнение не в каталоге) */
+  zones?: string[];
+
   /**
    * Тип упражнения
    */

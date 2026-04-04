@@ -8,6 +8,7 @@ import WorkoutDetailSheet from './WorkoutDetailSheet';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
 import { workoutsApi } from '@/api/workouts';
 import { parseApiDateTime } from '@/utils/date';
+import WorkoutIntensityBar from '@/components/WorkoutIntensityBar/WorkoutIntensityBar';
 import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
 import toast from 'react-hot-toast';
 import AccentButton from '@/components/ui/AccentButton';
@@ -60,8 +61,7 @@ function WorkoutTile({
   const hasVolume = (workout.volume ?? 0) > 0;
   const volumeKg = workout.volume ?? 0;
   const volumeLabel = volumeKg >= 1000 ? `${(volumeKg / 1000).toFixed(1)} т` : `${volumeKg} кг`;
-  const intensityPct = Math.round((workout.intensity ?? 0) * 100);
-  const timeLabel = extractTime(workout.date);
+const timeLabel = extractTime(workout.date);
   const fromTrainer = workout.scheduledWorkoutId != null;
 
   const body = (
@@ -99,20 +99,11 @@ function WorkoutTile({
       </div>
 
       {/* Интенсивность */}
-      {intensityPct > 0 && (
-        <div className="mb-2">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-[11px] text-(--color_text_muted)">Интенсивность</span>
-            <span className="text-[11px] text-(--color_text_muted) tabular-nums">{intensityPct}%</span>
-          </div>
-          <div className="h-1.5 rounded-full bg-(--color_bg_card_hover) overflow-hidden">
-            <div
-              className="h-full rounded-full bg-linear-to-r from-emerald-600 to-emerald-400"
-              style={{ width: `${intensityPct}%` }}
-            />
-          </div>
-        </div>
-      )}
+      <WorkoutIntensityBar
+        intensity={workout.intensity ?? 0}
+        hasMissingWeights={workout.hasMissingWeights}
+        className="mb-2"
+      />
 
       {/* Объём (только для силовых) */}
       {hasVolume && (

@@ -18,6 +18,7 @@ export interface WorkoutSet {
  */
 export interface WorkoutExercise {
   exerciseId: string;
+  name?: string;
   type: 'strength' | 'cardio' | 'wod';
   sets?: WorkoutSet[];
   wodType?: 'amrap' | 'fortime' | 'emom' | 'tabata';
@@ -25,6 +26,7 @@ export interface WorkoutExercise {
   duration?: number;
   rounds?: number;
   blockId?: string;
+  zones?: string[];
 }
 
 export interface CreateWorkoutDTO {

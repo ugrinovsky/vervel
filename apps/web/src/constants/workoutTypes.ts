@@ -1,5 +1,7 @@
 // ── Workout Type Config (единый источник истины для лейблов) ─────────
 
+export const DEFAULT_WORKOUT_TYPE = 'bodybuilding' as const;
+
 export const WORKOUT_TYPE_CONFIG: Record<string, string> = {
   crossfit:     'Кроссфит',
   bodybuilding: 'Силовая',

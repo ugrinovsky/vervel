@@ -1,10 +1,10 @@
 import type { HttpContext } from '@adonisjs/core/http'
+import logger from '@adonisjs/core/services/logger'
 import vine from '@vinejs/vine'
 import { YandexAiService, type AiExercise, type AiWorkoutResult } from '#services/YandexAiService'
 import { AiBalanceService, InsufficientBalanceError } from '#services/AiBalanceService'
 import { ExerciseCatalog } from '#services/ExerciseCatalog'
 import AchievementService from '#services/AchievementService'
-import { token_set_ratio } from 'fuzzball'
 import Workout, { type WorkoutExercise, type WorkoutSet } from '#models/workout'
 import { WorkoutCalculator } from '#services/WorkoutCalculator'
 
@@ -99,13 +99,14 @@ export default class AiController {
       throw err
     }
 
+    logger.info({ userId, mimeType: data.mimeType, base64Kb: Math.round(data.imageBase64.length / 1024) }, 'ai:recognize start')
     try {
       const result = await YandexAiService.recognizeFromImage(data.imageBase64, data.mimeType)
-      const matched = await matchExercisesToCatalog(result)
+      logger.info({ userId, exerciseCount: result.exercises.length, workoutType: result.workoutType }, 'ai:recognize ok')
+      const matched = matchExercisesToCatalog(result)
       return response.ok({ data: matched })
     } catch (err: any) {
-      // Возвращаем средства при ошибке AI
-      // (упрощённая логика — без refund для Phase 1)
+      logger.error({ userId, err: err?.message }, 'ai:recognize failed')
       return response.internalServerError({
         message: 'Не удалось распознать тренировку',
         detail: err?.message,
@@ -141,7 +142,7 @@ export default class AiController {
 
     try {
       const result = await YandexAiService.generateFromText(data.prompt)
-      const matched = await matchExercisesToCatalog(result)
+      const matched = matchExercisesToCatalog(result)
       return response.ok({ data: matched })
     } catch (err: any) {
       return response.internalServerError({
@@ -193,7 +194,7 @@ export default class AiController {
 
     try {
       const result = await YandexAiService.parseWorkoutNotes(workout.notes)
-      const matched = await matchExercisesToCatalog(result)
+      const matched = matchExercisesToCatalog(result)
       const workoutExercises = aiExercisesToWorkoutExercises(matched.exercises, matched.workoutType)
 
       // Проверка качества: дубликаты или слишком мало упражнений
@@ -272,7 +273,7 @@ export default class AiController {
 
     try {
       const result = await YandexAiService.parseWorkoutNotes(notes)
-      const matched = await matchExercisesToCatalog(result)
+      const matched = matchExercisesToCatalog(result)
       const workoutExercises = aiExercisesToWorkoutExercises(matched.exercises, matched.workoutType)
 
       const uniqueIds = new Set(workoutExercises.map((e) => e.exerciseId))
@@ -450,13 +451,20 @@ function aiExercisesToWorkoutExercises(
   exercises: AiExercise[],
   workoutType: 'crossfit' | 'bodybuilding' | 'cardio'
 ): WorkoutExercise[] {
-  return exercises
-    .filter((ex) => !!ex.exerciseId)
-    .map((ex) => {
+  return exercises.map((ex) => {
+      // exerciseId обязателен для схемы — используем каталожный если нашли,
+      // иначе "custom:<displayName>" (зоны = 0, но упражнение не теряется)
+      const exerciseId = ex.exerciseId ?? `custom:${ex.displayName ?? ex.name}`
+      const name = ex.displayName ?? ex.name
+
+      const zones = ex.zones && ex.zones.length > 0 ? ex.zones : undefined
+
       if (workoutType === 'cardio') {
         const set: WorkoutSet = { id: crypto.randomUUID(), time: (ex.duration ?? 20) * 60 }
         return {
-          exerciseId: ex.exerciseId!,
+          exerciseId,
+          name,
+          zones,
           type: 'cardio' as const,
           sets: [set],
           blockId: ex.supersetGroup ?? undefined,
@@ -474,7 +482,9 @@ function aiExercisesToWorkoutExercises(
             weight: ex.weight,
           }))
       return {
-        exerciseId: ex.exerciseId!,
+        exerciseId,
+        name,
+        zones,
         type: workoutType === 'crossfit' ? ('wod' as const) : ('strength' as const),
         sets,
         blockId: ex.supersetGroup ?? undefined,
@@ -483,89 +493,51 @@ function aiExercisesToWorkoutExercises(
 }
 
 /**
- * Порог fuzz.token_set_ratio [0..100].
- * 72 ≈ "barbell bench press" vs "bench press" (~80% overlap).
- * AI возвращает английские имена, каталог — тоже английский.
- */
-const FUZZY_THRESHOLD = 72
-
-/**
  * Матчит упражнения из AI-ответа к реальным ID каталога.
- * AI возвращает английские имена (см. промпт), каталог — тоже английский.
- *
- * Порядок поиска (от точного к нечёткому):
- *   1. Точное совпадение title (без учёта регистра)
- *   2. title содержит имя из AI (или наоборот)
- *   3. Любое keyword содержит имя из AI (или наоборот)
- *   4. fuzz.token_set_ratio по title + keywords
- *
- * Если совпадение найдено — заполняет exerciseId, иначе оставляет undefined
- * (тренировка запишется, но зоны будут пустыми).
+ * Три шага — только детерминированные совпадения, без fuzzy и GPT.
+ * Всё что не матчится → custom: + AI-зоны для аналитики.
  */
-async function matchExercisesToCatalog(result: AiWorkoutResult): Promise<AiWorkoutResult> {
+function matchExercisesToCatalog(result: AiWorkoutResult): AiWorkoutResult {
   const catalog = ExerciseCatalog.all()
 
-  const matched: AiExercise[] = result.exercises.map((aiEx) => {
+  const exercises = result.exercises.map((aiEx) => {
     const nameLower = aiEx.name.toLowerCase()
 
-    // 1. Точное совпадение title
-    let found = catalog.find((ex) => ex.title.toLowerCase() === nameLower)
+    // 1. Точное совпадение по нормализованному ID
+    let found = catalog.find((ex) => ex.id.replace(/_/g, ' ').toLowerCase() === nameLower)
 
-    // 2. Частичное совпадение (AI-имя содержится в title или наоборот)
+    // 2. Substring: ID содержит AI-имя с coverage ≥ 0.6, или AI-имя содержит длинный ID (≥ 3 слов)
     if (!found) {
-      found = catalog.find(
-        (ex) =>
-          ex.title.toLowerCase().includes(nameLower) ||
-          nameLower.includes(ex.title.toLowerCase())
-      )
+      found = catalog.find((ex) => {
+        const idPhrase = ex.id.replace(/_/g, ' ').toLowerCase()
+        const idWordCount = idPhrase.split(' ').filter((w) => w !== '-').length
+        const nameWordCount = nameLower.split(' ').length
+        return (idPhrase.includes(nameLower) && nameWordCount / idWordCount >= 0.6)
+          || (idWordCount >= 3 && nameLower.includes(idPhrase))
+      })
     }
 
-    // 3. Совпадение по keywords
+    // 3. Keyword: любой keyword содержит AI-имя с coverage ≥ 0.6
     if (!found) {
       found = catalog.find((ex) =>
-        (ex.keywords ?? []).some(
-          (kw) => kw.toLowerCase().includes(nameLower) || nameLower.includes(kw.toLowerCase())
-        )
+        (ex.keywords ?? []).some((kw) => {
+          const kwLower = kw.toLowerCase()
+          if (!kwLower.includes(nameLower)) return false
+          const kwWordCount = kwLower.split(' ').filter((w) => w !== '-').length
+          return nameLower.split(' ').length / kwWordCount >= 0.6
+        })
       )
     }
 
-    // 4. Нечёткий поиск: token_set_ratio по title + keywords.
-    // Сначала ищем среди записей с совпадением стема первого слова (различает
-    // "сгибания" от "разгибания"), при отсутствии результата — по всему каталогу.
-    if (!found) {
-      const firstWord = nameLower.split(/\s+/)[0]
-      const stem = firstWord.length >= 5 ? firstWord.slice(0, firstWord.length - 2) : null
-      const candidatePool =
-        stem && stem.length >= 5
-          ? catalog.filter((ex) => ex.title.toLowerCase().split(/\s+/)[0].startsWith(stem))
-          : catalog
-      const searchPool = candidatePool.length > 0 ? candidatePool : catalog
-
-      let bestScore = 0
-      let bestMatch: (typeof catalog)[number] | undefined
-
-      for (const ex of searchPool) {
-        let score = token_set_ratio(nameLower, ex.title.toLowerCase())
-
-        for (const kw of ex.keywords ?? []) {
-          const kwScore = token_set_ratio(nameLower, kw.toLowerCase())
-          if (kwScore > score) score = kwScore
-        }
-
-        if (score > bestScore) {
-          bestScore = score
-          bestMatch = ex
-        }
-      }
-
-      if (bestScore >= FUZZY_THRESHOLD) {
-        found = bestMatch
-      }
+    if (found) {
+      logger.info({ name: aiEx.name, exerciseId: found.id }, 'ai:match hit')
+      return { ...aiEx, exerciseId: found.id }
     }
 
-    return found ? { ...aiEx, exerciseId: found.id } : aiEx
+    logger.info({ name: aiEx.name }, 'ai:match miss — will use custom: prefix')
+    return aiEx
   })
 
-  return { ...result, exercises: matched }
+  return { ...result, exercises }
 }
 

@@ -7,7 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { workoutsApi, type WorkoutSet } from '@/api/workouts';
 import { aiApi } from '@/api/ai';
-import { parseApiDateTime } from '@/utils/date';
+import { parseApiDateTime, parseLocalDate } from '@/utils/date';
 import { exercisesApi } from '@/api/exercises';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
 import type { Exercise } from '@/types/Exercise';
@@ -20,6 +20,7 @@ import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 import { PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import ExerciseDrawer from '@/screens/WorkoutForm/ExerciseDrawer';
 import type { ExerciseWithSets } from '@/types/Exercise';
+import WorkoutIntensityBar from '@/components/WorkoutIntensityBar/WorkoutIntensityBar';
 
 /* ─── Типы ──────────────────────────────────────────────────────────── */
 
@@ -28,6 +29,7 @@ interface FullWorkout {
   workoutType: string;
   exercises: Array<{
     exerciseId: string;
+    name?: string;
     type: 'strength' | 'cardio' | 'wod';
     sets?: WorkoutSet[];
     rounds?: number;
@@ -104,7 +106,7 @@ function extractTime(dateStr?: string): string | null {
 
 // Есть ли подходы с повторами без веса (атлет должен дополнить)
 function hasSetsNeedingWeight(ex: FullWorkout['exercises'][number]): boolean {
-  return (ex.sets ?? []).some((s) => (s.reps ?? 0) > 0 && s.weight == null);
+  return (ex.sets ?? []).some((s) => (s.reps ?? 0) > 0 && !s.weight);
 }
 
 /* ─── Секции ─────────────────────────────────────────────────────────  */
@@ -117,25 +119,15 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-function IntensityBar({ value }: { value: number }) {
-  const pct = Math.round(value * 100);
-  return (
-    <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 rounded-full bg-(--color_bg_card_hover) overflow-hidden">
-        <div className="h-full rounded-full bg-linear-to-r from-emerald-600 to-emerald-400 transition-all duration-500" style={{ width: `${pct}%` }} />
-      </div>
-      <span className="text-xs text-(--color_text_muted) tabular-nums w-8 text-right">{pct}%</span>
-    </div>
-  );
-}
 
 /* ─── Карточка упражнения ─────────────────────────────────────────── */
 
 function ExerciseCard({
-  ex, exerciseName, isEditing, onEditClick, onDelete,
+  ex, exerciseName, number, isEditing, onEditClick, onDelete,
 }: {
   ex: FullWorkout['exercises'][number];
   exerciseName: string;
+  number: number;
   isEditing: boolean;
   onEditClick?: () => void;
   onDelete?: () => void;
@@ -148,9 +140,9 @@ function ExerciseCard({
   return (
     <div className={`relative rounded-xl p-3 border space-y-2 ${isInSuperset ? 'bg-amber-500/10 border-amber-500/40' : 'bg-(--color_bg_card) border-(--color_border)'}`}>
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          {isInSuperset && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 font-semibold shrink-0">СС</span>}
-          <span className="text-sm font-semibold text-white leading-tight truncate">{exerciseName}</span>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <span className="text-[11px] font-bold tabular-nums w-5 h-5 rounded-md flex items-center justify-center shrink-0 bg-white/8 border border-white/12 text-white/50">{number}</span>
+<span className="text-sm font-semibold text-white leading-tight truncate">{exerciseName}</span>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {vol > 0 && (
@@ -290,6 +282,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
   const buildUpdatePayload = (overrides: { exercises?: FullWorkout['exercises']; rpe?: number | null }) => {
     const exercises = (overrides.exercises ?? editExercises).map((ex) => ({
       exerciseId: ex.exerciseId,
+      name: ex.name,
       type: ex.type,
       sets: ex.sets,
       rounds: ex.rounds,
@@ -390,6 +383,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
         return {
           ...ex,
           exerciseId: String(saved.exerciseId),
+          name: saved.title,
           sets: saved.sets.map((s) => ({ id: s.id, reps: s.reps, weight: s.weight })),
           duration: saved.duration != null ? saved.duration * 60 : ex.duration,
         };
@@ -424,7 +418,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
 
   const timeLabel = extractTime(workout?.date);
   const dateLabel = workout?.date
-    ? format(new Date(workout.date.slice(0, 10) + 'T12:00:00'), 'd MMMM yyyy', { locale: ru })
+    ? format(parseLocalDate(workout.date.slice(0, 10)), 'd MMMM yyyy', { locale: ru })
     : '';
 
   const hasMissingWeights = fullWorkout?.exercises.some(hasSetsNeedingWeight) ?? false;
@@ -433,7 +427,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
     (fullWorkout?.exercises.length ?? 0) === 0 &&
     !!fullWorkout?.notes?.trim();
   // Прошлая тренировка — можно оценивать и редактировать
-  const isPast = workout?.date ? new Date(workout.date) <= new Date() : false;
+  const isPast = workout?.date ? parseApiDateTime(workout.date) <= new Date() : false;
 
   return (
     <BottomSheet
@@ -529,13 +523,10 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
           )}
 
           {/* ── Интенсивность ──────────────────────────────────────── */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-(--color_text_muted)">Интенсивность</span>
-              <span className="text-xs text-(--color_text_muted) tabular-nums">{Math.round(fullWorkout.totalIntensity * 100)}%</span>
-            </div>
-            <IntensityBar value={fullWorkout.totalIntensity} />
-          </div>
+          <WorkoutIntensityBar
+            intensity={fullWorkout.totalIntensity}
+            hasMissingWeights={hasMissingWeights}
+          />
 
           {/* ── RPE — оценка (только прошедшая, вне режима редактирования) ── */}
           {isPast && !isEditing && (
@@ -574,23 +565,38 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
           {fullWorkout.exercises.length > 0 && (
             <div>
               <SectionTitle>Упражнения · {fullWorkout.exercises.length}</SectionTitle>
-              <div className="space-y-0">
+              <div className="flex flex-col">
                 {(isEditing ? editExercises : fullWorkout.exercises).map((ex, i, arr) => {
-                  const name = exerciseMap.get(ex.exerciseId)?.title ?? ex.exerciseId.replace(/_/g, ' ');
-                  const isLinkedToNext = isEditing && i < arr.length - 1 && !!ex.blockId && ex.blockId === arr[i + 1].blockId;
-                  const showSupersetBtn = isEditing && i < arr.length - 1;
+                  const name = ex.name ?? exerciseMap.get(ex.exerciseId)?.title ?? ex.exerciseId.replace(/_/g, ' ');
+                  const isLinkedToNext = i < arr.length - 1 && !!ex.blockId && ex.blockId === arr[i + 1].blockId;
+                  const isLast = i === arr.length - 1;
                   return (
-                    <div key={i} className={showSupersetBtn ? '' : 'mb-2'}>
+                    <div key={i}>
                       <ExerciseCard
                         ex={ex}
                         exerciseName={name}
+                        number={i + 1}
                         isEditing={isEditing}
                         onEditClick={() => setEditingExIdx(i)}
                         onDelete={isEditing ? () => setEditExercises((prev) => prev.filter((_, idx) => idx !== i)) : undefined}
                       />
-                      {isEditing && i < arr.length - 1 && (
-                        <div className="relative flex items-center h-7 pl-4 mb-2">
-                          {isLinkedToNext && <div className="absolute left-4.5 top-0 bottom-0 w-0.5 bg-amber-500/60" />}
+                      {/* Между упражнениями в просмотре */}
+                      {!isEditing && !isLast && (
+                        isLinkedToNext ? (
+                          /* Суперсет: маленький коннектор */
+                          <div className="relative flex items-center h-5 pl-4">
+                            <div className="absolute left-[18px] top-0 bottom-0 w-0.5 bg-amber-500/50" />
+                            <span className="ml-7 text-[10px] text-amber-400/60 font-medium">суперсет</span>
+                          </div>
+                        ) : (
+                          /* Обычный разделитель */
+                          <div className="my-3 border-t border-(--color_border)" />
+                        )
+                      )}
+                      {/* Кнопка суперсета — только в режиме редактирования */}
+                      {isEditing && !isLast && (
+                        <div className="relative flex items-center h-7 pl-4">
+                          {isLinkedToNext && <div className="absolute left-[18px] top-0 bottom-0 w-0.5 bg-amber-500/60" />}
                           <button
                             onClick={() => {
                               setEditExercises((prev) => {
@@ -727,7 +733,8 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
           open={true}
           exercise={toExerciseWithSets(
             editExercises[editingExIdx],
-            exerciseMap.get(editExercises[editingExIdx].exerciseId)?.title
+            editExercises[editingExIdx].name
+              ?? exerciseMap.get(editExercises[editingExIdx].exerciseId)?.title
               ?? editExercises[editingExIdx].exerciseId.replace(/_/g, ' ')
           )}
           workoutType={(fullWorkout?.workoutType ?? 'bodybuilding') as any}

@@ -32,6 +32,36 @@ export function getCurrentHour(): number {
   return new Date().getHours();
 }
 
+/** Returns a Date set to the current hour with minutes/seconds zeroed (e.g. 14:33 → 14:00). */
+export function nowRoundedToHour(): Date {
+  const d = new Date();
+  d.setMinutes(0, 0, 0);
+  return d;
+}
+
+/** Returns the current time as "HH:00" string (minutes zeroed). */
+export function currentHourString(): string {
+  return `${String(new Date().getHours()).padStart(2, '0')}:00`;
+}
+
+/** Returns a Date representing today (current date, time zeroed). */
+export function today(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/**
+ * Parses a "HH:mm" time string and applies it to a new Date object (today's date).
+ * Use instead of `new Date()` + manual `setHours`.
+ */
+export function parseTimeString(timeStr: string): Date {
+  const d = new Date();
+  const [h, m] = timeStr.split(':').map(Number);
+  d.setHours(h, m, 0, 0);
+  return d;
+}
+
 /** Formats a Date to "HH:mm" using LOCAL timezone components. */
 export function toTimeKey(date: Date): string {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;

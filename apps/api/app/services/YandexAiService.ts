@@ -1,4 +1,7 @@
 import env from '#start/env'
+import logger from '@adonisjs/core/services/logger'
+import convert from 'heic-convert'
+import { MUSCLE_ZONES } from '#services/ExerciseCatalog'
 
 export interface AiSetData {
   reps?: number
@@ -20,6 +23,8 @@ export interface AiExercise {
   supersetGroup?: string
   /** Заполняется после матчинга к каталогу упражнений (если нашли совпадение) */
   exerciseId?: string
+  /** Зоны мышц, задействованные в упражнении — заполняется GPT напрямую */
+  zones?: string[]
 }
 
 export interface AiWorkoutResult {
@@ -28,12 +33,14 @@ export interface AiWorkoutResult {
   notes?: string
 }
 
+const ZONES_LIST = MUSCLE_ZONES.map((z) => `"${z}"`).join(',')
+
 // Системный промпт для парсинга текста тренировки в JSON (OCR / изображения)
 const PARSE_SYSTEM_PROMPT = `You are a fitness assistant. You are given text recognized from a photo of a workout board or sheet. Parse it into strict JSON format.
 
 Requirements:
-1. Return only JSON, no surrounding text
-2. Format: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"Barbell Bench Press","displayName":"Жим штанги лёжа","sets":3,"reps":10,"weight":null,"setData":[{"reps":15},{"reps":12},{"reps":10}],"duration":null,"notes":null,"supersetGroup":null}],"notes":"general notes"}
+1. Return only a single JSON object — NOT an array, NOT wrapped in markdown code blocks, NO extra text
+2. Format: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"Barbell Bench Press","displayName":"Жим штанги лёжа","sets":3,"reps":10,"weight":null,"setData":[{"reps":15},{"reps":12},{"reps":10}],"duration":null,"notes":null,"supersetGroup":null,"zones":["chests","triceps","shoulders"]}],"notes":"general notes"}
 3. weight — in kilograms, duration — in MINUTES (not seconds)
 4. If a parameter is not specified — use null
 5. supersetGroup — if exercises are performed as a superset, assign them the same letter (e.g. "A"). Different superset pairs use different letters ("A", "B", etc.). If not a superset — use null
@@ -41,13 +48,19 @@ Requirements:
    - "crossfit" = WOD, AMRAP, For Time, EMOM, Tabata, circuit training, functional fitness, HIIT with barbell/bodyweight
    - "bodybuilding" = strength training, weightlifting, isolation exercises, hypertrophy, powerlifting, muscle building (bench press, squats, curls, etc.)
    - "cardio" = running, cycling, swimming, rowing, stretching, yoga, mobility, flexibility, pilates, walking, any low-intensity or duration-based activity
-7. "name" — standard English gym terminology for catalog matching (e.g. "Barbell Bench Press", "Back Squat", "Pull-Up", "Deadlift")
+7. "name" — precise English gym terminology for catalog matching. ALWAYS include equipment and variant:
+   - Include equipment: "Barbell", "Dumbbell", "Kettlebell", "Cable", "Machine", "Bodyweight" etc.
+   - Include variant if known: "Incline", "Decline", "Overhead", "Seated", "Standing", "One-Arm" etc.
+   - Examples: "Barbell Thruster" (not "Thruster"), "Dumbbell Lateral Raise" (not "Lateral Raise"), "Kettlebell Swing" (not "Swing")
+   - For unknown/unclear Russian exercises: use the closest standard English equivalent, NOT a transliteration
+   - "Скалолаз" = "Mountain Climber", "Трастеры" = "Thruster", "Пресс книжка" = "Jackknife Sit-Up"
 8. "displayName" — Russian name shown to the user (e.g. "Жим штанги лёжа", "Приседания со штангой", "Подтягивания", "Становая тяга"). For non-standard CrossFit exercises write the Russian transliteration or translation.
-9. Interpret abbreviations: "5х10" = 5 sets of 10 reps, "x" or "×" = sets×reps
-10. For cardio exercises always set duration (in minutes); for strength/crossfit set reps
-11. notes field — write in Russian for user readability
-12. CRITICAL — progressive/varied sets: if the same exercise name is followed by multiple "1×N" or "1×N-M" lines (e.g. "Bench Press / 1×15 / 1×12-10 / 1×10-8 / 1×8-6"), treat them as ONE exercise with setData listing each set. For ranges like "12-10" use the first (higher) number as reps. sets = number of setData entries. Do NOT create a separate exercise for each set line.
-13. setData: for each set provide {reps, weight} — include weight if known, otherwise omit it. Use setData whenever sets have different rep counts or when individual set lines are listed explicitly.`
+9. "zones" — array of muscle zones this exercise primarily works. Choose ONLY from: [${ZONES_LIST}]. Include 1-4 most relevant zones. Examples: bench press = ["chests","triceps","shoulders"], squat = ["legs","glutes"], plank = ["core"]
+10. Interpret abbreviations: "5х10" = 5 sets of 10 reps, "x" or "×" = sets×reps
+11. For cardio exercises always set duration (in minutes); for strength/crossfit set reps
+12. notes field — write in Russian for user readability
+13. CRITICAL — progressive/varied sets: if the same exercise name is followed by multiple "1×N" or "1×N-M" lines (e.g. "Bench Press / 1×15 / 1×12-10 / 1×10-8 / 1×8-6"), treat them as ONE exercise with setData listing each set. For ranges like "12-10" use the first (higher) number as reps. sets = number of setData entries. Do NOT create a separate exercise for each set line.
+14. setData: for each set provide {reps, weight} — include weight if known, otherwise omit it. Use setData whenever sets have different rep counts or when individual set lines are listed explicitly.`
 
 // Системный промпт для парсинга заметок тренера
 const PARSE_NOTES_SYSTEM_PROMPT = `Разбери текст тренировки в JSON. Верни только JSON, без текста вокруг.
@@ -81,7 +94,7 @@ const GENERATE_SYSTEM_PROMPT = `You are a professional fitness trainer. Generate
 
 Requirements:
 1. Return only JSON, no surrounding text
-2. Format: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"Barbell Bench Press","displayName":"Жим штанги лёжа","sets":3,"reps":10,"weight":null,"duration":null,"notes":"техника в 1-2 предложения","supersetGroup":null}],"notes":"общие рекомендации"}
+2. Format: {"workoutType":"crossfit|bodybuilding|cardio","exercises":[{"name":"Barbell Bench Press","displayName":"Жим штанги лёжа","sets":3,"reps":10,"weight":null,"duration":null,"notes":"техника в 1-2 предложения","supersetGroup":null,"zones":["chests","triceps","shoulders"]}],"notes":"общие рекомендации"}
 3. weight — in kilograms (null if not applicable), duration — in MINUTES (not seconds, null if not applicable)
 4. Generate a realistic workout with correct volume and intensity
 5. Take into account fitness level if specified: beginner, intermediate, advanced
@@ -93,9 +106,10 @@ Requirements:
 8. For crossfit/bodybuilding: set reps, set duration to null
 9. "name" — standard English gym terminology for catalog matching (e.g. "Barbell Bench Press", "Back Squat", "Pull-Up", "Deadlift", "Dumbbell Curl")
 10. "displayName" — Russian exercise name shown in the app UI (e.g. "Жим штанги лёжа", "Приседания со штангой")
-11. 4-8 exercises for a standard workout
-12. notes and technique tips — write in Russian for user readability
-13. supersetGroup — if the user mentions supersets or paired exercises, assign them the same letter (e.g. "A"). Different superset pairs use different letters ("A", "B", etc.). If not a superset — use null`
+11. "zones" — array of muscle zones. Choose ONLY from: [${ZONES_LIST}]. Include 1-4 most relevant zones.
+12. 4-8 exercises for a standard workout
+13. notes and technique tips — write in Russian for user readability
+14. supersetGroup — if the user mentions supersets or paired exercises, assign them the same letter (e.g. "A"). Different superset pairs use different letters ("A", "B", etc.). If not a superset — use null`
 
 // Yandex Vision OCR — специализированный OCR для текста (включая рукописный)
 const VISION_OCR_URL = 'https://ocr.api.cloud.yandex.net/ocr/v1/recognizeText'
@@ -121,8 +135,18 @@ export class YandexAiService {
     const apiKey = env.get('YANDEX_CLOUD_API_KEY')!
     const folderId = env.get('YANDEX_FOLDER_ID')!
 
+    // HEIC/HEIF → конвертируем в JPEG через heic-convert (OCR не поддерживает HEIC)
+    if (mimeType === 'image/heic' || mimeType === 'image/heif') {
+      logger.info({ mimeType }, 'ai:recognize converting HEIC to JPEG')
+      const buffer = Buffer.from(imageBase64, 'base64')
+      const jpeg = await convert({ buffer, format: 'JPEG', quality: 0.9 })
+      imageBase64 = Buffer.from(jpeg).toString('base64')
+      mimeType = 'image/jpeg'
+    }
+
     // Шаг 1: OCR — извлечь текст с изображения
     const extractedText = await this.extractTextWithOcr(imageBase64, mimeType, apiKey, folderId)
+    logger.info({ mimeType, ocrChars: extractedText.length, ocrPreview: extractedText.slice(0, 300) }, 'ai:ocr result')
 
     if (!extractedText.trim()) {
       throw new Error('Не удалось распознать текст на изображении. Убедитесь, что текст виден чётко.')
@@ -136,6 +160,7 @@ export class YandexAiService {
       0.1,
       apiKey
     )
+    logger.info({ gptPreview: result.slice(0, 500) }, 'ai:gpt result')
 
     return this.parseWorkoutJson(result)
   }
@@ -180,6 +205,50 @@ export class YandexAiService {
     )
 
     return this.parseWorkoutJson(result)
+  }
+
+  /**
+   * Второй проход матчинга: для нераспознанных упражнений отправляет батч в GPT.
+   * exercises — массив { name, displayName, candidates: [{id, phrase}] }
+   * Возвращает Map: originalName → catalogId | null
+   */
+  static async matchExercisesWithAi(
+    exercises: Array<{
+      name: string
+      displayName: string
+      candidates: Array<{ id: string; phrase: string }>
+    }>
+  ): Promise<Map<string, string | null>> {
+    const apiKey = env.get('YANDEX_CLOUD_API_KEY')!
+    const folderId = env.get('YANDEX_FOLDER_ID')!
+
+    const systemPrompt = `You are a fitness exercise catalog matcher. You receive a JSON array of exercises, each with candidate catalog entries.
+For each exercise select the best matching candidate ID. Return ONLY a JSON object: {"exercise_name": "catalog_id_or_null"}.
+Rules:
+- The returned ID must be exactly one of the provided candidate IDs (copy it verbatim)
+- Use null if no candidate is a reasonable semantic match
+- No markdown, no extra text — only the JSON object`
+
+    const userMessage = JSON.stringify(
+      exercises.map((ex) => ({
+        name: ex.name,
+        displayName: ex.displayName,
+        candidates: ex.candidates,
+      }))
+    )
+
+    const raw = await this.callGpt(
+      folderId,
+      systemPrompt,
+      userMessage,
+      0.0,
+      apiKey,
+      env.get('YANDEX_GPT_PARSE_MODEL', 'yandexgpt')
+    )
+
+    const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    const parsed: Record<string, string | null> = JSON.parse(cleaned)
+    return new Map(Object.entries(parsed))
   }
 
   /**
@@ -362,12 +431,14 @@ export class YandexAiService {
     let parsed: any
     try {
       parsed = JSON.parse(cleaned)
+      // GPT иногда оборачивает результат в массив — берём первый элемент
+      if (Array.isArray(parsed)) parsed = parsed[0]
     } catch {
       throw new Error('AI вернул некорректный JSON')
     }
 
     const validTypes = ['crossfit', 'bodybuilding', 'cardio'] as const
-    const workoutType = validTypes.includes(parsed.workoutType) ? parsed.workoutType : 'crossfit'
+    const workoutType = validTypes.includes(parsed.workoutType) ? parsed.workoutType : 'bodybuilding'
 
     const exercises: AiExercise[] = (Array.isArray(parsed.exercises) ? parsed.exercises : []).map(
       (ex: any) => {
@@ -380,6 +451,11 @@ export class YandexAiService {
             }))
           : undefined
 
+        const rawZones = Array.isArray(ex.zones) ? ex.zones : []
+        const zones = rawZones
+          .map((z: any) => String(z))
+          .filter((z: string) => (MUSCLE_ZONES as readonly string[]).includes(z))
+
         return {
           name: String(ex.name || 'Exercise'),
           displayName: String(ex.displayName || ex.name || 'Упражнение'),
@@ -390,6 +466,7 @@ export class YandexAiService {
           setData,
           notes: ex.notes != null ? String(ex.notes) : undefined,
           supersetGroup: ex.supersetGroup != null ? String(ex.supersetGroup) : undefined,
+          zones: zones.length > 0 ? zones : undefined,
         }
       }
     )

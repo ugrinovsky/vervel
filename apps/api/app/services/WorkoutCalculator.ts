@@ -52,14 +52,27 @@ export class WorkoutCalculator {
     const exerciseMap = await this.loadExercises(exercises);
 
     for (const input of exercises) {
-      const exercise = exerciseMap.get(input.exerciseId);
-      if (!exercise) continue;
+      const catalogEntry = exerciseMap.get(input.exerciseId);
 
-      const { load, volume } = this.calculateExerciseLoad(exercise, input, workoutType);
+      // Use catalog entry if found; otherwise fall back to AI-provided zones
+      const zones = catalogEntry?.zones ?? input.zones;
+      if (!zones || zones.length === 0) continue;
+
+      const entry: CatalogExercise = catalogEntry ?? {
+        id: input.exerciseId,
+        title: input.name ?? input.exerciseId,
+        category: 'strength',
+        keywords: [],
+        zones,
+        intensity: 0.7,
+        imageUrl: null,
+      };
+
+      const { load, volume } = this.calculateExerciseLoad(entry, input, workoutType);
 
       totalVolume += volume;
 
-      for (const zone of exercise.zones) {
+      for (const zone of zones) {
         zoneLoads[zone] = (zoneLoads[zone] ?? 0) + load;
       }
     }
@@ -366,6 +379,9 @@ export class WorkoutCalculator {
       const intensity =
         typeof w.totalIntensity === 'string' ? parseFloat(w.totalIntensity) : w.totalIntensity || 0;
       const hasExercises = Array.isArray(w.exercises) && w.exercises.length > 0;
+      const hasMissingWeights = Array.isArray(w.exercises) && w.exercises.some((ex) =>
+        (ex.sets ?? []).some((s: any) => (s.reps ?? 0) > 0 && !s.weight)
+      );
       return {
         id: w.id,
         date: w.date.toString(),
@@ -374,6 +390,7 @@ export class WorkoutCalculator {
         type: w.workoutType || 'unknown',
         scheduledWorkoutId: w.scheduledWorkoutId ?? null,
         loadLevel: WorkoutCalculator.getLoadLevel(volume, intensity, hasExercises),
+        hasMissingWeights,
       };
     });
 
