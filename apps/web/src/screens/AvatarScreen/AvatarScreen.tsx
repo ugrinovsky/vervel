@@ -177,8 +177,8 @@ export default function AvatarScreen() {
                     key={i}
                     className={`h-2 flex-1 rounded-full transition-colors ${
                       i < thisWeekWorkouts
-                        ? 'bg-(--color_primary)'
-                        : 'bg-(--color_border)'
+                        ? 'bg-(--color_primary_light)'
+                        : 'bg-white/25'
                     }`}
                   />
                 ))}
