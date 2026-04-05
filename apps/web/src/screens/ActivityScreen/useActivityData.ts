@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { useLocation } from 'react-router';
 import { toDateKey, parseApiDateTime, parseLocalDate } from '@/utils/date';
@@ -60,8 +60,21 @@ export function useActivityData(draftDate?: string | null) {
   const [stats, setStats] = useState<WorkoutStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refetchTrigger, setRefetchTrigger] = useState(0);
+  const currentMonthRef = useRef(currentMonth);
+  useEffect(() => { currentMonthRef.current = currentMonth; }, [currentMonth]);
 
-  const refetch = () => setRefetchTrigger((t) => t + 1);
+  const refetch = async () => {
+    const year = currentMonthRef.current.getFullYear();
+    const month = currentMonthRef.current.getMonth();
+    const from = toDateKey(new Date(year, month, 1));
+    const to = toDateKey(new Date(year, month + 1, 0)) + 'T23:59:59';
+    try {
+      const res = await workoutsApi.stats(from, to);
+      setStats(res.data);
+    } catch {
+      setStats(null);
+    }
+  };
 
   useEffect(() => {
     const year = currentMonth.getFullYear();

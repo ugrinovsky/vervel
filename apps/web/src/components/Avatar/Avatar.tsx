@@ -59,7 +59,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
   const bodyData = gender === 'female' ? femaleBody : maleBody;
   const viewDef  = bodyData[side];
   const { viewBox: rawViewBox, outline, parts } = viewDef;
-  const viewBox = cropViewBox(rawViewBox, 0.08);
+  const viewBox = cropViewBox(rawViewBox, 0);
   const cyl = cylinderFromViewBox(viewBox);
 
   const exerciseParts   = parts.filter((p) => p.appZone !== null);
@@ -97,16 +97,7 @@ const BodySVG: React.FC<BodySVGProps> = ({
   };
 
   return (
-    <div className="avatar-wrapper glass relative" style={{ paddingBottom: 0 }}>
-      {/* ── Front / Back toggle ─────────────────────────────────────────── */}
-      <div className="absolute top-2 right-2 z-10 flex gap-0.5 bg-(--color_bg_card) rounded-lg p-0.75 border border-(--color_border)">
-        {(['front', 'back'] as BodySide[]).map((s) => (
-          <PillButton key={s} active={side === s} onClick={() => setSide(s)}>
-            {s === 'front' ? 'Перед' : 'Зад'}
-          </PillButton>
-        ))}
-      </div>
-
+    <div className="avatar-wrapper glass relative w-full" style={{ paddingBottom: 0 }}>
       {/* Ambient radial glow */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -117,18 +108,28 @@ const BodySVG: React.FC<BodySVGProps> = ({
         }}
       />
 
-      <AnimatePresence mode="wait">
-        <motion.svg
-          key={`${gender}-${side}`}
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox={viewBox}
-          className="w-full"
-          style={{ pointerEvents: 'all', display: 'block' }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.22 }}
-        >
+      <div className="absolute top-0 right-0 z-20 flex gap-0.5 rounded-tr-2xl rounded-bl-xl border-b border-l border-(--color_border) bg-(--color_bg_card) px-1 py-1">
+        {(['front', 'back'] as BodySide[]).map((s) => (
+          <PillButton key={s} active={side === s} onClick={() => setSide(s)}>
+            {s === 'front' ? 'Перед' : 'Зад'}
+          </PillButton>
+        ))}
+      </div>
+
+      <div className="relative z-[1] w-fit max-w-full mx-auto lg:mx-0 lg:w-full">
+        <AnimatePresence mode="wait">
+          <motion.svg
+            key={`${gender}-${side}`}
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox={viewBox}
+            preserveAspectRatio="xMidYMid meet"
+            className="block h-[min(72dvh,680px)] w-auto max-w-full lg:h-auto lg:w-full"
+            style={{ pointerEvents: 'all' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22 }}
+          >
           <defs>
             <filter id="av-zone-glow" x="-40%" y="-40%" width="180%" height="180%">
               <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
@@ -347,7 +348,8 @@ const BodySVG: React.FC<BodySVGProps> = ({
             />
           </g>
         </motion.svg>
-      </AnimatePresence>
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
