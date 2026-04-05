@@ -101,7 +101,7 @@ function Podium({
     <div className="flex items-end gap-1.5">
       {PODIUM_COLS.map(({ sortIdx, medal, platformH, platformColor, valueColor }) => {
         const candidate = sorted[sortIdx] ?? null;
-        const entry = candidate && (candidate[metric] ?? 0) > 0 ? candidate : null;
+        const entry = candidate ?? null;
         const rank = sortIdx + 1;
         return (
           <div key={sortIdx} className="flex-1 flex flex-col items-center">
@@ -201,8 +201,6 @@ export default function LeaderboardScreen() {
     return b.workouts - a.workouts;
   });
 
-  const topValue = sorted[0]?.[metric] ?? null;
-  const hasResults = topValue !== null && topValue > 0;
   const metricEmpty = entries.every((e) => e[metric] === null || e[metric] === 0);
 
   return (
@@ -264,7 +262,7 @@ export default function LeaderboardScreen() {
             {sorted.length >= 2 && (
               <AnimatedBlock className={`${cardClass} rounded-2xl px-4 pt-3 pb-0 overflow-hidden`}>
                 <CardHeader title="Топ-3" />
-                <Podium sorted={hasResults ? sorted : []} metric={metric} format={currentMetric.format} />
+                <Podium sorted={sorted} metric={metric} format={currentMetric.format} />
               </AnimatedBlock>
             )}
 

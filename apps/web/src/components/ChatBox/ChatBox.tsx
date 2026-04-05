@@ -9,6 +9,7 @@ import AppInput from '@/components/ui/AppInput';
 import { useAuth } from '@/contexts/AuthContext';
 import { checkForNewAchievements } from '@/hooks/useAchievementToast';
 import { refreshDialogs } from '@/hooks/useDialogs';
+import { useVisualViewportBottomInset } from '@/hooks/useVisualViewportBottomInset';
 import { WorkoutPreviewCard, parseWorkoutPreview } from './WorkoutPreviewCard';
 import type { WorkoutPreviewData } from './WorkoutPreviewCard';
 import WorkoutDetailSheet from '@/screens/ActivityScreen/WorkoutDetailSheet';
@@ -62,6 +63,8 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
   const loadingOlderRef = useRef(false);
   const scrollNeededRef = useRef<ScrollBehavior | null>(null);
   const [bottomPanelHeight, setBottomPanelHeight] = useState(80);
+  const { bottomInset: keyboardBottomInset, remeasureForKeyboardFocus } =
+    useVisualViewportBottomInset(glass);
 
   // Scroll to bottom or restore position — runs after DOM is updated
   useLayoutEffect(() => {
@@ -252,7 +255,14 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
       <div
         ref={scrollContainerRef}
         className={glass ? 'absolute inset-0 overflow-y-auto px-4 space-y-3' : 'flex-1 min-h-0 overflow-y-auto p-4 space-y-3'}
-        style={glass ? { paddingTop: (topPadding ?? 0) + 16, paddingBottom: bottomPanelHeight + 16 } : undefined}
+        style={
+          glass
+            ? {
+                paddingTop: (topPadding ?? 0) + 16,
+                paddingBottom: bottomPanelHeight + 16 + keyboardBottomInset,
+              }
+            : undefined
+        }
       >
         <div ref={topSentinelRef} className="h-px" />
 
@@ -311,15 +321,15 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
                     className={`max-w-[75%] rounded-2xl px-4 py-2 text-white ${
                       isCurrentUser
                         ? glass
-                          ? ''
+                          ? 'backdrop-blur-sm border border-white/22 shadow-[inset_0_1px_0_0_rgb(255_255_255/0.08)]'
                           : 'bg-(--color_primary_light)'
                         : glass
-                          ? 'bg-white/10 backdrop-blur-sm border border-white/10'
+                          ? 'bg-white/[0.06] backdrop-blur-sm border border-white/20 shadow-[inset_0_1px_0_0_rgb(255_255_255/0.06)]'
                           : 'bg-(--color_bg_card_hover)'
                     }`}
                     style={
                       isCurrentUser && glass
-                        ? { background: 'rgb(var(--color_primary_light_ch) / 0.35)' }
+                        ? { background: 'rgb(var(--color_primary_light_ch) / 0.14)' }
                         : undefined
                     }
                   >
@@ -347,8 +357,9 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
       {glass ? (
         <div
           ref={bottomPanelRef}
-          className="absolute bottom-0 left-0 right-0 z-10 flex items-center gap-2 px-3"
+          className="absolute left-0 right-0 z-10 flex items-center gap-2 px-3"
           style={{
+            bottom: keyboardBottomInset,
             background: 'var(--chat_panel_bg)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
@@ -364,6 +375,7 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
               value={newMessage}
               onChange={handleTextareaChange}
               onKeyDown={handleKeyDown}
+              onFocus={remeasureForKeyboardFocus}
               placeholder="Написать сообщение..."
               disabled={sending}
               className="flex-1 bg-transparent text-sm text-white placeholder:text-white/35 border-none focus:outline-none resize-none leading-5"

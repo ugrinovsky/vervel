@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { callsApi, type CallSession } from '../api/calls'
+import { withUnauthorizedRedirect } from '../api/http/baseApi'
 
 interface UseVideoCallReturn {
   session: CallSession | null
@@ -18,8 +19,8 @@ export function useVideoCall(): UseVideoCallReturn {
   const startCallToAthlete = useCallback(async (athleteId: number) => {
     setIsConnecting(true)
     try {
-      const res = await callsApi.callAthlete(athleteId)
-      setSession(res.data)
+      const res = await withUnauthorizedRedirect(() => callsApi.callAthlete(athleteId))
+      if (res) setSession(res.data)
     } finally {
       setIsConnecting(false)
     }
@@ -28,8 +29,8 @@ export function useVideoCall(): UseVideoCallReturn {
   const startCallToGroup = useCallback(async (groupId: number) => {
     setIsConnecting(true)
     try {
-      const res = await callsApi.callGroup(groupId)
-      setSession(res.data)
+      const res = await withUnauthorizedRedirect(() => callsApi.callGroup(groupId))
+      if (res) setSession(res.data)
     } finally {
       setIsConnecting(false)
     }
@@ -38,8 +39,8 @@ export function useVideoCall(): UseVideoCallReturn {
   const joinCall = useCallback(async (roomName: string) => {
     setIsConnecting(true)
     try {
-      const res = await callsApi.join(roomName)
-      setSession(res.data)
+      const res = await withUnauthorizedRedirect(() => callsApi.join(roomName))
+      if (res) setSession(res.data)
     } finally {
       setIsConnecting(false)
     }

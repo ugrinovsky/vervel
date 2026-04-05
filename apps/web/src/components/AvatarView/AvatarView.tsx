@@ -419,9 +419,9 @@ export default function AvatarView({
                 return (
                   <button
                     key={name}
-                    onClick={() => handleZoneClick(name)}
+                    onClick={() => handleZoneClick(ZONE_NORMALIZE[name] ?? name)}
                     className={`w-full flex items-center gap-3 p-2.5 rounded-lg transition-all text-left ${
-                      selectedZone === name
+                      selectedZone === (ZONE_NORMALIZE[name] ?? name)
                         ? 'bg-(--color_primary_light)/15 ring-1 ring-(--color_primary_light)/30'
                         : 'hover:bg-(--color_bg_card_hover)'
                     }`}

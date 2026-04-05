@@ -17,6 +17,16 @@ export default class ProgressionController {
    * GET /athlete/groups/:id/leaderboard?period=7|30
    * Лидерборд группы для атлета — проверяем, что он является участником группы
    */
+  /**
+   * GET /progression/strength-log
+   * Силовой журнал: история подходов по каждому упражнению
+   */
+  async getStrengthLog({ auth, response }: HttpContext) {
+    const user = auth.user!
+    const log = await ProgressionService.getStrengthLog(user.id)
+    return response.ok({ success: true, data: log })
+  }
+
   async getGroupLeaderboard({ auth, params, request, response }: HttpContext) {
     const user = auth.user!
     const groupId = Number(params.id)

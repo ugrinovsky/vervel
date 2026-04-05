@@ -15,7 +15,7 @@ export default class WorkoutsController {
     const user = auth.user!;
     const data = await request.validateUsing(createWorkoutValidator);
 
-    const calculated = await WorkoutCalculator.calculateZoneLoads(data.exercises, data.workoutType, data.rpe);
+    const calculated = await WorkoutCalculator.calculateZoneLoads(data.exercises, data.workoutType, data.rpe, user.id);
 
     const workout = await Workout.create({
       userId: user.id,
@@ -88,7 +88,7 @@ export default class WorkoutsController {
 
     const data = await request.validateUsing(updateWorkoutValidator);
 
-    const calculated = await WorkoutCalculator.calculateZoneLoads(data.exercises, data.workoutType, data.rpe);
+    const calculated = await WorkoutCalculator.calculateZoneLoads(data.exercises, data.workoutType, data.rpe, user.id);
 
     workout.merge({
       date: DateTime.fromISO(data.date),
@@ -164,7 +164,7 @@ export default class WorkoutsController {
         const zoneLoad = aliases.reduce((max, alias) => Math.max(max, load[alias] ?? 0), 0);
         const exercises = ((w.exercises as any[]) ?? []).map((ex: any) => ({
           exerciseId: ex.exerciseId,
-          name: catalogMap.get(ex.exerciseId) ?? ex.exerciseId?.replace(/_/g, ' ') ?? '—',
+          name: catalogMap.get(ex.exerciseId) ?? ex.name ?? ex.exerciseId?.replace(/^custom:/, '').replace(/_/g, ' ') ?? '—',
         }));
         return {
           id: w.id,

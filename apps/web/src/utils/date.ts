@@ -44,6 +44,11 @@ export function currentHourString(): string {
   return `${String(new Date().getHours()).padStart(2, '0')}:00`;
 }
 
+/** Returns the current date and time as a Date object. */
+export function now(): Date {
+  return new Date();
+}
+
 /** Returns a Date representing today (current date, time zeroed). */
 export function today(): Date {
   const d = new Date();

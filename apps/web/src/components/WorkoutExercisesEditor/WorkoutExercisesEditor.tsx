@@ -21,6 +21,7 @@ interface Props {
   superset?: boolean;
   /** Extra content above the exercise list (e.g. AI tools) */
   toolbar?: React.ReactNode;
+  profileWeight?: number;
 }
 
 // ── Normalisation helpers (exported for type-switch handlers) ──────────
@@ -53,6 +54,7 @@ export default function WorkoutExercisesEditor({
   onChange,
   superset = true,
   toolbar,
+  profileWeight,
 }: Props) {
   const [replacingIdx, setReplacingIdx] = useState<number | null>(null);
 
@@ -70,7 +72,18 @@ export default function WorkoutExercisesEditor({
   // ── Helpers ─────────────────────────────────────────────────────────
 
   const update = (index: number, patch: Partial<ExerciseData>) => {
-    onChange(exercises.map((ex, i) => (i === index ? { ...ex, ...patch } : ex)));
+    if ('bodyweight' in patch && patch.bodyweight && profileWeight) {
+      onChange(exercises.map((ex, i) => {
+        if (i !== index) return ex;
+        return {
+          ...ex,
+          ...patch,
+          setsDetail: (ex.setsDetail ?? []).map((s) => ({ ...s, weight: s.weight ?? profileWeight })),
+        };
+      }));
+    } else {
+      onChange(exercises.map((ex, i) => (i === index ? { ...ex, ...patch } : ex)));
+    }
   };
 
   const removeExercise = (index: number) => {
@@ -169,13 +182,14 @@ export default function WorkoutExercisesEditor({
       {toolbar}
 
       {exercises.length > 0 && (
-        <div className={`space-y-0.5 ${toolbar ? 'mt-3' : ''}`}>
+        <div className={toolbar ? 'mt-3' : ''}>
           {exercises.map((ex, i) => {
             const isInBlock = !!ex.blockId;
+            const isLast = i === exercises.length - 1;
             const isLinkedToNext =
               superset &&
               workoutType !== 'crossfit' &&
-              i < exercises.length - 1 &&
+              !isLast &&
               ex.blockId != null &&
               ex.blockId === exercises[i + 1].blockId;
 
@@ -224,6 +238,8 @@ export default function WorkoutExercisesEditor({
                       timeCap={ex.timeCap}
                       rounds={ex.rounds}
                       setsDetail={ex.setsDetail}
+                      bodyweight={ex.bodyweight}
+                      profileWeight={profileWeight}
                       onPatch={(patch) => update(i, patch as Partial<ExerciseData>)}
                       onAddSet={() => addSet(i)}
                       onRemoveSet={(si) => removeSet(i, si)}
@@ -242,25 +258,31 @@ export default function WorkoutExercisesEditor({
                   />
                 </div>
 
-                {/* Superset link — bodybuilding only */}
-                {superset && workoutType !== 'crossfit' && i < exercises.length - 1 && (
-                  <div className="relative flex items-center h-6 pl-4.5 my-0.5">
-                    {isLinkedToNext && (
-                      <div className="absolute left-4.75 top-0 bottom-0 w-0.5 bg-amber-500/60" />
-                    )}
-                    <button
-                      onClick={() => toggleLink(i)}
-                      className={`flex items-center gap-1.5 text-xs font-medium transition-colors px-2 py-0.5 rounded-md ${
-                        isLinkedToNext
-                          ? 'text-amber-400 bg-amber-500/10'
-                          : 'text-white/35 hover:text-amber-400 hover:bg-amber-500/10'
-                      }`}
-                      title={isLinkedToNext ? 'Разъединить суперсет' : 'Связать в суперсет'}
-                    >
-                      <span>⚡</span>
-                      <span>{isLinkedToNext ? 'суперсет' : 'суперсет?'}</span>
-                    </button>
-                  </div>
+                {!isLast && (
+                  superset && workoutType !== 'crossfit' ? (
+                    <div className="relative flex items-center h-6 pl-4.5 my-1.5">
+                      {isLinkedToNext && (
+                        <div className="absolute left-4.75 top-0 bottom-0 w-0.5 bg-amber-500/60" />
+                      )}
+                      {!isLinkedToNext && (
+                        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-(--color_border)" />
+                      )}
+                      <button
+                        onClick={() => toggleLink(i)}
+                        className={`relative flex items-center gap-1.5 text-xs font-medium transition-colors px-2 py-0.5 rounded-md ${
+                          isLinkedToNext
+                            ? 'text-amber-400 bg-amber-500/10'
+                            : 'text-white/25 hover:text-amber-400 hover:bg-amber-500/10 bg-(--color_bg_card)'
+                        }`}
+                        title={isLinkedToNext ? 'Разъединить суперсет' : 'Связать в суперсет'}
+                      >
+                        <span>⚡</span>
+                        <span>{isLinkedToNext ? 'суперсет' : 'суперсет?'}</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="my-3 border-t border-(--color_border)" />
+                  )
                 )}
               </div>
             );

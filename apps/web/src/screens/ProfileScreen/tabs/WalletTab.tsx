@@ -70,7 +70,7 @@ export default function WalletTab({ balance, inTrainerMode }: Props) {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold text-white">Кошелек</h2>
-            <p className="text-xs text-(--color_text_muted) mt-0.5">AI-функции, донаты тренерам</p>
+            <p className="text-xs text-(--color_text_muted) mt-0.5">ИИ-функции, донаты тренерам</p>
           </div>
           <div className="text-right">
             <div className="text-2xl font-bold text-white">
@@ -85,7 +85,7 @@ export default function WalletTab({ balance, inTrainerMode }: Props) {
           {[
             ...(inTrainerMode ? [{ label: 'Генерация', cost: '10₽' }] : []),
             { label: 'Распознавание', cost: '10₽' },
-            { label: 'AI-чат', cost: 'от 0.5₽' },
+            { label: 'ИИ-чат', cost: 'от 0.5₽' },
           ].map(({ label, cost }) => (
             <div
               key={label}
@@ -123,7 +123,7 @@ export default function WalletTab({ balance, inTrainerMode }: Props) {
           <SparklesIcon className="w-5 h-5 text-emerald-400" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-white">AI-помощник</div>
+          <div className="text-sm font-semibold text-white">ИИ-помощник</div>
           <p className="text-xs text-(--color_text_muted) mt-0.5">
             Тренировки, питание, восстановление — от 0.5₽/сообщение
           </p>

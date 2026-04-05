@@ -65,6 +65,9 @@ export type WorkoutExercise = {
    * Если упражнение часть суперсета — одинаковая метка у группы (напр. "A", "B")
    */
   supersetGroup?: string;
+
+  /** Упражнение с собственным весом — не требует указания кг */
+  bodyweight?: boolean;
 };
 
 export default class Workout extends compose(BaseModel, SoftDeletes) {

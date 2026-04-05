@@ -35,6 +35,8 @@ function readBase64(file: File): Promise<string> {
 
 interface Props {
   onResult: (result: AiWorkoutResult, photoUrl: string) => void;
+  triggerClassName?: string;
+  triggerContent?: React.ReactNode;
 }
 
 const LOADING_STEPS = [
@@ -44,7 +46,7 @@ const LOADING_STEPS = [
   'Собираю результат…',
 ];
 
-export default function AiWorkoutRecognizer({ onResult }: Props) {
+export default function AiWorkoutRecognizer({ onResult, triggerClassName, triggerContent }: Props) {
   const { balance, setBalance, hasEnoughBalance } = useAiBalance(COST_RECOGNIZE);
 
   const [open, setOpen] = useState(false);
@@ -134,12 +136,16 @@ export default function AiWorkoutRecognizer({ onResult }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+        className={triggerClassName ?? 'flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors'}
       >
-        <SparklesIcon className="w-4 h-4" />
-        Распознать по фото
-        <span className="text-white/30">·</span>
-        <span className="text-white/40">{COST_RECOGNIZE}₽</span>
+        {triggerContent ?? (
+          <>
+            <SparklesIcon className="w-4 h-4" />
+            Распознать по фото
+            <span className="text-white/30">·</span>
+            <span className="text-white/40">{COST_RECOGNIZE}₽</span>
+          </>
+        )}
       </button>
 
       <BottomSheet

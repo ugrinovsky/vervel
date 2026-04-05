@@ -12,6 +12,7 @@ import TrainerGroupDetailScreen from '@/screens/TrainerGroupDetailScreen/Trainer
 import TrainerPersonalScreen from '@/screens/TrainerPersonalScreen/TrainerPersonalScreen';
 import TrainerPublicProfileScreen from '@/screens/TrainerPublicProfileScreen/TrainerPublicProfileScreen';
 import LeaderboardScreen from '@/screens/LeaderboardScreen/LeaderboardScreen';
+import StrengthLogScreen from '@/screens/StrengthLogScreen/StrengthLogScreen';
 import InviteScreen from '@/screens/InviteScreen/InviteScreen';
 import DocsScreen from '@/screens/DocsScreen/DocsScreen';
 import AvatarScreen from '@/screens/AvatarScreen/AvatarScreen';
@@ -138,6 +139,14 @@ function AppContent(): JSX.Element {
           element={
             <ProtectedRoute>
               <LeaderboardScreen />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/strength-log"
+          element={
+            <ProtectedRoute>
+              <StrengthLogScreen />
             </ProtectedRoute>
           }
         />

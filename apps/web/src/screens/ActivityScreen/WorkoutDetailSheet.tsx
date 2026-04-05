@@ -7,7 +7,8 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { workoutsApi, type WorkoutSet } from '@/api/workouts';
 import { aiApi } from '@/api/ai';
-import { parseApiDateTime, parseLocalDate, nowRoundedToHour, today } from '@/utils/date';
+import { profileApi } from '@/api/profile';
+import { parseApiDateTime, parseLocalDate, nowRoundedToHour, today, now } from '@/utils/date';
 import { exercisesApi } from '@/api/exercises';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
 import type { Exercise } from '@/types/Exercise';
@@ -21,6 +22,7 @@ import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 import { PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import ExerciseDrawer from '@/screens/WorkoutForm/ExerciseDrawer';
 import type { ExerciseWithSets } from '@/types/Exercise';
+import type { WorkoutType } from '@/components/WorkoutTypeTabs';
 import WorkoutIntensityBar from '@/components/WorkoutIntensityBar/WorkoutIntensityBar';
 
 /* ─── Типы ──────────────────────────────────────────────────────────── */
@@ -40,6 +42,7 @@ interface FullWorkout {
     distance?: number;
     blockId?: string;
     zones?: string[];
+    bodyweight?: boolean;
   }>;
   zonesLoad: Record<string, number>;
   totalIntensity: number;
@@ -105,6 +108,7 @@ function extractTime(dateStr?: string): string | null {
 
 // Есть ли подходы с повторами без веса (атлет должен дополнить)
 function hasSetsNeedingWeight(ex: FullWorkout['exercises'][number]): boolean {
+  if (ex.bodyweight) return false;
   return (ex.sets ?? []).some((s) => (s.reps ?? 0) > 0 && !s.weight);
 }
 
@@ -179,6 +183,8 @@ function ExerciseCard({
             )}
             {ex.sets?.[0]?.weight ? (
               <span className="text-(--color_text_secondary)">{ex.sets[0].weight} кг</span>
+            ) : ex.bodyweight ? (
+              <span className="text-emerald-400/60 text-[10px]">собственный вес</span>
             ) : (
               <span className="text-white/30 italic">вес не указан</span>
             )}
@@ -195,9 +201,9 @@ function ExerciseCard({
             <div key={s.id ?? si} className="flex items-center gap-2">
               <span className="text-xs text-(--color_text_muted) w-10 shrink-0">Сет {si + 1}</span>
               <span className={`text-xs ${s.weight ? 'text-(--color_text_secondary)' : 'text-white/30 italic'}`}>
-                {formatSet(s, ex.type)}
+                {ex.bodyweight && s.reps ? `${s.reps} повт.` : formatSet(s, ex.type)}
               </span>
-              {s.weight == null && (s.reps ?? 0) > 0 && (
+              {!ex.bodyweight && s.weight == null && (s.reps ?? 0) > 0 && (
                 <span className="text-[10px] text-amber-400/70 ml-auto">вес не указан</span>
               )}
             </div>
@@ -209,16 +215,23 @@ function ExerciseCard({
 }
 
 function ZonesSection({ zonesLoad }: { zonesLoad: Record<string, number> }) {
-  const sorted = Object.entries(zonesLoad).filter(([, v]) => v > 0).sort(([, a], [, b]) => b - a);
+  // Merge zones with the same label (e.g. 'back' and 'backMuscles' both → 'Спина')
+  const merged: Record<string, number> = {};
+  for (const [zone, val] of Object.entries(zonesLoad)) {
+    if (val <= 0) continue;
+    const label = getZoneLabel(zone);
+    merged[label] = Math.max(merged[label] ?? 0, val);
+  }
+  const sorted = Object.entries(merged).sort(([, a], [, b]) => b - a);
   if (!sorted.length) return null;
-  const chartData = sorted.map(([zone, val]) => ({ name: getZoneLabel(zone), value: Math.round(val * 100) }));
+  const chartData = sorted.map(([label, val]) => ({ name: label, value: Math.round(val * 100) }));
   return (
     <div>
       <SectionTitle>Нагрузка по мышцам</SectionTitle>
-      <ResponsiveContainer width="100%" height={sorted.length * 34 + 8}>
+      <ResponsiveContainer width="100%" height={chartData.length * 34 + 8}>
         <BarChart layout="vertical" data={chartData} margin={{ top: 0, right: 44, left: 0, bottom: 0 }}>
           <XAxis type="number" domain={[0, 100]} hide />
-          <YAxis type="category" dataKey="name" width={92} tick={{ fontSize: 12, fill: 'var(--color_text_muted)' }} axisLine={false} tickLine={false} />
+          <YAxis type="category" dataKey="name" width={92} interval={0} tick={{ fontSize: 12, fill: 'var(--color_text_muted)' }} axisLine={false} tickLine={false} />
           <Bar
             dataKey="value"
             radius={[0, 4, 4, 0]}
@@ -247,6 +260,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
   const [rpe, setRpe] = useState<number | null>(null);
   const [savingWeights, setSavingWeights] = useState(false);
   const [savingRpe, setSavingRpe] = useState(false);
+  const [profileWeight, setProfileWeight] = useState<number | undefined>();
   const [isParsing, setIsParsing] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [notesHidden, setNotesHidden] = useState(false);
@@ -277,6 +291,15 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
       .finally(() => setLoading(false));
   }, [workout?.id]);
 
+  useEffect(() => {
+    profileApi.getMeasurements('body_weight', 1)
+      .then((res) => {
+        const latest = res.data?.data?.[0];
+        if (latest) setProfileWeight(latest.value);
+      })
+      .catch(() => {});
+  }, []);
+
   // Строит полный payload для PUT /workouts/:id (backend требует все поля)
   const buildUpdatePayload = (overrides: { exercises?: FullWorkout['exercises']; rpe?: number | null }) => {
     const exercises = (overrides.exercises ?? editExercises).map((ex) => ({
@@ -289,6 +312,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
       wodType: ex.wodType as 'amrap' | 'fortime' | 'emom' | 'tabata' | undefined,
       blockId: ex.blockId,
       zones: ex.zones,
+      bodyweight: ex.bodyweight,
     }));
     const rpeVal = 'rpe' in overrides
       ? (overrides.rpe ?? undefined)
@@ -310,9 +334,12 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
     if (!fullWorkout || !workout) return;
     setSavingWeights(true);
     try {
-      await workoutsApi.update(fullWorkout.id, buildUpdatePayload({ exercises: editExercises }));
-      setFullWorkout((prev) => prev ? { ...prev, exercises: editExercises } : prev);
+      const res = await workoutsApi.update(fullWorkout.id, buildUpdatePayload({ exercises: editExercises }));
+      const updated = res.data as FullWorkout;
+      setFullWorkout(updated);
       setIsEditing(false);
+      onRefresh?.();
+      onUpdate?.(fullWorkout.id, updated.totalIntensity);
       toast.success('Веса сохранены');
     } catch {
       toast.error('Ошибка сохранения');
@@ -370,6 +397,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
   const toExerciseWithSets = (ex: FullWorkout['exercises'][number], title: string): ExerciseWithSets => ({
     exerciseId: ex.exerciseId,
     title,
+    bodyweight: ex.bodyweight,
     sets: (ex.sets ?? []).map((s) => ({ id: s.id ?? crypto.randomUUID(), reps: s.reps ?? 0, weight: s.weight ?? 0 })),
     duration: ex.duration ? Math.round(ex.duration / 60) : undefined,
   });
@@ -384,6 +412,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
           ...ex,
           exerciseId: String(saved.exerciseId),
           name: saved.title,
+          bodyweight: saved.bodyweight,
           sets: saved.sets.map((s) => ({ id: s.id, reps: s.reps, weight: s.weight })),
           duration: saved.duration != null ? saved.duration * 60 : ex.duration,
         };
@@ -427,7 +456,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
     (fullWorkout?.exercises.length ?? 0) === 0 &&
     !!fullWorkout?.notes?.trim();
   // Прошлая тренировка — можно оценивать и редактировать
-  const isPast = workout?.date ? parseApiDateTime(workout.date) <= today() : false;
+  const isPast = workout?.date ? parseApiDateTime(workout.date) <= now() : false;
 
   return (
     <BottomSheet
@@ -524,8 +553,8 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
             hasMissingWeights={hasMissingWeights}
           />
 
-          {/* ── RPE — оценка (только прошедшая, вне режима редактирования) ── */}
-          {isPast && !isEditing && (
+          {/* ── RPE — оценка (только прошедшая силовая/кардио, вне режима редактирования) ── */}
+          {isPast && !isEditing && fullWorkout.workoutType !== 'crossfit' && (
             <div className="bg-(--color_bg_card_hover) rounded-xl p-3 border border-(--color_border)">
               <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wide mb-2.5">
                 Как прошла тренировка?
@@ -666,7 +695,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
                       Разбираю программу...
                     </>
                   ) : (
-                    <>✨ Разобрать программу через AI</>
+                    <>✨ Разобрать программу через ИИ</>
                   )}
                 </GhostButton>
               )}
@@ -676,7 +705,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
           {/* ── Превью AI-парсинга ──────────────────────────────────── */}
           {!isEditing && parsePreview && (
             <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) space-y-3">
-              <SectionTitle>Программа от AI · проверьте</SectionTitle>
+              <SectionTitle>Программа от ИИ · проверьте</SectionTitle>
 
               {parsePreview.warning && (
                 <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
@@ -733,9 +762,10 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
               ?? exerciseMap.get(editExercises[editingExIdx].exerciseId)?.title
               ?? exerciseIdToLabel(editExercises[editingExIdx].exerciseId)
           )}
-          workoutType={(fullWorkout?.workoutType ?? 'bodybuilding') as any}
+          workoutType={(fullWorkout?.workoutType ?? 'bodybuilding') as WorkoutType}
           onClose={() => setEditingExIdx(null)}
           onSave={handleExerciseDrawerSave}
+          profileWeight={profileWeight}
           allowReplace
         />
       )}

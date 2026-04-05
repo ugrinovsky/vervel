@@ -92,12 +92,12 @@ export default function ProfileScreen() {
         <ScreenHeader
           icon="👤"
           title="Профиль"
-          description="Ваш аккаунт, кошелек для оплаты AI-функций и настройки приложения"
+          description="Ваш аккаунт, кошелек для оплаты ИИ-функций и настройки приложения"
         />
 
         <ScreenHint className="mb-4">
           <span className="text-white font-medium">Профиль</span> — данные и фото аккаунта.{' '}
-          <span className="text-white font-medium">Кошелек</span> — баланс для AI-функций,
+          <span className="text-white font-medium">Кошелек</span> — баланс для ИИ-функций,
           история списаний и пополнение.{' '}
           <span className="text-white font-medium">Настройки</span> — тема, уведомления и выход.
         </ScreenHint>

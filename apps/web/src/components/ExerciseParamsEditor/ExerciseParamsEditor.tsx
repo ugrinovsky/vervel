@@ -10,6 +10,7 @@ import { WOD_CONFIG, type WodType } from '@/constants/workoutTypes';
 import { DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
 import NumberInput from '@/components/ui/NumberInput';
+import { useNavigate } from 'react-router';
 
 export interface SetDetail {
   reps?: number;
@@ -33,14 +34,55 @@ interface Props {
   // Bodybuilding
   setsDetail?: SetDetail[];
 
+  bodyweight?: boolean;
+  profileWeight?: number;
+
   // Callbacks — simple field changes (cardio duration, crossfit fields)
-  onPatch: (patch: Record<string, number | string | undefined>) => void;
+  onPatch: (patch: Record<string, number | string | boolean | undefined>) => void;
 
   // Bodybuilding set management
   onAddSet?: () => void;
   onRemoveSet?: (idx: number) => void;
   onDupSet?: (idx: number) => void;
   onUpdateSet?: (idx: number, field: 'reps' | 'weight', raw: string) => void;
+}
+
+function BodyweightToggle({
+  bodyweight,
+  profileWeight,
+  onToggle,
+}: {
+  bodyweight?: boolean;
+  profileWeight?: number;
+  onToggle: () => void;
+}) {
+  const navigate = useNavigate();
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`text-[10px] px-2 py-0.5 rounded-full border font-medium transition-colors ${
+          bodyweight
+            ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+            : 'bg-white/5 border-white/15 text-white/30 hover:text-white/50'
+        }`}
+      >
+        {bodyweight
+          ? `✓ собственный вес${profileWeight ? ` · ${profileWeight} кг` : ''}`
+          : 'собственный вес'}
+      </button>
+      {bodyweight && !profileWeight && (
+        <button
+          type="button"
+          onClick={() => navigate('/profile')}
+          className="text-[10px] text-amber-400/70 hover:text-amber-300 transition-colors"
+        >
+          ⚠ укажите вес в настройках →
+        </button>
+      )}
+    </div>
+  );
 }
 
 export default function ExerciseParamsEditor({
@@ -53,6 +95,8 @@ export default function ExerciseParamsEditor({
   weight,
   distance,
   setsDetail,
+  bodyweight,
+  profileWeight,
   onPatch,
   onAddSet,
   onRemoveSet,
@@ -154,8 +198,8 @@ export default function ExerciseParamsEditor({
             step={2.5}
             value={weight ?? ''}
             onChange={(e) => onPatch({ weight: e.target.value ? +e.target.value : undefined })}
-            placeholder="—"
-            className="flex-1 text-white/80"
+            placeholder={bodyweight ? String(profileWeight ?? '—') : '—'}
+            className={`flex-1 ${bodyweight ? 'text-emerald-300' : 'text-white/80'}`}
           />
           <NumberInput
             min={0}
@@ -165,6 +209,13 @@ export default function ExerciseParamsEditor({
             className="flex-1 text-white/80"
           />
         </div>
+
+        {/* Bodyweight toggle */}
+        <BodyweightToggle
+          bodyweight={bodyweight}
+          profileWeight={profileWeight}
+          onToggle={() => onPatch({ bodyweight: !bodyweight })}
+        />
       </div>
     );
   }
@@ -172,11 +223,20 @@ export default function ExerciseParamsEditor({
   /* ── Bodybuilding ────────────────────────────────────────────────── */
   return (
     <div className="space-y-1.5">
+      {/* Bodyweight toggle */}
+      <div className="mb-0.5">
+        <BodyweightToggle
+          bodyweight={bodyweight}
+          profileWeight={profileWeight}
+          onToggle={() => onPatch({ bodyweight: !bodyweight })}
+        />
+      </div>
+
       <div className="flex items-center gap-2 text-[10px] text-white/40 font-medium">
         <span className="w-5" />
         <span className="flex-1 text-center">повт</span>
         <span className="text-white/20">×</span>
-        <span className="flex-1 text-center">кг</span>
+        <span className={`flex-1 text-center ${bodyweight ? 'text-emerald-400/60' : ''}`}>кг</span>
         <span className="w-14" />
       </div>
       {(setsDetail ?? []).map((set, si) => (
@@ -197,8 +257,8 @@ export default function ExerciseParamsEditor({
             step={2.5}
             value={set.weight ?? ''}
             onChange={(e) => onUpdateSet?.(si, 'weight', e.target.value)}
-            placeholder="— кг"
-            className="flex-1 text-white/80"
+            placeholder={bodyweight ? String(profileWeight ?? 'вес тела') : '— кг'}
+            className={`flex-1 ${bodyweight ? 'text-emerald-300' : 'text-white/80'}`}
           />
           <div className="flex gap-1 shrink-0 w-14 justify-end">
             <button

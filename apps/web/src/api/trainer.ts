@@ -81,6 +81,8 @@ export interface ExerciseData {
   wodType?: 'amrap' | 'fortime' | 'emom' | 'tabata';
   timeCap?: number;     // минут: AMRAP — время работы; EMOM — общее время; For Time — time cap
   rounds?: number;      // For Time / Tabata — количество раундов
+  /** Упражнение с собственным весом — не требует указания кг */
+  bodyweight?: boolean;
 }
 
 export interface WorkoutData {

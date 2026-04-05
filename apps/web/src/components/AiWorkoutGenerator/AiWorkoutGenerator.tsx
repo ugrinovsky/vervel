@@ -11,6 +11,8 @@ const MAX_PROMPT_LENGTH = 600;
 
 interface Props {
   onResult: (result: AiWorkoutResult) => void;
+  triggerClassName?: string;
+  triggerContent?: React.ReactNode;
 }
 
 const EXAMPLES = [
@@ -28,7 +30,7 @@ const LOADING_STEPS = [
 ];
 
 
-export default function AiWorkoutGenerator({ onResult }: Props) {
+export default function AiWorkoutGenerator({ onResult, triggerClassName, triggerContent }: Props) {
   const { balance, setBalance, hasEnoughBalance } = useAiBalance(COST_GENERATE);
 
   const [open, setOpen] = useState(false);
@@ -82,10 +84,14 @@ export default function AiWorkoutGenerator({ onResult }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+        className={triggerClassName ?? 'flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors'}
       >
-        <SparklesIcon className="w-4 h-4" />
-        Сгенерировать ИИ
+        {triggerContent ?? (
+          <>
+            <SparklesIcon className="w-4 h-4" />
+            Сгенерировать ИИ
+          </>
+        )}
       </button>
 
       <BottomSheet id="ai-workout-generator" open={open} onClose={handleClose} header={sheetHeader}>

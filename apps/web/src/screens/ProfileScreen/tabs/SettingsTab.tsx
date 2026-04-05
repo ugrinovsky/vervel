@@ -81,6 +81,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
   const [emailField, setEmailField] = useState(data.user.email);
   const [genderField, setGenderField] = useState<'male' | 'female' | null>(data.user.gender ?? null);
   const [bodyWeightField, setBodyWeightField] = useState('');
+  const [currentBodyWeight, setCurrentBodyWeight] = useState<number | null>(null);
   const [savingWeight, setSavingWeight] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -105,6 +106,15 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
     setEmailField(data.user.email);
     setGenderField(data.user.gender ?? null);
   }, [data.user]);
+
+  useEffect(() => {
+    profileApi.getMeasurements('body_weight', 1)
+      .then(res => {
+        const latest = res.data?.data?.[0];
+        if (latest) setCurrentBodyWeight(latest.value);
+      })
+      .catch(() => {});
+  }, []);
 
   const themeChanged = activeSpecial !== initialSpecial || (activeSpecial === null && activeHue !== initialHue);
 
@@ -131,6 +141,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
       setSavingWeight(true);
       await profileApi.logMeasurement({ type: 'body_weight', value });
       setBodyWeightField('');
+      setCurrentBodyWeight(value);
       toast.success('Вес сохранён');
     } catch {
       toast.error('Ошибка при сохранении веса');
@@ -351,8 +362,11 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
           <div className="mt-6 pt-6 border-t border-(--color_border)">
             <h3 className="text-sm font-semibold text-white mb-1">Вес тела</h3>
             <p className="text-xs text-(--color_text_muted) mb-3">
-              Используется для расчёта относительного тоннажа в рейтинге. История сохраняется.
+              Используется для расчёта интенсивности упражнений с собственным весом и рейтинга. История сохраняется.
             </p>
+            {currentBodyWeight && (
+              <p className="text-xs text-emerald-400 mb-2">Текущий: {currentBodyWeight} кг</p>
+            )}
             <div className="space-y-2">
               <AppInput
                 type="number"

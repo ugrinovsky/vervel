@@ -31,6 +31,7 @@ import { WORKOUT_TYPE_CONFIG, DEFAULT_WORKOUT_TYPE } from '@/constants/workoutTy
 import { nowRoundedToHour, today, parseTimeString, parseLocalDate } from '@/utils/date';
 import { convertExercisesForType, convertAiResult } from './workoutTypeConversion';
 import { workoutsApi } from '@/api/workouts';
+import { profileApi } from '@/api/profile';
 
 export interface WorkoutFormData {
   date: Date;
@@ -130,6 +131,7 @@ export default function WorkoutFormBase({
   );
   const [saving, setSaving] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
+  const [profileWeight, setProfileWeight] = useState<number | undefined>();
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [aiGenerated, setAiGenerated] = useState(false);
   const [aiPhotoUrl, setAiPhotoUrl] = useState<string | null>(null);
@@ -221,6 +223,16 @@ export default function WorkoutFormBase({
       .catch(() => {});
   }, []);
 
+  // ── Fetch athlete body weight once on mount ───────────────────────
+  useEffect(() => {
+    profileApi.getMeasurements('body_weight', 1)
+      .then((res) => {
+        const latest = res.data?.data?.[0];
+        if (latest) setProfileWeight(latest.value);
+      })
+      .catch(() => {});
+  }, []);
+
   // ── Type change with exercise normalization ───────────────────────
 
   const handleWorkoutTypeChange = (newType: WorkoutType) => {
@@ -265,7 +277,7 @@ export default function WorkoutFormBase({
       });
       setAiPhotoExpanded(false);
     }
-    toast.success(`AI сгенерировал ${converted.length} упражнений`);
+    toast.success(`ИИ сгенерировал ${converted.length} упражнений`);
   };
 
   const handleParseNotes = async () => {
@@ -289,7 +301,7 @@ export default function WorkoutFormBase({
       setAiGenerated(true);
       setSelectedTemplateId(null);
       if (warning) toast(warning, { icon: '⚠️' });
-      else toast.success(`AI разобрал ${converted.length} упражнений`);
+      else toast.success(`ИИ разобрал ${converted.length} упражнений`);
     } catch (err: any) {
       const msg = err?.response?.data?.message;
       toast.error(msg ?? 'Не удалось разобрать программу');
@@ -477,7 +489,7 @@ export default function WorkoutFormBase({
           {aiGenerated && (
             <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
               <SparklesIcon className="w-3 h-3" />
-              Сгенерировано через AI
+              Сгенерировано через ИИ
             </span>
           )}
         </div>
@@ -489,32 +501,48 @@ export default function WorkoutFormBase({
               Как добавить упражнения?
             </p>
 
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-              <div className="text-xl shrink-0">📸</div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white">По фото</p>
-                <p className="text-xs text-(--color_text_muted)">AI распознает упражнения с фото</p>
-              </div>
-              <AiWorkoutRecognizer onResult={handleAiResult} />
-            </div>
+            <AiWorkoutRecognizer
+              onResult={handleAiResult}
+              triggerClassName="w-full flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-left hover:bg-emerald-500/15 transition-colors"
+              triggerContent={
+                <>
+                  <span className="text-xl shrink-0">📸</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-medium text-white">По фото</span>
+                    <span className="block text-xs text-(--color_text_muted)">
+                      ИИ распознает упражнения с фото
+                    </span>
+                  </span>
+                  <span className="text-emerald-400/60 text-base shrink-0">→</span>
+                </>
+              }
+            />
 
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-violet-500/10 border border-violet-500/20">
-              <div className="text-xl shrink-0">✨</div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white">Из текста</p>
-                <p className="text-xs text-(--color_text_muted)">
-                  Опишите тренировку — AI заполнит
-                </p>
-              </div>
-              <AiWorkoutGenerator onResult={handleAiResult} />
-            </div>
+            <AiWorkoutGenerator
+              onResult={handleAiResult}
+              triggerClassName="w-full flex items-center gap-3 p-3 rounded-xl bg-violet-500/10 border border-violet-500/20 text-left hover:bg-violet-500/15 transition-colors"
+              triggerContent={
+                <>
+                  <span className="text-xl shrink-0">✨</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-medium text-white">Из текста</span>
+                    <span className="block text-xs text-(--color_text_muted)">
+                      Опишите тренировку — ИИ заполнит
+                    </span>
+                  </span>
+                  <span className="text-violet-400/60 text-base shrink-0">→</span>
+                </>
+              }
+            />
 
             <div className="flex items-center gap-3 p-3 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border)">
-              <div className="text-xl shrink-0">✏️</div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white/70">Вручную из каталога</p>
-                <p className="text-xs text-(--color_text_muted)">Добавьте упражнения по одному</p>
-              </div>
+              <span className="text-xl shrink-0">✏️</span>
+              <span className="flex-1 min-w-0">
+                <span className="block text-sm font-medium text-white/70">Вручную из каталога</span>
+                <span className="block text-xs text-(--color_text_muted)">
+                  Добавьте упражнения по одному ниже
+                </span>
+              </span>
             </div>
           </div>
         )}
@@ -549,6 +577,7 @@ export default function WorkoutFormBase({
         <WorkoutExercisesEditor
           workoutType={workoutType}
           exercises={exercises}
+          profileWeight={profileWeight}
           onChange={(exs) => {
             setExercises(exs);
             setAiGenerated(false);

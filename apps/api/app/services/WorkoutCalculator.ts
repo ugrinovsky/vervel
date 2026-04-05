@@ -1,5 +1,6 @@
 import { ExerciseCatalog, type CatalogExercise } from '#services/ExerciseCatalog'
 import Workout, { WorkoutExercise, WorkoutSet } from '#models/workout';
+import UserMeasurement from '#models/user_measurement';
 
 /* ------------------------------------------------------------------ */
 /* Types */
@@ -44,10 +45,21 @@ export class WorkoutCalculator {
   static async calculateZoneLoads(
     exercises: WorkoutExercise[],
     workoutType: Workout['workoutType'],
-    rpe?: number | null
+    rpe?: number | null,
+    userId?: number
   ): Promise<WorkoutCalculationResult> {
     const zoneLoads: Record<string, number> = {};
     let totalVolume = 0;
+
+    let userBodyWeight: number | null = null;
+    if (userId && exercises.some(e => e.bodyweight)) {
+      const m = await UserMeasurement.query()
+        .where('userId', userId)
+        .where('type', 'body_weight')
+        .orderBy('loggedAt', 'desc')
+        .first();
+      userBodyWeight = m ? Number(m.value) : null;
+    }
 
     const exerciseMap = await this.loadExercises(exercises);
 
@@ -68,7 +80,7 @@ export class WorkoutCalculator {
         imageUrl: null,
       };
 
-      const { load, volume } = this.calculateExerciseLoad(entry, input, workoutType);
+      const { load, volume } = this.calculateExerciseLoad(entry, input, workoutType, userBodyWeight);
 
       totalVolume += volume;
 
@@ -106,13 +118,14 @@ export class WorkoutCalculator {
   private static calculateExerciseLoad(
     exercise: CatalogExercise,
     input: WorkoutExercise,
-    workoutType: Workout['workoutType']
+    workoutType: Workout['workoutType'],
+    userBodyWeight?: number | null
   ): { load: number; volume: number } {
     const baseIntensity = exercise.intensity;
 
     switch (workoutType) {
       case 'bodybuilding':
-        return this.calculateBodybuildingLoad(baseIntensity, input);
+        return this.calculateBodybuildingLoad(baseIntensity, input, userBodyWeight);
 
       case 'crossfit':
         return this.calculateCrossfitLoad(baseIntensity, input);
@@ -124,7 +137,8 @@ export class WorkoutCalculator {
 
   private static calculateBodybuildingLoad(
     baseIntensity: number,
-    input: WorkoutExercise
+    input: WorkoutExercise,
+    userBodyWeight?: number | null
   ): { load: number; volume: number } {
     if (!input.sets || input.sets.length === 0) {
       return { load: 0, volume: 0 };
@@ -136,7 +150,7 @@ export class WorkoutCalculator {
     // Считаем по каждому подходу
     input.sets.forEach((set: WorkoutSet) => {
       const reps = set.reps || 0;
-      const weight = set.weight || 0;
+      const weight = (set.weight && set.weight > 0) ? set.weight : (input.bodyweight ? (userBodyWeight ?? 0) : 0);
 
       totalVolume += reps * weight;
 
@@ -380,7 +394,7 @@ export class WorkoutCalculator {
         typeof w.totalIntensity === 'string' ? parseFloat(w.totalIntensity) : w.totalIntensity || 0;
       const hasExercises = Array.isArray(w.exercises) && w.exercises.length > 0;
       const hasMissingWeights = Array.isArray(w.exercises) && w.exercises.some((ex) =>
-        (ex.sets ?? []).some((s: any) => (s.reps ?? 0) > 0 && !s.weight)
+        !ex.bodyweight && (ex.sets ?? []).some((s) => (s.reps ?? 0) > 0 && !s.weight)
       );
       return {
         id: w.id,

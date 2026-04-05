@@ -176,7 +176,7 @@ export default function DialogsScreen() {
           </div>
           <div className="flex-1 min-w-0 flex items-center py-3 border-b border-(--color_border)/50">
             <div className="flex-1 min-w-0">
-              <div className="text-[15px] font-semibold text-white leading-snug">AI-помощник</div>
+              <div className="text-[15px] font-semibold text-white leading-snug">ИИ-помощник</div>
               <div className="text-[13px] text-(--color_text_muted) leading-snug mt-0.5">
                 Тренировки, питание, восстановление
               </div>

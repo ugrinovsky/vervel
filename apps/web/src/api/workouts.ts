@@ -27,6 +27,7 @@ export interface WorkoutExercise {
   rounds?: number;
   blockId?: string;
   zones?: string[];
+  bodyweight?: boolean;
 }
 
 export interface CreateWorkoutDTO {

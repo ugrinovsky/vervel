@@ -25,7 +25,8 @@ function toWorkoutExercise(ex: ExerciseData, workoutType: WorkoutType): WorkoutE
       wodType: ex.wodType,
       timeCap: ex.timeCap,
       rounds: ex.rounds,
-      sets: [{ id: crypto.randomUUID(), reps: ex.reps ?? 0, weight: ex.weight ?? 0 }],
+      bodyweight: ex.bodyweight,
+      sets: [{ id: crypto.randomUUID(), reps: ex.reps ?? 0, weight: ex.bodyweight ? undefined : (ex.weight ?? 0) }],
     };
   }
   return {
@@ -33,10 +34,11 @@ function toWorkoutExercise(ex: ExerciseData, workoutType: WorkoutType): WorkoutE
     name: ex.name,
     zones: ex.zones,
     type: 'strength',
+    bodyweight: ex.bodyweight,
     sets: (ex.setsDetail ?? []).map((s) => ({
       id: crypto.randomUUID(),
       reps: s.reps ?? 0,
-      weight: s.weight ?? 0,
+      weight: ex.bodyweight ? undefined : (s.weight ?? 0),
     })),
     blockId: ex.blockId,
   };
@@ -83,13 +85,13 @@ export default function WorkoutForm() {
         <ScreenHeader
           icon="💪"
           title="Новая тренировка"
-          description="Добавьте упражнения, подходы и веса вручную — или воспользуйтесь AI-распознаванием по фото или описанию"
+          description="Добавьте упражнения, подходы и веса вручную — или воспользуйтесь ИИ-распознаванием по фото или описанию"
         />
 
         <ScreenHint className="mb-4">
           Выберите тип тренировки, добавьте упражнения и подходы.{' '}
-          <span className="text-white font-medium">AI-распознавание</span> — сфотографируйте
-          страницу дневника или опишите тренировку текстом, и AI заполнит форму автоматически.
+          <span className="text-white font-medium">ИИ-распознавание</span> — сфотографируйте
+          страницу дневника или опишите тренировку текстом, и ИИ заполнит форму автоматически.
         </ScreenHint>
 
         <WorkoutFormBase

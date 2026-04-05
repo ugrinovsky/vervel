@@ -104,6 +104,13 @@ export default function AnalyticsScreen() {
                 sub: 'Достижения и рекорды',
                 to: '/streak',
               },
+              {
+                emoji: '📒',
+                bg: 'bg-purple-500/20',
+                label: 'Силовой журнал',
+                sub: 'Прогресс по весам',
+                to: '/strength-log',
+              },
             ]}
           />
         </motion.div>

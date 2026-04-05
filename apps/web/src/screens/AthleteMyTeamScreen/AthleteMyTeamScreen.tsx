@@ -179,7 +179,7 @@ export default function AthleteMyTeamScreen() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-white">AI-помощник</span>
+              <span className="text-sm font-semibold text-white">ИИ-помощник</span>
             </div>
             <p className="text-xs text-(--color_text_muted) mt-0.5">
               Вопросы про тренировки, питание, восстановление

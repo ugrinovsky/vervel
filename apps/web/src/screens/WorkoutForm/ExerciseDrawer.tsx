@@ -16,15 +16,17 @@ interface Props {
   onSave: (exercise: ExerciseWithSets) => void;
   /** Если передан — показывает кнопку "Сменить упражнение" */
   allowReplace?: boolean;
+  profileWeight?: number;
 }
 
-export default function ExerciseDrawer({ open, exercise, workoutType = 'bodybuilding', onClose, onSave, allowReplace }: Props) {
+export default function ExerciseDrawer({ open, exercise, workoutType = 'bodybuilding', onClose, onSave, allowReplace, profileWeight }: Props) {
   const [currentExercise, setCurrentExercise] = useState<ExerciseWithSets>(exercise);
   const [replacerOpen, setReplacerOpen] = useState(false);
   // ── State ──────────────────────────────────────────────────────────
 
   // Bodybuilding
   const [setsDetail, setSetsDetail] = useState<SetDetail[]>([]);
+  const [bodyweight, setBodyweight] = useState(false);
 
   // CrossFit
   const [wodType, setWodType] = useState<string | undefined>();
@@ -40,6 +42,7 @@ export default function ExerciseDrawer({ open, exercise, workoutType = 'bodybuil
   // ── Init on open / exercise change ────────────────────────────────
 
   const initFromExercise = (ex: ExerciseWithSets) => {
+    setBodyweight(ex.bodyweight ?? false);
     if (workoutType === 'crossfit') {
       const first = ex.sets?.[0];
       setReps(first?.reps ?? 10);
@@ -112,14 +115,22 @@ export default function ExerciseDrawer({ open, exercise, workoutType = 'bodybuil
 
   // ── Patch handler for ExerciseParamsEditor ─────────────────────────
 
-  const handlePatch = (patch: Record<string, number | string | undefined>) => {
-    if ('duration' in patch) setDuration((patch.duration as number) ?? 20);
-    if ('wodType'  in patch) setWodType(patch.wodType as string | undefined);
-    if ('timeCap'  in patch) setTimeCap(patch.timeCap as number | undefined);
-    if ('rounds'   in patch) setRounds(patch.rounds as number | undefined);
-    if ('reps'     in patch) setReps((patch.reps as number) ?? 10);
-    if ('weight'   in patch) setWeight(patch.weight as number | undefined);
-    if ('distance' in patch) setDistance(patch.distance as number | undefined);
+  const handlePatch = (patch: Record<string, number | string | boolean | undefined>) => {
+    if ('duration'   in patch) setDuration((patch.duration as number) ?? 20);
+    if ('wodType'    in patch) setWodType(patch.wodType as string | undefined);
+    if ('timeCap'    in patch) setTimeCap(patch.timeCap as number | undefined);
+    if ('rounds'     in patch) setRounds(patch.rounds as number | undefined);
+    if ('reps'       in patch) setReps((patch.reps as number) ?? 10);
+    if ('weight'     in patch) setWeight(patch.weight as number | undefined);
+    if ('distance'   in patch) setDistance(patch.distance as number | undefined);
+    if ('bodyweight' in patch) {
+      const bw = patch.bodyweight as boolean;
+      setBodyweight(bw);
+      if (bw && profileWeight) {
+        setSetsDetail((prev) => prev.map((s) => ({ ...s, weight: s.weight ?? profileWeight })));
+        if (!weight) setWeight(profileWeight);
+      }
+    }
   };
 
   // ── Replace exercise ──────────────────────────────────────────────
@@ -137,17 +148,19 @@ export default function ExerciseDrawer({ open, exercise, workoutType = 'bodybuil
     if (workoutType === 'crossfit') {
       onSave({
         ...currentExercise,
-        sets: [{ id: crypto.randomUUID(), reps, weight: weight ?? 0 }],
+        bodyweight,
+        sets: [{ id: crypto.randomUUID(), reps, weight: bodyweight ? 0 : (weight ?? 0) }],
       });
     } else if (workoutType === 'cardio') {
       onSave({ ...currentExercise, duration });
     } else {
       onSave({
         ...currentExercise,
+        bodyweight,
         sets: setsDetail.map((s) => ({
           id: crypto.randomUUID(),
           reps: s.reps ?? 10,
-          weight: s.weight ?? 0,
+          weight: bodyweight ? 0 : (s.weight ?? 0),
         })),
       });
     }
@@ -206,6 +219,8 @@ export default function ExerciseDrawer({ open, exercise, workoutType = 'bodybuil
           timeCap={timeCap}
           rounds={rounds}
           setsDetail={setsDetail}
+          bodyweight={bodyweight}
+          profileWeight={profileWeight}
           onPatch={handlePatch}
           onAddSet={addSet}
           onRemoveSet={removeSet}

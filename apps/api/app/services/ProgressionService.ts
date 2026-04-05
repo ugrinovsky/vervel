@@ -275,4 +275,80 @@ export class ProgressionService {
       }
     })
   }
+
+  /**
+   * Силовой журнал: последние 6 сессий по каждому силовому упражнению.
+   */
+  static async getStrengthLog(userId: number): Promise<StrengthLogEntry[]> {
+    const since = DateTime.now().minus({ days: 365 }).toJSDate()
+
+    const workouts = await Workout.query()
+      .where('userId', userId)
+      .where('date', '>=', since)
+      .whereNull('deleted_at')
+      .orderBy('date', 'desc')
+
+    // Группируем по exerciseId → последние 6 сессий
+    const exerciseSessionsMap = new Map<
+      string,
+      { name: string; sessions: StrengthLogEntry['sessions'] }
+    >()
+
+    for (const w of workouts) {
+      for (const ex of w.exercises ?? []) {
+        if (ex.type !== 'strength' || !ex.sets?.length) continue
+        const hasWeightData = ex.sets.some((s) => s.weight && s.reps)
+        if (!hasWeightData) continue
+
+        if (!exerciseSessionsMap.has(ex.exerciseId)) {
+          exerciseSessionsMap.set(ex.exerciseId, { name: ex.name ?? ex.exerciseId, sessions: [] })
+        }
+        const entry = exerciseSessionsMap.get(ex.exerciseId)!
+        if (entry.sessions.length < 6) {
+          entry.sessions.push({
+            date: String(w.date),
+            workoutId: w.id,
+            sets: ex.sets.map((s) => ({ reps: s.reps, weight: s.weight })),
+            notes: w.notes ?? undefined,
+          })
+        }
+      }
+    }
+
+    // Обогащаем названиями из каталога
+    const exerciseIds = [...exerciseSessionsMap.keys()]
+    if (exerciseIds.length > 0) {
+      const catalogExercises = await db
+        .from('exercises')
+        .whereIn('id', exerciseIds)
+        .select('id', 'title')
+      for (const row of catalogExercises as any[]) {
+        const entry = exerciseSessionsMap.get(row.id)
+        if (entry) entry.name = row.title
+      }
+    }
+
+    // Если имя выглядит как slug (подчёркивания, нет пробелов) — форматируем
+    for (const [, entry] of exerciseSessionsMap) {
+      if (entry.name.includes('_') && !entry.name.includes(' ')) {
+        entry.name = entry.name.replace(/_/g, ' ')
+      }
+    }
+
+    return [...exerciseSessionsMap.entries()]
+      .filter(([, v]) => v.sessions.length > 0)
+      .map(([exerciseId, { name, sessions }]) => ({ exerciseId, exerciseName: name, sessions }))
+      .sort((a, b) => a.exerciseName.localeCompare(b.exerciseName, 'ru'))
+  }
+}
+
+export interface StrengthLogEntry {
+  exerciseId: string
+  exerciseName: string
+  sessions: {
+    date: string
+    workoutId: number
+    sets: { reps?: number; weight?: number }[]
+    notes?: string
+  }[]
 }

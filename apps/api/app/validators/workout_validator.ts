@@ -29,6 +29,7 @@ export const createWorkoutValidator = vine.compile(
         wodType: vine.enum(['amrap', 'emom', 'fortime', 'tabata']).optional(),
         blockId: vine.string().trim().optional(),
         zones: vine.array(vine.string().trim()).optional(),
+        bodyweight: vine.boolean().optional(),
       })
     ),
   })

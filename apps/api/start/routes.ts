@@ -78,6 +78,7 @@ router
 
     // Progression
     router.get('progression', '#controllers/progression_controller.getUserProgression');
+    router.get('progression/strength-log', '#controllers/progression_controller.getStrengthLog');
 
     // Achievement routes
     router.get('achievements', '#controllers/streak_controller.achievements');

@@ -40,8 +40,8 @@ function getMotivation(lastWorkoutDaysAgo: number | null, allTimeWorkouts: numbe
 const ONBOARDING_FEATURES = [
   {
     emoji: '📸',
-    title: 'AI-распознавание',
-    desc: 'Сфотографируй страницу дневника — AI сам занесёт все упражнения',
+    title: 'ИИ-распознавание',
+    desc: 'Сфотографируй страницу дневника — ИИ сам занесёт все упражнения',
   },
   {
     emoji: '🗺️',

@@ -81,7 +81,7 @@ export default function ActivityScreen() {
                 {
                   emoji: '1️⃣',
                   title: 'Добавьте тренировку',
-                  desc: 'Вручную или через AI-распознавание по фото/описанию',
+                  desc: 'Вручную или через ИИ-распознавание по фото/описанию',
                   action: () => navigate('/workouts/new'),
                   label: 'Добавить',
                 },
@@ -210,7 +210,7 @@ export default function ActivityScreen() {
                 emoji: '🏋️',
                 bg: 'bg-emerald-500/20',
                 label: 'Новая тренировка',
-                sub: 'вручную или AI',
+                sub: 'вручную или ИИ',
                 to: '/workouts/new',
               },
               {

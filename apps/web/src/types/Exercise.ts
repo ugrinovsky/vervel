@@ -53,4 +53,5 @@ export interface ExerciseWithSets {
   notes?: string;
   workoutType?: 'strength' | 'cardio' | 'crossfit'; // опционально
   duration?: number; // минуты, для кардио
+  bodyweight?: boolean;
 }

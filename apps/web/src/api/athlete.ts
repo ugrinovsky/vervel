@@ -2,6 +2,19 @@ import { privateApi } from './http/privateApi';
 import { publicApi } from './http/publicApi';
 import type { PeriodizationData, LeaderboardEntry, LeaderboardResponse } from './trainer';
 
+export interface StrengthLogSession {
+  date: string;
+  workoutId: number;
+  sets: { reps?: number; weight?: number }[];
+  notes?: string;
+}
+
+export interface StrengthLogEntry {
+  exerciseId: string;
+  exerciseName: string;
+  sessions: StrengthLogSession[];
+}
+
 export interface AthleteGroup {
   id: number;
   name: string;
@@ -72,4 +85,7 @@ export const athleteApi = {
     privateApi.get<{ success: boolean; data: LeaderboardResponse }>(
       `/athlete/groups/${groupId}/leaderboard?period=${period}`
     ),
+
+  getStrengthLog: () =>
+    privateApi.get<{ success: boolean; data: StrengthLogEntry[] }>('/progression/strength-log'),
 };

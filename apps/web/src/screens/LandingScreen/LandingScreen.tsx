@@ -229,7 +229,7 @@ export default function LandingScreen() {
         <motion.div {...fade(0.15)} className="lnd-phones-row" style={{ marginTop: 36 }}>
           <Phone h={420} w={188} src={AvatarScreen} label="Профиль" />
           <Phone h={460} w={188} icon="💪" caption="Добавить тренировку" label="Тренировка" />
-          <Phone h={420} w={188} icon="🤖" caption="AI-чат" label="ИИ-тренер" />
+          <Phone h={420} w={188} icon="🤖" caption="ИИ-чат" label="ИИ-тренер" />
           <Phone h={420} w={188} icon="🏆" caption="Достижения" label="Ачивки" />
         </motion.div>
       </Wrap>
@@ -286,7 +286,7 @@ export default function LandingScreen() {
           </motion.div>
           <motion.div {...fade(0.1)} style={{ display: 'flex', gap: 16, justifyContent: 'center', alignItems: 'flex-end' }}>
             <Phone h={400} w={190} icon="📷" caption="Фото → план" label="Распознавание" dim shrink={0.9} mt={40} />
-            <Phone h={460} w={190} icon="🤖" caption="AI-чат" label="ИИ-тренер" zIndex={2} />
+            <Phone h={460} w={190} icon="🤖" caption="ИИ-чат" label="ИИ-тренер" zIndex={2} />
           </motion.div>
         </div>
       </Wrap>

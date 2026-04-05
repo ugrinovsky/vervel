@@ -394,4 +394,75 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     const result = WorkoutCalculator.calculatePeriodStats([w], 'week');
     assert.equal(result.timeline[0].loadLevel, 'high');
   });
+
+  /* -------------------------------- BODYWEIGHT -------------------------------- */
+
+  test('bodyweight: без userId объём = 0 (нет веса тела из профиля)', async ({ assert }) => {
+    const exercise = createExercise('ex1', ['спина'], 0.7);
+    WorkoutCalculator['loadExercises'] = async () => new Map([['ex1', exercise]]);
+
+    const result = await WorkoutCalculator.calculateZoneLoads(
+      [{
+        exerciseId: 'ex1',
+        type: 'strength' as const,
+        bodyweight: true,
+        sets: [
+          { id: '1', reps: 10, weight: 0 },
+          { id: '2', reps: 10, weight: 0 },
+        ],
+      }],
+      'bodybuilding'
+      // userId не передан — нет запроса к БД
+    );
+
+    assert.equal(result.totalVolume, 0);
+    // Нагрузка по зонам всё равно должна быть нулевой (weight=0)
+    assert.equal(result.totalIntensity, 0);
+  });
+
+  test('bodyweight: если указан явный вес в подходе — он используется несмотря на флаг', async ({ assert }) => {
+    const exercise = createExercise('ex1', ['спина'], 1.0);
+    WorkoutCalculator['loadExercises'] = async () => new Map([['ex1', exercise]]);
+
+    // Атлет добавил отягощение +20кг к подтягиваниям — weight явно задан
+    const result = await WorkoutCalculator.calculateZoneLoads(
+      [{
+        exerciseId: 'ex1',
+        type: 'strength' as const,
+        bodyweight: true,
+        sets: [{ id: '1', reps: 10, weight: 20 }],
+      }],
+      'bodybuilding'
+    );
+
+    // volume = 10 * 20 = 200
+    assert.equal(result.totalVolume, 200);
+    assert.isAbove(result.totalIntensity, 0);
+  });
+
+  test('calculatePeriodStats: bodyweight-упражнение не триггерит hasMissingWeights', ({ assert }) => {
+    const w = createWorkout('w1', 'bodybuilding', { спина: 1 }, 0, 0.5, new Date(), [
+      {
+        exerciseId: 'pullup',
+        type: 'strength',
+        bodyweight: true,
+        sets: [{ id: '1', reps: 10, weight: 0 }],
+      },
+    ]);
+    const result = WorkoutCalculator.calculatePeriodStats([w], 'week');
+    assert.isFalse((result.timeline[0] as any).hasMissingWeights);
+  });
+
+  test('calculatePeriodStats: обычное упражнение без веса триггерит hasMissingWeights', ({ assert }) => {
+    const w = createWorkout('w1', 'bodybuilding', { ноги: 1 }, 0, 0.5, new Date(), [
+      {
+        exerciseId: 'squat',
+        type: 'strength',
+        // bodyweight не задан
+        sets: [{ id: '1', reps: 10, weight: 0 }],
+      },
+    ]);
+    const result = WorkoutCalculator.calculatePeriodStats([w], 'week');
+    assert.isTrue((result.timeline[0] as any).hasMissingWeights);
+  });
 });
