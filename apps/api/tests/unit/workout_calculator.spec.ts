@@ -325,6 +325,37 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     assert.equal(WorkoutCalculator.getLoadLevel(0, 0, false), 'none');
   });
 
+  /* -------------------------------- CALCULATE RECOVERY STATE -------------------------------- */
+  test('calculateRecoveryState: пустой список', ({ assert }) => {
+    const r = WorkoutCalculator.calculateRecoveryState([], new Date('2026-04-05T12:00:00Z'));
+    assert.deepEqual(r.zones, {});
+    assert.equal(r.totalWorkouts, 0);
+    assert.isNull(r.lastWorkoutDaysAgo);
+  });
+
+  test('calculateRecoveryState: несколько тренировок одной зоны не суммируют усталость', ({ assert }) => {
+    const now = new Date('2026-04-05T12:00:00.000Z');
+    const day = new Date('2026-04-03T12:00:00.000Z');
+    const w1 = createWorkout('1', 'bodybuilding', { legs: 1 }, 100, 0.5, day);
+    const w2 = createWorkout('2', 'crossfit', { legs: 1 }, 100, 0.5, day);
+    const r = WorkoutCalculator.calculateRecoveryState([w1, w2], now);
+    const expected = Math.exp(-0.3 * 2);
+    assert.closeTo(r.zones.legs.intensity, expected, 0.02);
+    assert.equal(r.zones.legs.peakLoad, 1);
+  });
+
+  test('calculateRecoveryState: берётся max(decayed) между сеансами', ({ assert }) => {
+    const now = new Date('2026-04-05T12:00:00.000Z');
+    const recent = new Date('2026-04-04T12:00:00.000Z');
+    const old = new Date('2026-03-25T12:00:00.000Z');
+    const wRecent = createWorkout('1', 'bodybuilding', { legs: 0.4 }, 100, 0.5, recent);
+    const wOld = createWorkout('2', 'bodybuilding', { legs: 1 }, 100, 0.5, old);
+    const r = WorkoutCalculator.calculateRecoveryState([wRecent, wOld], now);
+    const fromRecent = 0.4 * Math.exp(-0.3 * 1);
+    const fromOld = 1 * Math.exp(-0.3 * 11);
+    assert.closeTo(r.zones.legs.intensity, Math.max(fromRecent, fromOld), 0.02);
+  });
+
   /* -------------------------------- CALCULATE PERIOD STATS -------------------------------- */
   test('calculatePeriodStats: корректно считает по пустому массиву', ({ assert }) => {
     const result = WorkoutCalculator.calculatePeriodStats([], 'week');

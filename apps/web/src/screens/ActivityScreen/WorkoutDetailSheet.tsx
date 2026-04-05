@@ -200,8 +200,10 @@ function ExerciseCard({
           {(ex.sets ?? []).map((s, si) => (
             <div key={s.id ?? si} className="flex items-center gap-2">
               <span className="text-xs text-(--color_text_muted) w-10 shrink-0">Сет {si + 1}</span>
-              <span className={`text-xs ${s.weight ? 'text-(--color_text_secondary)' : 'text-white/30 italic'}`}>
-                {ex.bodyweight && s.reps ? `${s.reps} повт.` : formatSet(s, ex.type)}
+              <span className={`text-xs ${s.weight || ex.bodyweight ? 'text-(--color_text_secondary)' : 'text-white/30 italic'}`}>
+                {ex.bodyweight && s.reps
+                  ? `${s.weight ? `${s.reps} × ${s.weight} кг · ` : `${s.reps} повт. · `}вес тела`
+                  : formatSet(s, ex.type)}
               </span>
               {!ex.bodyweight && s.weight == null && (s.reps ?? 0) > 0 && (
                 <span className="text-[10px] text-amber-400/70 ml-auto">вес не указан</span>

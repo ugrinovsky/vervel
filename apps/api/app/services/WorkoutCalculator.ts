@@ -251,14 +251,17 @@ export class WorkoutCalculator {
 
   /**
    * Рассчитать текущее состояние мышц с учётом затухания нагрузки.
-   * Недавние тренировки весят больше, старые — меньше.
+   *
+   * По каждой зоне берём **максимум** (нагрузка_сеанса × decay), а не сумму по всем тренировкам:
+   * иначе 3–4 ноги за неделю бесконечно копят «100% усталости», хотя последняя сессия была давно.
+   *
    * decay = e^(-λ × daysAgo), λ = 0.3
-   * → сегодня = 100%, 1д = 74%, 2д = 55%, 3д = 41%, 5д = 22%, 7д = 12%
+   * Для **одной** тренировки: сегодня = 100% вклада, 1д ≈ 74%, 2д ≈ 55%, …
    *
    * Для каждой зоны возвращает:
-   *  - intensity: текущая нагрузка с decay (0-1)
-   *  - lastTrainedDaysAgo: сколько дней назад тренировали
-   *  - peakLoad: пиковая нагрузка до decay (нормализованная)
+   *  - intensity: затухший вклад от «самого тяжёлого» сеанса в окне (0–1)
+   *  - lastTrainedDaysAgo: дней с последнего раза, когда зона получила нагрузку
+   *  - peakLoad: max нагрузка по зоне за один сеанс в окне, нормализованная к 0–1
    */
   static calculateRecoveryState(
     workouts: Workout[],
@@ -292,8 +295,10 @@ export class WorkoutCalculator {
 
       const zonesLoad = workout.zonesLoad || {};
       for (const [zone, load] of Object.entries(zonesLoad)) {
-        rawZones[zone] = (rawZones[zone] || 0) + load * decayFactor;
-        zonePeakLoad[zone] = (zonePeakLoad[zone] || 0) + load;
+        const numLoad = Number(load) || 0;
+        const decayed = numLoad * decayFactor;
+        rawZones[zone] = Math.max(rawZones[zone] || 0, decayed);
+        zonePeakLoad[zone] = Math.max(zonePeakLoad[zone] || 0, numLoad);
 
         if (zoneLastTrained[zone] === undefined || daysAgo < zoneLastTrained[zone]) {
           zoneLastTrained[zone] = daysAgo;
@@ -301,9 +306,8 @@ export class WorkoutCalculator {
       }
     }
 
-    // peakLoad нормализуется относительно максимума (показывает, какая зона нагружалась больше всего)
-    // intensity НЕ нормализуется относительно maxRaw — иначе самая нагруженная зона всегда будет 100%
-    // независимо от того, сколько прошло дней. Используем абсолютный cap в 1.0.
+    // peakLoad: пик за один сеанс по зоне, нормализованный по максимуму среди зон
+    // intensity: абсолютный cap 1.0 (уже не раздувается суммой сеансов)
     const peakValues = Object.values(zonePeakLoad);
     const maxPeak = Math.max(...peakValues, NORMALIZATION.MIN_DENOMINATOR);
 

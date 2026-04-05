@@ -56,16 +56,13 @@ function BodyweightToggle({
   profileWeight?: number;
   onToggle: () => void;
 }) {
-  const navigate = useNavigate();
   return (
     <button
       type="button"
-      onClick={bodyweight && !profileWeight ? () => navigate('/profile') : onToggle}
+      onClick={onToggle}
       title={
-        bodyweight
-          ? profileWeight
-            ? `Собственный вес · ${profileWeight} кг`
-            : 'Укажите вес в настройках профиля'
+        bodyweight && profileWeight
+          ? `Вес тела · ${profileWeight} кг`
           : 'Вес тела (собственный)'
       }
       className={`h-6 flex items-center gap-1 px-1.5 rounded-md transition-colors text-[10px] font-medium whitespace-nowrap ${
@@ -78,6 +75,19 @@ function BodyweightToggle({
     >
       <UserIcon className="w-3 h-3 shrink-0" />
       {bodyweight && profileWeight ? `${profileWeight} кг` : 'вес тела'}
+    </button>
+  );
+}
+
+function BodyweightWarning() {
+  const navigate = useNavigate();
+  return (
+    <button
+      type="button"
+      onClick={() => navigate('/profile')}
+      className="text-[10px] text-amber-400/80 hover:text-amber-300 transition-colors text-left"
+    >
+      ⚠ Укажите вес тела в профиле — нужен для расчёта интенсивности →
     </button>
   );
 }
@@ -213,6 +223,7 @@ export default function ExerciseParamsEditor({
           profileWeight={profileWeight}
           onToggle={() => onPatch({ bodyweight: !bodyweight })}
         />
+        {bodyweight && !profileWeight && <BodyweightWarning />}
       </div>
     );
   }
@@ -282,6 +293,7 @@ export default function ExerciseParamsEditor({
       >
         <span className="text-sm leading-none">+</span> подход
       </button>
+      {bodyweight && !profileWeight && <BodyweightWarning />}
     </div>
   );
 }
