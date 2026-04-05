@@ -10,10 +10,20 @@ export interface StrengthLogSession {
   best1RM: number | null;
 }
 
+export interface StrengthLogDashboardMetric {
+  best1RMLast30d: number | null;
+  best1RMPrev30d: number | null;
+  changePct: number | null;
+  sessionsLast30d: number;
+  lastWorkedAt: string | null;
+}
+
 export interface StrengthLogEntry {
   exerciseId: string;
   exerciseName: string;
   sessions: StrengthLogSession[];
+  standardId: number | null;
+  dashboardMetric: StrengthLogDashboardMetric | null;
 }
 
 export interface WeightedExerciseOption {
@@ -23,6 +33,17 @@ export interface WeightedExerciseOption {
   isCustom: boolean;
 }
 
+export interface ExerciseStandardDTO {
+  id: number;
+  catalogExerciseId: string | null;
+  displayLabel: string;
+}
+
+export interface ExerciseStandardAliasDTO {
+  sourceExerciseId: string;
+  standardId: number;
+}
+
 export interface StrengthLogPayload {
   entries: StrengthLogEntry[];
   pinnedExerciseIds: string[];
@@ -30,22 +51,8 @@ export interface StrengthLogPayload {
   suggestedPins: string[];
   /** Все упражнения с весом за год — в т.ч. custom: для ручного закрепления */
   weightedExerciseOptions: WeightedExerciseOption[];
-}
-
-export interface ExerciseDashboardMetric {
-  exerciseId: string;
-  exerciseName: string;
-  best1RMLast30d: number | null;
-  best1RMPrev30d: number | null;
-  changePct: number | null;
-  sessionsLast30d: number;
-  lastWorkedAt: string | null;
-}
-
-export interface ExerciseDashboardPayload {
-  metrics: ExerciseDashboardMetric[];
-  trackedExerciseIds: string[];
-  weightedExerciseOptions: WeightedExerciseOption[];
+  standards: ExerciseStandardDTO[];
+  aliases: ExerciseStandardAliasDTO[];
 }
 
 export interface AthleteGroup {
@@ -127,11 +134,23 @@ export const athleteApi = {
       exerciseIds,
     }),
 
-  getExerciseDashboard: () =>
-    privateApi.get<{ success: boolean; data: ExerciseDashboardPayload }>('/progression/exercise-dashboard'),
+  getExerciseStandards: () =>
+    privateApi.get<{ success: boolean; data: ExerciseStandardDTO[] }>('/progression/exercise-standards'),
 
-  putExerciseDashboard: (exerciseIds: string[]) =>
-    privateApi.put<{ success: boolean; data: ExerciseDashboardPayload }>('/progression/exercise-dashboard', {
-      exerciseIds,
+  postExerciseStandard: (body: { displayLabel: string; catalogExerciseId?: string | null }) =>
+    privateApi.post<{ success: boolean; data: ExerciseStandardDTO }>('/progression/exercise-standards', body),
+
+  patchExerciseStandard: (id: number, body: { displayLabel: string }) =>
+    privateApi.patch<{ success: boolean }>(`/progression/exercise-standards/${id}`, body),
+
+  deleteExerciseStandard: (id: number) =>
+    privateApi.delete<{ success: boolean }>(`/progression/exercise-standards/${id}`),
+
+  postExerciseStandardAlias: (body: { sourceExerciseId: string; standardId: number }) =>
+    privateApi.post<{ success: boolean }>('/progression/exercise-standard-aliases', body),
+
+  removeExerciseStandardAlias: (sourceExerciseId: string) =>
+    privateApi.delete<{ success: boolean }>('/progression/exercise-standard-aliases', {
+      data: { sourceExerciseId },
     }),
 };

@@ -25,6 +25,8 @@ describe('buildStrengthLogChartPoints', () => {
         { date: '2026-01-02', workoutId: 2, sets: [], best1RM: 120 },
         { date: '2026-01-01', workoutId: 1, sets: [], best1RM: 100 },
       ],
+      standardId: null,
+      dashboardMetric: null,
     };
     const pts = buildStrengthLogChartPoints(entry);
     expect(pts).toHaveLength(2);
@@ -44,6 +46,8 @@ describe('buildStrengthLogChartPoints', () => {
           best1RM: null,
         },
       ],
+      standardId: null,
+      dashboardMetric: null,
     };
     const pts = buildStrengthLogChartPoints(entry);
     expect(pts).toHaveLength(1);
@@ -57,6 +61,8 @@ describe('buildStrengthLogChartPoints', () => {
       sessions: [
         { date: '2026-01-01', workoutId: 1, sets: [], best1RM: null },
       ],
+      standardId: null,
+      dashboardMetric: null,
     };
     expect(buildStrengthLogChartPoints(entry)).toHaveLength(0);
   });
@@ -68,6 +74,8 @@ describe('strengthLogProgressPercent', () => {
       exerciseId: 'x',
       exerciseName: 'X',
       sessions: [{ date: '2026-01-01', workoutId: 1, sets: [], best1RM: 100 }],
+      standardId: null,
+      dashboardMetric: null,
     };
     expect(strengthLogProgressPercent(entry)).toBeNull();
   });
@@ -80,6 +88,8 @@ describe('strengthLogProgressPercent', () => {
         { date: '2026-01-03', workoutId: 3, sets: [], best1RM: 120 },
         { date: '2026-01-01', workoutId: 1, sets: [], best1RM: 100 },
       ],
+      standardId: null,
+      dashboardMetric: null,
     };
     expect(strengthLogProgressPercent(entry)).toBe(20);
   });
@@ -92,6 +102,8 @@ describe('strengthLogProgressPercent', () => {
         { date: '2026-01-02', workoutId: 2, sets: [], best1RM: 90 },
         { date: '2026-01-01', workoutId: 1, sets: [], best1RM: 100 },
       ],
+      standardId: null,
+      dashboardMetric: null,
     };
     expect(strengthLogProgressPercent(entry)).toBe(-10);
   });

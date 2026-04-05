@@ -1,18 +1,26 @@
 import { DateTime } from 'luxon';
 import Workout from '#models/workout';
 import UserPinnedExercise from '#models/user_pinned_exercise';
-import UserDashboardExercise from '#models/user_dashboard_exercise';
+import UserExerciseStandard from '#models/user_exercise_standard';
+import UserExerciseStandardAlias from '#models/user_exercise_standard_alias';
 import db from '@adonisjs/lucid/services/db';
 import type { WorkoutExercise, WorkoutSet } from '#models/workout';
 import { ExerciseCatalog } from '#services/ExerciseCatalog';
-import {
-  capitalizeFirstForDisplay,
-  displayNameMatchesCatalogTitle,
-} from '#services/exercise_match_helpers';
+import { capitalizeFirstForDisplay } from '#services/exercise_match_helpers';
 import {
   normalizePinnedExerciseIdList,
   pickTopExerciseIdsBySessionCount,
 } from '#services/strength_log_support';
+
+const STD_PREFIX = 'std:';
+
+type StandardRow = { id: number; catalogExerciseId: string | null; displayLabel: string };
+
+type StandardContext = {
+  standardsById: Map<number, StandardRow>;
+  aliasToStandardId: Map<string, number>;
+  catalogToStandardId: Map<string, number>;
+};
 
 /**
  * Формула Эпли: расчёт условного 1RM
@@ -69,6 +77,92 @@ export interface GroupLeaderboardEntry {
 }
 
 export class ProgressionService {
+  private static parseStandardGroupKey(groupKey: string): number | null {
+    if (!groupKey.startsWith(STD_PREFIX)) return null;
+    const n = Number(groupKey.slice(STD_PREFIX.length));
+    return Number.isFinite(n) ? n : null;
+  }
+
+  private static async loadStandardContext(userId: number): Promise<StandardContext> {
+    const [standards, aliases] = await Promise.all([
+      UserExerciseStandard.query().where('userId', userId).orderBy('id', 'asc'),
+      UserExerciseStandardAlias.query().where('userId', userId),
+    ]);
+    const standardsById = new Map<number, StandardRow>();
+    const catalogToStandardId = new Map<string, number>();
+    for (const s of standards) {
+      standardsById.set(s.id, {
+        id: s.id,
+        catalogExerciseId: s.catalogExerciseId,
+        displayLabel: s.displayLabel,
+      });
+      if (s.catalogExerciseId) {
+        catalogToStandardId.set(s.catalogExerciseId, s.id);
+      }
+    }
+    const aliasToStandardId = new Map<string, number>();
+    for (const a of aliases) {
+      aliasToStandardId.set(a.sourceExerciseId, a.standardId);
+    }
+    return { standardsById, aliasToStandardId, catalogToStandardId };
+  }
+
+  private static resolveGroupKey(exerciseId: string, ctx: StandardContext): string {
+    const viaAlias = ctx.aliasToStandardId.get(exerciseId);
+    if (viaAlias !== undefined) {
+      return `${STD_PREFIX}${viaAlias}`;
+    }
+    const viaCatalog = ctx.catalogToStandardId.get(exerciseId);
+    if (viaCatalog !== undefined) {
+      return `${STD_PREFIX}${viaCatalog}`;
+    }
+    return exerciseId;
+  }
+
+  private static exerciseMatchesStandard(
+    ex: WorkoutExercise,
+    standard: StandardRow,
+    aliasToStandardId: Map<string, number>
+  ): boolean {
+    if (!ProgressionService.workoutExerciseHasPositiveWeight(ex)) return false;
+    if (aliasToStandardId.get(ex.exerciseId) === standard.id) return true;
+    if (standard.catalogExerciseId && ex.exerciseId === standard.catalogExerciseId) return true;
+    return false;
+  }
+
+  private static mergeSetsForGroupKey(
+    exercises: WorkoutExercise[],
+    groupKey: string,
+    ctx: StandardContext
+  ): WorkoutSet[] | null {
+    const stdId = ProgressionService.parseStandardGroupKey(groupKey);
+    if (stdId !== null) {
+      const standard = ctx.standardsById.get(stdId);
+      if (!standard) return null;
+      const matches = exercises.filter((ex) =>
+        ProgressionService.exerciseMatchesStandard(ex, standard, ctx.aliasToStandardId)
+      );
+      if (matches.length === 0) return null;
+      const sets = matches.flatMap((ex) => ex.sets ?? []);
+      if (!sets.some((s) => Number(s.weight) > 0)) return null;
+      return sets;
+    }
+    const matches = exercises.filter(
+      (ex) =>
+        ProgressionService.workoutExerciseHasPositiveWeight(ex) && ex.exerciseId === groupKey
+    );
+    if (matches.length === 0) return null;
+    const sets = matches.flatMap((ex) => ex.sets ?? []);
+    if (!sets.some((s) => Number(s.weight) > 0)) return null;
+    return sets;
+  }
+
+  private static oneRmForGroupKey(w: Workout, groupKey: string, ctx: StandardContext): number {
+    const merged = ProgressionService.mergeSetsForGroupKey(w.exercises ?? [], groupKey, ctx);
+    if (!merged?.length) return 0;
+    return maxEpley(merged);
+  }
+
   /**
    * Прогрессия по упражнениям для одного пользователя.
    * Сравниваем текущий месяц с предыдущим.
@@ -289,39 +383,59 @@ export class ProgressionService {
    */
   static async getStrengthLog(userId: number): Promise<StrengthLogPayload> {
     const since = DateTime.now().minus({ days: 365 }).toJSDate();
+    const since400 = DateTime.now().minus({ days: 400 }).startOf('day').toJSDate();
+    const ctx = await this.loadStandardContext(userId);
 
-    const [workouts, pinnedRows] = await Promise.all([
+    const [workoutsDesc, pinnedRows, workoutsAsc400] = await Promise.all([
       Workout.query()
         .where('userId', userId)
         .where('date', '>=', since)
         .whereNull('deleted_at')
         .orderBy('date', 'desc'),
       UserPinnedExercise.query().where('userId', userId).orderBy('createdAt', 'asc'),
+      Workout.query()
+        .where('userId', userId)
+        .where('date', '>=', since400)
+        .whereNull('deleted_at')
+        .orderBy('date', 'asc'),
     ]);
 
     const pinnedExerciseIds = pinnedRows.map((r) => r.exerciseId);
 
-    const { entries: allEntries, sessionCounts } = this.buildAllStrengthLog(workouts);
-    await this.enrichStrengthLogNamesFromDb(allEntries);
+    const { entries: allEntries, sessionCounts } = this.buildGroupedStrengthLog(workoutsDesc, ctx);
+    await this.enrichStrengthLogNamesFromDb(allEntries, ctx);
 
-    const weightedExerciseOptions: WeightedExerciseOption[] = allEntries
-      .map((e) => ({
-        exerciseId: e.exerciseId,
-        exerciseName: e.exerciseName,
-        isCustom: e.exerciseId.startsWith('custom:'),
-      }))
-      .sort((a, b) => a.exerciseName.localeCompare(b.exerciseName, 'ru'));
+    const weightedExerciseOptions = await this.buildWeightedExerciseOptionsForUser(userId);
+
+    const standards = [...ctx.standardsById.values()].map((s) => ({
+      id: s.id,
+      catalogExerciseId: s.catalogExerciseId,
+      displayLabel: s.displayLabel,
+    }));
+    const aliases = [...ctx.aliasToStandardId.entries()].map(([sourceExerciseId, standardId]) => ({
+      sourceExerciseId,
+      standardId,
+    }));
+
+    for (const e of allEntries) {
+      e.dashboardMetric = this.computeDashboardMetricForGroup(e.exerciseId, workoutsAsc400, ctx);
+    }
 
     if (pinnedExerciseIds.length > 0) {
-      const entries = this.buildPinnedStrengthLog(workouts, pinnedExerciseIds);
-      await this.enrichStrengthLogNamesFromDb(entries);
+      const entries = this.buildPinnedGroupedStrengthLog(workoutsDesc, pinnedExerciseIds, ctx);
+      await this.enrichStrengthLogNamesFromDb(entries, ctx);
       const pinOrder = new Map(pinnedExerciseIds.map((id, i) => [id, i]));
       entries.sort((a, b) => (pinOrder.get(a.exerciseId) ?? 999) - (pinOrder.get(b.exerciseId) ?? 999));
+      for (const e of entries) {
+        e.dashboardMetric = this.computeDashboardMetricForGroup(e.exerciseId, workoutsAsc400, ctx);
+      }
       return {
         entries,
         pinnedExerciseIds,
         suggestedPins: [],
         weightedExerciseOptions,
+        standards,
+        aliases,
       };
     }
 
@@ -333,6 +447,8 @@ export class ProgressionService {
       pinnedExerciseIds,
       suggestedPins,
       weightedExerciseOptions,
+      standards,
+      aliases,
     };
   }
 
@@ -349,79 +465,54 @@ export class ProgressionService {
     });
   }
 
-  static async getExerciseDashboard(userId: number): Promise<ExerciseDashboardPayload> {
-    const rows = await UserDashboardExercise.query()
-      .where('userId', userId)
-      .orderBy('sortOrder', 'asc');
-
-    const trackedExerciseIds = rows.map((r) => r.exerciseId);
-
-    const weightedExerciseOptions = await this.buildWeightedExerciseOptionsForUser(userId);
-
-    if (trackedExerciseIds.length === 0) {
-      return { metrics: [], trackedExerciseIds: [], weightedExerciseOptions };
-    }
-
-    const since = DateTime.now().minus({ days: 400 }).startOf('day').toJSDate();
-    const workouts = await Workout.query()
-      .where('userId', userId)
-      .where('date', '>=', since)
-      .whereNull('deleted_at')
-      .orderBy('date', 'asc');
-
+  private static computeDashboardMetricForGroup(
+    groupKey: string,
+    workoutsAsc: Workout[],
+    ctx: StandardContext
+  ): StrengthLogDashboardMetric {
     const now = DateTime.now();
     const curStart = now.minus({ days: 30 }).startOf('day');
     const prevStart = curStart.minus({ days: 30 }).startOf('day');
 
-    const metrics: ExerciseDashboardMetric[] = [];
+    let bestCur = 0;
+    let bestPrev = 0;
+    let sessionsCur = 0;
+    let lastWorked: DateTime | null = null;
 
-    for (const trackId of trackedExerciseIds) {
-      let bestCur = 0;
-      let bestPrev = 0;
-      let sessionsCur = 0;
-      let lastWorked: DateTime | null = null;
+    for (const w of workoutsAsc) {
+      const rm = this.oneRmForGroupKey(w, groupKey, ctx);
+      if (rm <= 0) continue;
 
-      for (const w of workouts) {
-        const rm = this.oneRmForTrackedExercise(w, trackId);
-        if (rm <= 0) continue;
+      const d = this.workoutDay(w);
+      if (!d.isValid) continue;
 
-        const d = this.workoutDay(w);
-        if (!d.isValid) continue;
-
-        if (!lastWorked || d > lastWorked) {
-          lastWorked = d;
-        }
-
-        if (d >= curStart) {
-          if (rm > bestCur) bestCur = rm;
-          sessionsCur += 1;
-        } else if (d >= prevStart && d < curStart) {
-          if (rm > bestPrev) bestPrev = rm;
-        }
+      if (!lastWorked || d > lastWorked) {
+        lastWorked = d;
       }
 
-      const best1RMLast30d = bestCur > 0 ? Math.round(bestCur * 10) / 10 : null;
-      const best1RMPrev30d = bestPrev > 0 ? Math.round(bestPrev * 10) / 10 : null;
-      let changePct: number | null = null;
-      if (best1RMLast30d !== null && best1RMPrev30d !== null && best1RMPrev30d > 0) {
-        changePct =
-          Math.round(((best1RMLast30d - best1RMPrev30d) / best1RMPrev30d) * 100 * 10) / 10;
+      if (d >= curStart) {
+        if (rm > bestCur) bestCur = rm;
+        sessionsCur += 1;
+      } else if (d >= prevStart && d < curStart) {
+        if (rm > bestPrev) bestPrev = rm;
       }
-
-      metrics.push({
-        exerciseId: trackId,
-        exerciseName: this.fallbackStrengthLogName(trackId),
-        best1RMLast30d,
-        best1RMPrev30d,
-        changePct,
-        sessionsLast30d: sessionsCur,
-        lastWorkedAt: lastWorked?.toISODate() ?? null,
-      });
     }
 
-    await this.enrichDashboardMetricNames(metrics);
+    const best1RMLast30d = bestCur > 0 ? Math.round(bestCur * 10) / 10 : null;
+    const best1RMPrev30d = bestPrev > 0 ? Math.round(bestPrev * 10) / 10 : null;
+    let changePct: number | null = null;
+    if (best1RMLast30d !== null && best1RMPrev30d !== null && best1RMPrev30d > 0) {
+      changePct =
+        Math.round(((best1RMLast30d - best1RMPrev30d) / best1RMPrev30d) * 100 * 10) / 10;
+    }
 
-    return { metrics, trackedExerciseIds, weightedExerciseOptions };
+    return {
+      best1RMLast30d,
+      best1RMPrev30d,
+      changePct,
+      sessionsLast30d: sessionsCur,
+      lastWorkedAt: lastWorked?.toISODate() ?? null,
+    };
   }
 
   private static async buildWeightedExerciseOptionsForUser(
@@ -433,9 +524,38 @@ export class ProgressionService {
       .where('date', '>=', since)
       .whereNull('deleted_at')
       .orderBy('date', 'desc');
-    const { entries } = this.buildAllStrengthLog(workouts);
-    await this.enrichStrengthLogNamesFromDb(entries);
-    return entries
+
+    const rawIds = new Set<string>();
+    const nameHint = new Map<string, string>();
+    for (const w of workouts) {
+      for (const ex of w.exercises ?? []) {
+        if (!this.workoutExerciseHasPositiveWeight(ex) || !ex.sets?.length) continue;
+        rawIds.add(ex.exerciseId);
+        if (!nameHint.has(ex.exerciseId) && ex.name?.trim()) {
+          nameHint.set(ex.exerciseId, ex.name.trim());
+        }
+      }
+    }
+
+    const pseudoEntries: StrengthLogEntry[] = [...rawIds].map((exerciseId) => ({
+      exerciseId,
+      exerciseName:
+        exerciseId.startsWith('custom:')
+          ? nameHint.get(exerciseId)
+            ? capitalizeFirstForDisplay(nameHint.get(exerciseId)!)
+            : capitalizeFirstForDisplay(
+                exerciseId.slice('custom:'.length).trim() || exerciseId
+              )
+          : nameHint.get(exerciseId) || exerciseId,
+      sessions: [],
+      standardId: null,
+      dashboardMetric: null,
+    }));
+
+    const ctx = await this.loadStandardContext(userId);
+    await this.enrichStrengthLogNamesFromDb(pseudoEntries, ctx);
+
+    return pseudoEntries
       .map((e) => ({
         exerciseId: e.exerciseId,
         exerciseName: e.exerciseName,
@@ -444,39 +564,122 @@ export class ProgressionService {
       .sort((a, b) => a.exerciseName.localeCompare(b.exerciseName, 'ru'));
   }
 
-  static async replaceExerciseDashboard(userId: number, exerciseIds: string[]): Promise<void> {
-    const unique = normalizePinnedExerciseIdList(exerciseIds);
+  static async listExerciseStandards(userId: number): Promise<ExerciseStandardDTO[]> {
+    const rows = await UserExerciseStandard.query().where('userId', userId).orderBy('id', 'asc');
+    return rows.map((r) => ({
+      id: r.id,
+      catalogExerciseId: r.catalogExerciseId,
+      displayLabel: r.displayLabel,
+    }));
+  }
 
-    await db.transaction(async (trx) => {
-      await UserDashboardExercise.query({ client: trx }).where('userId', userId).delete();
-      if (unique.length === 0) return;
-      await UserDashboardExercise.createMany(
-        unique.map((exerciseId, sortOrder) => ({ userId, exerciseId, sortOrder })),
-        { client: trx }
-      );
+  static async createExerciseStandard(
+    userId: number,
+    displayLabel: string,
+    catalogExerciseId: string | null
+  ): Promise<ExerciseStandardDTO> {
+    const label = displayLabel.trim();
+    if (!label) {
+      throw new Error('displayLabel required');
+    }
+    const cat = catalogExerciseId?.trim() || null;
+    if (cat) {
+      const dup = await UserExerciseStandard.query()
+        .where('userId', userId)
+        .where('catalogExerciseId', cat)
+        .first();
+      if (dup) {
+        throw new Error('Эталон для этого упражнения из каталога уже есть');
+      }
+    }
+    const row = await UserExerciseStandard.create({
+      userId,
+      catalogExerciseId: cat,
+      displayLabel: label,
     });
+    return {
+      id: row.id,
+      catalogExerciseId: row.catalogExerciseId,
+      displayLabel: row.displayLabel,
+    };
+  }
+
+  static async updateExerciseStandard(
+    userId: number,
+    standardId: number,
+    displayLabel: string
+  ): Promise<void> {
+    const label = displayLabel.trim();
+    if (!label) {
+      throw new Error('displayLabel required');
+    }
+    const row = await UserExerciseStandard.query()
+      .where('id', standardId)
+      .where('userId', userId)
+      .first();
+    if (!row) {
+      throw new Error('Эталон не найден');
+    }
+    row.displayLabel = label;
+    await row.save();
+  }
+
+  static async deleteExerciseStandard(userId: number, standardId: number): Promise<void> {
+    const row = await UserExerciseStandard.query()
+      .where('id', standardId)
+      .where('userId', userId)
+      .first();
+    if (!row) {
+      throw new Error('Эталон не найден');
+    }
+    await row.delete();
+  }
+
+  static async setExerciseStandardAlias(
+    userId: number,
+    sourceExerciseId: string,
+    standardId: number
+  ): Promise<void> {
+    const src = sourceExerciseId.trim();
+    if (!src) {
+      throw new Error('sourceExerciseId required');
+    }
+    if (src.startsWith(STD_PREFIX)) {
+      throw new Error('Некорректный id');
+    }
+    const std = await UserExerciseStandard.query()
+      .where('id', standardId)
+      .where('userId', userId)
+      .first();
+    if (!std) {
+      throw new Error('Эталон не найден');
+    }
+    const existing = await UserExerciseStandardAlias.query()
+      .where('userId', userId)
+      .where('sourceExerciseId', src)
+      .first();
+    if (existing) {
+      existing.standardId = standardId;
+      await existing.save();
+    } else {
+      await UserExerciseStandardAlias.create({
+        userId,
+        sourceExerciseId: src,
+        standardId,
+      });
+    }
+  }
+
+  static async removeExerciseStandardAlias(userId: number, sourceExerciseId: string): Promise<void> {
+    const src = sourceExerciseId.trim();
+    await UserExerciseStandardAlias.query()
+      .where('userId', userId)
+      .where('sourceExerciseId', src)
+      .delete();
   }
 
   private static workoutExerciseHasPositiveWeight(ex: WorkoutExercise): boolean {
     return Boolean(ex.sets?.some((s) => Number(s.weight) > 0));
-  }
-
-  private static exerciseMatchesPinnedEntry(ex: WorkoutExercise, pinId: string): boolean {
-    if (!this.workoutExerciseHasPositiveWeight(ex)) return false;
-    if (ex.exerciseId === pinId) return true;
-    const catalogEx = ExerciseCatalog.find(pinId);
-    if (!catalogEx || !ex.exerciseId.startsWith('custom:')) return false;
-    const rawName = ex.name?.trim();
-    if (!rawName) return false;
-    return displayNameMatchesCatalogTitle(rawName, catalogEx.title);
-  }
-
-  private static mergeSetsForPin(exercises: WorkoutExercise[], pinId: string): WorkoutSet[] | null {
-    const matches = exercises.filter((ex) => this.exerciseMatchesPinnedEntry(ex, pinId));
-    if (matches.length === 0) return null;
-    const sets = matches.flatMap((ex) => ex.sets ?? []);
-    if (!sets.some((s) => Number(s.weight) > 0)) return null;
-    return sets;
   }
 
   private static sessionDto(w: Workout, sets: WorkoutSet[]): StrengthLogSession {
@@ -489,33 +692,125 @@ export class ProgressionService {
     };
   }
 
-  private static buildPinnedStrengthLog(
+  private static buildPinnedGroupedStrengthLog(
     workouts: Workout[],
-    pinnedExerciseIds: string[]
+    pinnedGroupKeys: string[],
+    ctx: StandardContext
   ): StrengthLogEntry[] {
     const entries: StrengthLogEntry[] = [];
 
-    for (const pinId of pinnedExerciseIds) {
+    for (const pinKey of pinnedGroupKeys) {
       const sessions: StrengthLogSession[] = [];
       for (const w of workouts) {
-        const merged = this.mergeSetsForPin(w.exercises ?? [], pinId);
-        if (!merged) continue;
+        const merged = this.mergeSetsForGroupKey(w.exercises ?? [], pinKey, ctx);
+        if (!merged?.length) continue;
         sessions.push(this.sessionDto(w, merged));
         if (sessions.length >= 6) break;
       }
       if (sessions.length === 0) continue;
+      const stdId = this.parseStandardGroupKey(pinKey);
       entries.push({
-        exerciseId: pinId,
-        exerciseName: this.fallbackStrengthLogName(pinId),
+        exerciseId: pinKey,
+        exerciseName:
+          stdId !== null
+            ? ctx.standardsById.get(stdId)?.displayLabel ?? pinKey
+            : this.fallbackStrengthLogName(pinKey),
         sessions,
+        standardId: stdId,
+        dashboardMetric: null,
       });
     }
 
     return entries;
   }
 
-  private static async enrichStrengthLogNamesFromDb(entries: StrengthLogEntry[]): Promise<void> {
-    const ids = entries.map((e) => e.exerciseId).filter((id) => !id.startsWith('custom:'));
+  private static buildGroupedStrengthLog(
+    workouts: Workout[],
+    ctx: StandardContext
+  ): {
+    entries: StrengthLogEntry[];
+    sessionCounts: Map<string, number>;
+  } {
+    const groupSessionsMap = new Map<
+      string,
+      { name: string; standardId: number | null; sessions: StrengthLogSession[] }
+    >();
+    const sessionCounts = new Map<string, number>();
+
+    for (const w of workouts) {
+      const countedForWorkout = new Set<string>();
+      for (const ex of w.exercises ?? []) {
+        if (!this.workoutExerciseHasPositiveWeight(ex) || !ex.sets?.length) continue;
+
+        const gk = this.resolveGroupKey(ex.exerciseId, ctx);
+
+        if (!countedForWorkout.has(gk)) {
+          countedForWorkout.add(gk);
+          sessionCounts.set(gk, (sessionCounts.get(gk) ?? 0) + 1);
+        }
+
+        if (!groupSessionsMap.has(gk)) {
+          const stdId = this.parseStandardGroupKey(gk);
+          let initialName: string;
+          if (stdId !== null) {
+            const row = ctx.standardsById.get(stdId);
+            initialName = row?.displayLabel ?? gk;
+          } else if (ex.exerciseId.startsWith('custom:')) {
+            initialName = ex.name?.trim()
+              ? capitalizeFirstForDisplay(ex.name.trim())
+              : capitalizeFirstForDisplay(
+                  ex.exerciseId.slice('custom:'.length).trim() || ex.exerciseId
+                );
+          } else {
+            initialName = ex.name?.trim() || ex.exerciseId;
+          }
+          groupSessionsMap.set(gk, {
+            name: initialName,
+            standardId: stdId,
+            sessions: [],
+          });
+        }
+        const entry = groupSessionsMap.get(gk)!;
+        if (entry.sessions.length < 6 && !entry.sessions.some((s) => s.workoutId === w.id)) {
+          const merged = this.mergeSetsForGroupKey(w.exercises ?? [], gk, ctx);
+          if (merged?.length) {
+            entry.sessions.push(this.sessionDto(w, merged));
+          }
+        }
+      }
+    }
+
+    const entries: StrengthLogEntry[] = [...groupSessionsMap.entries()]
+      .filter(([, v]) => v.sessions.length > 0)
+      .map(([exerciseId, { name, sessions, standardId }]) => ({
+        exerciseId,
+        exerciseName: name,
+        sessions,
+        standardId,
+        dashboardMetric: null,
+      }));
+
+    return { entries, sessionCounts };
+  }
+
+  private static async enrichStrengthLogNamesFromDb(
+    entries: StrengthLogEntry[],
+    ctx: StandardContext
+  ): Promise<void> {
+    for (const e of entries) {
+      const stdId = this.parseStandardGroupKey(e.exerciseId);
+      if (stdId !== null) {
+        const row = ctx.standardsById.get(stdId);
+        if (row) {
+          e.exerciseName = capitalizeFirstForDisplay(row.displayLabel);
+        }
+        continue;
+      }
+    }
+
+    const ids = entries
+      .map((e) => e.exerciseId)
+      .filter((id) => !id.startsWith('custom:') && !id.startsWith(STD_PREFIX));
     const titleMap = new Map<string, string>();
     if (ids.length > 0) {
       const rows = await db.from('exercises').whereIn('id', ids).select('id', 'title');
@@ -525,6 +820,7 @@ export class ProgressionService {
     }
     for (const e of entries) {
       if (e.exerciseId.startsWith('custom:')) continue;
+      if (e.exerciseId.startsWith(STD_PREFIX)) continue;
       const dbTitle = titleMap.get(e.exerciseId);
       const cat = ExerciseCatalog.find(e.exerciseId);
       if (dbTitle) {
@@ -534,6 +830,7 @@ export class ProgressionService {
       }
     }
     for (const e of entries) {
+      if (e.exerciseId.startsWith(STD_PREFIX)) continue;
       if (e.exerciseName.includes('_') && !e.exerciseName.includes(' ')) {
         e.exerciseName = e.exerciseName.replace(/_/g, ' ');
       }
@@ -554,57 +851,6 @@ export class ProgressionService {
     return exerciseId;
   }
 
-  private static buildAllStrengthLog(workouts: Workout[]): {
-    entries: StrengthLogEntry[];
-    sessionCounts: Map<string, number>;
-  } {
-    const exerciseSessionsMap = new Map<string, { name: string; sessions: StrengthLogSession[] }>();
-    const sessionCounts = new Map<string, number>();
-
-    for (const w of workouts) {
-      const countedForWorkout = new Set<string>();
-      for (const ex of w.exercises ?? []) {
-        if (!this.workoutExerciseHasPositiveWeight(ex) || !ex.sets?.length) continue;
-
-        if (!countedForWorkout.has(ex.exerciseId)) {
-          countedForWorkout.add(ex.exerciseId);
-          sessionCounts.set(ex.exerciseId, (sessionCounts.get(ex.exerciseId) ?? 0) + 1);
-        }
-
-        if (!exerciseSessionsMap.has(ex.exerciseId)) {
-          let initialName: string;
-          if (ex.exerciseId.startsWith('custom:')) {
-            initialName = ex.name?.trim()
-              ? capitalizeFirstForDisplay(ex.name.trim())
-              : capitalizeFirstForDisplay(
-                  ex.exerciseId.slice('custom:'.length).trim() || ex.exerciseId
-                );
-          } else {
-            initialName = ex.name?.trim() || ex.exerciseId;
-          }
-          exerciseSessionsMap.set(ex.exerciseId, {
-            name: initialName,
-            sessions: [],
-          });
-        }
-        const entry = exerciseSessionsMap.get(ex.exerciseId)!;
-        if (entry.sessions.length < 6 && !entry.sessions.some((s) => s.workoutId === w.id)) {
-          entry.sessions.push(this.sessionDto(w, ex.sets));
-        }
-      }
-    }
-
-    const entries: StrengthLogEntry[] = [...exerciseSessionsMap.entries()]
-      .filter(([, v]) => v.sessions.length > 0)
-      .map(([exerciseId, { name, sessions }]) => ({
-        exerciseId,
-        exerciseName: name,
-        sessions,
-      }));
-
-    return { entries, sessionCounts };
-  }
-
   private static workoutDay(w: Workout): DateTime {
     const d = w.date;
     if (d instanceof DateTime) {
@@ -613,38 +859,6 @@ export class ProgressionService {
     return DateTime.fromISO(String(d)).startOf('day');
   }
 
-  private static oneRmForTrackedExercise(w: Workout, trackId: string): number {
-    const merged = this.mergeSetsForPin(w.exercises ?? [], trackId);
-    if (!merged?.length) return 0;
-    return maxEpley(merged);
-  }
-
-  private static async enrichDashboardMetricNames(metrics: ExerciseDashboardMetric[]): Promise<void> {
-    const ids = metrics.map((m) => m.exerciseId).filter((id) => !id.startsWith('custom:'));
-    const titleMap = new Map<string, string>();
-    if (ids.length > 0) {
-      const rows = await db.from('exercises').whereIn('id', ids).select('id', 'title');
-      for (const r of rows as { id: string; title: string }[]) {
-        titleMap.set(r.id, r.title);
-      }
-    }
-    for (const m of metrics) {
-      if (m.exerciseId.startsWith('custom:')) continue;
-      const dbTitle = titleMap.get(m.exerciseId);
-      const cat = ExerciseCatalog.find(m.exerciseId);
-      if (dbTitle) {
-        m.exerciseName = dbTitle;
-      } else if (cat) {
-        m.exerciseName = cat.title;
-      }
-    }
-    for (const m of metrics) {
-      if (m.exerciseName.includes('_') && !m.exerciseName.includes(' ')) {
-        m.exerciseName = m.exerciseName.replace(/_/g, ' ');
-      }
-      m.exerciseName = capitalizeFirstForDisplay(m.exerciseName);
-    }
-  }
 }
 
 export interface StrengthLogSession {
@@ -654,10 +868,20 @@ export interface StrengthLogSession {
   best1RM: number | null;
 }
 
+export interface StrengthLogDashboardMetric {
+  best1RMLast30d: number | null;
+  best1RMPrev30d: number | null;
+  changePct: number | null;
+  sessionsLast30d: number;
+  lastWorkedAt: string | null;
+}
+
 export interface StrengthLogEntry {
   exerciseId: string;
   exerciseName: string;
   sessions: StrengthLogSession[];
+  standardId: number | null;
+  dashboardMetric: StrengthLogDashboardMetric | null;
 }
 
 export interface WeightedExerciseOption {
@@ -667,26 +891,23 @@ export interface WeightedExerciseOption {
   isCustom: boolean;
 }
 
+export interface ExerciseStandardDTO {
+  id: number;
+  catalogExerciseId: string | null;
+  displayLabel: string;
+}
+
+export interface ExerciseStandardAliasDTO {
+  sourceExerciseId: string;
+  standardId: number;
+}
+
 export interface StrengthLogPayload {
   entries: StrengthLogEntry[];
   pinnedExerciseIds: string[];
   suggestedPins: string[];
   /** Все упражнения с весом за год — для закрепления custom: и редких id */
   weightedExerciseOptions: WeightedExerciseOption[];
-}
-
-export interface ExerciseDashboardMetric {
-  exerciseId: string;
-  exerciseName: string;
-  best1RMLast30d: number | null;
-  best1RMPrev30d: number | null;
-  changePct: number | null;
-  sessionsLast30d: number;
-  lastWorkedAt: string | null;
-}
-
-export interface ExerciseDashboardPayload {
-  metrics: ExerciseDashboardMetric[];
-  trackedExerciseIds: string[];
-  weightedExerciseOptions: WeightedExerciseOption[];
+  standards: ExerciseStandardDTO[];
+  aliases: ExerciseStandardAliasDTO[];
 }

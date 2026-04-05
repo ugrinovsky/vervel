@@ -3,8 +3,8 @@ import { BaseModel, column, belongsTo } from '@adonisjs/lucid/orm'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
 
-export default class UserDashboardExercise extends BaseModel {
-  static table = 'user_dashboard_exercises'
+export default class UserExerciseStandard extends BaseModel {
+  static table = 'user_exercise_standards'
 
   @column({ isPrimary: true })
   declare id: number
@@ -13,13 +13,16 @@ export default class UserDashboardExercise extends BaseModel {
   declare userId: number
 
   @column()
-  declare exerciseId: string
+  declare catalogExerciseId: string | null
 
   @column()
-  declare sortOrder: number
+  declare displayLabel: string
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
+
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
 
   @belongsTo(() => User)
   declare user: BelongsTo<typeof User>

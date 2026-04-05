@@ -9,9 +9,29 @@ const strengthLogPinsValidator = vine.compile(
   })
 )
 
-const exerciseDashboardValidator = vine.compile(
+const createStandardValidator = vine.compile(
   vine.object({
-    exerciseIds: vine.array(vine.string().trim().minLength(1).maxLength(512)).maxLength(12),
+    displayLabel: vine.string().trim().minLength(1).maxLength(255),
+    catalogExerciseId: vine.string().trim().maxLength(512).optional(),
+  })
+)
+
+const updateStandardValidator = vine.compile(
+  vine.object({
+    displayLabel: vine.string().trim().minLength(1).maxLength(255),
+  })
+)
+
+const setAliasValidator = vine.compile(
+  vine.object({
+    sourceExerciseId: vine.string().trim().minLength(1).maxLength(512),
+    standardId: vine.number(),
+  })
+)
+
+const removeAliasValidator = vine.compile(
+  vine.object({
+    sourceExerciseId: vine.string().trim().minLength(1).maxLength(512),
   })
 )
 
@@ -27,12 +47,8 @@ export default class ProgressionController {
   }
 
   /**
-   * GET /athlete/groups/:id/leaderboard?period=7|30
-   * Лидерборд группы для атлета — проверяем, что он является участником группы
-   */
-  /**
    * GET /progression/strength-log
-   * Силовой журнал: история подходов по каждому упражнению
+   * Силовой журнал: история подходов по каждому упражнению (+ эталоны, метрики 30+30 дн.)
    */
   async getStrengthLog({ auth, response }: HttpContext) {
     const user = auth.user!
@@ -53,25 +69,94 @@ export default class ProgressionController {
   }
 
   /**
-   * GET /progression/exercise-dashboard
-   * Показатели по выбранным упражнениям (скользящие окна 30+30 дней).
+   * GET /progression/exercise-standards
    */
-  async getExerciseDashboard({ auth, response }: HttpContext) {
+  async getExerciseStandards({ auth, response }: HttpContext) {
     const user = auth.user!
-    const data = await ProgressionService.getExerciseDashboard(user.id)
+    const data = await ProgressionService.listExerciseStandards(user.id)
     return response.ok({ success: true, data })
   }
 
   /**
-   * PUT /progression/exercise-dashboard
-   * Задать список упражнений дашборда (полная замена, до 12 шт.).
+   * POST /progression/exercise-standards
    */
-  async putExerciseDashboard({ auth, request, response }: HttpContext) {
+  async postExerciseStandard({ auth, request, response }: HttpContext) {
     const user = auth.user!
-    const { exerciseIds } = await request.validateUsing(exerciseDashboardValidator)
-    await ProgressionService.replaceExerciseDashboard(user.id, exerciseIds)
-    const data = await ProgressionService.getExerciseDashboard(user.id)
-    return response.ok({ success: true, data })
+    const body = await request.validateUsing(createStandardValidator)
+    const catRaw = body.catalogExerciseId?.trim()
+    try {
+      const data = await ProgressionService.createExerciseStandard(
+        user.id,
+        body.displayLabel,
+        catRaw && catRaw.length > 0 ? catRaw : null
+      )
+      return response.ok({ success: true, data })
+    } catch (e: any) {
+      return response.badRequest({ success: false, message: e?.message ?? 'Ошибка' })
+    }
+  }
+
+  /**
+   * PATCH /progression/exercise-standards/:id
+   */
+  async patchExerciseStandard({ auth, request, response, params }: HttpContext) {
+    const user = auth.user!
+    const id = Number(params.id)
+    if (!Number.isFinite(id)) {
+      return response.badRequest({ success: false, message: 'Некорректный id' })
+    }
+    const body = await request.validateUsing(updateStandardValidator)
+    try {
+      await ProgressionService.updateExerciseStandard(user.id, id, body.displayLabel)
+      return response.ok({ success: true })
+    } catch (e: any) {
+      return response.badRequest({ success: false, message: e?.message ?? 'Ошибка' })
+    }
+  }
+
+  /**
+   * DELETE /progression/exercise-standards/:id
+   */
+  async deleteExerciseStandard({ auth, response, params }: HttpContext) {
+    const user = auth.user!
+    const id = Number(params.id)
+    if (!Number.isFinite(id)) {
+      return response.badRequest({ success: false, message: 'Некорректный id' })
+    }
+    try {
+      await ProgressionService.deleteExerciseStandard(user.id, id)
+      return response.ok({ success: true })
+    } catch (e: any) {
+      return response.badRequest({ success: false, message: e?.message ?? 'Ошибка' })
+    }
+  }
+
+  /**
+   * POST /progression/exercise-standard-aliases
+   */
+  async postExerciseStandardAlias({ auth, request, response }: HttpContext) {
+    const user = auth.user!
+    const body = await request.validateUsing(setAliasValidator)
+    try {
+      await ProgressionService.setExerciseStandardAlias(
+        user.id,
+        body.sourceExerciseId,
+        body.standardId
+      )
+      return response.ok({ success: true })
+    } catch (e: any) {
+      return response.badRequest({ success: false, message: e?.message ?? 'Ошибка' })
+    }
+  }
+
+  /**
+   * DELETE /progression/exercise-standard-aliases (body: { sourceExerciseId })
+   */
+  async deleteExerciseStandardAlias({ auth, request, response }: HttpContext) {
+    const user = auth.user!
+    const body = await request.validateUsing(removeAliasValidator)
+    await ProgressionService.removeExerciseStandardAlias(user.id, body.sourceExerciseId)
+    return response.ok({ success: true })
   }
 
   async getGroupLeaderboard({ auth, params, request, response }: HttpContext) {

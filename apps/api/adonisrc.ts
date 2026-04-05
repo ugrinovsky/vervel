@@ -76,7 +76,8 @@ export default defineConfig({
       {
         files: ['tests/unit/**/*.spec(.ts|.js)'],
         name: 'unit',
-        timeout: 2000,
+        // Тесты с БД (например ai_balance_db) не укладываются в 2s на CI / под нагрузкой
+        timeout: 15000,
       },
       {
         files: ['tests/functional/**/*.spec(.ts|.js)'],

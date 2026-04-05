@@ -7,7 +7,7 @@
  *   - ExerciseDrawer (BottomSheet per-exercise in athlete/trainer workout form)
  */
 import { WOD_CONFIG, type WodType } from '@/constants/workoutTypes';
-import { DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { DocumentDuplicateIcon, TrashIcon, UserIcon } from '@heroicons/react/24/outline';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
 import NumberInput from '@/components/ui/NumberInput';
 import { useNavigate } from 'react-router';
@@ -58,30 +58,27 @@ function BodyweightToggle({
 }) {
   const navigate = useNavigate();
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <button
-        type="button"
-        onClick={onToggle}
-        className={`text-[10px] px-2 py-0.5 rounded-full border font-medium transition-colors ${
-          bodyweight
-            ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-            : 'bg-white/5 border-white/15 text-white/30 hover:text-white/50'
-        }`}
-      >
-        {bodyweight
-          ? `✓ собственный вес${profileWeight ? ` · ${profileWeight} кг` : ''}`
-          : 'собственный вес'}
-      </button>
-      {bodyweight && !profileWeight && (
-        <button
-          type="button"
-          onClick={() => navigate('/profile')}
-          className="text-[10px] text-amber-400/70 hover:text-amber-300 transition-colors"
-        >
-          ⚠ укажите вес в настройках →
-        </button>
-      )}
-    </div>
+    <button
+      type="button"
+      onClick={bodyweight && !profileWeight ? () => navigate('/profile') : onToggle}
+      title={
+        bodyweight
+          ? profileWeight
+            ? `Собственный вес · ${profileWeight} кг`
+            : 'Укажите вес в настройках профиля'
+          : 'Вес тела (собственный)'
+      }
+      className={`h-6 flex items-center gap-1 px-1.5 rounded-md transition-colors text-[10px] font-medium whitespace-nowrap ${
+        bodyweight
+          ? profileWeight
+            ? 'text-emerald-400 bg-emerald-500/15'
+            : 'text-amber-400 bg-amber-500/15'
+          : 'text-white/30 hover:text-emerald-400 hover:bg-emerald-500/15'
+      }`}
+    >
+      <UserIcon className="w-3 h-3 shrink-0" />
+      {bodyweight && profileWeight ? `${profileWeight} кг` : 'вес тела'}
+    </button>
   );
 }
 
@@ -223,21 +220,18 @@ export default function ExerciseParamsEditor({
   /* ── Bodybuilding ────────────────────────────────────────────────── */
   return (
     <div className="space-y-1.5">
-      {/* Bodyweight toggle */}
-      <div className="mb-0.5">
-        <BodyweightToggle
-          bodyweight={bodyweight}
-          profileWeight={profileWeight}
-          onToggle={() => onPatch({ bodyweight: !bodyweight })}
-        />
-      </div>
-
       <div className="flex items-center gap-2 text-[10px] text-white/40 font-medium">
         <span className="w-5" />
         <span className="flex-1 text-center">повт</span>
         <span className="text-white/20">×</span>
         <span className={`flex-1 text-center ${bodyweight ? 'text-emerald-400/60' : ''}`}>кг</span>
-        <span className="w-14" />
+        <div className="w-14 shrink-0 flex justify-end">
+          <BodyweightToggle
+            bodyweight={bodyweight}
+            profileWeight={profileWeight}
+            onToggle={() => onPatch({ bodyweight: !bodyweight })}
+          />
+        </div>
       </div>
       {(setsDetail ?? []).map((set, si) => (
         <div key={si} className="flex items-center gap-2">

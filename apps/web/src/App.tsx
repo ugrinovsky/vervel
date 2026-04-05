@@ -150,11 +150,8 @@ function AppContent(): JSX.Element {
             </ProtectedRoute>
           }
         />
-        <Route path="/strength-log" element={<Navigate to="/progression?tab=log" replace />} />
-        <Route
-          path="/exercise-dashboard"
-          element={<Navigate to="/progression?tab=dashboard" replace />}
-        />
+        <Route path="/strength-log" element={<Navigate to="/progression" replace />} />
+        <Route path="/exercise-dashboard" element={<Navigate to="/progression" replace />} />
       </Routes>
       {!isAuthPage && <Navigation />}
       {showIncomingCallWatcher && <IncomingCallWatcher />}

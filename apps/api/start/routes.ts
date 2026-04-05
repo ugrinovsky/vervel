@@ -80,8 +80,24 @@ router
     router.get('progression', '#controllers/progression_controller.getUserProgression');
     router.get('progression/strength-log', '#controllers/progression_controller.getStrengthLog');
     router.put('progression/strength-log/pins', '#controllers/progression_controller.putStrengthLogPins');
-    router.get('progression/exercise-dashboard', '#controllers/progression_controller.getExerciseDashboard');
-    router.put('progression/exercise-dashboard', '#controllers/progression_controller.putExerciseDashboard');
+    router.get('progression/exercise-standards', '#controllers/progression_controller.getExerciseStandards');
+    router.post('progression/exercise-standards', '#controllers/progression_controller.postExerciseStandard');
+    router.patch(
+      'progression/exercise-standards/:id',
+      '#controllers/progression_controller.patchExerciseStandard'
+    );
+    router.delete(
+      'progression/exercise-standards/:id',
+      '#controllers/progression_controller.deleteExerciseStandard'
+    );
+    router.post(
+      'progression/exercise-standard-aliases',
+      '#controllers/progression_controller.postExerciseStandardAlias'
+    );
+    router.delete(
+      'progression/exercise-standard-aliases',
+      '#controllers/progression_controller.deleteExerciseStandardAlias'
+    );
 
     // Achievement routes
     router.get('achievements', '#controllers/streak_controller.achievements');
