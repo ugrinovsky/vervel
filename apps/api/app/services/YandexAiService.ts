@@ -141,7 +141,11 @@ export class YandexAiService {
     if (mimeType === 'image/heic' || mimeType === 'image/heif') {
       logger.info({ mimeType }, 'ai:recognize converting HEIC to JPEG')
       const buffer = Buffer.from(imageBase64, 'base64')
-      const jpeg = await convert({ buffer, format: 'JPEG', quality: 0.9 })
+      const arrayBuffer = buffer.buffer.slice(
+        buffer.byteOffset,
+        buffer.byteOffset + buffer.byteLength
+      )
+      const jpeg = await convert({ buffer: arrayBuffer, format: 'JPEG', quality: 0.9 })
       imageBase64 = Buffer.from(jpeg).toString('base64')
       mimeType = 'image/jpeg'
     }

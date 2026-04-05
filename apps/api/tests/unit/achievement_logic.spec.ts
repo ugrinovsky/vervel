@@ -13,6 +13,9 @@ const emptyCtx = {
   aiChatCount: 0,
   groupsJoined: 0,
   trainerMessages: 0,
+  trainersConnected: 0,
+  personalRecords: 0,
+  progressionCoeff: null as number | null,
 }
 
 // Приватный метод доступен через индексацию

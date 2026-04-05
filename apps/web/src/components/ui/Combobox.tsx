@@ -34,7 +34,12 @@ export default function UiCombobox<T>({
       : options.filter((opt) => opt.label.toLowerCase().includes(query.toLowerCase()));
 
   return (
-    <Combobox value={value} onChange={onChange}>
+    <Combobox
+      value={value}
+      onChange={(next) => {
+        if (next !== null) onChange(next);
+      }}
+    >
       {({ open }) => (
         <div className="relative">
           <div

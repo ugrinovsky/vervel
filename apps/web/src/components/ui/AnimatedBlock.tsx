@@ -1,9 +1,13 @@
 import { motion } from 'framer-motion';
 import type { HTMLAttributes } from 'react';
 
-interface Props extends HTMLAttributes<HTMLDivElement> {
+/** DOM-события анимации конфликтуют с одноимёнными колбэками Framer Motion на motion.div */
+type Props = Omit<
+  HTMLAttributes<HTMLDivElement>,
+  'onAnimationStart' | 'onAnimationEnd' | 'onAnimationIteration'
+> & {
   delay?: number;
-}
+};
 
 /** Content block with standard animation: enters from bottom, exits upward. */
 export default function AnimatedBlock({ delay = 0, className = '', children, ...props }: Props) {

@@ -1,4 +1,4 @@
-import { WorkoutExercise } from './WorkoutExercise';
+import type { WorkoutExercise } from '@/api/workouts';
 
 export interface Workout {
   _id?: string;

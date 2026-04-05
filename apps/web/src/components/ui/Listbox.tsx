@@ -20,7 +20,7 @@ export default function UiListbox<T>({
   placeholder = 'Выберите значение',
 }: UiListboxProps<T>) {
   return (
-    <Listbox value={value} onChange={onChange}>
+    <Listbox value={value ?? undefined} onChange={onChange}>
       <div className="relative">
         <ListboxButton
           className="

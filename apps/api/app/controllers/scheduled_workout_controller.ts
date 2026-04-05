@@ -6,7 +6,7 @@ import emitter from '@adonisjs/core/services/emitter'
 import ScheduledWorkout from '#models/scheduled_workout'
 import Workout from '#models/workout'
 import { WorkoutCalculator } from '#services/WorkoutCalculator'
-import { toWorkoutExercises } from '#services/WorkoutConverter'
+import { toWorkoutExercises, type ExerciseData } from '#services/WorkoutConverter'
 import { parseDateRange } from '#utils/date'
 
 /**
