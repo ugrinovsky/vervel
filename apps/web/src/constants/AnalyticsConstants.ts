@@ -105,10 +105,19 @@ export const METRICS = {
   /** Делитель для расчета частоты тренировок в неделю (предполагаем месяц = 4 недели) */
   WEEKS_PER_PERIOD: 4,
 
-  /** Минимальный объем тренировки для учета в расчетах (кг) */
+  /**
+   * Устаревший жёсткий порог (1 т); раньше отсекал почти все реальные сессии → прочерк «прогресс объёма».
+   * Оставлен для совместимости импортов; в UI используйте MIN_VOLUME_FOR_VOLUME_PROGRESS.
+   */
   MIN_VOLUME: 1000,
 
-  /** Минимальное количество тренировок с объемом для расчета прогресса */
+  /** Сессия попадает в сравнение «первая / вторая половина периода», если объём ≥ (кг). */
+  MIN_VOLUME_FOR_VOLUME_PROGRESS: 1,
+
+  /** Минимум таких сессий в таймлайне, чтобы показать % прогресса объёма */
+  MIN_WORKOUTS_FOR_VOLUME_PROGRESS: 2,
+
+  /** Минимальное количество тренировок с объемом для расчета прогресса (legacy) */
   MIN_WORKOUTS_FOR_PROGRESS: 4,
 
   /** Минимальное количество тренировок для отображения динамики объема */
@@ -117,6 +126,31 @@ export const METRICS = {
   /** Минимальное количество тренировок для расчета изменений */
   MIN_WORKOUTS_FOR_CHANGES: 2,
 } as const;
+
+/**
+ * Пороги бейджа на карточках «Показатели».
+ * У каждой метрики свой `score` в шкале 0–100 (чем выше — тем лучше для этой оси).
+ *
+ * Карта: Отлично ≥ EXCELLENT, Хорошо ≥ GOOD, Норма ≥ OK, иначе Слабо.
+ * Для «Прогресс объёма» score = clamp(50 + 50×относит._изменение_среднего_объёма); 50 ≈ «без изменений».
+ */
+export const METRIC_CARD_BADGE_THRESHOLDS = {
+  EXCELLENT: 80,
+  GOOD: 55,
+  OK: 35,
+} as const;
+
+export function metricCardBadge(score: number | null | undefined): { label: string; cls: string } {
+  if (score == null || Number.isNaN(score)) {
+    return { label: '—', cls: 'text-white/40 bg-white/8' };
+  }
+  const s = Math.max(0, Math.min(100, score));
+  const { EXCELLENT, GOOD, OK } = METRIC_CARD_BADGE_THRESHOLDS;
+  if (s >= EXCELLENT) return { label: 'Отлично', cls: 'text-emerald-400 bg-emerald-400/10' };
+  if (s >= GOOD) return { label: 'Хорошо', cls: 'text-emerald-300 bg-emerald-300/10' };
+  if (s >= OK) return { label: 'Норма', cls: 'text-amber-400 bg-amber-400/10' };
+  return { label: 'Слабо', cls: 'text-red-400 bg-red-400/10' };
+}
 
 /* -------------------------------- РАДАР -------------------------------- */
 
@@ -127,12 +161,89 @@ export const RADAR = {
   /** Максимальное значение для всех метрик радара */
   MAX_VALUE: 100,
 
-  /** Коэффициент для расчета выносливости от интенсивности */
-  ENDURANCE_COEFFICIENT: 0.8,
-
   /** Процент затемнения цвета для заливки радара */
   DARKEN_PERCENT: 0.2,
 } as const;
+
+/** Длительность периода аналитики в неделях (для «тренировок в неделю» и радара «ритм») */
+export const ANALYTICS_PERIOD_WEEKS: Record<'week' | 'month' | 'year', number> = {
+  week: 1,
+  month: 30 / 7,
+  year: 365.25 / 7,
+};
+
+/**
+ * Ориентир «высокого» суммарного объёма за период (кг) для шкалы радара 0–100%.
+ * Не медицинская норма — только чтобы сравнивать неделю/месяц/год на одной шкале.
+ */
+export const RADAR_VOLUME_REF_KG: Record<'week' | 'month' | 'year', number> = {
+  week: 12_000,
+  month: 45_000,
+  year: 520_000,
+};
+
+/** Целевая частота для шкалы «ритм» в радаре (тренировок в неделю) */
+export const IDEAL_WORKOUTS_PER_WEEK = 3;
+
+/**
+ * Грубая оценка числа календарных дней в окне аналитики (для «активных дней» и долей).
+ */
+export function analyticsCalendarDaysApprox(period: 'week' | 'month' | 'year'): number {
+  return Math.max(1, Math.round(ANALYTICS_PERIOD_WEEKS[period] * 7));
+}
+
+/** Как на API в calculatePeriodStats: сумма по сессиям, затем деление на max (пиковая зона = 1). */
+const ZONES_AGG_MIN_DENOM = 0.01;
+
+/**
+ * Агрегировать `zones` с точек таймлайна так же, как бэкенд за период (сумма → нормализация к max).
+ * Нужен для «Топ мышц»: тренд первой vs второй половины периода на сопоставимой шкале.
+ */
+export function aggregateZonesFromTimeline(
+  entries: ReadonlyArray<{ zones?: Record<string, number> }>
+): Record<string, number> {
+  const acc: Record<string, number> = {};
+  for (const t of entries) {
+    const z = t.zones ?? {};
+    for (const [k, v] of Object.entries(z)) {
+      acc[k] = (acc[k] ?? 0) + (Number(v) || 0);
+    }
+  }
+  const vals = Object.values(acc);
+  if (vals.length === 0) return {};
+  const maxZ = Math.max(...vals, ZONES_AGG_MIN_DENOM);
+  const out: Record<string, number> = {};
+  for (const k of Object.keys(acc)) {
+    out[k] = Math.min(acc[k]! / maxZ, 1);
+  }
+  return out;
+}
+
+/**
+ * Ориентир среднего тоннажа за тренировку (кг), согласованный с RADAR_VOLUME_REF_KG и целевой частотой.
+ * Для шкалы 0–100% в блоке «Объём/тренировку», не медицинская норма.
+ */
+export function referenceVolumePerSessionKg(period: 'week' | 'month' | 'year'): number {
+  const weeks = ANALYTICS_PERIOD_WEEKS[period];
+  const sessions = Math.max(0.5, weeks * IDEAL_WORKOUTS_PER_WEEK);
+  return RADAR_VOLUME_REF_KG[period] / sessions;
+}
+
+/**
+ * Насколько равномерно распределена нагрузка между задействованными зонами (0–100%).
+ * 100% — доли зон близки к равным; низкое значение — удар по одной-двум группам.
+ */
+export function computeMuscleBalancePercent(zones: Record<string, number>): number {
+  const zoneValues = Object.values(zones).map((v) => Number(v) || 0);
+  if (zoneValues.length <= 1) return zoneValues.length === 1 ? 100 : 0;
+  const total = zoneValues.reduce((s, v) => s + v, 0);
+  if (total <= 0) return 0;
+  const proportions = zoneValues.map((v) => v / total);
+  const ideal = 1 / proportions.length;
+  const deviation = proportions.reduce((s, p) => s + Math.abs(p - ideal), 0);
+  const maxDeviation = 2 * (1 - ideal);
+  return Math.round(Math.max(0, 1 - deviation / maxDeviation) * DISPLAY.PERCENT_MULTIPLIER);
+}
 
 /* -------------------------------- ЗОНЫ И ТИПЫ -------------------------------- */
 

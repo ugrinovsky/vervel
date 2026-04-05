@@ -9,6 +9,7 @@ import FullScreenChat from '@/components/FullScreenChat/FullScreenChat';
 import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import AnalyticsCards from '@/components/analytics/AnalyticsCards';
+import AnalyticsPeriodToggle from '@/components/analytics/AnalyticsPeriodToggle';
 import AvatarView from '@/components/AvatarView/AvatarView';
 import Calendar, { type DayData } from '@/components/ui/Calendar';
 import MonthlyStats from '@/screens/ActivityScreen/MonthlyStats';
@@ -289,21 +290,9 @@ export default function TrainerAthleteDetailScreen() {
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              className="grid grid-cols-3 gap-2 mb-5"
+              className="mb-5"
             >
-              {(['week', 'month', 'year'] as const).map((period) => (
-                <button
-                  key={period}
-                  onClick={() => setTimeRange(period)}
-                  className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
-                    timeRange === period
-                      ? 'bg-(--color_primary_light) text-white shadow-lg'
-                      : 'bg-(--color_bg_card) text-(--color_text_secondary) hover:text-white'
-                  }`}
-                >
-                  {period === 'week' ? 'Неделя' : period === 'month' ? 'Месяц' : 'Год'}
-                </button>
-              ))}
+              <AnalyticsPeriodToggle value={timeRange} onChange={setTimeRange} showHint={false} />
             </motion.div>
 
             {stats ? (

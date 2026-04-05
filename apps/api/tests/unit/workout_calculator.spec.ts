@@ -357,8 +357,8 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
   });
 
   /* -------------------------------- CALCULATE PERIOD STATS -------------------------------- */
-  test('calculatePeriodStats: корректно считает по пустому массиву', ({ assert }) => {
-    const result = WorkoutCalculator.calculatePeriodStats([], 'week');
+  test('calculatePeriodStats: корректно считает по пустому массиву', async ({ assert }) => {
+    const result = await WorkoutCalculator.calculatePeriodStats([], 'week');
 
     assert.equal(result.workoutsCount, 0);
     assert.equal(result.totalVolume, 0);
@@ -369,7 +369,7 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     assert.equal(result.period, 'week');
   });
 
-  test('calculatePeriodStats: суммирует тренировки и нормализует зоны', ({ assert }) => {
+  test('calculatePeriodStats: суммирует тренировки и нормализует зоны', async ({ assert }) => {
     const w1 = createWorkout(
       'w1',
       'bodybuilding',
@@ -386,7 +386,7 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
       0.6,
       new Date('2026-01-02')
     );
-    const result = WorkoutCalculator.calculatePeriodStats([w1, w2], 'week');
+    const result = await WorkoutCalculator.calculatePeriodStats([w1, w2], 'week');
 
     // zones: ноги = 3+1=4, руки=1, грудь=2 → max=4 → нормализуем
     assert.closeTo(result.zones.ноги, 1, 0.001);
@@ -406,23 +406,52 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     // loadLevel должен присутствовать в каждой записи
     assert.equal(result.timeline[0].loadLevel, 'low'); // volume=1000 → low
     assert.equal(result.timeline[1].loadLevel, 'low'); // volume=500 → low
+    assert.deepEqual(result.timeline[0].zones, { ноги: 3, руки: 1 });
+    assert.deepEqual(result.timeline[1].zones, { ноги: 1, грудь: 2 });
   });
 
-  test('calculatePeriodStats: timeline содержит loadLevel=none при intensity=0 и нет упражнений', ({ assert }) => {
+  test('calculatePeriodStats: пустой zonesLoad пересчитывается из упражнений (каталог)', async ({ assert }) => {
+    const exercise = createExercise('squat', ['ноги'], 0.8);
+    WorkoutCalculator['loadExercises'] = async () => new Map([['squat', exercise]]);
+
+    const w = createWorkout(
+      'w1',
+      'bodybuilding',
+      {},
+      5000,
+      0.7,
+      new Date('2026-01-01'),
+      [
+        {
+          exerciseId: 'squat',
+          type: 'strength',
+          sets: [{ id: '1', reps: 5, weight: 100 }],
+        },
+      ]
+    );
+    w.userId = 1;
+
+    const result = await WorkoutCalculator.calculatePeriodStats([w], 'week');
+
+    assert.isTrue('ноги' in result.zones);
+    assert.isTrue('ноги' in result.timeline[0].zones);
+  });
+
+  test('calculatePeriodStats: timeline содержит loadLevel=none при intensity=0 и нет упражнений', async ({ assert }) => {
     const w = createWorkout('w1', 'bodybuilding', {}, 0, 0, new Date(), []);
-    const result = WorkoutCalculator.calculatePeriodStats([w], 'week');
+    const result = await WorkoutCalculator.calculatePeriodStats([w], 'week');
     assert.equal(result.timeline[0].loadLevel, 'none');
   });
 
-  test('calculatePeriodStats: timeline содержит loadLevel=low когда упражнения есть но intensity=0', ({ assert }) => {
+  test('calculatePeriodStats: timeline содержит loadLevel=low когда упражнения есть но intensity=0', async ({ assert }) => {
     const w = createWorkout('w1', 'bodybuilding', {}, 0, 0, new Date(), [{ exerciseId: 'unknown' }]);
-    const result = WorkoutCalculator.calculatePeriodStats([w], 'week');
+    const result = await WorkoutCalculator.calculatePeriodStats([w], 'week');
     assert.equal(result.timeline[0].loadLevel, 'low');
   });
 
-  test('calculatePeriodStats: timeline содержит loadLevel=high при большом volume', ({ assert }) => {
+  test('calculatePeriodStats: timeline содержит loadLevel=high при большом volume', async ({ assert }) => {
     const w = createWorkout('w1', 'bodybuilding', { ноги: 1 }, 20000, 0.9);
-    const result = WorkoutCalculator.calculatePeriodStats([w], 'week');
+    const result = await WorkoutCalculator.calculatePeriodStats([w], 'week');
     assert.equal(result.timeline[0].loadLevel, 'high');
   });
 
@@ -471,7 +500,7 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     assert.isAbove(result.totalIntensity, 0);
   });
 
-  test('calculatePeriodStats: bodyweight-упражнение не триггерит hasMissingWeights', ({ assert }) => {
+  test('calculatePeriodStats: bodyweight-упражнение не триггерит hasMissingWeights', async ({ assert }) => {
     const w = createWorkout('w1', 'bodybuilding', { спина: 1 }, 0, 0.5, new Date(), [
       {
         exerciseId: 'pullup',
@@ -480,11 +509,11 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
         sets: [{ id: '1', reps: 10, weight: 0 }],
       },
     ]);
-    const result = WorkoutCalculator.calculatePeriodStats([w], 'week');
+    const result = await WorkoutCalculator.calculatePeriodStats([w], 'week');
     assert.isFalse((result.timeline[0] as any).hasMissingWeights);
   });
 
-  test('calculatePeriodStats: обычное упражнение без веса триггерит hasMissingWeights', ({ assert }) => {
+  test('calculatePeriodStats: обычное упражнение без веса триггерит hasMissingWeights', async ({ assert }) => {
     const w = createWorkout('w1', 'bodybuilding', { ноги: 1 }, 0, 0.5, new Date(), [
       {
         exerciseId: 'squat',
@@ -493,7 +522,7 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
         sets: [{ id: '1', reps: 10, weight: 0 }],
       },
     ]);
-    const result = WorkoutCalculator.calculatePeriodStats([w], 'week');
+    const result = await WorkoutCalculator.calculatePeriodStats([w], 'week');
     assert.isTrue((result.timeline[0] as any).hasMissingWeights);
   });
 });

@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { WorkoutStats } from '@/types/Analytics';
 import { formatVolume } from '@/constants/AnalyticsConstants';
+import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 
 interface Props {
   period: 'week' | 'month' | 'year';
@@ -98,6 +99,10 @@ export default function TrendChart({ period, data }: Props) {
 
   return (
     <div className="space-y-4">
+      <AnalyticsSheetIntro>
+        Каждая точка — тренировка (или месяц за год). Столбики — объём, линия — средняя интенсивность сетов в
+        этой точке (0–100%, не путать с весом на штанге).
+      </AnalyticsSheetIntro>
       {/* Summary row */}
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) text-center">

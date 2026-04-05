@@ -39,12 +39,26 @@ export default function AnalyticsCards({ stats, monthStats, periodization, timeR
     { id: 'muscles',         icon: '💪', title: 'Топ мышц',       content: <TopMuscles    period={timeRange} data={stats} /> },
     { id: 'stats',           icon: '📊', title: 'Нагрузка',       content: <StatsOverview  period={timeRange} data={stats} /> },
     { id: 'balance',         icon: '⚖️', title: 'Баланс мышц',    content: <MuscleBalance  period={timeRange} data={stats} /> },
-    { id: 'metrics',         icon: '🎯', title: 'Показатели',     content: <MetricsOverview stats={stats} /> },
+    { id: 'metrics',         icon: '🎯', title: 'Показатели',     content: <MetricsOverview stats={stats} period={timeRange} /> },
     { id: 'recommendations', icon: '💡', title: 'Рекомендации',   content: <Recommendations stats={stats} /> },
-    { id: 'weekly',          icon: '📅', title: periodLabel,       content: <WeeklyOverview  period={timeRange} data={stats} /> },
+    {
+      id: 'weekly',
+      icon: '📅',
+      title: timeRange === 'week' ? 'Календарь' : periodLabel,
+      content: <WeeklyOverview period={timeRange} data={stats} />,
+    },
     { id: 'streak',          icon: '🔥', title: 'Регулярность',   content: <StreakBlock      data={monthStats ?? stats} period={timeRange} /> },
     { id: 'trend',           icon: '📉', title: 'Тренд нагрузки', content: <TrendChart       period={timeRange} data={stats} /> },
-    { id: 'weekday',         icon: '📆', title: 'По дням недели', content: <WeekdayChart     data={stats} /> },
+    ...(timeRange === 'week'
+      ? []
+      : [
+          {
+            id: 'weekday',
+            icon: '🗓️',
+            title: 'Привычка по дням',
+            content: <WeekdayChart data={stats} />,
+          } satisfies CardDef,
+        ]),
     ...(periodization
       ? [{ id: 'periodization', icon: '📈', title: 'Периодизация', content: <PeriodizationChart data={periodization} /> } satisfies CardDef]
       : []),

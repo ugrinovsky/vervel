@@ -9,6 +9,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import type { PeriodizationData } from '@/api/trainer';
+import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 
 interface Props {
   data: PeriodizationData;
@@ -381,6 +382,10 @@ export default function PeriodizationChart({ data }: Props) {
 
   return (
     <div className="space-y-3">
+      <AnalyticsSheetIntro>
+        Упрощённая модель усталости и формы (ATL / CTL / TSB) по истории тренировок. Даёт картину «слишком
+        мало или много нагрузки», а не прогноз соревнований.
+      </AnalyticsSheetIntro>
       {/* ── HERO: Спидометр готовности ── */}
       <div
         className="rounded-xl border border-(--color_border) p-4"

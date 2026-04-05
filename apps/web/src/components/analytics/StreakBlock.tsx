@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { WorkoutStats } from '@/types/Analytics';
+import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 
 interface Props {
   data: WorkoutStats;
@@ -117,6 +118,10 @@ export default function StreakBlock({ data, period }: Props) {
 
   return (
     <div className="space-y-4">
+      <AnalyticsSheetIntro>
+        Календарь точек строится по последним 28 дням; серии и «в неделю» считаются по фактическим датам
+        тренировок в загруженном периоде. Для полноценной сетки переключитесь на «Месяц».
+      </AnalyticsSheetIntro>
       {/* Streak cards */}
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">

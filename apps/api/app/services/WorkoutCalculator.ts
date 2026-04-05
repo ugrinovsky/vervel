@@ -34,6 +34,12 @@ const NORMALIZATION = {
   MAX_ZONE_LOAD: 1,
 };
 
+/** Есть ли сохранённая карта зон с ненулевой нагрузкой (пустой объект — пересчитываем из упражнений). */
+function hasMeaningfulZonesLoad(zonesLoad: Record<string, number> | null | undefined): boolean {
+  if (!zonesLoad || typeof zonesLoad !== 'object') return false;
+  return Object.values(zonesLoad).some((v) => Number(v) > 0);
+}
+
 /* ------------------------------------------------------------------ */
 /* Calculator */
 /* ------------------------------------------------------------------ */
@@ -328,25 +334,28 @@ export class WorkoutCalculator {
     };
   }
 
-  static calculatePeriodStats(
+  static async calculatePeriodStats(
     workouts: Workout[],
     period: string = 'custom'
-  ): {
+  ): Promise<{
     workoutsCount: number;
     totalVolume: number;
     avgIntensity: number;
     byType: Record<string, number>;
     zones: Record<string, number>;
     timeline: Array<{
+      id: number;
       date: string;
       intensity: number;
       volume: number;
       type: string;
       scheduledWorkoutId: number | null;
       loadLevel: 'none' | 'low' | 'medium' | 'high';
+      zones: Record<string, number>;
+      hasMissingWeights?: boolean;
     }>;
     period: string;
-  } {
+  }> {
     if (workouts.length === 0) {
       return {
         workoutsCount: 0,
@@ -359,12 +368,32 @@ export class WorkoutCalculator {
       };
     }
 
+    /** По каждой тренировке: сохранённые зоны или пересчёт из exercises (старые записи в БД часто с пустым zonesLoad). */
+    const perWorkoutZones: Record<string, number>[] = [];
+    for (const workout of workouts) {
+      if (hasMeaningfulZonesLoad(workout.zonesLoad)) {
+        perWorkoutZones.push({ ...workout.zonesLoad! });
+        continue;
+      }
+      if (Array.isArray(workout.exercises) && workout.exercises.length > 0) {
+        const calc = await WorkoutCalculator.calculateZoneLoads(
+          workout.exercises,
+          workout.workoutType,
+          workout.rpe,
+          workout.userId
+        );
+        perWorkoutZones.push({ ...calc.zonesLoad });
+      } else {
+        perWorkoutZones.push({});
+      }
+    }
+
     let totalVolume = 0;
     let totalIntensity = 0;
     const byType: Record<string, number> = {};
     const zones: Record<string, number> = {};
 
-    workouts.forEach((workout) => {
+    workouts.forEach((workout, i) => {
       // ✅ Принудительно конвертируем в число
       const volume = Number(workout.totalVolume) || 0;
       totalVolume += volume;
@@ -378,9 +407,9 @@ export class WorkoutCalculator {
       const type = workout.workoutType || 'unknown';
       byType[type] = (byType[type] || 0) + 1;
 
-      const zonesLoad = workout.zonesLoad || {};
-      Object.entries(zonesLoad).forEach(([zone, intensity]) => {
-        zones[zone] = (zones[zone] || 0) + intensity;
+      const zonesLoad = perWorkoutZones[i] ?? {};
+      Object.entries(zonesLoad).forEach(([zone, load]) => {
+        zones[zone] = (zones[zone] || 0) + (Number(load) || 0);
       });
     });
 
@@ -392,7 +421,7 @@ export class WorkoutCalculator {
       });
     }
 
-    const timeline = workouts.map((w) => {
+    const timeline = workouts.map((w, i) => {
       const volume = Number(w.totalVolume) || 0;
       const intensity =
         typeof w.totalIntensity === 'string' ? parseFloat(w.totalIntensity) : w.totalIntensity || 0;
@@ -408,6 +437,7 @@ export class WorkoutCalculator {
         type: w.workoutType || 'unknown',
         scheduledWorkoutId: w.scheduledWorkoutId ?? null,
         loadLevel: WorkoutCalculator.getLoadLevel(volume, intensity, hasExercises),
+        zones: { ...(perWorkoutZones[i] ?? {}) },
         hasMissingWeights,
       };
     });

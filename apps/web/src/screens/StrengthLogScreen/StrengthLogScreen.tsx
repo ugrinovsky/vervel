@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
+import { isAxiosError } from 'axios';
 import {
   LineChart,
   Line,
@@ -26,6 +27,8 @@ import {
 } from '@heroicons/react/24/outline';
 import {
   athleteApi,
+  type ExerciseStandardAliasDTO,
+  type ExerciseStandardDTO,
   type StrengthLogDashboardMetric,
   type StrengthLogEntry,
   type StrengthLogPayload,
@@ -36,6 +39,24 @@ import type { ExerciseWithSets } from '@/types/Exercise';
 import { buildStrengthLogChartPoints, strengthLogProgressPercent } from './strengthLogChart';
 
 const GROUP_STD_PREFIX = 'std:';
+
+function resolveStandardIdForStrengthEntry(
+  entry: StrengthLogEntry,
+  standards: ExerciseStandardDTO[],
+  aliases: ExerciseStandardAliasDTO[],
+): number | null {
+  if (entry.standardId != null) {
+    const n = Number(entry.standardId);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  const viaAlias = aliases.find((x) => x.sourceExerciseId === entry.exerciseId);
+  if (viaAlias != null) {
+    const n = Number(viaAlias.standardId);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  const viaCatalog = standards.find((x) => x.catalogExerciseId === entry.exerciseId);
+  return viaCatalog != null ? Number(viaCatalog.id) : null;
+}
 
 function formatShortDashDate(iso: string | null): string {
   if (!iso) return '—';
@@ -130,6 +151,7 @@ function StrengthLogChartTooltip({
 
 function ExerciseCard({
   entry,
+  linkedToStandard,
   pinnedOnly,
   pinsBusy,
   onPin,
@@ -137,6 +159,8 @@ function ExerciseCard({
   onOpenStandards,
 }: {
   entry: StrengthLogEntry;
+  /** Учёт эталона по standardId, алиасу или привязке к каталогу (важно для закреплённых «сырых» id) */
+  linkedToStandard: boolean;
   pinnedOnly: boolean;
   pinsBusy: boolean;
   onPin: (exerciseId: string) => void;
@@ -174,7 +198,7 @@ function ExerciseCard({
         <div className="text-sm font-bold text-white min-w-0 flex-1 leading-snug">
           <div className="flex items-center gap-2 flex-wrap">
             <span>{entry.exerciseName}</span>
-            {entry.standardId !== null && (
+            {linkedToStandard && (
               <span className="text-[10px] font-medium text-(--color_primary_light)/80 px-1.5 py-0.5 rounded bg-(--color_primary_light)/10">
                 эталон
               </span>
@@ -382,7 +406,8 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
 
   const openStandardsFor = useCallback(
     (entry: StrengthLogEntry) => {
-      const std = entry.standardId != null ? standards.find((s) => s.id === entry.standardId) : null;
+      const resolved = resolveStandardIdForStrengthEntry(entry, standards, aliases);
+      const std = resolved != null ? standards.find((s) => s.id === resolved) : null;
       setStandardsEntry(entry);
       setStandardsLabelDraft((std?.displayLabel ?? entry.exerciseName).trim() || entry.exerciseName);
       setStandardsCatalogId(std?.catalogExerciseId ?? null);
@@ -390,7 +415,7 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
       setStandardsPickerOpen(false);
       setStandardsOpen(true);
     },
-    [standards],
+    [standards, aliases],
   );
 
   const closeStandardsSheet = () => {
@@ -400,8 +425,14 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
     setStandardsPickerOpen(false);
   };
 
+  const effectiveStandardIdForSheet = useMemo(
+    () =>
+      standardsEntry ? resolveStandardIdForStrengthEntry(standardsEntry, standards, aliases) : null,
+    [standardsEntry, standards, aliases],
+  );
+
   const saveStandardLabel = async () => {
-    if (!standardsEntry?.standardId || standardsBusy) return;
+    if (!standardsEntry || effectiveStandardIdForSheet == null || standardsBusy) return;
     const label = standardsLabelDraft.trim();
     if (!label) {
       toast.error('Введите название');
@@ -409,13 +440,24 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
     }
     setStandardsBusy(true);
     try {
-      const res = await athleteApi.patchExerciseStandard(standardsEntry.standardId, { displayLabel: label });
-      if (res.data.success) {
-        toast.success('Сохранено');
-        await load();
+      const res = await athleteApi.patchExerciseStandard(effectiveStandardIdForSheet, {
+        displayLabel: label,
+      });
+      if (res.data?.success === false) {
+        toast.error(
+          typeof (res.data as { message?: string }).message === 'string'
+            ? (res.data as { message: string }).message
+            : 'Не удалось сохранить',
+        );
+        return;
       }
-    } catch {
-      toast.error('Не удалось сохранить');
+      toast.success('Сохранено');
+      await load();
+    } catch (e) {
+      const msg = isAxiosError(e)
+        ? (e.response?.data as { message?: string } | undefined)?.message
+        : undefined;
+      toast.error(typeof msg === 'string' && msg.trim() ? msg : 'Не удалось сохранить');
     } finally {
       setStandardsBusy(false);
     }
@@ -482,7 +524,7 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
     setStandardsPickerOpen(false);
   };
 
-  const standardsSid = standardsEntry?.standardId ?? null;
+  const standardsSid = effectiveStandardIdForSheet;
   const standardsAliasCandidates =
     standardsSid != null
       ? weightedExerciseOptions.filter((o) => !aliases.some((a) => a.sourceExerciseId === o.exerciseId))
@@ -833,6 +875,7 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
             <AnimatedBlock key={entry.exerciseId} delay={i * 0.03}>
               <ExerciseCard
                 entry={entry}
+                linkedToStandard={resolveStandardIdForStrengthEntry(entry, standards, aliases) !== null}
                 pinnedOnly={pinnedExerciseIds.length > 0}
                 pinsBusy={pinsBusy}
                 onPin={pinExercise}

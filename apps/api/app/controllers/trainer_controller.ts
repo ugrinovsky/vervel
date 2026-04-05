@@ -235,7 +235,7 @@ export default class TrainerController {
       .whereBetween('date', [from, to])
       .orderBy('date', 'asc')
 
-    const stats = WorkoutCalculator.calculatePeriodStats(workouts)
+    const stats = await WorkoutCalculator.calculatePeriodStats(workouts)
 
     return response.ok(stats)
   }
@@ -318,7 +318,7 @@ export default class TrainerController {
       .whereBetween('date', [startDate, endDate])
       .orderBy('date', 'asc')
 
-    const stats = WorkoutCalculator.calculatePeriodStats(workouts, period)
+    const stats = await WorkoutCalculator.calculatePeriodStats(workouts, period)
 
     return response.json({ success: true, data: stats })
   }

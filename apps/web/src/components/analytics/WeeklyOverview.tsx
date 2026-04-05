@@ -1,6 +1,17 @@
 import { WorkoutStats } from '@/types/Analytics';
 import { useMemo } from 'react';
-import { WORKOUT_TYPE_CONFIG, formatVolume } from '@/constants/AnalyticsConstants';
+import { format } from 'date-fns';
+import { ru } from 'date-fns/locale';
+import { WORKOUT_TYPE_CONFIG, formatVolume, normalizeIntensity } from '@/constants/AnalyticsConstants';
+import {
+  aggregateTimelineDay,
+  entriesForDateKey,
+  enumerateLocalCalendarDays,
+  getAnalyticsPeriodEnd,
+  getAnalyticsPeriodStart,
+} from '@/util/analyticsPeriodDays';
+import { parseApiDateTime, toDateKey } from '@/utils/date';
+import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 import {
   BarChart,
   Bar,
@@ -9,6 +20,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
+  CartesianGrid,
 } from 'recharts';
 
 interface WeeklyOverviewProps {
@@ -16,8 +28,14 @@ interface WeeklyOverviewProps {
   data: WorkoutStats;
 }
 
-const WEEK_DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+const WEEK_DAYS_MON = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const MONTH_NAMES = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+
+function labelWeekdayAndDay(d: Date): string {
+  const js = d.getDay();
+  const idx = js === 0 ? 6 : js - 1;
+  return `${WEEK_DAYS_MON[idx]} ${d.getDate()}`;
+}
 
 const TYPE_COLORS: Record<string, string> = {
   bodybuilding: 'var(--color_primary_icon)',
@@ -46,43 +64,45 @@ export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
 
   const chartData = useMemo(() => {
     if (period === 'week') {
-      const last7 = timeline.slice(-7);
-      return WEEK_DAYS.map((label, idx) => {
-        const entry = last7[idx];
+      const start = getAnalyticsPeriodStart('week');
+      const end = getAnalyticsPeriodEnd();
+      const calendarDays = enumerateLocalCalendarDays(start, end);
+      return calendarDays.map((dayDate) => {
+        const key = toDateKey(dayDate);
+        const entries = entriesForDateKey(timeline, key);
+        const agg = aggregateTimelineDay(entries);
         return {
-          label,
-          intensity: entry ? Math.round((entry.intensity ?? 0) * 100) : 0,
-          volume: entry?.volume ?? 0,
-          type: entry?.type ?? '',
+          label: labelWeekdayAndDay(dayDate),
+          intensity: agg.intensity,
+          volume: agg.volume,
+          type: agg.type,
         };
       });
     }
 
     if (period === 'month') {
-      const dayMap: Record<number, { intensity: number; volume: number; type: string }> = {};
-      timeline.forEach((t) => {
-        const d = new Date(t.date).getDate();
-        dayMap[d] = {
-          intensity: Math.round((t.intensity ?? 0) * 100),
-          volume: t.volume ?? 0,
-          type: t.type ?? '',
+      const start = getAnalyticsPeriodStart('month');
+      const end = getAnalyticsPeriodEnd();
+      const calendarDays = enumerateLocalCalendarDays(start, end);
+      return calendarDays.map((dayDate) => {
+        const key = toDateKey(dayDate);
+        const entries = entriesForDateKey(timeline, key);
+        const agg = aggregateTimelineDay(entries);
+        return {
+          label: format(dayDate, 'd MMM', { locale: ru }),
+          intensity: agg.intensity,
+          volume: agg.volume,
+          type: agg.type,
         };
       });
-      const maxDay = timeline.length ? Math.max(...timeline.map((t) => new Date(t.date).getDate())) : 30;
-      return Array.from({ length: maxDay }, (_, i) => ({
-        label: `${i + 1}`,
-        intensity: dayMap[i + 1]?.intensity ?? 0,
-        volume: dayMap[i + 1]?.volume ?? 0,
-        type: dayMap[i + 1]?.type ?? '',
-      }));
     }
 
     // year — aggregate by month, show avg intensity + sum volume
     const monthMap: Record<number, { intensities: number[]; volume: number; type: string }> = {};
     timeline.forEach((t) => {
-      const m = new Date(t.date).getMonth();
+      const m = parseApiDateTime(t.date).getMonth();
       if (!monthMap[m]) monthMap[m] = { intensities: [], volume: 0, type: '' };
-      monthMap[m].intensities.push((t.intensity ?? 0) * 100);
+      monthMap[m].intensities.push(normalizeIntensity(Number(t.intensity) || 0));
       monthMap[m].volume += t.volume ?? 0;
       monthMap[m].type = t.type ?? '';
     });
@@ -120,6 +140,12 @@ export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
 
   return (
     <div className="space-y-4">
+      <AnalyticsSheetIntro>
+        {period === 'week' &&
+          'Хронология: каждый столбик — конкретная дата в выбранном окне (день недели + число). Это не «все понедельники подряд», а реальные дни подряд. Паттерн «в какой день недели чаще ходите» — в блоке «Привычка по дням» при периоде месяц или год.'}
+        {period === 'month' && 'По числам месяца: видно, в какие дни были тренировки и насколько они были «тяжёлыми» по оценке приложения.'}
+        {period === 'year' && 'По месяцам года: суммарный объём и усреднённая интенсивность за каждый месяц.'}
+      </AnalyticsSheetIntro>
       {/* Summary row */}
       <div className="grid grid-cols-4 gap-2">
         {periodTotals.map((s) => (
@@ -133,14 +159,23 @@ export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
       {/* Bar chart */}
       <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border)">
         <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wide mb-3">
-          Интенсивность по {period === 'week' ? 'дням' : period === 'month' ? 'числам' : 'месяцам'}
+          Интенсивность по {period === 'week' ? 'датам' : period === 'month' ? 'числам' : 'месяцам'}
         </p>
         <ResponsiveContainer width="100%" height={130}>
           <BarChart data={chartData} margin={{ top: 0, right: 0, left: -28, bottom: 0 }}>
+            {period === 'week' && (
+              <CartesianGrid
+                vertical
+                horizontal={false}
+                stroke="var(--color_border)"
+                strokeOpacity={0.65}
+                strokeDasharray="4 4"
+              />
+            )}
             <XAxis
               dataKey="label"
               tick={{ fontSize: 11, fill: 'var(--color_text_muted)' }}
-              interval={period === 'month' ? 4 : 0}
+              interval={period === 'month' && chartData.length > 14 ? 3 : 0}
             />
             <YAxis tick={{ fontSize: 11, fill: 'var(--color_text_muted)' }} domain={[0, 100]} />
             <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--color_bg_card)' }} />

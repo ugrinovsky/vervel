@@ -1,7 +1,13 @@
 import { useMemo } from 'react';
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts';
 import { WorkoutStats } from '@/types/Analytics';
-import { WORKOUT_TYPE_CONFIG, PERIOD_LABELS, DISPLAY, formatVolume } from '@/constants/AnalyticsConstants';
+import {
+  WORKOUT_TYPE_CONFIG,
+  PERIOD_LABELS,
+  formatVolume,
+  normalizeIntensity,
+} from '@/constants/AnalyticsConstants';
+import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 
 type Period = 'week' | 'month' | 'year';
 
@@ -18,15 +24,15 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 const calcAvgIntensity = (data: WorkoutStats): number => {
-  if (data.avgIntensity != null) {
-    return Math.round(data.avgIntensity * DISPLAY.PERCENT_MULTIPLIER);
+  if (data.avgIntensity != null && data.workoutsCount > 0) {
+    return Math.round(normalizeIntensity(Number(data.avgIntensity)));
   }
   if (!data.timeline?.length) return 0;
   const sum = data.timeline.reduce((acc, item) => {
     const val = typeof item.intensity === 'string' ? parseFloat(item.intensity) : item.intensity || 0;
-    return acc + val;
+    return acc + normalizeIntensity(val);
   }, 0);
-  return Math.round((sum / data.timeline.length) * DISPLAY.PERCENT_MULTIPLIER);
+  return Math.round(sum / data.timeline.length);
 };
 
 function SparklineTooltip({ active, payload }: any) {
@@ -62,6 +68,10 @@ export default function StatsOverview({ period, data }: StatsOverviewProps) {
 
   return (
     <div className="space-y-4">
+      <AnalyticsSheetIntro>
+        Сколько раз вы тренировались, какой суммарный тоннаж и насколько тяжёлыми были сеты в среднем.
+        График объёма — по дням с тренировками в выбранном периоде; блок типов — доля силовых/кроссфита и т.д.
+      </AnalyticsSheetIntro>
       {/* Header */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-(--color_text_muted)">За {PERIOD_LABELS[period]}</p>

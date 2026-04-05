@@ -1,6 +1,9 @@
 import { useMemo } from 'react';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { WorkoutStats } from '@/types/Analytics';
+import { normalizeIntensity } from '@/constants/AnalyticsConstants';
+import { parseApiDateTime } from '@/utils/date';
+import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 
 interface Props {
   data: WorkoutStats;
@@ -43,11 +46,11 @@ export default function WeekdayChart({ data }: Props) {
     const intensities: number[][] = Array.from({ length: 7 }, () => []);
 
     timeline.forEach((t) => {
-      const d = new Date(t.date);
+      const d = parseApiDateTime(t.date);
       const jsDay = d.getDay(); // 0=Sun
       const idx = jsDay === 0 ? 6 : jsDay - 1; // Mon=0..Sun=6
       counts[idx]++;
-      if (t.intensity) intensities[idx].push(t.intensity * 100);
+      intensities[idx].push(normalizeIntensity(Number(t.intensity) || 0));
     });
 
     const maxCount = Math.max(...counts, 1);
@@ -81,6 +84,10 @@ export default function WeekdayChart({ data }: Props) {
 
   return (
     <div className="space-y-4">
+      <AnalyticsSheetIntro>
+        Все тренировки за период свёрнуты в семь слотов «пн … вс»: не календарная лента, а ответ на вопрос, в
+        какие дни недели вы обычно выходите на тренировку и как делится объём между буднями и выходными.
+      </AnalyticsSheetIntro>
       {/* Summary stats */}
       <div className="grid grid-cols-3 gap-2">
         <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) text-center">
@@ -100,7 +107,7 @@ export default function WeekdayChart({ data }: Props) {
       {/* Bar chart */}
       <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border)">
         <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wide mb-3">
-          Тренировки по дням недели
+          Число тренировок по дню недели (за весь период)
         </p>
         <ResponsiveContainer width="100%" height={130}>
           <BarChart data={weekdayData} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>

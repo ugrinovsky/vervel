@@ -83,6 +83,17 @@ export class ProgressionService {
     return Number.isFinite(n) ? n : null;
   }
 
+  /** id эталона по ключу карточки: std:N, алиас или catalog_exercise_id эталона */
+  private static resolveStandardIdForExerciseId(exerciseId: string, ctx: StandardContext): number | null {
+    const fromKey = this.parseStandardGroupKey(exerciseId);
+    if (fromKey !== null) return fromKey;
+    const viaAlias = ctx.aliasToStandardId.get(exerciseId);
+    if (viaAlias !== undefined) return viaAlias;
+    const viaCatalog = ctx.catalogToStandardId.get(exerciseId);
+    if (viaCatalog !== undefined) return viaCatalog;
+    return null;
+  }
+
   private static async loadStandardContext(userId: number): Promise<StandardContext> {
     const [standards, aliases] = await Promise.all([
       UserExerciseStandard.query().where('userId', userId).orderBy('id', 'asc'),
@@ -708,7 +719,7 @@ export class ProgressionService {
         if (sessions.length >= 6) break;
       }
       if (sessions.length === 0) continue;
-      const stdId = this.parseStandardGroupKey(pinKey);
+      const stdId = this.resolveStandardIdForExerciseId(pinKey, ctx);
       entries.push({
         exerciseId: pinKey,
         exerciseName:
@@ -798,7 +809,8 @@ export class ProgressionService {
     ctx: StandardContext
   ): Promise<void> {
     for (const e of entries) {
-      const stdId = this.parseStandardGroupKey(e.exerciseId);
+      const stdIdFromKey = this.parseStandardGroupKey(e.exerciseId);
+      const stdId = stdIdFromKey !== null ? stdIdFromKey : e.standardId;
       if (stdId !== null) {
         const row = ctx.standardsById.get(stdId);
         if (row) {
@@ -821,6 +833,8 @@ export class ProgressionService {
     for (const e of entries) {
       if (e.exerciseId.startsWith('custom:')) continue;
       if (e.exerciseId.startsWith(STD_PREFIX)) continue;
+      const linkedStd = this.parseStandardGroupKey(e.exerciseId) ?? e.standardId;
+      if (linkedStd !== null) continue;
       const dbTitle = titleMap.get(e.exerciseId);
       const cat = ExerciseCatalog.find(e.exerciseId);
       if (dbTitle) {

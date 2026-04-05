@@ -235,7 +235,7 @@ export default class WorkoutsController {
       .whereBetween('date', [from, to])
       .orderBy('date', 'asc');
 
-    const stats = WorkoutCalculator.calculatePeriodStats(workouts);
+    const stats = await WorkoutCalculator.calculatePeriodStats(workouts);
 
     return response.ok(stats);
   }

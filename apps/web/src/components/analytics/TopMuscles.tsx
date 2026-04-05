@@ -3,12 +3,13 @@ import { FireIcon } from '@heroicons/react/24/outline';
 import { WorkoutStats } from '@/types/Analytics';
 import {
   DISPLAY,
-  TREND_THRESHOLDS,
+  aggregateZonesFromTimeline,
   getTrendDirection,
   getLoadLabel,
   type TrendDirection,
 } from '@/constants/AnalyticsConstants';
 import { getZoneLabel } from '@/util/zones';
+import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 
 interface TopMusclesProps {
   period: 'week' | 'month' | 'year';
@@ -28,6 +29,8 @@ interface MuscleData {
 export default function TopMuscles({ period, data }: TopMusclesProps) {
   const [viewMode, setViewMode] = useState<'percentage' | 'relative'>('percentage');
 
+  const totalZoneKeys = useMemo(() => Object.keys(data?.zones ?? {}).length, [data?.zones]);
+
   const muscles: MuscleData[] = useMemo(() => {
     const zones = data?.zones || {};
     const timeline = data?.timeline || [];
@@ -37,19 +40,26 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
       return [];
     }
 
+    const mid = Math.floor(timeline.length / 2);
+    const firstHalfZones =
+      timeline.length >= 2 ? aggregateZonesFromTimeline(timeline.slice(0, mid)) : {};
+    const secondHalfZones =
+      timeline.length >= 2 ? aggregateZonesFromTimeline(timeline.slice(mid)) : {};
+
     return Object.entries(zones)
       .map(([zone, value]) => {
         const numValue = Number(value) || 0;
         const percentage = Math.round(numValue * DISPLAY.PERCENT_MULTIPLIER);
 
-        // Тренд
-        let previousValue = percentage;
-        if (timeline.length > 1) {
-          const prevZones = timeline[timeline.length - 2]?.zones || {};
-          previousValue = Math.round((Number(prevZones[zone]) || 0) * DISPLAY.PERCENT_MULTIPLIER);
-        }
-
-        const change = percentage - previousValue;
+        // Тренд: сравнение первой и второй половины периода (та же логика агрегации, что у API), а не «весь период vs одна тренировка»
+        const firstHalfPct = Math.round(
+          (Number(firstHalfZones[zone]) || 0) * DISPLAY.PERCENT_MULTIPLIER
+        );
+        const secondHalfPct = Math.round(
+          (Number(secondHalfZones[zone]) || 0) * DISPLAY.PERCENT_MULTIPLIER
+        );
+        const change =
+          timeline.length >= 2 ? secondHalfPct - firstHalfPct : 0;
         const trend = getTrendDirection(change);
 
         // Относительная нагрузка (для отображения вместо объёма)
@@ -97,6 +107,12 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
 
   return (
     <>
+      <AnalyticsSheetIntro>
+        Доля нагрузки по зонам за период: после суммирования по тренировкам каждая зона делится на пиковую
+        за период (топ = 100%, остальные — доля от этого пика). Стрелка — сдвиг между первой и второй
+        половиной периода на той же логике. «Уровень» — текстовая шкала относительно %, не сравнение с
+        другими людьми.
+      </AnalyticsSheetIntro>
       <div className="flex items-center justify-between mb-4">
         <div>
           <p className="text-sm text-[var(--color_text_muted)]">
@@ -195,15 +211,10 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
 
       <div className="mt-6 pt-4 border-t border-[var(--color_border)]">
         <div className="flex items-center justify-between text-sm">
-          <div className="text-[var(--color_text_muted)]">Всего мышц:</div>
-          <div className="text-white font-medium">{muscles.length}</div>
-        </div>
-        <div className="flex items-center justify-between text-sm mt-1">
-          <div className="text-[var(--color_text_muted)]">Средняя нагрузка:</div>
-          <div className="text-green-400 font-medium">
-            {muscles.length > 0
-              ? Math.round(muscles.reduce((sum, m) => sum + m.percentage, 0) / muscles.length)
-              : 0}%
+          <div className="text-[var(--color_text_muted)]">В топе / всего зон:</div>
+          <div className="text-white font-medium">
+            {muscles.length}
+            {totalZoneKeys > 0 ? ` из ${totalZoneKeys}` : ''}
           </div>
         </div>
       </div>

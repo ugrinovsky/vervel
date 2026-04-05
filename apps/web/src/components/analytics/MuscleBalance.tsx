@@ -1,4 +1,5 @@
 import { WorkoutStats } from '@/types/Analytics';
+import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 
 interface MuscleBalanceProps {
   period: 'week' | 'month' | 'year';
@@ -83,6 +84,10 @@ export default function MuscleBalance({ period, data }: MuscleBalanceProps) {
 
   return (
     <div className="space-y-4">
+      <AnalyticsSheetIntro>
+        Три пары: верх/низ, перед/зад, толкание/тяга. Проценты показывают, насколько близко к 50/50 было
+        распределение объёма за период — не диагноз, а подсказка для планирования.
+      </AnalyticsSheetIntro>
       {/* Overall */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-(--color_text_muted)">Симметрия развития</p>

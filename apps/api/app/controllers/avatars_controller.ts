@@ -61,7 +61,7 @@ export default class AvatarsController {
         .whereBetween('date', [startDate, endDate])
         .orderBy('date', 'asc');
 
-      const stats = WorkoutCalculator.calculatePeriodStats(workouts, period);
+      const stats = await WorkoutCalculator.calculatePeriodStats(workouts, period);
 
       return response.json({
         success: true,
