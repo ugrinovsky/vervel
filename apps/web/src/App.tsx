@@ -12,7 +12,7 @@ import TrainerGroupDetailScreen from '@/screens/TrainerGroupDetailScreen/Trainer
 import TrainerPersonalScreen from '@/screens/TrainerPersonalScreen/TrainerPersonalScreen';
 import TrainerPublicProfileScreen from '@/screens/TrainerPublicProfileScreen/TrainerPublicProfileScreen';
 import LeaderboardScreen from '@/screens/LeaderboardScreen/LeaderboardScreen';
-import StrengthLogScreen from '@/screens/StrengthLogScreen/StrengthLogScreen';
+import ProgressionHubScreen from '@/screens/ProgressionHubScreen/ProgressionHubScreen';
 import InviteScreen from '@/screens/InviteScreen/InviteScreen';
 import DocsScreen from '@/screens/DocsScreen/DocsScreen';
 import AvatarScreen from '@/screens/AvatarScreen/AvatarScreen';
@@ -143,12 +143,17 @@ function AppContent(): JSX.Element {
           }
         />
         <Route
-          path="/strength-log"
+          path="/progression"
           element={
             <ProtectedRoute>
-              <StrengthLogScreen />
+              <ProgressionHubScreen />
             </ProtectedRoute>
           }
+        />
+        <Route path="/strength-log" element={<Navigate to="/progression?tab=log" replace />} />
+        <Route
+          path="/exercise-dashboard"
+          element={<Navigate to="/progression?tab=dashboard" replace />}
         />
       </Routes>
       {!isAuthPage && <Navigation />}

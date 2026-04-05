@@ -79,6 +79,9 @@ router
     // Progression
     router.get('progression', '#controllers/progression_controller.getUserProgression');
     router.get('progression/strength-log', '#controllers/progression_controller.getStrengthLog');
+    router.put('progression/strength-log/pins', '#controllers/progression_controller.putStrengthLogPins');
+    router.get('progression/exercise-dashboard', '#controllers/progression_controller.getExerciseDashboard');
+    router.put('progression/exercise-dashboard', '#controllers/progression_controller.putExerciseDashboard');
 
     // Achievement routes
     router.get('achievements', '#controllers/streak_controller.achievements');

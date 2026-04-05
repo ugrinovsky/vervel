@@ -264,21 +264,20 @@ export default function WorkoutExercisesEditor({
                       {isLinkedToNext && (
                         <div className="absolute left-4.75 top-0 bottom-0 w-0.5 bg-amber-500/60" />
                       )}
-                      {!isLinkedToNext && (
-                        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-(--color_border)" />
-                      )}
+                      <div className={`flex-1 ${!isLinkedToNext ? 'border-t border-(--color_border)' : ''}`} />
                       <button
                         onClick={() => toggleLink(i)}
                         className={`relative flex items-center gap-1.5 text-xs font-medium transition-colors px-2 py-0.5 rounded-md ${
                           isLinkedToNext
                             ? 'text-amber-400 bg-amber-500/10'
-                            : 'text-white/25 hover:text-amber-400 hover:bg-amber-500/10 bg-(--color_bg_card)'
+                            : 'text-white/25 hover:text-amber-400 hover:bg-amber-500/10'
                         }`}
                         title={isLinkedToNext ? 'Разъединить суперсет' : 'Связать в суперсет'}
                       >
                         <span>⚡</span>
                         <span>{isLinkedToNext ? 'суперсет' : 'суперсет?'}</span>
                       </button>
+                      <div className={`flex-1 ${!isLinkedToNext ? 'border-t border-(--color_border)' : ''}`} />
                     </div>
                   ) : (
                     <div className="my-3 border-t border-(--color_border)" />

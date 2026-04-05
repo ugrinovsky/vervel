@@ -6,13 +6,46 @@ export interface StrengthLogSession {
   date: string;
   workoutId: number;
   sets: { reps?: number; weight?: number }[];
-  notes?: string;
+  /** Условный 1RM (Эпли), макс. по подходам сессии — с бэкенда */
+  best1RM: number | null;
 }
 
 export interface StrengthLogEntry {
   exerciseId: string;
   exerciseName: string;
   sessions: StrengthLogSession[];
+}
+
+export interface WeightedExerciseOption {
+  exerciseId: string;
+  exerciseName: string;
+  /** Из ИИ / не из каталога (id вида custom:…) */
+  isCustom: boolean;
+}
+
+export interface StrengthLogPayload {
+  entries: StrengthLogEntry[];
+  pinnedExerciseIds: string[];
+  /** Топ упражнений по числу сессий, когда закреплений ещё нет */
+  suggestedPins: string[];
+  /** Все упражнения с весом за год — в т.ч. custom: для ручного закрепления */
+  weightedExerciseOptions: WeightedExerciseOption[];
+}
+
+export interface ExerciseDashboardMetric {
+  exerciseId: string;
+  exerciseName: string;
+  best1RMLast30d: number | null;
+  best1RMPrev30d: number | null;
+  changePct: number | null;
+  sessionsLast30d: number;
+  lastWorkedAt: string | null;
+}
+
+export interface ExerciseDashboardPayload {
+  metrics: ExerciseDashboardMetric[];
+  trackedExerciseIds: string[];
+  weightedExerciseOptions: WeightedExerciseOption[];
 }
 
 export interface AthleteGroup {
@@ -87,5 +120,18 @@ export const athleteApi = {
     ),
 
   getStrengthLog: () =>
-    privateApi.get<{ success: boolean; data: StrengthLogEntry[] }>('/progression/strength-log'),
+    privateApi.get<{ success: boolean; data: StrengthLogPayload }>('/progression/strength-log'),
+
+  putStrengthLogPins: (exerciseIds: string[]) =>
+    privateApi.put<{ success: boolean; data: StrengthLogPayload }>('/progression/strength-log/pins', {
+      exerciseIds,
+    }),
+
+  getExerciseDashboard: () =>
+    privateApi.get<{ success: boolean; data: ExerciseDashboardPayload }>('/progression/exercise-dashboard'),
+
+  putExerciseDashboard: (exerciseIds: string[]) =>
+    privateApi.put<{ success: boolean; data: ExerciseDashboardPayload }>('/progression/exercise-dashboard', {
+      exerciseIds,
+    }),
 };

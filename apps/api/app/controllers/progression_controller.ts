@@ -1,6 +1,19 @@
 import { HttpContext } from '@adonisjs/core/http'
+import vine from '@vinejs/vine'
 import { ProgressionService } from '#services/ProgressionService'
 import db from '@adonisjs/lucid/services/db'
+
+const strengthLogPinsValidator = vine.compile(
+  vine.object({
+    exerciseIds: vine.array(vine.string().trim().minLength(1).maxLength(512)).maxLength(40),
+  })
+)
+
+const exerciseDashboardValidator = vine.compile(
+  vine.object({
+    exerciseIds: vine.array(vine.string().trim().minLength(1).maxLength(512)).maxLength(12),
+  })
+)
 
 export default class ProgressionController {
   /**
@@ -25,6 +38,40 @@ export default class ProgressionController {
     const user = auth.user!
     const log = await ProgressionService.getStrengthLog(user.id)
     return response.ok({ success: true, data: log })
+  }
+
+  /**
+   * PUT /progression/strength-log/pins
+   * Полностью заменяет список закреплённых упражнений силового журнала.
+   */
+  async putStrengthLogPins({ auth, request, response }: HttpContext) {
+    const user = auth.user!
+    const { exerciseIds } = await request.validateUsing(strengthLogPinsValidator)
+    await ProgressionService.replaceStrengthLogPins(user.id, exerciseIds)
+    const data = await ProgressionService.getStrengthLog(user.id)
+    return response.ok({ success: true, data })
+  }
+
+  /**
+   * GET /progression/exercise-dashboard
+   * Показатели по выбранным упражнениям (скользящие окна 30+30 дней).
+   */
+  async getExerciseDashboard({ auth, response }: HttpContext) {
+    const user = auth.user!
+    const data = await ProgressionService.getExerciseDashboard(user.id)
+    return response.ok({ success: true, data })
+  }
+
+  /**
+   * PUT /progression/exercise-dashboard
+   * Задать список упражнений дашборда (полная замена, до 12 шт.).
+   */
+  async putExerciseDashboard({ auth, request, response }: HttpContext) {
+    const user = auth.user!
+    const { exerciseIds } = await request.validateUsing(exerciseDashboardValidator)
+    await ProgressionService.replaceExerciseDashboard(user.id, exerciseIds)
+    const data = await ProgressionService.getExerciseDashboard(user.id)
+    return response.ok({ success: true, data })
   }
 
   async getGroupLeaderboard({ auth, params, request, response }: HttpContext) {

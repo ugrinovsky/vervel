@@ -54,7 +54,7 @@ Requirements:
    - Examples: "Barbell Thruster" (not "Thruster"), "Dumbbell Lateral Raise" (not "Lateral Raise"), "Kettlebell Swing" (not "Swing")
    - For unknown/unclear Russian exercises: use the closest standard English equivalent, NOT a transliteration
    - "Скалолаз" = "Mountain Climber", "Трастеры" = "Thruster", "Пресс книжка" = "Jackknife Sit-Up"
-8. "displayName" — Russian name shown to the user (e.g. "Жим штанги лёжа", "Приседания со штангой", "Подтягивания", "Становая тяга"). For non-standard CrossFit exercises write the Russian transliteration or translation.
+8. "displayName" — Russian name shown to the user (e.g. "Жим штанги лёжа", "Приседания со штангой", "Подтягивания", "Становая тяга"). Always start displayName with a capital letter. For non-standard CrossFit exercises write the Russian transliteration or translation.
 9. "zones" — array of muscle zones this exercise primarily works. Choose ONLY from: [${ZONES_LIST}]. Include 1-4 most relevant zones. Examples: bench press = ["chests","triceps","shoulders"], squat = ["legs","glutes"], plank = ["core"]
 10. Interpret abbreviations: "5х10" = 5 sets of 10 reps, "x" or "×" = sets×reps
 11. For cardio exercises always set duration (in minutes); for strength/crossfit set reps
@@ -107,7 +107,7 @@ Requirements:
 7. For cardio workouts: set duration (in minutes) for each exercise, set reps and weight to null
 8. For crossfit/bodybuilding: set reps, set duration to null
 9. "name" — standard English gym terminology for catalog matching (e.g. "Barbell Bench Press", "Back Squat", "Pull-Up", "Deadlift", "Dumbbell Curl")
-10. "displayName" — Russian exercise name shown in the app UI (e.g. "Жим штанги лёжа", "Приседания со штангой")
+10. "displayName" — Russian exercise name shown in the app UI (e.g. "Жим штанги лёжа", "Приседания со штангой"). Always capitalize the first letter.
 11. "zones" — array of muscle zones. Choose ONLY from: [${ZONES_LIST}]. Include 1-4 most relevant zones.
 12. 4-8 exercises for a standard workout
 13. notes and technique tips — write in Russian for user readability

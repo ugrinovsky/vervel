@@ -4,7 +4,8 @@ import limiter from '@adonisjs/limiter/services/main'
 import vine from '@vinejs/vine'
 import { YandexAiService, type AiWorkoutResult } from '#services/YandexAiService'
 import { AiBalanceService, InsufficientBalanceError } from '#services/AiBalanceService'
-import { ExerciseCatalog } from '#services/ExerciseCatalog'
+import { ExerciseCatalog, type CatalogExercise } from '#services/ExerciseCatalog'
+import { tokenizeForMatch, tokenSubsetOverlap } from '#services/exercise_match_helpers'
 import AchievementService from '#services/AchievementService'
 import Workout from '#models/workout'
 import { WorkoutCalculator } from '#services/WorkoutCalculator'
@@ -427,16 +428,39 @@ export default class AiController {
   }
 }
 
+const TOKEN_OVERLAP_MIN = 0.7
+const KW_MIN_FOR_NAME_INCLUDES_KW = 4
+
+function bestMatchByTitleTokenOverlap(
+  nameTokens: string[],
+  catalog: CatalogExercise[]
+): CatalogExercise | undefined {
+  if (nameTokens.length < 2) return undefined
+  let best: { ex: CatalogExercise; score: number } | undefined
+  for (const ex of catalog) {
+    const titleTokens = tokenizeForMatch(ex.title)
+    if (titleTokens.length === 0) continue
+    const forward = tokenSubsetOverlap(nameTokens, titleTokens)
+    const backward = tokenSubsetOverlap(titleTokens, nameTokens)
+    const score = Math.max(forward, backward)
+    if (score >= TOKEN_OVERLAP_MIN && (!best || score > best.score)) {
+      best = { ex, score }
+    }
+  }
+  return best?.ex
+}
+
 /**
  * Матчит упражнения из AI-ответа к реальным ID каталога.
- * Три шага — только детерминированные совпадения, без fuzzy и GPT.
+ * Детерминированные шаги + пересечение токенов с русским title из каталога.
  * Всё что не матчится → custom: + AI-зоны для аналитики.
  */
 function matchExercisesToCatalog(result: AiWorkoutResult): AiWorkoutResult {
   const catalog = ExerciseCatalog.all()
 
   const exercises = result.exercises.map((aiEx) => {
-    const nameLower = aiEx.name.toLowerCase()
+    const nameLower = aiEx.name.trim().toLowerCase()
+    const nameTokens = tokenizeForMatch(aiEx.name)
 
     // 1. Точное совпадение по нормализованному ID
     let found = catalog.find((ex) => ex.id.replace(/_/g, ' ').toLowerCase() === nameLower)
@@ -446,22 +470,39 @@ function matchExercisesToCatalog(result: AiWorkoutResult): AiWorkoutResult {
       found = catalog.find((ex) => {
         const idPhrase = ex.id.replace(/_/g, ' ').toLowerCase()
         const idWordCount = idPhrase.split(' ').filter((w) => w !== '-').length
-        const nameWordCount = nameLower.split(' ').length
+        const nameWordCount = nameLower.split(/\s+/).filter(Boolean).length
         return (idPhrase.includes(nameLower) && nameWordCount / idWordCount >= 0.6)
           || (idWordCount >= 3 && nameLower.includes(idPhrase))
       })
     }
 
-    // 3. Keyword: любой keyword содержит AI-имя с coverage ≥ 0.6
+    // 3. Точное совпадение с keyword (в т.ч. полное русское название из JSON)
+    if (!found) {
+      found = catalog.find((ex) =>
+        (ex.keywords ?? []).some((kw) => kw.trim().toLowerCase() === nameLower)
+      )
+    }
+
+    // 4. Keyword содержит имя с coverage ≥ 0.6, или имя содержит достаточно длинный keyword
     if (!found) {
       found = catalog.find((ex) =>
         (ex.keywords ?? []).some((kw) => {
-          const kwLower = kw.toLowerCase()
-          if (!kwLower.includes(nameLower)) return false
-          const kwWordCount = kwLower.split(' ').filter((w) => w !== '-').length
-          return nameLower.split(' ').length / kwWordCount >= 0.6
+          const kwLower = kw.trim().toLowerCase()
+          if (kwLower.length < 2) return false
+          if (kwLower.includes(nameLower)) {
+            const kwWordCount = kwLower.split(/\s+/).filter((w) => w !== '-').length || 1
+            const nameWordCount = nameLower.split(/\s+/).filter(Boolean).length
+            return nameWordCount / kwWordCount >= 0.6
+          }
+          if (nameLower.includes(kwLower) && kwLower.length >= KW_MIN_FOR_NAME_INCLUDES_KW) return true
+          return false
         })
       )
+    }
+
+    // 5. Token overlap с title каталога (≥2 токена в AI-имени — меньше ложных «пресс» и т.п.)
+    if (!found) {
+      found = bestMatchByTitleTokenOverlap(nameTokens, catalog)
     }
 
     if (found) {

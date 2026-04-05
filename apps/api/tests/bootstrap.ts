@@ -19,7 +19,7 @@ export const plugins: Config['plugins'] = [
 ];
 
 export const configureSuite: Config['configureSuite'] = (suite) => {
-  if (['functional', 'unit'].includes(suite.name)) {
+  if (suite.name === 'functional') {
     suite.setup(() => TestUtils.httpServer().start());
   }
 };

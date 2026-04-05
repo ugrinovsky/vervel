@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
+import { tokenizeForMatch } from '#services/exercise_match_helpers'
 
 // ──────────────────────────────────────────────
 // Типы
@@ -103,10 +104,12 @@ function loadCatalog(): Map<string, CatalogExerciseFull> {
     }
     if (zones.size === 0) continue
 
-    // Ключевые слова: английские слова из ID (напр. "Bench_Press" → ["bench press", "bench", "press"])
+    // Ключевые слова: ID + русское/англ название из JSON (для AI-матчинга)
     const phrase = ex.id.replace(/_/g, ' ').toLowerCase()
     const words = phrase.split(' ').filter((w) => w.length > 2)
-    const keywords = [...new Set([phrase, ...words])]
+    const titleLower = ex.name.trim().toLowerCase()
+    const titleTokens = tokenizeForMatch(ex.name)
+    const keywords = [...new Set([phrase, ...words, titleLower, ...titleTokens])]
 
     const allImages = ex.images.map((img) => `${IMAGE_BASE_URL}/${img}`)
 

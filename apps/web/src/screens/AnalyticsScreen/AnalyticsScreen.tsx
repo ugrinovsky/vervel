@@ -105,11 +105,11 @@ export default function AnalyticsScreen() {
                 to: '/streak',
               },
               {
-                emoji: '📒',
+                emoji: '🏋️',
                 bg: 'bg-purple-500/20',
-                label: 'Силовой журнал',
-                sub: 'Прогресс по весам',
-                to: '/strength-log',
+                label: 'Сила и прогресс',
+                sub: 'Силовой журнал и дашборд упражнений',
+                to: '/progression',
               },
             ]}
           />
