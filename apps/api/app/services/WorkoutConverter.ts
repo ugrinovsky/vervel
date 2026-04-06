@@ -1,5 +1,6 @@
 import type { WorkoutExercise, WorkoutSet } from '#models/workout'
 import type { AiExercise } from '#services/YandexAiService'
+import { canonicalCustomExerciseKey } from '#services/exercise_match_helpers'
 
 export interface ExerciseData {
   exerciseId?: string
@@ -50,7 +51,8 @@ export function aiExercisesToWorkoutExercises(
   workoutType: 'crossfit' | 'bodybuilding' | 'cardio'
 ): WorkoutExercise[] {
   return exercises.map((ex) => {
-    const exerciseId = ex.exerciseId ?? `custom:${ex.displayName ?? ex.name}`
+    const exerciseId =
+      ex.exerciseId ?? `custom:${canonicalCustomExerciseKey(ex.displayName ?? ex.name)}`
     const name = ex.displayName ?? ex.name
     const zones = ex.zones && ex.zones.length > 0 ? ex.zones : undefined
 

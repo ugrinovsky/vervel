@@ -98,6 +98,18 @@ router
       'progression/exercise-standard-aliases',
       '#controllers/progression_controller.deleteExerciseStandardAlias'
     );
+    router.post(
+      'progression/ai-suggest-standard-links',
+      '#controllers/progression_controller.postAiSuggestStandardLinks'
+    );
+    router.post(
+      'progression/apply-standard-alias-batch',
+      '#controllers/progression_controller.postApplyStandardAliasBatch'
+    );
+    router.post(
+      'progression/revert-standard-alias-batch/:id',
+      '#controllers/progression_controller.postRevertStandardAliasBatch'
+    );
 
     // Achievement routes
     router.get('achievements', '#controllers/streak_controller.achievements');

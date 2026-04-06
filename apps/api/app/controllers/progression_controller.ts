@@ -1,6 +1,8 @@
 import { HttpContext } from '@adonisjs/core/http'
 import vine from '@vinejs/vine'
 import { ProgressionService } from '#services/ProgressionService'
+import { YandexAiService } from '#services/YandexAiService'
+import { AiBalanceService, InsufficientBalanceError } from '#services/AiBalanceService'
 import db from '@adonisjs/lucid/services/db'
 
 const strengthLogPinsValidator = vine.compile(
@@ -32,6 +34,20 @@ const setAliasValidator = vine.compile(
 const removeAliasValidator = vine.compile(
   vine.object({
     sourceExerciseId: vine.string().trim().minLength(1).maxLength(512),
+  })
+)
+
+const applyAliasBatchValidator = vine.compile(
+  vine.object({
+    links: vine
+      .array(
+        vine.object({
+          sourceExerciseId: vine.string().trim().minLength(1).maxLength(512),
+          standardId: vine.number(),
+        })
+      )
+      .minLength(1)
+      .maxLength(40),
   })
 )
 
@@ -157,6 +173,93 @@ export default class ProgressionController {
     const body = await request.validateUsing(removeAliasValidator)
     await ProgressionService.removeExerciseStandardAlias(user.id, body.sourceExerciseId)
     return response.ok({ success: true })
+  }
+
+  /**
+   * POST /progression/ai-suggest-standard-links
+   * ИИ предлагает связи упражнений из истории с эталонами (списание баланса, если есть кандидаты).
+   */
+  async postAiSuggestStandardLinks({ auth, response }: HttpContext) {
+    if (!YandexAiService.isEnabled()) {
+      return response.forbidden({ success: false, message: 'AI временно недоступен' })
+    }
+
+    const userId = auth.user!.id
+    const standards = await ProgressionService.listExerciseStandards(userId)
+    if (standards.length === 0) {
+      return response.badRequest({
+        success: false,
+        message: 'Сначала создайте хотя бы один эталон',
+      })
+    }
+
+    const candidates = await ProgressionService.listUnlinkedStrengthExerciseCandidates(userId)
+    if (candidates.length === 0) {
+      const balance = await AiBalanceService.getBalance(userId)
+      return response.ok({ success: true, data: { suggestions: [], balance } })
+    }
+
+    const cost = AiBalanceService.COST_SUGGEST_STANDARD_LINKS
+    try {
+      await AiBalanceService.charge(userId, cost, 'ИИ: подсказки связей с эталонами')
+    } catch (e) {
+      if (e instanceof InsufficientBalanceError) {
+        return response.paymentRequired({
+          success: false,
+          message: `Недостаточно средств. Баланс: ${e.balance}₽, требуется: ${e.required}₽`,
+          balance: e.balance,
+          required: e.required,
+        })
+      }
+      throw e
+    }
+
+    try {
+      const suggestions = await ProgressionService.suggestStandardAliasLinksWithAi(userId)
+      const balance = await AiBalanceService.getBalance(userId)
+      return response.ok({ success: true, data: { suggestions, balance } })
+    } catch (e: any) {
+      return response.internalServerError({
+        success: false,
+        message: e?.message ?? 'Не удалось получить подсказки',
+      })
+    }
+  }
+
+  /**
+   * POST /progression/apply-standard-alias-batch
+   * Применить выбранные связи; возвращает revertId для отката.
+   */
+  async postApplyStandardAliasBatch({ auth, request, response }: HttpContext) {
+    const user = auth.user!
+    const body = await request.validateUsing(applyAliasBatchValidator)
+    try {
+      const { revertId, applied } = await ProgressionService.applyStandardAliasBatch(
+        user.id,
+        body.links
+      )
+      return response.ok({ success: true, data: { revertId, applied } })
+    } catch (e: any) {
+      return response.badRequest({ success: false, message: e?.message ?? 'Ошибка' })
+    }
+  }
+
+  /**
+   * POST /progression/revert-standard-alias-batch/:id
+   * Откатить последний пакет по id снимка.
+   */
+  async postRevertStandardAliasBatch({ auth, response, params }: HttpContext) {
+    const user = auth.user!
+    const id = Number(params.id)
+    if (!Number.isFinite(id) || id <= 0) {
+      return response.badRequest({ success: false, message: 'Некорректный id' })
+    }
+    try {
+      await ProgressionService.revertStandardAliasBatch(user.id, id)
+      return response.ok({ success: true })
+    } catch (e: any) {
+      return response.badRequest({ success: false, message: e?.message ?? 'Ошибка отката' })
+    }
   }
 
   async getGroupLeaderboard({ auth, params, request, response }: HttpContext) {

@@ -28,6 +28,11 @@ export class AiBalanceService {
     return Number(env.get('AI_COST_PARSE_NOTES', '10'))
   }
 
+  /** Подсказки ИИ: связать упражнения с эталонами (силовой журнал) */
+  static get COST_SUGGEST_STANDARD_LINKS(): number {
+    return Number(env.get('AI_COST_SUGGEST_STANDARD_LINKS', '8'))
+  }
+
   /** YandexGPT Lite: ₽ per 1000 input tokens */
   static get CHAT_INPUT_RATE(): number {
     return Number(env.get('AI_CHAT_INPUT_RATE', '0.20'))

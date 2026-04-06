@@ -22,4 +22,15 @@ export const configureSuite: Config['configureSuite'] = (suite) => {
   if (suite.name === 'functional') {
     suite.setup(() => TestUtils.httpServer().start());
   }
+  if (suite.name === 'unit') {
+    suite.setup(async () => {
+      await TestUtils.boot();
+      // macro из @adonisjs/lucid: перед тестами с БД подтягиваем pending-миграции (в т.ч. новые таблицы)
+      await (
+        TestUtils as typeof TestUtils & { db: () => { migrate: () => Promise<() => Promise<void>> } }
+      )
+        .db()
+        .migrate();
+    });
+  }
 };

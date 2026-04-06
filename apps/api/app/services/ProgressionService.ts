@@ -3,7 +3,10 @@ import Workout from '#models/workout';
 import UserPinnedExercise from '#models/user_pinned_exercise';
 import UserExerciseStandard from '#models/user_exercise_standard';
 import UserExerciseStandardAlias from '#models/user_exercise_standard_alias';
+import UserExerciseStandardLinkBatchSnapshot from '#models/user_exercise_standard_link_batch_snapshot';
 import db from '@adonisjs/lucid/services/db';
+import { YandexAiService } from '#services/YandexAiService';
+import type { TransactionClientContract } from '@adonisjs/lucid/types/database';
 import type { WorkoutExercise, WorkoutSet } from '#models/workout';
 import { ExerciseCatalog } from '#services/ExerciseCatalog';
 import { capitalizeFirstForDisplay } from '#services/exercise_match_helpers';
@@ -11,6 +14,7 @@ import {
   normalizePinnedExerciseIdList,
   pickTopExerciseIdsBySessionCount,
 } from '#services/strength_log_support';
+import env from '#start/env';
 
 const STD_PREFIX = 'std:';
 
@@ -77,6 +81,16 @@ export interface GroupLeaderboardEntry {
 }
 
 export class ProgressionService {
+  /**
+   * Сколько несвязанных упражнений максимум уходит в один платный запрос ИИ (связи с эталонами).
+   * Env: AI_STANDARD_LINK_SUGGEST_MAX_CANDIDATES
+   */
+  static get AI_STANDARD_LINK_SUGGEST_MAX_CANDIDATES(): number {
+    const n = Number(env.get('AI_STANDARD_LINK_SUGGEST_MAX_CANDIDATES', '60'));
+    if (!Number.isFinite(n)) return 60;
+    return Math.min(200, Math.max(1, Math.floor(n)));
+  }
+
   private static parseStandardGroupKey(groupKey: string): number | null {
     if (!groupKey.startsWith(STD_PREFIX)) return null;
     const n = Number(groupKey.slice(STD_PREFIX.length));
@@ -447,6 +461,7 @@ export class ProgressionService {
         weightedExerciseOptions,
         standards,
         aliases,
+        aiStandardLinkSuggestMaxCandidates: this.AI_STANDARD_LINK_SUGGEST_MAX_CANDIDATES,
       };
     }
 
@@ -460,6 +475,7 @@ export class ProgressionService {
       weightedExerciseOptions,
       standards,
       aliases,
+      aiStandardLinkSuggestMaxCandidates: this.AI_STANDARD_LINK_SUGGEST_MAX_CANDIDATES,
     };
   }
 
@@ -649,7 +665,8 @@ export class ProgressionService {
   static async setExerciseStandardAlias(
     userId: number,
     sourceExerciseId: string,
-    standardId: number
+    standardId: number,
+    trx?: TransactionClientContract
   ): Promise<void> {
     const src = sourceExerciseId.trim();
     if (!src) {
@@ -658,20 +675,33 @@ export class ProgressionService {
     if (src.startsWith(STD_PREFIX)) {
       throw new Error('Некорректный id');
     }
-    const std = await UserExerciseStandard.query()
+    const client = trx ? { client: trx } : {};
+    const std = await UserExerciseStandard.query(client)
       .where('id', standardId)
       .where('userId', userId)
       .first();
     if (!std) {
       throw new Error('Эталон не найден');
     }
-    const existing = await UserExerciseStandardAlias.query()
+    const existing = await UserExerciseStandardAlias.query(client)
       .where('userId', userId)
       .where('sourceExerciseId', src)
       .first();
     if (existing) {
       existing.standardId = standardId;
+      if (trx) {
+        existing.useTransaction(trx);
+      }
       await existing.save();
+    } else if (trx) {
+      await UserExerciseStandardAlias.create(
+        {
+          userId,
+          sourceExerciseId: src,
+          standardId,
+        },
+        { client: trx }
+      );
     } else {
       await UserExerciseStandardAlias.create({
         userId,
@@ -681,12 +711,175 @@ export class ProgressionService {
     }
   }
 
-  static async removeExerciseStandardAlias(userId: number, sourceExerciseId: string): Promise<void> {
+  static async removeExerciseStandardAlias(
+    userId: number,
+    sourceExerciseId: string,
+    trx?: TransactionClientContract
+  ): Promise<void> {
     const src = sourceExerciseId.trim();
-    await UserExerciseStandardAlias.query()
+    const client = trx ? { client: trx } : {};
+    await UserExerciseStandardAlias.query(client)
       .where('userId', userId)
       .where('sourceExerciseId', src)
       .delete();
+  }
+
+  /**
+   * Упражнения с весом за год, ещё не попавшие ни под эталон (ни алиас, ни catalog_id эталона).
+   */
+  static async listUnlinkedStrengthExerciseCandidates(
+    userId: number,
+    max?: number
+  ): Promise<WeightedExerciseOption[]> {
+    const cap = max ?? this.AI_STANDARD_LINK_SUGGEST_MAX_CANDIDATES;
+    const ctx = await this.loadStandardContext(userId);
+    const options = await this.buildWeightedExerciseOptionsForUser(userId);
+    const unlinked = options.filter(
+      (o) => this.resolveStandardIdForExerciseId(o.exerciseId, ctx) === null
+    );
+    unlinked.sort((a, b) => Number(b.isCustom) - Number(a.isCustom));
+    return unlinked.slice(0, cap);
+  }
+
+  /**
+   * Применить связи sourceExerciseId → эталон; сохраняет снимок для отката.
+   */
+  static async applyStandardAliasBatch(
+    userId: number,
+    links: Array<{ sourceExerciseId: string; standardId: number }>
+  ): Promise<{ revertId: number; applied: number }> {
+    if (links.length === 0) {
+      throw new Error('Пустой список связей');
+    }
+    const ctx = await this.loadStandardContext(userId);
+    const validStd = new Set(ctx.standardsById.keys());
+
+    return await db.transaction(async (trx) => {
+      const touches: Array<{ source: string; beforeStandardId: number | null }> = [];
+
+      for (const raw of links) {
+        const standardId = Number(raw.standardId);
+        const src = raw.sourceExerciseId.trim();
+        if (!Number.isFinite(standardId) || !validStd.has(standardId)) {
+          throw new Error('Неизвестный эталон');
+        }
+        if (!src || src.startsWith(STD_PREFIX)) {
+          throw new Error('Некорректный sourceExerciseId');
+        }
+
+        const existing = await UserExerciseStandardAlias.query({ client: trx })
+          .where('userId', userId)
+          .where('sourceExerciseId', src)
+          .first();
+
+        if (existing && existing.standardId === standardId) {
+          continue;
+        }
+
+        touches.push({
+          source: src,
+          beforeStandardId: existing?.standardId ?? null,
+        });
+
+        await this.setExerciseStandardAlias(userId, src, standardId, trx);
+      }
+
+      if (touches.length === 0) {
+        return { revertId: 0, applied: 0 };
+      }
+
+      const snap = await UserExerciseStandardLinkBatchSnapshot.create(
+        {
+          userId,
+          touchesJson: touches,
+        },
+        { client: trx }
+      );
+
+      return { revertId: snap.id, applied: touches.length };
+    });
+  }
+
+  /**
+   * Откатить пакетное применение связей по id снимка (один раз).
+   */
+  static async revertStandardAliasBatch(userId: number, revertId: number): Promise<void> {
+    await db.transaction(async (trx) => {
+      const snap = await UserExerciseStandardLinkBatchSnapshot.query({ client: trx })
+        .where('id', revertId)
+        .where('userId', userId)
+        .forUpdate()
+        .first();
+
+      if (!snap) {
+        throw new Error('Снимок не найден или уже откатили');
+      }
+
+      const touches = snap.touchesJson;
+      if (!Array.isArray(touches)) {
+        throw new Error('Повреждённые данные снимка');
+      }
+
+      for (const t of touches) {
+        const src = t.source?.trim();
+        if (!src) continue;
+        if (t.beforeStandardId === null) {
+          await this.removeExerciseStandardAlias(userId, src, trx);
+        } else {
+          await this.setExerciseStandardAlias(userId, src, t.beforeStandardId, trx);
+        }
+      }
+
+      snap.useTransaction(trx);
+      await snap.delete();
+    });
+  }
+
+  /**
+   * ИИ: предложить связи «упражнение из истории → эталон» (только из уже известных id).
+   */
+  static async suggestStandardAliasLinksWithAi(userId: number): Promise<StandardLinkSuggestionDTO[]> {
+    const standards = await this.listExerciseStandards(userId);
+    if (standards.length === 0) {
+      throw new Error('Сначала создайте хотя бы один эталон');
+    }
+
+    const candidates = await this.listUnlinkedStrengthExerciseCandidates(userId);
+    if (candidates.length === 0) {
+      return [];
+    }
+
+    const rawLinks = await YandexAiService.suggestStrengthLogStandardLinks(
+      standards.map((s) => ({ id: s.id, displayLabel: s.displayLabel })),
+      candidates.map((c) => ({ exerciseId: c.exerciseId, exerciseName: c.exerciseName }))
+    );
+
+    const candidateIds = new Set(candidates.map((c) => c.exerciseId));
+    const stdIds = new Set(standards.map((s) => s.id));
+    const nameById = new Map(candidates.map((c) => [c.exerciseId, c.exerciseName] as const));
+    const labelById = new Map(standards.map((s) => [s.id, s.displayLabel] as const));
+
+    const seen = new Set<string>();
+    const out: StandardLinkSuggestionDTO[] = [];
+
+    for (const link of rawLinks) {
+      const src = link.sourceExerciseId?.trim();
+      if (!src || !candidateIds.has(src) || !stdIds.has(link.standardId)) {
+        continue;
+      }
+      if (seen.has(src)) {
+        continue;
+      }
+      seen.add(src);
+      out.push({
+        sourceExerciseId: src,
+        standardId: link.standardId,
+        exerciseName: nameById.get(src) ?? src,
+        standardLabel: labelById.get(link.standardId) ?? String(link.standardId),
+      });
+    }
+
+    return out;
   }
 
   private static workoutExerciseHasPositiveWeight(ex: WorkoutExercise): boolean {
@@ -916,6 +1109,13 @@ export interface ExerciseStandardAliasDTO {
   standardId: number;
 }
 
+export interface StandardLinkSuggestionDTO {
+  sourceExerciseId: string;
+  standardId: number;
+  exerciseName: string;
+  standardLabel: string;
+}
+
 export interface StrengthLogPayload {
   entries: StrengthLogEntry[];
   pinnedExerciseIds: string[];
@@ -924,4 +1124,6 @@ export interface StrengthLogPayload {
   weightedExerciseOptions: WeightedExerciseOption[];
   standards: ExerciseStandardDTO[];
   aliases: ExerciseStandardAliasDTO[];
+  /** Макс. несвязанных упражнений в одном платном запросе ИИ к эталонам */
+  aiStandardLinkSuggestMaxCandidates: number;
 }

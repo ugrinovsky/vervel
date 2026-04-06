@@ -1,6 +1,7 @@
 import { test } from '@japa/runner'
 import {
   capitalizeFirstForDisplay,
+  canonicalCustomExerciseKey,
   displayNameMatchesCatalogTitle,
   tokenSubsetOverlap,
   tokenizeForMatch,
@@ -41,5 +42,18 @@ test.group('displayNameMatchesCatalogTitle', () => {
 
   test('no false match on unrelated', ({ assert }) => {
     assert.isFalse(displayNameMatchesCatalogTitle('Приседания', 'Румынская тяга'))
+  })
+})
+
+test.group('canonicalCustomExerciseKey', () => {
+  test('unifies case, ё/е, spaces for same custom id', ({ assert }) => {
+    assert.equal(
+      canonicalCustomExerciseKey('Жим  лёжа'),
+      canonicalCustomExerciseKey('жим лежа')
+    )
+  })
+
+  test('normalizes unicode dashes', ({ assert }) => {
+    assert.equal(canonicalCustomExerciseKey('Тяга — штанга'), canonicalCustomExerciseKey('Тяга - штанга'))
   })
 })

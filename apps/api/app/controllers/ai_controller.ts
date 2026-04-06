@@ -322,6 +322,7 @@ export default class AiController {
         generate: AiBalanceService.COST_GENERATE,
         recognize: AiBalanceService.COST_RECOGNIZE,
         parseNotes: auth.user!.aiNotesFree ? 0 : AiBalanceService.COST_PARSE_NOTES,
+        suggestStandardLinks: AiBalanceService.COST_SUGGEST_STANDARD_LINKS,
         chatMinCharge: AiBalanceService.CHAT_MIN_CHARGE,
       },
       transactions,

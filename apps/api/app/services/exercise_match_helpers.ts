@@ -47,3 +47,20 @@ export function displayNameMatchesCatalogTitle(displayName: string, catalogTitle
     tokenSubsetOverlap(a, b) >= TITLE_MATCH_MIN || tokenSubsetOverlap(b, a) >= TITLE_MATCH_MIN
   )
 }
+
+/**
+ * Стабильный ключ для суффикса custom:id (после того как каталог не сматчился).
+ * Регистр, ё/е, пробелы, Unicode-тире → одна каноническая строка, меньше дублей в журнале/эталонах.
+ *
+ * Синхронно с apps/web/src/utils/canonicalCustomExerciseKey.ts
+ */
+export function canonicalCustomExerciseKey(label: string): string {
+  const t = label.trim().replace(/\s+/g, ' ')
+  if (!t) return 'unnamed'
+  return t
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/ё/g, 'е')
+    .replace(/[\u2013\u2014–—]/g, '-')
+    .trim()
+}

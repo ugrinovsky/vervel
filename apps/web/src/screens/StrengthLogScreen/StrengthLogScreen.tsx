@@ -30,16 +30,38 @@ import {
   athleteApi,
   type ExerciseStandardAliasDTO,
   type ExerciseStandardDTO,
+  type StandardLinkSuggestionDTO,
   type StrengthLogDashboardMetric,
   type StrengthLogEntry,
   type StrengthLogPayload,
   type WeightedExerciseOption,
 } from '@/api/athlete';
+import { aiApi } from '@/api/ai';
+import { useBalance } from '@/contexts/AuthContext';
 import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
 import type { ExerciseWithSets } from '@/types/Exercise';
 import { buildStrengthLogChartPoints, strengthLogProgressPercent } from './strengthLogChart';
 
 const GROUP_STD_PREFIX = 'std:';
+
+function resolveStandardIdForRawExerciseId(
+  exerciseId: string,
+  standards: ExerciseStandardDTO[],
+  aliases: ExerciseStandardAliasDTO[],
+): number | null {
+  if (exerciseId.startsWith(GROUP_STD_PREFIX)) {
+    const rest = exerciseId.slice(GROUP_STD_PREFIX.length);
+    const n = Number(rest);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+  const viaAlias = aliases.find((x) => x.sourceExerciseId === exerciseId);
+  if (viaAlias != null) {
+    const n = Number(viaAlias.standardId);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  const viaCatalog = standards.find((x) => x.catalogExerciseId === exerciseId);
+  return viaCatalog != null ? Number(viaCatalog.id) : null;
+}
 
 function resolveStandardIdForStrengthEntry(
   entry: StrengthLogEntry,
@@ -408,6 +430,7 @@ function ExerciseCard({
 
 export default function StrengthLogScreen({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
+  const { balance, setBalance } = useBalance();
   const [payload, setPayload] = useState<StrengthLogPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [pinsBusy, setPinsBusy] = useState(false);
@@ -421,6 +444,14 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
   const [standardsPickerOpen, setStandardsPickerOpen] = useState(false);
   const [standardsBusy, setStandardsBusy] = useState(false);
   const [standardsAliasSearch, setStandardsAliasSearch] = useState('');
+  const [aiSuggestOpen, setAiSuggestOpen] = useState(false);
+  const [aiSuggestPhase, setAiSuggestPhase] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [aiSuggestError, setAiSuggestError] = useState<string | null>(null);
+  const [aiSuggestItems, setAiSuggestItems] = useState<StandardLinkSuggestionDTO[]>([]);
+  const [aiSuggestSelected, setAiSuggestSelected] = useState<Record<string, boolean>>({});
+  const [aiSuggestApplyBusy, setAiSuggestApplyBusy] = useState(false);
+  const [aiFeatureEnabled, setAiFeatureEnabled] = useState(false);
+  const [suggestLinksCost, setSuggestLinksCost] = useState(8);
 
   const load = useCallback(() => {
     return athleteApi
@@ -435,12 +466,37 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
     load().finally(() => setLoading(false));
   }, [load]);
 
+  useEffect(() => {
+    if (!payload) return;
+    aiApi
+      .status()
+      .then((r) => setAiFeatureEnabled(r.data.enabled))
+      .catch(() => setAiFeatureEnabled(false));
+    aiApi
+      .getBalance()
+      .then((r) => {
+        const c = r.data.costs.suggestStandardLinks;
+        if (typeof c === 'number' && Number.isFinite(c)) setSuggestLinksCost(c);
+      })
+      .catch(() => {});
+  }, [payload]);
+
   const entries = payload?.entries ?? [];
   const pinnedExerciseIds = payload?.pinnedExerciseIds ?? [];
   const suggestedPins = payload?.suggestedPins ?? [];
   const weightedExerciseOptions = payload?.weightedExerciseOptions ?? [];
   const standards = payload?.standards ?? [];
   const aliases = payload?.aliases ?? [];
+
+  const aiSuggestCap = payload?.aiStandardLinkSuggestMaxCandidates ?? 60;
+
+  const unlinkedTotalCount = useMemo(
+    () =>
+      weightedExerciseOptions.filter(
+        (o) => resolveStandardIdForRawExerciseId(o.exerciseId, standards, aliases) === null,
+      ).length,
+    [weightedExerciseOptions, standards, aliases],
+  );
 
   const exerciseNameById = (id: string) =>
     entries.find((e) => e.exerciseId === id)?.exerciseName ?? id.replace(/_/g, ' ');
@@ -466,6 +522,123 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
     setStandardsPickerOpen(false);
   };
 
+  const closeAiSuggestSheet = () => {
+    setAiSuggestOpen(false);
+    setAiSuggestPhase('idle');
+    setAiSuggestError(null);
+    setAiSuggestItems([]);
+    setAiSuggestSelected({});
+  };
+
+  const requestAiSuggestLinks = async () => {
+    setAiSuggestPhase('loading');
+    setAiSuggestError(null);
+    try {
+      const res = await athleteApi.postAiSuggestStandardLinks();
+      if (res.data.success && res.data.data) {
+        setBalance(res.data.data.balance);
+        const items = res.data.data.suggestions ?? [];
+        setAiSuggestItems(items);
+        setAiSuggestSelected(Object.fromEntries(items.map((s) => [s.sourceExerciseId, true])));
+        setAiSuggestPhase('ready');
+      } else {
+        setAiSuggestError(
+          typeof res.data.message === 'string' ? res.data.message : 'Не удалось получить подсказки',
+        );
+        setAiSuggestPhase('error');
+      }
+    } catch (e) {
+      if (isAxiosError(e) && e.response?.status === 402) {
+        const d = e.response?.data as { balance?: number; message?: string };
+        setAiSuggestError(
+          d?.message ??
+            (d?.balance != null ? `Недостаточно средств (баланс ${d.balance}₽)` : 'Недостаточно средств'),
+        );
+      } else if (isAxiosError(e) && e.response?.status === 403) {
+        setAiSuggestError('ИИ временно недоступен');
+      } else {
+        const msg = isAxiosError(e)
+          ? (e.response?.data as { message?: string } | undefined)?.message
+          : undefined;
+        setAiSuggestError(typeof msg === 'string' && msg.trim() ? msg : 'Ошибка запроса');
+      }
+      setAiSuggestPhase('error');
+    }
+  };
+
+  const openAiSuggestSheet = () => {
+    setAiSuggestOpen(true);
+    void requestAiSuggestLinks();
+  };
+
+  const applyAiSuggestBatch = async () => {
+    if (aiSuggestApplyBusy) return;
+    const links = aiSuggestItems
+      .filter((s) => aiSuggestSelected[s.sourceExerciseId] !== false)
+      .map((s) => ({ sourceExerciseId: s.sourceExerciseId, standardId: s.standardId }));
+    if (links.length === 0) {
+      toast.error('Не выбрано ни одной связи');
+      return;
+    }
+    setAiSuggestApplyBusy(true);
+    try {
+      const res = await athleteApi.postApplyStandardAliasBatch(links);
+      if (!res.data.success || !res.data.data) {
+        toast.error(
+          typeof res.data.message === 'string' ? res.data.message : 'Не удалось применить',
+        );
+        return;
+      }
+      const { revertId, applied } = res.data.data;
+      closeAiSuggestSheet();
+      await load();
+      if (applied === 0) {
+        toast.success('Изменений не потребовалось');
+        return;
+      }
+      if (revertId > 0) {
+        toast.custom(
+          (t) => (
+            <div className="rounded-xl border border-white/15 bg-[#1a1a1a] px-4 py-3 text-sm text-white shadow-xl max-w-[min(100vw-2rem,20rem)]">
+              <p className="mb-2">Связали {applied} вариант(ов) с эталонами.</p>
+              <button
+                type="button"
+                className="text-(--color_primary_light) underline underline-offset-2 font-medium"
+                onClick={async () => {
+                  toast.dismiss(t.id);
+                  try {
+                    const rev = await athleteApi.postRevertStandardAliasBatch(revertId);
+                    if (rev.data.success) {
+                      toast.success('Откат выполнен');
+                      await load();
+                    } else {
+                      toast.error(
+                        typeof rev.data.message === 'string'
+                          ? rev.data.message
+                          : 'Не удалось откатить',
+                      );
+                    }
+                  } catch {
+                    toast.error('Не удалось откатить');
+                  }
+                }}
+              >
+                Откатить
+              </button>
+            </div>
+          ),
+          { duration: 20000 },
+        );
+      } else {
+        toast.success(`Применено связей: ${applied}`);
+      }
+    } catch {
+      toast.error('Не удалось применить');
+    } finally {
+      setAiSuggestApplyBusy(false);
+    }
+  };
+
   const effectiveStandardIdForSheet = useMemo(
     () =>
       standardsEntry ? resolveStandardIdForStrengthEntry(standardsEntry, standards, aliases) : null,
@@ -485,9 +658,10 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
         displayLabel: label,
       });
       if (res.data?.success === false) {
+        const errBody = res.data as unknown as { message?: string };
         toast.error(
-          typeof (res.data as { message?: string }).message === 'string'
-            ? (res.data as { message: string }).message
+          typeof errBody.message === 'string' && errBody.message.trim()
+            ? errBody.message
             : 'Не удалось сохранить',
         );
         return;
@@ -664,13 +838,15 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
         {!loading && payload && (
           <div className="space-y-2 text-xs text-(--color_text_muted)">
             {pinnedExerciseIds.length > 0 ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <span>Показаны только закреплённые упражнения.</span>
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                <span className="text-(--color_text_muted)">
+                  Показаны только закреплённые упражнения.
+                </span>
                 <GhostButton
-                  variant="link"
+                  variant="outline-accent"
                   disabled={pinsBusy}
                   onClick={() => applyPins([])}
-                  className="text-(--color_primary_light) hover:text-(--color_primary_light)"
+                  className="w-full shrink-0 sm:w-auto whitespace-nowrap py-2"
                 >
                   Снять закрепления
                 </GhostButton>
@@ -713,8 +889,127 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
                 + Добавить из истории (кастомные и любые id)
               </GhostButton>
             )}
+            {standards.length > 0 && unlinkedTotalCount > 0 && aiFeatureEnabled && (
+              <div className="space-y-1.5">
+                <GhostButton
+                  variant="outline-accent"
+                  disabled={
+                    pinsBusy || (balance !== null && balance < suggestLinksCost)
+                  }
+                  onClick={() => openAiSuggestSheet()}
+                  className="w-full py-2 rounded-xl"
+                >
+                  Платная подсказка ИИ: связи с эталонами — {suggestLinksCost}₽ за запрос
+                </GhostButton>
+                <p className="text-[11px] text-(--color_text_muted) leading-snug px-0.5">
+                  В один запрос к ИИ для анализа уходит не более {aiSuggestCap} шт.
+                  {unlinkedTotalCount > aiSuggestCap
+                    ? ` Сейчас несвязанных ${unlinkedTotalCount} — в этот запрос попадут первые ${aiSuggestCap} по приоритету сервера (сначала кастомные и нестандартные id).`
+                    : ''}
+                </p>
+              </div>
+            )}
           </div>
         )}
+
+        <BottomSheet
+          id="strength-log-ai-suggest-links"
+          open={aiSuggestOpen}
+          onClose={closeAiSuggestSheet}
+          emoji="✨"
+          title="Платная подсказка ИИ"
+        >
+          <div className="space-y-3 pb-4 text-sm">
+            <p className="text-xs text-(--color_text_muted) leading-relaxed">
+              <span className="text-white/90">Платная услуга:</span> с баланса списывается{' '}
+              {suggestLinksCost}₽ за один запрос к ИИ — в момент отправки (когда ниже идёт загрузка). В
+              запрос попадает не более {aiSuggestCap} несвязанных упражнений из истории. ИИ сопоставляет
+              их с эталонами — проверьте каждую строку и
+              снимите галочки с сомнительных. После применения выбранных связей можно откатить весь пакет
+              одной кнопкой в уведомлении.
+            </p>
+            {aiSuggestPhase === 'loading' && (
+              <p className="text-(--color_text_muted) py-6 text-center">
+                Списываем {suggestLinksCost}₽ и запрашиваем ИИ…
+              </p>
+            )}
+            {aiSuggestPhase === 'error' && aiSuggestError && (
+              <div className="space-y-3">
+                <p className="text-rose-300 text-sm">{aiSuggestError}</p>
+                <GhostButton variant="accent-soft" type="button" onClick={() => void requestAiSuggestLinks()}>
+                  Повторить ({suggestLinksCost}₽)
+                </GhostButton>
+              </div>
+            )}
+            {aiSuggestPhase === 'ready' && aiSuggestItems.length === 0 && (
+              <p className="text-(--color_text_muted) text-sm leading-relaxed">
+                Уверенных совпадений не нашлось — плата за этот запрос ({suggestLinksCost}₽) уже списана.
+                Связать вручную можно через звёздочку на карточке упражнения.
+              </p>
+            )}
+            {aiSuggestPhase === 'ready' && aiSuggestItems.length > 0 && (
+              <>
+                <div className="flex flex-wrap gap-2">
+                  <GhostButton
+                    variant="link"
+                    type="button"
+                    className="text-xs"
+                    onClick={() =>
+                      setAiSuggestSelected(Object.fromEntries(aiSuggestItems.map((s) => [s.sourceExerciseId, true])))
+                    }
+                  >
+                    Выбрать все
+                  </GhostButton>
+                  <GhostButton
+                    variant="link"
+                    type="button"
+                    className="text-xs"
+                    onClick={() =>
+                      setAiSuggestSelected(Object.fromEntries(aiSuggestItems.map((s) => [s.sourceExerciseId, false])))
+                    }
+                  >
+                    Снять все
+                  </GhostButton>
+                </div>
+                <div className="max-h-[45dvh] overflow-y-auto space-y-2 border border-(--color_border) rounded-xl p-2">
+                  {aiSuggestItems.map((s) => (
+                    <label
+                      key={s.sourceExerciseId}
+                      className="flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-white/5 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        className="mt-1 shrink-0"
+                        checked={aiSuggestSelected[s.sourceExerciseId] !== false}
+                        onChange={() =>
+                          setAiSuggestSelected((prev) => {
+                            const cur = prev[s.sourceExerciseId] !== false;
+                            return { ...prev, [s.sourceExerciseId]: !cur };
+                          })
+                        }
+                      />
+                      <span className="min-w-0">
+                        <span className="text-white block">{s.exerciseName}</span>
+                        <span className="text-[11px] text-(--color_text_muted)">
+                          → эталон «{s.standardLabel}»
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <GhostButton
+                  variant="accent-soft"
+                  type="button"
+                  disabled={aiSuggestApplyBusy}
+                  className="w-full py-2.5"
+                  onClick={() => void applyAiSuggestBatch()}
+                >
+                  {aiSuggestApplyBusy ? 'Применяем…' : 'Применить выбранные'}
+                </GhostButton>
+              </>
+            )}
+          </div>
+        </BottomSheet>
 
         <BottomSheet
           id="strength-log-history-pins"

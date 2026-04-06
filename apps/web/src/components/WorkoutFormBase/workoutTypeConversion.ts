@@ -1,6 +1,7 @@
 import type { ExerciseData } from '@/api/trainer'
 import type { AiWorkoutResult } from '@/api/ai'
 import type { WorkoutType } from '@/components/WorkoutTypeTabs'
+import { canonicalCustomExerciseKey } from '@/utils/canonicalCustomExerciseKey'
 
 /**
  * Normalizes exercises when the workout type changes.
@@ -57,7 +58,8 @@ export function convertAiResult(result: AiWorkoutResult): ExerciseData[] {
 
   return result.exercises.map((ex) => {
     const base: ExerciseData = {
-      exerciseId: ex.exerciseId ?? `custom:${ex.displayName ?? ex.name}`,
+      exerciseId:
+        ex.exerciseId ?? `custom:${canonicalCustomExerciseKey(ex.displayName ?? ex.name)}`,
       name: ex.displayName ?? ex.name,
       notes: ex.notes,
       zones: ex.zones && ex.zones.length > 0 ? ex.zones : undefined,

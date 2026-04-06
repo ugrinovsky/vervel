@@ -119,6 +119,20 @@ const VISION_OCR_URL = 'https://ocr.api.cloud.yandex.net/ocr/v1/recognizeText'
 // OpenAI-совместимый API Yandex Cloud для YandexGPT (chat/completions)
 const YANDEX_GPT_URL = 'https://ai.api.cloud.yandex.net/v1/chat/completions'
 
+const SUGGEST_STANDARD_LINKS_PROMPT = `You map workout exercise entries to the user's strength "standards" (reference groups).
+
+Return ONLY valid JSON — no markdown, no code fences, no extra text.
+
+Format:
+{"links":[{"sourceExerciseId":"<exact id from input>","standardId":<number>}]}
+
+Rules:
+- sourceExerciseId must be copied EXACTLY from the candidates list (character-for-character)
+- standardId must be one of the ids from the standards list
+- Only include links you are reasonably confident about; omit uncertain exercises
+- If nothing matches well, return {"links":[]}
+- Do not invent ids or numbers that were not in the input`
+
 export class YandexAiService {
   /**
    * Проверяет, включена ли функция AI-тренировок.
@@ -258,6 +272,55 @@ Rules:
   }
 
   /**
+   * Силовой журнал: предложить связи exerciseId → standardId (ids только из переданных списков).
+   */
+  static async suggestStrengthLogStandardLinks(
+    standards: Array<{ id: number; displayLabel: string }>,
+    candidates: Array<{ exerciseId: string; exerciseName: string }>
+  ): Promise<Array<{ sourceExerciseId: string; standardId: number }>> {
+    const apiKey = env.get('YANDEX_CLOUD_API_KEY')!
+    const folderId = env.get('YANDEX_FOLDER_ID')!
+
+    const payload = {
+      standards: standards.map((s) => ({ id: s.id, displayLabel: s.displayLabel })),
+      candidates: candidates.map((c) => ({ exerciseId: c.exerciseId, exerciseName: c.exerciseName })),
+    }
+
+    const raw = await this.callGpt(
+      folderId,
+      SUGGEST_STANDARD_LINKS_PROMPT,
+      JSON.stringify(payload),
+      0.1,
+      apiKey,
+      env.get('YANDEX_GPT_PARSE_MODEL', 'yandexgpt'),
+      4096
+    )
+
+    const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    let parsed: { links?: unknown }
+    try {
+      parsed = JSON.parse(cleaned) as { links?: unknown }
+    } catch {
+      throw new Error('AI вернул некорректный JSON для связей с эталонами')
+    }
+
+    const linksRaw = Array.isArray(parsed.links) ? parsed.links : []
+    const out: Array<{ sourceExerciseId: string; standardId: number }> = []
+
+    for (const item of linksRaw) {
+      if (item == null || typeof item !== 'object') continue
+      const rec = item as Record<string, unknown>
+      const sid = rec.sourceExerciseId != null ? String(rec.sourceExerciseId).trim() : ''
+      const std = rec.standardId
+      const stdNum = typeof std === 'number' ? std : Number(std)
+      if (!sid || !Number.isFinite(stdNum)) continue
+      out.push({ sourceExerciseId: sid, standardId: stdNum })
+    }
+
+    return out
+  }
+
+  /**
    * AI-чат — фитнес-советник для атлетов и тренеров.
    * messages — история диалога: [{ role: 'user'|'assistant', content: string }]
    * Возвращает текст ответа ассистента.
@@ -393,7 +456,8 @@ Rules:
     input: string,
     temperature: number,
     apiKey: string,
-    modelOverride?: string
+    modelOverride?: string,
+    maxTokens = 2000
   ): Promise<string> {
     const model = modelOverride ?? env.get('YANDEX_GPT_MODEL', 'yandexgpt-lite')
     const response = await fetch(YANDEX_GPT_URL, {
@@ -411,7 +475,7 @@ Rules:
           { role: 'user', content: input },
         ],
         temperature,
-        max_tokens: 2000,
+        max_tokens: maxTokens,
       }),
     })
 

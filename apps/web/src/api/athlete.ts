@@ -44,6 +44,13 @@ export interface ExerciseStandardAliasDTO {
   standardId: number;
 }
 
+export interface StandardLinkSuggestionDTO {
+  sourceExerciseId: string;
+  standardId: number;
+  exerciseName: string;
+  standardLabel: string;
+}
+
 export interface StrengthLogPayload {
   entries: StrengthLogEntry[];
   pinnedExerciseIds: string[];
@@ -53,6 +60,8 @@ export interface StrengthLogPayload {
   weightedExerciseOptions: WeightedExerciseOption[];
   standards: ExerciseStandardDTO[];
   aliases: ExerciseStandardAliasDTO[];
+  /** Макс. несвязанных упражнений в одном платном запросе ИИ к эталонам */
+  aiStandardLinkSuggestMaxCandidates: number;
 }
 
 export interface AthleteGroup {
@@ -153,4 +162,27 @@ export const athleteApi = {
     privateApi.delete<{ success: boolean }>('/progression/exercise-standard-aliases', {
       data: { sourceExerciseId },
     }),
+
+  postAiSuggestStandardLinks: () =>
+    privateApi.post<{
+      success: boolean;
+      data?: { suggestions: StandardLinkSuggestionDTO[]; balance: number };
+      message?: string;
+      balance?: number;
+      required?: number;
+    }>('/progression/ai-suggest-standard-links'),
+
+  postApplyStandardAliasBatch: (
+    links: Array<{ sourceExerciseId: string; standardId: number }>,
+  ) =>
+    privateApi.post<{
+      success: boolean;
+      data?: { revertId: number; applied: number };
+      message?: string;
+    }>('/progression/apply-standard-alias-batch', { links }),
+
+  postRevertStandardAliasBatch: (revertId: number) =>
+    privateApi.post<{ success: boolean; message?: string }>(
+      `/progression/revert-standard-alias-batch/${revertId}`,
+    ),
 };
