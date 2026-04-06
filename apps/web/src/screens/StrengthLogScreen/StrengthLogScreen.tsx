@@ -141,9 +141,27 @@ function DashboardMetricBlock({ m }: { m: StrengthLogDashboardMetric }) {
   );
 }
 
+/** День + краткий месяц для узких колонок таблицы (без «февр…» от locale) */
+const MONTH_ABBR_RU = [
+  'янв',
+  'фев',
+  'мар',
+  'апр',
+  'май',
+  'июн',
+  'июл',
+  'авг',
+  'сен',
+  'окт',
+  'ноя',
+  'дек',
+] as const;
+
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
-  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  const day = d.getDate();
+  const mon = MONTH_ABBR_RU[d.getMonth()];
+  return `${day} ${mon}.`;
 }
 
 function StrengthLogChartTooltip({
@@ -333,42 +351,40 @@ function ExerciseCard({
         )
       ) : (
         <div className="w-full overflow-x-auto">
-          <table className="w-full table-fixed border-collapse text-xs">
+          <table
+            className="w-full border-collapse text-xs table-auto"
+            style={{
+              minWidth:
+                sessions.length > 0
+                  ? `max(100%, calc(3.75rem + ${sessions.length} * 4.5rem))`
+                  : undefined,
+            }}
+          >
             <colgroup>
-              <col style={{ width: '3.5rem', maxWidth: '3.5rem' }} />
-              {sessions.map((s) => (
-                <col
-                  key={s.workoutId}
-                  style={{
-                    width:
-                      sessions.length > 0
-                        ? `min(7.5rem, calc((100% - 3.5rem) / ${sessions.length}))`
-                        : undefined,
-                    maxWidth: '7.5rem',
-                  }}
-                />
-              ))}
+              <col style={{ width: '3.75rem' }} />
             </colgroup>
             <thead>
               <tr className="border-b border-(--color_border)">
                 <th
                   scope="col"
-                  className="px-2 py-2 text-left text-(--color_text_muted) font-medium min-w-0"
+                  className="px-2 py-2 text-left text-(--color_text_muted) font-medium min-w-0 max-w-[3.75rem]"
                 >
-                  Подход
+                  <span className="block text-[11px] leading-tight whitespace-normal">Подход</span>
                 </th>
                 {sessions.map((s) => (
                   <th
                     scope="col"
                     key={s.workoutId}
-                    className="px-2 py-2 text-(--color_text_muted) font-medium text-center min-w-0 max-w-[7.5rem]"
+                    className="px-2 py-2 text-(--color_text_muted) font-medium text-center min-w-[4.5rem] max-w-[6.5rem]"
                     title={new Date(s.date).toLocaleDateString('ru-RU', {
                       day: 'numeric',
                       month: 'long',
                       year: 'numeric',
                     })}
                   >
-                    <span className="block truncate">{formatDate(s.date)}</span>
+                    <span className="block text-[11px] leading-tight whitespace-nowrap tabular-nums">
+                      {formatDate(s.date)}
+                    </span>
                   </th>
                 ))}
               </tr>
@@ -376,15 +392,15 @@ function ExerciseCard({
             <tbody>
               {Array.from({ length: maxSets }).map((_, setIdx) => (
                 <tr key={setIdx} className="border-b border-(--color_border)/50 last:border-0">
-                  <td className="px-2 py-2 text-(--color_text_muted) font-medium min-w-0">
-                    {setIdx + 1}
+                  <td className="px-2 py-2 text-(--color_text_muted) font-medium min-w-0 max-w-[3.75rem]">
+                    <span className="block truncate tabular-nums">{setIdx + 1}</span>
                   </td>
                   {sessions.map((s) => {
                     const set = s.sets[setIdx];
                     return (
                       <td
                         key={s.workoutId}
-                        className="px-2 py-2 text-center align-middle min-w-0 max-w-[7.5rem]"
+                        className="px-2 py-2 text-center align-middle min-w-[4.5rem] max-w-[6.5rem]"
                       >
                         {set?.weight && set?.reps ? (
                           <div className="flex flex-col items-center gap-0.5 min-w-0">
@@ -404,11 +420,13 @@ function ExerciseCard({
                 </tr>
               ))}
               <tr className="bg-(--color_bg_card_hover)/30">
-                <td className="px-2 py-2 text-(--color_text_muted) font-medium min-w-0">1RM</td>
+                <td className="px-2 py-2 text-(--color_text_muted) font-medium min-w-0 max-w-[3.75rem]">
+                  <span className="block truncate">1RM</span>
+                </td>
                 {sessions.map((s) => (
                   <td
                     key={s.workoutId}
-                    className="px-2 py-2 text-center min-w-0 max-w-[7.5rem]"
+                    className="px-2 py-2 text-center min-w-[4.5rem] max-w-[6.5rem]"
                   >
                     {s.best1RM !== null ? (
                       <span className="text-(--color_primary_light) font-bold tabular-nums">
@@ -568,7 +586,6 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
 
   const openAiSuggestSheet = () => {
     setAiSuggestOpen(true);
-    void requestAiSuggestLinks();
   };
 
   const applyAiSuggestBatch = async () => {
@@ -899,10 +916,14 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
                   onClick={() => openAiSuggestSheet()}
                   className="w-full py-2 rounded-xl"
                 >
-                  Платная подсказка ИИ: связи с эталонами — {suggestLinksCost}₽ за запрос
+                  ИИ: предложить связи с эталонами
                 </GhostButton>
+                <p className="text-[11px] text-white/30 leading-snug px-0.5">
+                  Стоимость: <span className="text-white/50">{suggestLinksCost}₽</span> — списывается
+                  после отправки
+                </p>
                 <p className="text-[11px] text-(--color_text_muted) leading-snug px-0.5">
-                  В один запрос к ИИ для анализа уходит не более {aiSuggestCap} шт.
+                  В один запрос для анализа уходит не более {aiSuggestCap} шт.
                   {unlinkedTotalCount > aiSuggestCap
                     ? ` Сейчас несвязанных ${unlinkedTotalCount} — в этот запрос попадут первые ${aiSuggestCap} по приоритету сервера (сначала кастомные и нестандартные id).`
                     : ''}
@@ -917,34 +938,48 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
           open={aiSuggestOpen}
           onClose={closeAiSuggestSheet}
           emoji="✨"
-          title="Платная подсказка ИИ"
+          title="Подсказка ИИ для эталонов"
         >
           <div className="space-y-3 pb-4 text-sm">
             <p className="text-xs text-(--color_text_muted) leading-relaxed">
-              <span className="text-white/90">Платная услуга:</span> с баланса списывается{' '}
-              {suggestLinksCost}₽ за один запрос к ИИ — в момент отправки (когда ниже идёт загрузка). В
-              запрос попадает не более {aiSuggestCap} несвязанных упражнений из истории. ИИ сопоставляет
-              их с эталонами — проверьте каждую строку и
-              снимите галочки с сомнительных. После применения выбранных связей можно откатить весь пакет
-              одной кнопкой в уведомлении.
+              ИИ сопоставляет названия из вашей истории с уже созданными эталонами. Проверьте каждую
+              строку и снимите галочки с сомнительных — модель может ошибаться. После применения можно
+              откатить весь пакет одной кнопкой в уведомлении.
             </p>
+            <p className="text-[11px] text-white/30 text-center">
+              Стоимость: <span className="text-white/50">{suggestLinksCost}₽</span> — списывается после
+              отправки
+            </p>
+            <p className="text-[11px] text-(--color_text_muted) text-center">
+              В один запрос для анализа уходит не более {aiSuggestCap} шт.
+            </p>
+
+            {aiSuggestPhase === 'idle' && (
+              <GhostButton
+                variant="accent-soft"
+                type="button"
+                disabled={balance !== null && balance < suggestLinksCost}
+                className="w-full py-2.5"
+                onClick={() => void requestAiSuggestLinks()}
+              >
+                Запросить подсказки {suggestLinksCost}₽
+              </GhostButton>
+            )}
             {aiSuggestPhase === 'loading' && (
-              <p className="text-(--color_text_muted) py-6 text-center">
-                Списываем {suggestLinksCost}₽ и запрашиваем ИИ…
-              </p>
+              <p className="text-(--color_text_muted) py-6 text-center">Запрос к ИИ…</p>
             )}
             {aiSuggestPhase === 'error' && aiSuggestError && (
               <div className="space-y-3">
                 <p className="text-rose-300 text-sm">{aiSuggestError}</p>
                 <GhostButton variant="accent-soft" type="button" onClick={() => void requestAiSuggestLinks()}>
-                  Повторить ({suggestLinksCost}₽)
+                  Повторить {suggestLinksCost}₽
                 </GhostButton>
               </div>
             )}
             {aiSuggestPhase === 'ready' && aiSuggestItems.length === 0 && (
               <p className="text-(--color_text_muted) text-sm leading-relaxed">
-                Уверенных совпадений не нашлось — плата за этот запрос ({suggestLinksCost}₽) уже списана.
-                Связать вручную можно через звёздочку на карточке упражнения.
+                Уверенных совпадений не нашлось. Связать вручную можно через звёздочку на карточке
+                упражнения.
               </p>
             )}
             {aiSuggestPhase === 'ready' && aiSuggestItems.length > 0 && (
