@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import WorkoutDateTimeRow from '@/components/WorkoutDateTimeRow';
@@ -19,7 +19,31 @@ import { getZoneLabel } from '@/util/zones';
 import toast from 'react-hot-toast';
 import GhostButton from '@/components/ui/GhostButton';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
-import { PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
+import { restrictToVerticalAxis } from '@/lib/workoutListDnd';
+import { exerciseWithSetsToWorkoutExercise } from '@/util/workoutExerciseConversions';
+import { InsertStartRow } from '@/components/workoutExerciseShared/WorkoutExerciseInsertControls';
+import { WorkoutExerciseBetweenRow } from '@/components/workoutExerciseShared/WorkoutExerciseBetweenRow';
+import {
+  DndContext,
+  closestCorners,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import ExerciseDrawer from '@/screens/WorkoutForm/ExerciseDrawer';
 import type { ExerciseWithSets } from '@/types/Exercise';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
@@ -126,7 +150,13 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 /* ─── Карточка упражнения ─────────────────────────────────────────── */
 
 function ExerciseCard({
-  ex, exerciseName, number, isEditing, onEditClick, onDelete,
+  ex,
+  exerciseName,
+  number,
+  isEditing,
+  onEditClick,
+  onDelete,
+  dragHandle,
 }: {
   ex: FullWorkout['exercises'][number];
   exerciseName: string;
@@ -134,6 +164,8 @@ function ExerciseCard({
   isEditing: boolean;
   onEditClick?: () => void;
   onDelete?: () => void;
+  /** Ручка сортировки (только в режиме редактирования в sheet). */
+  dragHandle?: ReactNode;
 }) {
   const isInSuperset = !!ex.blockId;
   const isWod = ex.type === 'wod';
@@ -144,6 +176,7 @@ function ExerciseCard({
     <div className={`relative rounded-xl p-3 border space-y-2 ${isInSuperset ? 'bg-amber-500/10 border-amber-500/40' : 'bg-(--color_bg_card) border-(--color_border)'}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
+          {dragHandle}
           <span className="text-[11px] font-bold tabular-nums w-5 h-5 rounded-md flex items-center justify-center shrink-0 bg-white/8 border border-white/12 text-white/50">{number}</span>
 <span className="text-sm font-semibold text-white leading-tight truncate">{exerciseName}</span>
         </div>
@@ -216,6 +249,76 @@ function ExerciseCard({
   );
 }
 
+/** Одна строка в режиме редактирования: карточка + суперсет между (как в WorkoutExercisesEditor). */
+function SortableEditExerciseBlock({
+  id,
+  index,
+  ex,
+  exerciseName,
+  isLast,
+  isLinkedToNext,
+  showSuperset,
+  onEditClick,
+  onDelete,
+  onToggleSuperset,
+  onInsertAfter,
+}: {
+  id: string;
+  index: number;
+  ex: FullWorkout['exercises'][number];
+  exerciseName: string;
+  isLast: boolean;
+  isLinkedToNext: boolean;
+  showSuperset: boolean;
+  onEditClick: () => void;
+  onDelete: () => void;
+  onToggleSuperset: () => void;
+  onInsertAfter: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+  const style = {
+    transform: transform ? CSS.Transform.toString({ ...transform, x: 0 }) : undefined,
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className={`relative min-w-0 ${isDragging ? 'z-30' : ''}`}>
+      <div className={isDragging ? 'opacity-95' : undefined}>
+        <ExerciseCard
+          ex={ex}
+          exerciseName={exerciseName}
+          number={index + 1}
+          isEditing
+          onEditClick={onEditClick}
+          onDelete={onDelete}
+          dragHandle={
+            <button
+              ref={setActivatorNodeRef}
+              type="button"
+              className="shrink-0 p-0.5 rounded text-white/35 hover:text-white/60 cursor-grab active:cursor-grabbing touch-none select-none"
+              title="Перетащить"
+              {...listeners}
+              {...attributes}
+            >
+              <Bars3Icon className="w-4 h-4" />
+            </button>
+          }
+        />
+      </div>
+      {!isLast && (
+        <WorkoutExerciseBetweenRow
+          showSuperset={showSuperset}
+          hideSupersetWhileDragging={isDragging}
+          isLinkedToNext={isLinkedToNext}
+          onToggleSuperset={onToggleSuperset}
+          onInsertBetween={onInsertAfter}
+        />
+      )}
+    </div>
+  );
+}
+
 function ZonesSection({ zonesLoad }: { zonesLoad: Record<string, number> }) {
   // Merge zones with the same label (e.g. 'back' and 'backMuscles' both → 'Спина')
   const merged: Record<string, number> = {};
@@ -256,7 +359,11 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
 
   const [isEditing, setIsEditing] = useState(false);
   const [editExercises, setEditExercises] = useState<FullWorkout['exercises']>([]);
+  /** Стабильные id для @dnd-kit/sortable в режиме редактирования. */
+  const [editSortIds, setEditSortIds] = useState<string[]>([]);
   const [editingExIdx, setEditingExIdx] = useState<number | null>(null);
+  /** Индекс вставки нового упражнения из каталога (0 — в начало). */
+  const [insertAt, setInsertAt] = useState<number | null>(null);
   const [editDate, setEditDate] = useState<Date>(today);
   const [editTime, setEditTime] = useState<Date>(nowRoundedToHour);
   const [rpe, setRpe] = useState<number | null>(null);
@@ -266,6 +373,12 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
   const [isParsing, setIsParsing] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [notesHidden, setNotesHidden] = useState(false);
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
   const [parsePreview, setParsePreview] = useState<{
     workoutType: 'crossfit' | 'bodybuilding' | 'cardio';
     previewItems: Array<{ exerciseId: string; name: string; sets: number; reps?: number; weight?: number; weightMax?: number }>;
@@ -292,6 +405,14 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [workout?.id]);
+
+  useLayoutEffect(() => {
+    if (!isEditing) return;
+    setEditSortIds((prev) => {
+      if (prev.length === editExercises.length) return prev;
+      return editExercises.map(() => crypto.randomUUID());
+    });
+  }, [isEditing, editExercises.length]);
 
   useEffect(() => {
     profileApi.getMeasurements('body_weight', 1)
@@ -339,6 +460,8 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
       const res = await workoutsApi.update(fullWorkout.id, buildUpdatePayload({ exercises: editExercises }));
       const updated = res.data as FullWorkout;
       setFullWorkout(updated);
+      setEditSortIds([]);
+      setInsertAt(null);
       setIsEditing(false);
       onRefresh?.();
       onUpdate?.(fullWorkout.id, updated.totalIntensity);
@@ -354,7 +477,57 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
     if (fullWorkout) {
       setEditExercises(fullWorkout.exercises.map((ex) => ({ ...ex, sets: (ex.sets ?? []).map((s) => ({ ...s })) })));
     }
+    setEditSortIds([]);
+    setInsertAt(null);
     setIsEditing(false);
+  };
+
+  const handleInsertPicked = (picked: ExerciseWithSets) => {
+    if (insertAt === null || !fullWorkout) return;
+    const wt = (
+      fullWorkout.workoutType === 'crossfit' || fullWorkout.workoutType === 'cardio'
+        ? fullWorkout.workoutType
+        : 'bodybuilding'
+    ) as WorkoutType;
+    const newEx = exerciseWithSetsToWorkoutExercise(picked, wt) as FullWorkout['exercises'][number];
+    setEditExercises((prev) => {
+      const next = [...prev];
+      next.splice(insertAt, 0, newEx);
+      return next;
+    });
+    setEditSortIds((prev) => {
+      const next = [...prev];
+      next.splice(insertAt, 0, crypto.randomUUID());
+      return next;
+    });
+    setExerciseMap((prev) => {
+      const next = new Map(prev);
+      next.set(String(picked.exerciseId), { id: String(picked.exerciseId), title: picked.title } as Exercise);
+      return next;
+    });
+    setInsertAt(null);
+  };
+
+  const handleEditDragStart = (_event: DragStartEvent) => {
+    setEditingExIdx(null);
+    setInsertAt(null);
+  };
+
+  const handleEditDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = editSortIds.indexOf(String(active.id));
+    const newIndex = editSortIds.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    setEditSortIds((ids) => arrayMove(ids, oldIndex, newIndex));
+    setEditExercises((prev) => {
+      const splitBlockId = prev[oldIndex]?.blockId;
+      const reordered = arrayMove(prev, oldIndex, newIndex);
+      if (!splitBlockId) return reordered;
+      return reordered.map((e) =>
+        e.blockId === splitBlockId ? { ...e, blockId: undefined } : e
+      );
+    });
   };
 
   const handleParseNotes = async () => {
@@ -593,65 +766,96 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
             <div>
               <SectionTitle>Упражнения · {fullWorkout.exercises.length}</SectionTitle>
               <div className="flex flex-col">
-                {(isEditing ? editExercises : fullWorkout.exercises).map((ex, i, arr) => {
-                  const name = ex.name ?? exerciseMap.get(ex.exerciseId)?.title ?? exerciseIdToLabel(ex.exerciseId);
-                  const isLinkedToNext = i < arr.length - 1 && !!ex.blockId && ex.blockId === arr[i + 1].blockId;
-                  const isLast = i === arr.length - 1;
-                  return (
-                    <div key={i}>
-                      <ExerciseCard
-                        ex={ex}
-                        exerciseName={name}
-                        number={i + 1}
-                        isEditing={isEditing}
-                        onEditClick={() => setEditingExIdx(i)}
-                        onDelete={isEditing ? () => setEditExercises((prev) => prev.filter((_, idx) => idx !== i)) : undefined}
-                      />
-                      {/* Между упражнениями в просмотре */}
-                      {!isEditing && !isLast && (
-                        isLinkedToNext ? (
-                          /* Суперсет: маленький коннектор */
-                          <div className="relative flex items-center h-5 pl-4">
-                            <div className="absolute left-[18px] top-0 bottom-0 w-0.5 bg-amber-500/50" />
-                            <span className="ml-7 text-[10px] text-amber-400/60 font-medium">суперсет</span>
-                          </div>
-                        ) : (
-                          /* Обычный разделитель */
-                          <div className="my-3 border-t border-(--color_border)" />
-                        )
-                      )}
-                      {/* Кнопка суперсета — только в режиме редактирования */}
-                      {isEditing && !isLast && (
-                        <div className="relative flex items-center h-7 pl-4">
-                          {isLinkedToNext && <div className="absolute left-[18px] top-0 bottom-0 w-0.5 bg-amber-500/60" />}
-                          <button
-                            onClick={() => {
-                              setEditExercises((prev) => {
-                                const next = prev.map((e) => ({ ...e }));
-                                const a = next[i], b = next[i + 1];
-                                if (a.blockId && a.blockId === b.blockId) {
-                                  const bid = a.blockId;
-                                  for (let j = i + 1; j < next.length; j++) {
-                                    if (next[j].blockId === bid) delete next[j].blockId; else break;
-                                  }
-                                  delete a.blockId;
-                                } else {
-                                  const id = a.blockId ?? crypto.randomUUID();
-                                  a.blockId = id; b.blockId = id;
-                                }
-                                return next;
-                              });
-                            }}
-                            className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-md transition-colors ${isLinkedToNext ? 'text-amber-400 bg-amber-500/10' : 'text-white/35 hover:text-amber-400 hover:bg-amber-500/10'}`}
-                          >
-                            <span>⚡</span>
-                            <span>{isLinkedToNext ? 'суперсет' : 'суперсет?'}</span>
-                          </button>
+                {!isEditing
+                  ? fullWorkout.exercises.map((ex, i, arr) => {
+                      const name =
+                        ex.name ?? exerciseMap.get(ex.exerciseId)?.title ?? exerciseIdToLabel(ex.exerciseId);
+                      const isLinkedToNext =
+                        i < arr.length - 1 && !!ex.blockId && ex.blockId === arr[i + 1].blockId;
+                      const isLast = i === arr.length - 1;
+                      return (
+                        <div key={i}>
+                          <ExerciseCard
+                            ex={ex}
+                            exerciseName={name}
+                            number={i + 1}
+                            isEditing={false}
+                          />
+                          {!isLast &&
+                            (isLinkedToNext ? (
+                              <div className="relative flex items-center h-5 pl-4">
+                                <div className="absolute left-[18px] top-0 bottom-0 w-0.5 bg-amber-500/50" />
+                                <span className="ml-7 text-[10px] text-amber-400/60 font-medium">суперсет</span>
+                              </div>
+                            ) : (
+                              <div className="my-3 border-t border-(--color_border)" />
+                            ))}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      );
+                    })
+                  : editSortIds.length === editExercises.length && (
+                      <DndContext
+                        sensors={dndSensors}
+                        collisionDetection={closestCorners}
+                        modifiers={[restrictToVerticalAxis]}
+                        onDragStart={handleEditDragStart}
+                        onDragEnd={handleEditDragEnd}
+                      >
+                        <InsertStartRow onClick={() => { setEditingExIdx(null); setInsertAt(0); }} />
+                        <SortableContext items={editSortIds} strategy={verticalListSortingStrategy}>
+                          {editExercises.map((ex, i, arr) => {
+                            const name =
+                              ex.name ??
+                              exerciseMap.get(ex.exerciseId)?.title ??
+                              exerciseIdToLabel(ex.exerciseId);
+                            const isLinkedToNext =
+                              i < arr.length - 1 && !!ex.blockId && ex.blockId === arr[i + 1].blockId;
+                            const isLast = i === arr.length - 1;
+                            return (
+                              <SortableEditExerciseBlock
+                                key={editSortIds[i]}
+                                id={editSortIds[i]}
+                                index={i}
+                                ex={ex}
+                                exerciseName={name}
+                                isLast={isLast}
+                                isLinkedToNext={isLinkedToNext}
+                                showSuperset={fullWorkout.workoutType !== 'crossfit'}
+                                onEditClick={() => setEditingExIdx(i)}
+                                onDelete={() =>
+                                  setEditExercises((prev) => prev.filter((_, idx) => idx !== i))
+                                }
+                                onInsertAfter={() => {
+                                  setEditingExIdx(null);
+                                  setInsertAt(i + 1);
+                                }}
+                                onToggleSuperset={() => {
+                                  setEditExercises((prev) => {
+                                    const next = prev.map((e) => ({ ...e }));
+                                    const a = next[i];
+                                    const b = next[i + 1];
+                                    if (!a || !b) return prev;
+                                    if (a.blockId && a.blockId === b.blockId) {
+                                      const bid = a.blockId;
+                                      for (let j = i + 1; j < next.length; j++) {
+                                        if (next[j].blockId === bid) delete next[j].blockId;
+                                        else break;
+                                      }
+                                      delete a.blockId;
+                                    } else {
+                                      const id = a.blockId ?? crypto.randomUUID();
+                                      a.blockId = id;
+                                      b.blockId = id;
+                                    }
+                                    return next;
+                                  });
+                                }}
+                              />
+                            );
+                          })}
+                        </SortableContext>
+                      </DndContext>
+                    )}
               </div>
             </div>
           )}
@@ -769,6 +973,15 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
           onSave={handleExerciseDrawerSave}
           profileWeight={profileWeight}
           allowReplace
+        />
+      )}
+
+      {insertAt !== null && fullWorkout && (
+        <ExercisePicker
+          open={true}
+          onClose={() => setInsertAt(null)}
+          onSelect={handleInsertPicked}
+          workoutType={fullWorkout.workoutType}
         />
       )}
 

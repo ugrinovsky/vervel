@@ -3,6 +3,7 @@
  * Used by WorkoutInlineForm (scheduling) and TrainerTemplatesScreen (templates).
  *
  * Single-exercise params are rendered via ExerciseParamsEditor (shared with ExerciseDrawer).
+ * Reorder: @dnd-kit/sortable. Важно: только sortable-элементы в SortableContext — разделители внутри той же обёртки с ref.
  */
 import ExerciseParamsEditor from '@/components/ExerciseParamsEditor/ExerciseParamsEditor';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
@@ -10,21 +11,39 @@ import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
 import type { ExerciseData } from '@/api/trainer';
 import type { ExerciseWithSets } from '@/types/Exercise';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
-import { useState } from 'react';
-import { ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
+import { useLayoutEffect, useState } from 'react';
+import { ArrowsRightLeftIcon, Bars3Icon } from '@heroicons/react/24/outline';
+import {
+  DndContext,
+  closestCorners,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { restrictToVerticalAxis } from '@/lib/workoutListDnd';
+import { exerciseWithSetsToExerciseData } from '@/util/workoutExerciseConversions';
+import { InsertStartRow } from '@/components/workoutExerciseShared/WorkoutExerciseInsertControls';
+import { WorkoutExerciseBetweenRow } from '@/components/workoutExerciseShared/WorkoutExerciseBetweenRow';
 
 interface Props {
   workoutType: WorkoutType;
   exercises: ExerciseData[];
   onChange: (exercises: ExerciseData[]) => void;
-  /** Show superset link buttons between exercises (bodybuilding only). Default: true */
   superset?: boolean;
-  /** Extra content above the exercise list (e.g. AI tools) */
   toolbar?: React.ReactNode;
   profileWeight?: number;
 }
-
-// ── Normalisation helpers (exported for type-switch handlers) ──────────
 
 export function normalizeExerciseForType(type: WorkoutType, ex: ExerciseData): ExerciseData {
   if (type === 'cardio') return ex;
@@ -32,7 +51,6 @@ export function normalizeExerciseForType(type: WorkoutType, ex: ExerciseData): E
     const { setsDetail: _s, sets: _c, blockId: _b, ...rest } = ex;
     return { ...rest, reps: ex.reps ?? ex.setsDetail?.[0]?.reps ?? 10 };
   }
-  // bodybuilding
   if (ex.duration != null) return ex;
   return {
     ...ex,
@@ -46,7 +64,140 @@ export function normalizeExercisesForType(type: WorkoutType, exs: ExerciseData[]
   return exs.map((ex) => normalizeExerciseForType(type, ex));
 }
 
-// ── Component ─────────────────────────────────────────────────────────
+function SortableExerciseCard({
+  id,
+  index,
+  ex,
+  isInBlock,
+  workoutType,
+  profileWeight,
+  isLast,
+  showBetweenRow,
+  showSupersetInBetween,
+  isLinkedToNext,
+  onToggleSuperset,
+  onInsertBetween,
+  onUpdate,
+  onAddSet,
+  onRemoveSet,
+  onDupSet,
+  onUpdateSet,
+  onReplace,
+  onRemove,
+}: {
+  id: string;
+  index: number;
+  ex: ExerciseData;
+  isInBlock: boolean;
+  workoutType: WorkoutType;
+  profileWeight?: number;
+  isLast: boolean;
+  showBetweenRow: boolean;
+  showSupersetInBetween: boolean;
+  isLinkedToNext: boolean;
+  onToggleSuperset: () => void;
+  onInsertBetween: () => void;
+  onUpdate: (patch: Partial<ExerciseData>) => void;
+  onAddSet: () => void;
+  onRemoveSet: (si: number) => void;
+  onDupSet: (si: number) => void;
+  onUpdateSet: (si: number, field: 'reps' | 'weight', raw: string) => void;
+  onReplace: () => void;
+  onRemove: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
+    useSortable({ id });
+  const style = {
+    transform: transform ? CSS.Transform.toString({ ...transform, x: 0 }) : undefined,
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`relative min-w-0 ${isDragging ? 'z-30' : ''}`}
+    >
+      <div
+        className={`rounded-xl min-w-0 border transition-colors ${
+          isDragging ? 'opacity-90 shadow-lg ring-1 ring-white/25' : ''
+        } ${isInBlock ? 'bg-amber-500/10 border-amber-500/40' : 'bg-white/[0.07] border-white/10'}`}
+      >
+        <div className="p-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              ref={setActivatorNodeRef}
+              type="button"
+              className="shrink-0 p-0.5 rounded text-white/35 hover:text-white/60 cursor-grab active:cursor-grabbing touch-none select-none"
+              title="Перетащить"
+              {...listeners}
+              {...attributes}
+            >
+              <Bars3Icon className="w-4 h-4" />
+            </button>
+            <span className="shrink-0 text-[10px] font-mono text-white/30 w-4 text-right tabular-nums">
+              {String(index + 1).padStart(2, '0')}
+            </span>
+            <p className="flex-1 text-sm font-medium text-white leading-snug min-w-0 truncate">{ex.name}</p>
+            <button
+              type="button"
+              onClick={onReplace}
+              className="text-white/30 hover:text-emerald-400 transition-colors shrink-0"
+              title="Заменить упражнение"
+            >
+              <ArrowsRightLeftIcon className="w-4 h-4" />
+            </button>
+            <ConfirmDeleteButton
+              icon="x"
+              variant="overlay"
+              onConfirm={onRemove}
+              className="shrink-0"
+            />
+          </div>
+
+          <div className="mt-2">
+            <ExerciseParamsEditor
+              workoutType={workoutType}
+              duration={ex.duration}
+              reps={ex.reps}
+              weight={ex.weight}
+              distance={ex.distance}
+              wodType={ex.wodType}
+              timeCap={ex.timeCap}
+              rounds={ex.rounds}
+              setsDetail={ex.setsDetail}
+              bodyweight={ex.bodyweight}
+              profileWeight={profileWeight}
+              onPatch={(patch) => onUpdate(patch as Partial<ExerciseData>)}
+              onAddSet={onAddSet}
+              onRemoveSet={onRemoveSet}
+              onDupSet={onDupSet}
+              onUpdateSet={onUpdateSet}
+            />
+          </div>
+
+          <textarea
+            value={ex.notes ?? ''}
+            onChange={(e) => onUpdate({ notes: e.target.value })}
+            placeholder="Комментарий тренера: техника, темп..."
+            rows={2}
+            className="mt-2 w-full text-xs bg-black/20 border border-white/10 rounded-lg px-2.5 py-1.5 text-white/70 placeholder:text-white/25 outline-none focus:border-white/30 resize-none transition-colors leading-relaxed"
+          />
+        </div>
+      </div>
+
+      {showBetweenRow && !isLast && (
+        <WorkoutExerciseBetweenRow
+          showSuperset={showSupersetInBetween}
+          hideSupersetWhileDragging={isDragging}
+          isLinkedToNext={isLinkedToNext}
+          onToggleSuperset={onToggleSuperset}
+          onInsertBetween={onInsertBetween}
+        />
+      )}
+    </div>
+  );
+}
 
 export default function WorkoutExercisesEditor({
   workoutType,
@@ -57,6 +208,49 @@ export default function WorkoutExercisesEditor({
   profileWeight,
 }: Props) {
   const [replacingIdx, setReplacingIdx] = useState<number | null>(null);
+  const [insertAt, setInsertAt] = useState<number | null>(null);
+  const [sortIds, setSortIds] = useState<string[]>([]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 6 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  useLayoutEffect(() => {
+    if (exercises.length === 0) {
+      setSortIds([]);
+      return;
+    }
+    setSortIds((prev) => {
+      if (prev.length === exercises.length) return prev;
+      return exercises.map(() => crypto.randomUUID());
+    });
+  }, [exercises.length]);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = sortIds.indexOf(String(active.id));
+    const newIndex = sortIds.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    setSortIds(arrayMove(sortIds, oldIndex, newIndex));
+    const splitBlockId = exercises[oldIndex]?.blockId;
+    const reordered = arrayMove(exercises, oldIndex, newIndex);
+    onChange(
+      splitBlockId
+        ? reordered.map((ex) =>
+            ex.blockId === splitBlockId ? { ...ex, blockId: undefined } : ex
+          )
+        : reordered
+    );
+  };
 
   const handleReplace = (ex: ExerciseWithSets) => {
     if (replacingIdx === null) return;
@@ -69,18 +263,27 @@ export default function WorkoutExercisesEditor({
     setReplacingIdx(null);
   };
 
-  // ── Helpers ─────────────────────────────────────────────────────────
+  const handleInsertPicked = (ex: ExerciseWithSets) => {
+    if (insertAt === null) return;
+    const data = exerciseWithSetsToExerciseData(ex, workoutType);
+    const next = [...exercises];
+    next.splice(insertAt, 0, data);
+    onChange(next);
+    setInsertAt(null);
+  };
 
   const update = (index: number, patch: Partial<ExerciseData>) => {
     if ('bodyweight' in patch && patch.bodyweight && profileWeight) {
-      onChange(exercises.map((ex, i) => {
-        if (i !== index) return ex;
-        return {
-          ...ex,
-          ...patch,
-          setsDetail: (ex.setsDetail ?? []).map((s) => ({ ...s, weight: s.weight ?? profileWeight })),
-        };
-      }));
+      onChange(
+        exercises.map((ex, i) => {
+          if (i !== index) return ex;
+          return {
+            ...ex,
+            ...patch,
+            setsDetail: (ex.setsDetail ?? []).map((s) => ({ ...s, weight: s.weight ?? profileWeight })),
+          };
+        })
+      );
     } else {
       onChange(exercises.map((ex, i) => (i === index ? { ...ex, ...patch } : ex)));
     }
@@ -129,7 +332,10 @@ export default function WorkoutExercisesEditor({
         if (i !== exIdx || ex.duration != null) return ex;
         const detail = [...(ex.setsDetail ?? [])];
         const val = field === 'weight' ? parseFloat(raw) : parseInt(raw, 10);
-        detail[setIdx] = { ...detail[setIdx], [field]: raw === '' || isNaN(val) ? undefined : val };
+        detail[setIdx] = {
+          ...detail[setIdx],
+          [field]: raw === '' || isNaN(val) ? undefined : val,
+        };
         return { ...ex, setsDetail: detail };
       })
     );
@@ -155,27 +361,11 @@ export default function WorkoutExercisesEditor({
   };
 
   const handleExercisePicked = (ex: ExerciseWithSets) => {
-    let data: ExerciseData;
-    if (workoutType === 'cardio') {
-      data = { exerciseId: String(ex.exerciseId), name: ex.title, duration: ex.duration ?? 20 };
-    } else if (workoutType === 'crossfit') {
-      data = { exerciseId: String(ex.exerciseId), name: ex.title, reps: ex.sets?.[0]?.reps ?? 10 };
-    } else {
-      const setsDetail = ex.sets?.length
-        ? ex.sets.map((s) => ({ reps: s.reps, weight: s.weight || undefined }))
-        : [{ reps: 10 }, { reps: 10 }, { reps: 10 }];
-      data = {
-        exerciseId: String(ex.exerciseId),
-        name: ex.title,
-        sets: setsDetail.length,
-        reps: setsDetail[0]?.reps ?? 10,
-        setsDetail,
-      };
-    }
+    const data = exerciseWithSetsToExerciseData(ex, workoutType);
     onChange([...exercises, data]);
   };
 
-  /* ─── Render ─────────────────────────────────────────────────────── */
+  const listReady = exercises.length > 0 && sortIds.length === exercises.length;
 
   return (
     <div>
@@ -183,109 +373,54 @@ export default function WorkoutExercisesEditor({
 
       {exercises.length > 0 && (
         <div className={toolbar ? 'mt-3' : ''}>
-          {exercises.map((ex, i) => {
-            const isInBlock = !!ex.blockId;
-            const isLast = i === exercises.length - 1;
-            const isLinkedToNext =
-              superset &&
-              workoutType !== 'crossfit' &&
-              !isLast &&
-              ex.blockId != null &&
-              ex.blockId === exercises[i + 1].blockId;
+          {listReady ? (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCorners}
+              modifiers={[restrictToVerticalAxis]}
+              onDragEnd={handleDragEnd}
+            >
+              <InsertStartRow onClick={() => setInsertAt(0)} />
+              <SortableContext items={sortIds} strategy={verticalListSortingStrategy}>
+                {exercises.map((ex, i) => {
+                  const isInBlock = !!ex.blockId;
+                  const isLast = i === exercises.length - 1;
+                  const isLinkedToNext =
+                    superset &&
+                    workoutType !== 'crossfit' &&
+                    !isLast &&
+                    ex.blockId != null &&
+                    ex.blockId === exercises[i + 1].blockId;
+                  const showSupersetBetween = superset && workoutType !== 'crossfit';
 
-            return (
-              <div key={i}>
-                <div
-                  className={`relative p-3 rounded-xl min-w-0 border transition-colors ${
-                    isInBlock
-                      ? 'bg-amber-500/10 border-amber-500/40'
-                      : 'bg-white/[0.07] border-white/10'
-                  }`}
-                >
-                  {/* Index + name + replace + remove */}
-                  <div className="flex items-start gap-2.5 min-w-0">
-                    <span className="shrink-0 mt-0.5 text-[10px] font-mono text-white/30 w-4 text-right leading-snug">
-                      {String(i + 1).padStart(2, '0')}
-                    </span>
-                    <p className="flex-1 text-sm font-medium text-white leading-snug min-w-0 truncate">
-                      {ex.name}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setReplacingIdx(i)}
-                      className="text-white/30 hover:text-emerald-400 transition-colors shrink-0 mt-0.5"
-                      title="Заменить упражнение"
-                    >
-                      <ArrowsRightLeftIcon className="w-4 h-4" />
-                    </button>
-                    <ConfirmDeleteButton
-                      icon="x"
-                      variant="overlay"
-                      onConfirm={() => removeExercise(i)}
-                      className="shrink-0 mt-0.5"
-                    />
-                  </div>
-
-                  {/* Params */}
-                  <div className="mt-2">
-                    <ExerciseParamsEditor
-                      workoutType={workoutType}
-                      duration={ex.duration}
-                      reps={ex.reps}
-                      weight={ex.weight}
-                      distance={ex.distance}
-                      wodType={ex.wodType}
-                      timeCap={ex.timeCap}
-                      rounds={ex.rounds}
-                      setsDetail={ex.setsDetail}
-                      bodyweight={ex.bodyweight}
-                      profileWeight={profileWeight}
-                      onPatch={(patch) => update(i, patch as Partial<ExerciseData>)}
-                      onAddSet={() => addSet(i)}
-                      onRemoveSet={(si) => removeSet(i, si)}
-                      onDupSet={(si) => dupSet(i, si)}
-                      onUpdateSet={(si, field, raw) => updateSet(i, si, field, raw)}
-                    />
-                  </div>
-
-                  {/* Notes textarea */}
-                  <textarea
-                    value={ex.notes ?? ''}
-                    onChange={(e) => update(i, { notes: e.target.value })}
-                    placeholder="Комментарий тренера: техника, темп..."
-                    rows={2}
-                    className="mt-2 w-full text-xs bg-black/20 border border-white/10 rounded-lg px-2.5 py-1.5 text-white/70 placeholder:text-white/25 outline-none focus:border-white/30 resize-none transition-colors leading-relaxed"
-                  />
-                </div>
-
-                {!isLast && (
-                  superset && workoutType !== 'crossfit' ? (
-                    <div className="relative flex items-center h-6 pl-4.5 my-1.5">
-                      {isLinkedToNext && (
-                        <div className="absolute left-4.75 top-0 bottom-0 w-0.5 bg-amber-500/60" />
-                      )}
-                      <div className={`flex-1 ${!isLinkedToNext ? 'border-t border-(--color_border)' : ''}`} />
-                      <button
-                        onClick={() => toggleLink(i)}
-                        className={`relative flex items-center gap-1.5 text-xs font-medium transition-colors px-2 py-0.5 rounded-md ${
-                          isLinkedToNext
-                            ? 'text-amber-400 bg-amber-500/10'
-                            : 'text-white/25 hover:text-amber-400 hover:bg-amber-500/10'
-                        }`}
-                        title={isLinkedToNext ? 'Разъединить суперсет' : 'Связать в суперсет'}
-                      >
-                        <span>⚡</span>
-                        <span>{isLinkedToNext ? 'суперсет' : 'суперсет?'}</span>
-                      </button>
-                      <div className={`flex-1 ${!isLinkedToNext ? 'border-t border-(--color_border)' : ''}`} />
-                    </div>
-                  ) : (
-                    <div className="my-3 border-t border-(--color_border)" />
-                  )
-                )}
-              </div>
-            );
-          })}
+                  return (
+                      <SortableExerciseCard
+                        key={sortIds[i]}
+                        id={sortIds[i]}
+                        index={i}
+                        ex={ex}
+                        isInBlock={isInBlock}
+                        workoutType={workoutType}
+                        profileWeight={profileWeight}
+                        isLast={isLast}
+                        showBetweenRow
+                        showSupersetInBetween={showSupersetBetween}
+                        isLinkedToNext={isLinkedToNext}
+                        onToggleSuperset={() => toggleLink(i)}
+                        onInsertBetween={() => setInsertAt(i + 1)}
+                        onUpdate={(patch) => update(i, patch)}
+                        onAddSet={() => addSet(i)}
+                        onRemoveSet={(si) => removeSet(i, si)}
+                        onDupSet={(si) => dupSet(i, si)}
+                        onUpdateSet={(si, field, raw) => updateSet(i, si, field, raw)}
+                        onReplace={() => setReplacingIdx(i)}
+                        onRemove={() => removeExercise(i)}
+                      />
+                  );
+                })}
+              </SortableContext>
+            </DndContext>
+          ) : null}
         </div>
       )}
 
@@ -296,6 +431,15 @@ export default function WorkoutExercisesEditor({
           open={true}
           onClose={() => setReplacingIdx(null)}
           onSelect={handleReplace}
+          workoutType={workoutType}
+        />
+      )}
+
+      {insertAt !== null && (
+        <ExercisePicker
+          open={true}
+          onClose={() => setInsertAt(null)}
+          onSelect={handleInsertPicked}
           workoutType={workoutType}
         />
       )}

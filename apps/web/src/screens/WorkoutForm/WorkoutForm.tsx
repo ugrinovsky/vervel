@@ -6,43 +6,10 @@ import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import WorkoutFormBase, { type WorkoutFormData } from '@/components/WorkoutFormBase/WorkoutFormBase';
 import { parseLocalDate, toApiDateTime, toDateKey } from '@/utils/date';
-import { workoutsApi, type WorkoutExercise } from '@/api/workouts';
+import { workoutsApi } from '@/api/workouts';
 import { checkForNewAchievements } from '@/hooks/useAchievementToast';
-import type { ExerciseData } from '@/api/trainer';
-import type { WorkoutType } from '@/components/WorkoutTypeTabs';
+import { exerciseDataToWorkoutExercise } from '@/util/workoutExerciseConversions';
 import { useAuth } from '@/contexts/AuthContext';
-
-function toWorkoutExercise(ex: ExerciseData, workoutType: WorkoutType): WorkoutExercise {
-  if (workoutType === 'cardio') {
-    return { exerciseId: ex.exerciseId!, name: ex.name, zones: ex.zones, type: 'cardio', duration: ex.duration };
-  }
-  if (workoutType === 'crossfit') {
-    return {
-      exerciseId: ex.exerciseId!,
-      name: ex.name,
-      zones: ex.zones,
-      type: 'wod',
-      wodType: ex.wodType,
-      timeCap: ex.timeCap,
-      rounds: ex.rounds,
-      bodyweight: ex.bodyweight,
-      sets: [{ id: crypto.randomUUID(), reps: ex.reps ?? 0, weight: ex.bodyweight ? undefined : (ex.weight ?? 0) }],
-    };
-  }
-  return {
-    exerciseId: ex.exerciseId!,
-    name: ex.name,
-    zones: ex.zones,
-    type: 'strength',
-    bodyweight: ex.bodyweight,
-    sets: (ex.setsDetail ?? []).map((s) => ({
-      id: crypto.randomUUID(),
-      reps: s.reps ?? 0,
-      weight: ex.bodyweight ? undefined : (s.weight ?? 0),
-    })),
-    blockId: ex.blockId,
-  };
-}
 
 export default function WorkoutForm() {
   const navigate = useNavigate();
@@ -62,7 +29,7 @@ export default function WorkoutForm() {
       await workoutsApi.create({
         date: toApiDateTime(data.date, data.time),
         workoutType: data.workoutType,
-        exercises: data.exercises.map((ex) => toWorkoutExercise(ex, data.workoutType)),
+        exercises: data.exercises.map((ex) => exerciseDataToWorkoutExercise(ex, data.workoutType)),
         notes: data.notes || undefined,
       });
       toast.success('Тренировка сохранена 💪');
