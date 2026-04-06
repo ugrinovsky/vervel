@@ -35,7 +35,7 @@ export interface AiWorkoutResult {
 
 const ZONES_LIST = MUSCLE_ZONES.map((z) => `"${z}"`).join(',')
 
-// Системный промпт для парсинга текста тренировки в JSON (OCR / изображения)
+// Парсинг текста после OCR с фото (recognizeFromImage). Не путать с PARSE_NOTES_SYSTEM_PROMPT — тот для текста заметок в UI.
 const PARSE_SYSTEM_PROMPT = `You are a fitness assistant. You are given text recognized from a photo of a workout board or sheet. Parse it into strict JSON format.
 
 Requirements:
@@ -60,9 +60,13 @@ Requirements:
 11. For cardio exercises always set duration (in minutes); for strength/crossfit set reps
 12. notes field — write in Russian for user readability
 13. CRITICAL — progressive/varied sets: if the same exercise name is followed by multiple "1×N" or "1×N-M" lines (e.g. "Bench Press / 1×15 / 1×12-10 / 1×10-8 / 1×8-6"), treat them as ONE exercise with setData listing each set. For ranges like "12-10" use the first (higher) number as reps. sets = number of setData entries. Do NOT create a separate exercise for each set line.
-14. setData: for each set provide {reps, weight} — include weight if known, otherwise omit it. Use setData whenever sets have different rep counts or when individual set lines are listed explicitly.`
+14. setData: for each set provide {reps, weight} — include weight if known, otherwise omit it. Use setData whenever sets have different rep counts or when individual set lines are listed explicitly.
+15. SUPERSET / CIRCUIT BLOCK HEADERS (Russian or English): lines like "Суперсет x 3", "Superset x 3", "Табата x 2", "Круговая x 4" are SECTION HEADERS only — not exercises. The number is how many sets each exercise in that block shares. All exercises listed under that header until the next such header share the same supersetGroup ("A", then "B", etc.). Never output the header line as an exercise.
+16. STANDALONE EXERCISE — TITLE LINE THEN ONLY SET LINES: If you see a line that is only a short exercise name (e.g. "Сумо", "Sumo", "Жим лёжа") with NO reps on that same line, and the following non-empty lines are ONLY set prescriptions in the form "NxM", "N×M", "NхM", "NxM-K" (e.g. "1x15" then "3x12-10"), that is ONE separate exercise: use the first line as the exercise name, build setData from every such line. Do NOT skip it. Do NOT attach it to the previous superset. For "3x12-10" expand to 3 setData entries; use the first rep number of the range (12) as reps unless weight is given.
+17. "Сумо" / "Sumo" alone in a strength workout means sumo-stance deadlift: name = "Barbell Sumo Deadlift", displayName = "Становая тяга сумо", zones include legs, glutes, back, core.
+18. "макс", "MAX", "max", "до отказа" as reps (e.g. "Pull-ups - max"): one set; use reps ~12 as a placeholder if needed; do not invent weight.`
 
-// Системный промпт для парсинга заметок тренера
+// Только parseWorkoutNotes (текст заметок из формы). Распознавание с фото → PARSE_SYSTEM_PROMPT + OCR.
 const PARSE_NOTES_SYSTEM_PROMPT = `Разбери текст тренировки в JSON. Верни только JSON, без текста вокруг.
 
 Формат:
@@ -181,7 +185,9 @@ export class YandexAiService {
       PARSE_SYSTEM_PROMPT,
       `Разбери следующий текст тренировки в JSON:\n\n${extractedText}`,
       0.1,
-      apiKey
+      apiKey,
+      undefined,
+      4096
     )
     logger.info({ gptPreview: result.slice(0, 500) }, 'ai:gpt result')
 

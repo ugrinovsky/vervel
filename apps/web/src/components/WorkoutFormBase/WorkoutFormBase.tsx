@@ -210,9 +210,33 @@ export default function WorkoutFormBase({
     setWorkoutType(initialType);
     setNotes(initialNotes);
     setExercises(initialExercises);
-    setDate(initialDate ?? new Date());
+    setDate(initialDate ?? today());
     setTime(initialTime ?? nowRoundedToHour());
     setSelectedTemplateId(null);
+    setAiGenerated(false);
+    setAiPhotoExpanded(false);
+    setAiPhotoUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  };
+
+  const hasFormContent =
+    notes.trim().length > 0 ||
+    exercises.length > 0 ||
+    selectedTemplateId != null ||
+    aiPhotoUrl != null;
+
+  const handleClearForm = () => {
+    if (
+      !window.confirm(
+        'Очистить форму? Все поля и черновик будут сброшены — это нельзя отменить.'
+      )
+    ) {
+      return;
+    }
+    resetToInitial();
+    toast.success('Форма очищена');
   };
 
   // ── Fetch AI costs once on mount ─────────────────────────────────
@@ -594,7 +618,18 @@ export default function WorkoutFormBase({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2 pt-1">
+      <div className="flex flex-col gap-2 pt-1">
+        {hasFormContent && (
+          <GhostButton
+            variant="link"
+            onClick={handleClearForm}
+            disabled={saving}
+            className="text-sm self-start hover:text-white"
+          >
+            Очистить форму
+          </GhostButton>
+        )}
+        <div className="flex gap-2">
         {onCancel && (
           <GhostButton variant="solid" onClick={onCancel} disabled={saving}>
             Отмена
@@ -609,6 +644,7 @@ export default function WorkoutFormBase({
         >
           {submitLabel}
         </AccentButton>
+        </div>
       </div>
     </div>
   );
