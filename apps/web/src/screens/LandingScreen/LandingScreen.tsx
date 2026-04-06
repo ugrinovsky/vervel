@@ -208,7 +208,7 @@ export default function LandingScreen() {
         <motion.div {...fade()} style={{ marginBottom: 44 }}>
           <Tag text="Для атлета" />
           <H2>Все инструменты —<br /><Em>в одном приложении</Em></H2>
-          <Sub>От плана и дневника до аналитики нагрузок и связи с тренером.</Sub>
+          <Sub>От плана и журнала тренировок до аналитики нагрузок и связи с тренером.</Sub>
         </motion.div>
 
         <div className="lnd-two-col">

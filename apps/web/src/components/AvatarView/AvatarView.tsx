@@ -50,16 +50,16 @@ const PHASE_CONFIG: Record<Phase, { label: string; color: string; barColor: stri
     },
     recovering: {
       label: 'Отдых',
-      color: 'text-orange-400',
-      barColor: 'from-orange-500 to-yellow-400',
-      dotBg: 'bg-orange-500/70',
+      color: 'text-emerald-400',
+      barColor: 'from-emerald-600 to-emerald-400',
+      dotBg: 'bg-emerald-500/80',
       tip: 'Мышца ещё восстанавливается. Лучше поработать с другими группами.',
     },
     almost_ready: {
       label: 'Почти готово',
-      color: 'text-yellow-300',
-      barColor: 'from-yellow-500 to-green-400',
-      dotBg: 'bg-yellow-400/70',
+      color: 'text-amber-300',
+      barColor: 'from-amber-500 to-yellow-300',
+      dotBg: 'bg-amber-400/85',
       tip: 'Почти восстановилась. Лёгкая нагрузка допустима.',
     },
     recovered: {
@@ -88,8 +88,9 @@ function getDaysAgoText(days: number | null): string {
 
 function getBarColorByIntensity(intensity: number): string {
   if (intensity >= 0.6) return 'from-red-500 to-red-400';
-  if (intensity >= 0.3) return 'from-orange-500 to-yellow-400';
-  if (intensity > 0) return 'from-green-500 to-green-400';
+  if (intensity >= 0.4) return 'from-emerald-600 to-emerald-400';
+  if (intensity >= 0.1) return 'from-amber-500 to-yellow-300';
+  if (intensity > 0) return 'from-cyan-500 to-emerald-400';
   return 'from-gray-600 to-gray-500';
 }
 

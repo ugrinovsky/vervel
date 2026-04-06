@@ -17,12 +17,13 @@ import BackButton from '@/components/BackButton/BackButton';
 import AnimatedBlock from '@/components/ui/AnimatedBlock';
 import { cardClass } from '@/components/ui/Card';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
+import GhostButton from '@/components/ui/GhostButton';
 import {
   BookmarkIcon,
   BookmarkSlashIcon,
   ChartBarIcon,
-  LinkIcon,
   PresentationChartLineIcon,
+  StarIcon,
   TableCellsIcon,
 } from '@heroicons/react/24/outline';
 import {
@@ -235,11 +236,11 @@ function ExerciseCard({
           <button
             type="button"
             onClick={() => onOpenStandards(entry)}
-            className="flex items-center justify-center p-1.5 rounded-lg text-(--color_text_muted) hover:text-white hover:bg-white/5"
-            title="Эталоны: объединить разные названия"
-            aria-label="Эталоны"
+            className="flex items-center justify-center p-1.5 rounded-lg text-(--color_text_muted) hover:text-(--color_primary_light) hover:bg-(--color_primary_light)/10"
+            title="Объединить варианты одного упражнения"
+            aria-label="Эталон: объединить варианты упражнения"
           >
-            <LinkIcon className="w-5 h-5 shrink-0" />
+            <StarIcon className="w-5 h-5 shrink-0" />
           </button>
           {pinnedOnly ? (
             <button
@@ -309,33 +310,68 @@ function ExerciseCard({
           </div>
         )
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs min-w-max">
+        <div className="w-full overflow-x-auto">
+          <table className="w-full table-fixed border-collapse text-xs">
+            <colgroup>
+              <col style={{ width: '3.5rem', maxWidth: '3.5rem' }} />
+              {sessions.map((s) => (
+                <col
+                  key={s.workoutId}
+                  style={{
+                    width:
+                      sessions.length > 0
+                        ? `min(7.5rem, calc((100% - 3.5rem) / ${sessions.length}))`
+                        : undefined,
+                    maxWidth: '7.5rem',
+                  }}
+                />
+              ))}
+            </colgroup>
             <thead>
               <tr className="border-b border-(--color_border)">
-                <td className="px-3 py-2 text-(--color_text_muted) font-medium w-14">Подход</td>
+                <th
+                  scope="col"
+                  className="px-2 py-2 text-left text-(--color_text_muted) font-medium min-w-0"
+                >
+                  Подход
+                </th>
                 {sessions.map((s) => (
-                  <td
+                  <th
+                    scope="col"
                     key={s.workoutId}
-                    className="px-3 py-2 text-(--color_text_muted) font-medium text-center whitespace-nowrap"
+                    className="px-2 py-2 text-(--color_text_muted) font-medium text-center min-w-0 max-w-[7.5rem]"
+                    title={new Date(s.date).toLocaleDateString('ru-RU', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
                   >
-                    {formatDate(s.date)}
-                  </td>
+                    <span className="block truncate">{formatDate(s.date)}</span>
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {Array.from({ length: maxSets }).map((_, setIdx) => (
                 <tr key={setIdx} className="border-b border-(--color_border)/50 last:border-0">
-                  <td className="px-3 py-2 text-(--color_text_muted) font-medium">{setIdx + 1}</td>
+                  <td className="px-2 py-2 text-(--color_text_muted) font-medium min-w-0">
+                    {setIdx + 1}
+                  </td>
                   {sessions.map((s) => {
                     const set = s.sets[setIdx];
                     return (
-                      <td key={s.workoutId} className="px-3 py-2 text-center">
+                      <td
+                        key={s.workoutId}
+                        className="px-2 py-2 text-center align-middle min-w-0 max-w-[7.5rem]"
+                      >
                         {set?.weight && set?.reps ? (
-                          <div className="flex flex-col items-center gap-0.5">
-                            <span className="text-white font-semibold">{set.weight} кг</span>
-                            <span className="text-(--color_text_muted)">{set.reps} повт</span>
+                          <div className="flex flex-col items-center gap-0.5 min-w-0">
+                            <span className="text-white font-semibold tabular-nums truncate max-w-full">
+                              {set.weight} кг
+                            </span>
+                            <span className="text-(--color_text_muted) tabular-nums truncate max-w-full">
+                              {set.reps} повт
+                            </span>
                           </div>
                         ) : (
                           <span className="text-(--color_border)">—</span>
@@ -346,11 +382,16 @@ function ExerciseCard({
                 </tr>
               ))}
               <tr className="bg-(--color_bg_card_hover)/30">
-                <td className="px-3 py-2 text-(--color_text_muted) font-medium">1RM</td>
+                <td className="px-2 py-2 text-(--color_text_muted) font-medium min-w-0">1RM</td>
                 {sessions.map((s) => (
-                  <td key={s.workoutId} className="px-3 py-2 text-center">
+                  <td
+                    key={s.workoutId}
+                    className="px-2 py-2 text-center min-w-0 max-w-[7.5rem]"
+                  >
                     {s.best1RM !== null ? (
-                      <span className="text-(--color_primary_light) font-bold">{s.best1RM}</span>
+                      <span className="text-(--color_primary_light) font-bold tabular-nums">
+                        {s.best1RM}
+                      </span>
                     ) : (
                       <span className="text-(--color_border)">—</span>
                     )}
@@ -625,14 +666,14 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
             {pinnedExerciseIds.length > 0 ? (
               <div className="flex flex-wrap items-center gap-2">
                 <span>Показаны только закреплённые упражнения.</span>
-                <button
-                  type="button"
+                <GhostButton
+                  variant="link"
                   disabled={pinsBusy}
                   onClick={() => applyPins([])}
-                  className="text-(--color_primary_light) underline-offset-2 hover:underline disabled:opacity-50"
+                  className="text-(--color_primary_light) hover:text-(--color_primary_light)"
                 >
                   Снять закрепления
-                </button>
+                </GhostButton>
               </div>
             ) : (
               <>
@@ -641,36 +682,36 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
                   станет короче.
                 </p>
                 {suggestedPins.length > 0 && (
-                  <button
-                    type="button"
+                  <GhostButton
+                    variant="accent-soft"
                     disabled={pinsBusy}
                     onClick={() => applyPins(suggestedPins)}
-                    className="w-full py-2.5 rounded-xl bg-(--color_primary)/20 border border-(--color_primary_light)/30 text-(--color_primary_light) text-sm font-semibold disabled:opacity-50"
+                    className="bg-(--color_primary)/20 border-(--color_primary_light)/30"
                   >
                     Закрепить топ‑{suggestedPins.length} по частоте
-                  </button>
+                  </GhostButton>
                 )}
                 {weightedExerciseOptions.length > 0 && (
-                  <button
-                    type="button"
+                  <GhostButton
+                    variant="solid"
                     disabled={pinsBusy}
                     onClick={() => setHistoryOpen(true)}
-                    className="w-full py-2.5 rounded-xl border border-(--color_border) text-(--color_text_secondary) text-sm font-medium disabled:opacity-50"
+                    className="w-full py-2.5 text-(--color_text_secondary) hover:text-white"
                   >
                     Выбрать из истории (в т.ч. после ИИ)
-                  </button>
+                  </GhostButton>
                 )}
               </>
             )}
             {pinnedExerciseIds.length > 0 && weightedExerciseOptions.length > 0 && (
-              <button
-                type="button"
+              <GhostButton
+                variant="outline-accent"
                 disabled={pinsBusy}
                 onClick={() => setHistoryOpen(true)}
-                className="w-full py-2 rounded-xl border border-(--color_border) text-xs text-(--color_primary_light) disabled:opacity-50"
+                className="w-full py-2 rounded-xl"
               >
                 + Добавить из истории (кастомные и любые id)
-              </button>
+              </GhostButton>
             )}
           </div>
         )}
@@ -686,8 +727,7 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
           title="Упражнения из ваших тренировок"
         >
           <p className="text-xs text-(--color_text_muted) mb-3">
-            Все движения за год, где был указан вес — в том числе с распознавания фото, если ИИ
-            назвал упражнение своими словами.
+            Все движения за год, где был указан вес — в том числе занесённые по фото через ИИ.
           </p>
           <input
             type="text"
@@ -724,15 +764,24 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
           id="strength-log-standards"
           open={standardsOpen && standardsEntry != null}
           onClose={closeStandardsSheet}
-          emoji="🔗"
+          emoji="⭐"
           title={standardsEntry ? `Эталон: ${standardsEntry.exerciseName}` : 'Эталон'}
         >
           {standardsEntry && (
             <div className="space-y-4 pb-4 text-sm">
-              <p className="text-xs text-(--color_text_muted) leading-relaxed">
-                Объединяйте разные id одного движения (каталог, кастом, ИИ) в одну карточку журнала и
-                сводку 30 дней.
-              </p>
+              <div className="text-xs text-(--color_text_muted) leading-relaxed space-y-2">
+                <p className="text-(--color_text_secondary)">
+                  Одно и то же упражнение в приложении может называться по-разному: из каталога, своим
+                  именем, после ИИ-распознавания по фото и т.д.
+                </p>
+                <p>
+                  <span className="text-white font-medium">Эталон</span> — это общее «имя группы»:
+                  вы связываете все нужные варианты с одним эталоном, и журнал показывает{' '}
+                  <span className="text-white font-medium">одну карточку</span> с полной историей,
+                  графиком и <span className="text-white font-medium">сводкой за 30 дней</span> по всему
+                  движению целиком.
+                </p>
+              </div>
 
               <div>
                 <label className="block text-[11px] text-(--color_text_muted) mb-1">Название эталона</label>
@@ -747,60 +796,58 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
               {standardsSid == null && (
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <button
-                      type="button"
+                    <GhostButton
+                      variant="outline-accent"
                       disabled={standardsBusy}
                       onClick={() => setStandardsPickerOpen(true)}
-                      className="px-3 py-2 rounded-lg border border-(--color_border) text-xs text-(--color_primary_light) disabled:opacity-50"
                     >
                       {standardsCatalogId ? 'Сменить из каталога' : 'Привязать к каталогу (необязательно)'}
-                    </button>
+                    </GhostButton>
                     {standardsCatalogId && (
-                      <button
-                        type="button"
+                      <GhostButton
+                        variant="link"
                         disabled={standardsBusy}
                         onClick={() => setStandardsCatalogId(null)}
-                        className="text-xs text-(--color_text_muted) underline-offset-2 hover:underline"
                       >
                         Сбросить каталог
-                      </button>
+                      </GhostButton>
                     )}
                   </div>
                   {standardsCatalogId && (
-                    <p className="text-[11px] text-(--color_text_muted)">Каталог: {standardsCatalogId}</p>
+                    <p className="text-[11px] text-(--color_text_muted)">
+                      Выбрано упражнение из каталога — так проще сопоставлять с базой движений.
+                    </p>
                   )}
-                  <button
-                    type="button"
+                  <GhostButton
+                    variant="accent-soft"
                     disabled={standardsBusy}
                     onClick={() => void createStandardForEntry()}
-                    className="w-full py-2.5 rounded-xl bg-(--color_primary)/25 border border-(--color_primary_light)/40 text-(--color_primary_light) text-sm font-semibold disabled:opacity-50"
                   >
                     Создать эталон и привязать эту карточку
-                  </button>
+                  </GhostButton>
                 </div>
               )}
 
               {standardsSid != null && (
                 <>
-                  <button
-                    type="button"
+                  <GhostButton
+                    variant="solid"
                     disabled={standardsBusy}
                     onClick={() => void saveStandardLabel()}
-                    className="w-full py-2 rounded-xl border border-(--color_border) text-(--color_text_secondary) text-sm font-medium disabled:opacity-50"
+                    className="w-full py-2 text-(--color_text_secondary)"
                   >
                     Сохранить название
-                  </button>
+                  </GhostButton>
 
                   {standardsLinkedSources.length > 0 && (
                     <div>
-                      <div className="text-[11px] text-(--color_text_muted) mb-2">Привязанные id</div>
+                      <div className="text-[11px] text-(--color_text_muted) mb-2">
+                        Варианты, которые уже входят в эту группу
+                      </div>
                       <ul className="space-y-1 max-h-28 overflow-y-auto text-xs">
                         {standardsLinkedSources.map((a) => (
                           <li key={a.sourceExerciseId} className="text-white/90">
                             {exerciseNameById(a.sourceExerciseId)}
-                            <span className="text-(--color_text_muted) ml-1 font-mono text-[10px]">
-                              ({a.sourceExerciseId})
-                            </span>
                           </li>
                         ))}
                       </ul>
@@ -809,7 +856,7 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
 
                   <div>
                     <div className="text-[11px] text-(--color_text_muted) mb-2">
-                      Добавить синоним из истории (ещё не привязан ни к одному эталону)
+                      Добавить ещё вариант из вашей истории (то же движение под другим названием)
                     </div>
                     <input
                       type="text"

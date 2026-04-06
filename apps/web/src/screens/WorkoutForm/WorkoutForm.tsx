@@ -90,8 +90,8 @@ export default function WorkoutForm() {
 
         <ScreenHint className="mb-4">
           Выберите тип тренировки, добавьте упражнения и подходы.{' '}
-          <span className="text-white font-medium">ИИ-распознавание</span> — сфотографируйте
-          страницу дневника или опишите тренировку текстом, и ИИ заполнит форму автоматически.
+          <span className="text-white font-medium">ИИ-распознавание</span> — по фото или текстовому
+          описанию ИИ заполнит форму автоматически.
         </ScreenHint>
 
         <WorkoutFormBase

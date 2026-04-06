@@ -166,8 +166,7 @@ export default function AiWorkoutRecognizer({ onResult, triggerClassName, trigge
               className="space-y-4"
             >
               <p className="text-sm text-(--color_text_muted)">
-                Сфотографируйте доску, листок или экран с тренировкой — ИИ распознает упражнения
-                автоматически.
+                По фото ИИ распознает упражнения автоматически.
               </p>
 
               <button

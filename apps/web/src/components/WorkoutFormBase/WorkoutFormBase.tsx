@@ -510,7 +510,7 @@ export default function WorkoutFormBase({
                   <span className="flex-1 min-w-0">
                     <span className="block text-sm font-medium text-white">По фото</span>
                     <span className="block text-xs text-(--color_text_muted)">
-                      ИИ распознает упражнения с фото
+                      ИИ распознаёт по фото
                     </span>
                   </span>
                   <span className="text-emerald-400/60 text-base shrink-0">→</span>
