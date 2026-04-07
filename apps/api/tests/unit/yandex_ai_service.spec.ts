@@ -117,6 +117,44 @@ test.group('YandexAiService: parseWorkoutJson', () => {
     assert.isUndefined(ex.duration)
   })
 
+  test('понимает десятичные значения с запятой (4,6 → 4.6)', ({ assert }) => {
+    const json = JSON.stringify({
+      workoutType: 'bodybuilding',
+      exercises: [{ name: 'Махи', displayName: 'Махи', sets: 1, reps: 15, weight: '4,6' }],
+    })
+    const ex = svc.parseWorkoutJson(json).exercises[0]
+    assert.equal(ex.weight, 4.6)
+  })
+
+  test('setData сохраняет разные веса по подходам', ({ assert }) => {
+    const json = JSON.stringify({
+      workoutType: 'bodybuilding',
+      exercises: [
+        {
+          name: 'Сгибания голени сидя',
+          displayName: 'Сгибания голени сидя',
+          setData: [
+            { reps: 15, weight: 14 },
+            { reps: 12, weight: 18 },
+            { reps: 12, weight: 18 },
+            { reps: 12, weight: 18 },
+          ],
+        },
+      ],
+    })
+    const ex = svc.parseWorkoutJson(json).exercises[0]
+    assert.equal(ex.sets, 4)
+    assert.deepEqual(
+      ex.setData?.map((s: any) => [s.reps, s.weight]),
+      [
+        [15, 14],
+        [12, 18],
+        [12, 18],
+        [12, 18],
+      ]
+    )
+  })
+
   test('notes — undefined если null', ({ assert }) => {
     const json = JSON.stringify({ workoutType: 'cardio', exercises: [], notes: null })
     assert.isUndefined(svc.parseWorkoutJson(json).notes)

@@ -16,6 +16,7 @@ import SectionLabel from '@/components/SectionLabel';
 import WorkoutExercisesEditor from '@/components/WorkoutExercisesEditor/WorkoutExercisesEditor';
 import AiWorkoutGenerator from '@/components/AiWorkoutGenerator/AiWorkoutGenerator';
 import AiWorkoutRecognizer from '@/components/AiWorkoutRecognizer/AiWorkoutRecognizer';
+import AiWorkoutTextParser from '@/components/AiWorkoutTextParser/AiWorkoutTextParser';
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -29,7 +30,11 @@ import type { AiRecognizedWorkoutResult, AiWorkoutResult } from '@/api/ai';
 import { aiApi } from '@/api/ai';
 import { WORKOUT_TYPE_CONFIG, DEFAULT_WORKOUT_TYPE } from '@/constants/workoutTypes';
 import { nowRoundedToHour, today, parseTimeString, parseLocalDate } from '@/utils/date';
-import { convertExercisesForType, convertAiExercises, convertAiResult } from './workoutTypeConversion';
+import {
+  convertExercisesForType,
+  convertAiExercises,
+  convertAiResult,
+} from './workoutTypeConversion';
 import { workoutsApi } from '@/api/workouts';
 import { profileApi } from '@/api/profile';
 
@@ -231,9 +236,7 @@ export default function WorkoutFormBase({
 
   const handleClearForm = () => {
     if (
-      !window.confirm(
-        'Очистить форму? Все поля и черновик будут сброшены — это нельзя отменить.'
-      )
+      !window.confirm('Очистить форму? Все поля и черновик будут сброшены — это нельзя отменить.')
     ) {
       return;
     }
@@ -251,7 +254,8 @@ export default function WorkoutFormBase({
 
   // ── Fetch athlete body weight once on mount ───────────────────────
   useEffect(() => {
-    profileApi.getMeasurements('body_weight', 1)
+    profileApi
+      .getMeasurements('body_weight', 1)
       .then((res) => {
         const latest = res.data?.data?.[0];
         if (latest) setProfileWeight(latest.value);
@@ -352,6 +356,48 @@ export default function WorkoutFormBase({
     } finally {
       setIsParsing(false);
     }
+  };
+
+  const handleAiTextParsed = (payload: {
+    sourceText: string;
+    parsedType: 'crossfit' | 'bodybuilding' | 'cardio';
+    previewItems: Array<{
+      exerciseId: string;
+      name: string;
+      sets: number;
+      reps?: number;
+      weight?: number;
+      weightMax?: number;
+    }>;
+    exercises: Array<{
+      exerciseId: string;
+      type: string;
+      sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>;
+      blockId?: string;
+    }>;
+    warning: string | null;
+  }) => {
+    const nameMap = new Map(payload.previewItems.map((item) => [item.exerciseId, item.name]));
+    const baseConverted: ExerciseData[] = payload.exercises.map((ex: any) => ({
+      exerciseId: ex.exerciseId,
+      name: nameMap.get(ex.exerciseId) ?? ex.exerciseId.replace(/_/g, ' '),
+      setsDetail: ex.sets?.map((s: any) => ({ reps: s.reps ?? 10, weight: s.weight })) ?? [],
+      sets: ex.sets?.length ?? 3,
+      blockId: ex.blockId,
+      duration: ex.sets?.[0]?.time ? Math.round(Number(ex.sets?.[0]?.time ?? 0) / 60) : undefined,
+    }));
+
+    const converted =
+      payload.parsedType === workoutType
+        ? baseConverted
+        : convertExercisesForType(baseConverted, payload.parsedType as WorkoutType, workoutType);
+
+    setNotes(payload.sourceText);
+    setExercises(converted);
+    setAiGenerated(true);
+    setSelectedTemplateId(null);
+    if (payload.warning) toast(payload.warning, { icon: '⚠️' });
+    else toast.success(`ИИ разобрал ${converted.length} упражнений`);
   };
 
   // ── Template picker ───────────────────────────────────────────────
@@ -564,15 +610,19 @@ export default function WorkoutFormBase({
                 <>
                   <span className="text-xl shrink-0">📸</span>
                   <span className="flex-1 min-w-0">
-                    <span className="block text-sm font-medium text-white">По фото</span>
+                    <span className="block text-sm font-medium text-white">
+                      Распознать изображение
+                    </span>
                     <span className="block text-xs text-(--color_text_muted)">
-                      ИИ распознаёт по фото
+                      ИИ распознает по фото
                     </span>
                   </span>
                   <span className="text-emerald-400/60 text-base shrink-0">→</span>
                 </>
               }
             />
+
+            <AiWorkoutTextParser onResult={handleAiTextParsed} />
 
             <AiWorkoutGenerator
               onResult={handleAiGeneratedResult}
@@ -581,9 +631,11 @@ export default function WorkoutFormBase({
                 <>
                   <span className="text-xl shrink-0">✨</span>
                   <span className="flex-1 min-w-0">
-                    <span className="block text-sm font-medium text-white">Из текста</span>
+                    <span className="block text-sm font-medium text-white">
+                      Сгенерировать по описанию
+                    </span>
                     <span className="block text-xs text-(--color_text_muted)">
-                      Опишите тренировку — ИИ заполнит
+                      ИИ сам подберёт упражнения, подходы и веса
                     </span>
                   </span>
                   <span className="text-violet-400/60 text-base shrink-0">→</span>
@@ -643,6 +695,16 @@ export default function WorkoutFormBase({
               <div className="flex flex-wrap gap-3 mb-1">
                 <AiWorkoutGenerator onResult={handleAiGeneratedResult} />
                 <AiWorkoutRecognizer onResult={handleAiRecognizedResult} />
+                <AiWorkoutTextParser
+                  onResult={handleAiTextParsed}
+                  triggerClassName="flex items-center gap-1.5 text-xs text-sky-400 hover:text-sky-300 transition-colors"
+                  triggerContent={
+                    <>
+                      <span>📝</span>
+                      Распознать по тексту
+                    </>
+                  }
+                />
               </div>
             ) : undefined
           }
@@ -662,20 +724,20 @@ export default function WorkoutFormBase({
           </GhostButton>
         )}
         <div className="flex gap-2">
-        {onCancel && (
-          <GhostButton variant="solid" onClick={onCancel} disabled={saving}>
-            Отмена
-          </GhostButton>
-        )}
-        <AccentButton
-          onClick={handleSubmit}
-          disabled={saving}
-          loading={saving}
-          loadingText="Сохранение..."
-          className="flex-1 font-semibold"
-        >
-          {submitLabel}
-        </AccentButton>
+          {onCancel && (
+            <GhostButton variant="solid" onClick={onCancel} disabled={saving}>
+              Отмена
+            </GhostButton>
+          )}
+          <AccentButton
+            onClick={handleSubmit}
+            disabled={saving}
+            loading={saving}
+            loadingText="Сохранение..."
+            className="flex-1 font-semibold"
+          >
+            {submitLabel}
+          </AccentButton>
         </div>
       </div>
     </div>
