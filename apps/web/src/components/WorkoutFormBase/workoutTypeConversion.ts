@@ -1,5 +1,5 @@
 import type { ExerciseData } from '@/api/trainer'
-import type { AiWorkoutResult } from '@/api/ai'
+import type { AiExercise, AiWorkoutResult } from '@/api/ai'
 import type { WorkoutType } from '@/components/WorkoutTypeTabs'
 import { canonicalCustomExerciseKey } from '@/utils/canonicalCustomExerciseKey'
 
@@ -53,10 +53,17 @@ export function convertExercisesForType(
  * Pure function — no side effects.
  */
 export function convertAiResult(result: AiWorkoutResult): ExerciseData[] {
+  return convertAiExercises(result.exercises, result.workoutType)
+}
+
+export function convertAiExercises(
+  exercises: AiExercise[],
+  workoutType: WorkoutType,
+): ExerciseData[] {
   // Map supersetGroup letter → shared blockId UUID
   const supersetBlockIds = new Map<string, string>()
 
-  return result.exercises.map((ex) => {
+  return exercises.map((ex) => {
     const base: ExerciseData = {
       exerciseId:
         ex.exerciseId ?? `custom:${canonicalCustomExerciseKey(ex.displayName ?? ex.name)}`,
@@ -66,17 +73,17 @@ export function convertAiResult(result: AiWorkoutResult): ExerciseData[] {
     }
 
     // Assign blockId for superset grouping (bodybuilding only)
-    if (ex.supersetGroup && result.workoutType === 'bodybuilding') {
+    if (ex.supersetGroup && workoutType === 'bodybuilding') {
       if (!supersetBlockIds.has(ex.supersetGroup)) {
         supersetBlockIds.set(ex.supersetGroup, crypto.randomUUID())
       }
       base.blockId = supersetBlockIds.get(ex.supersetGroup)
     }
 
-    if (result.workoutType === 'cardio') {
+    if (workoutType === 'cardio') {
       return { ...base, duration: ex.duration ?? 20 }
     }
-    if (result.workoutType === 'crossfit') {
+    if (workoutType === 'crossfit') {
       return { ...base, reps: ex.reps ?? 10, weight: ex.weight }
     }
     // bodybuilding

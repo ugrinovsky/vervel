@@ -25,11 +25,11 @@ import {
 import AccentButton from '@/components/ui/AccentButton';
 import GhostButton from '@/components/ui/GhostButton';
 import type { ExerciseData, WorkoutTemplate } from '@/api/trainer';
-import type { AiWorkoutResult } from '@/api/ai';
+import type { AiRecognizedWorkoutResult, AiWorkoutResult } from '@/api/ai';
 import { aiApi } from '@/api/ai';
 import { WORKOUT_TYPE_CONFIG, DEFAULT_WORKOUT_TYPE } from '@/constants/workoutTypes';
 import { nowRoundedToHour, today, parseTimeString, parseLocalDate } from '@/utils/date';
-import { convertExercisesForType, convertAiResult } from './workoutTypeConversion';
+import { convertExercisesForType, convertAiExercises, convertAiResult } from './workoutTypeConversion';
 import { workoutsApi } from '@/api/workouts';
 import { profileApi } from '@/api/profile';
 
@@ -136,6 +136,8 @@ export default function WorkoutFormBase({
   const [aiGenerated, setAiGenerated] = useState(false);
   const [aiPhotoUrl, setAiPhotoUrl] = useState<string | null>(null);
   const [aiPhotoExpanded, setAiPhotoExpanded] = useState(false);
+  /** Только для распознавания по фото: требуем явный выбор типа тренировки пользователем */
+  const [aiPhotoNeedsTypePick, setAiPhotoNeedsTypePick] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
   const [parseCost, setParseCost] = useState<number | null>(null);
 
@@ -260,6 +262,7 @@ export default function WorkoutFormBase({
   // ── Type change with exercise normalization ───────────────────────
 
   const handleWorkoutTypeChange = (newType: WorkoutType) => {
+    if (aiPhotoNeedsTypePick) setAiPhotoNeedsTypePick(false);
     if (exercises.length === 0) {
       setWorkoutType(newType);
       return;
@@ -288,7 +291,7 @@ export default function WorkoutFormBase({
 
   // ── AI result handler ─────────────────────────────────────────────
 
-  const handleAiResult = (result: AiWorkoutResult, photoUrl?: string) => {
+  const handleAiGeneratedResult = (result: AiWorkoutResult, photoUrl?: string) => {
     setWorkoutType(result.workoutType);
     const converted = convertAiResult(result);
     setExercises(converted);
@@ -302,6 +305,23 @@ export default function WorkoutFormBase({
       setAiPhotoExpanded(false);
     }
     toast.success(`ИИ сгенерировал ${converted.length} упражнений`);
+  };
+
+  const handleAiRecognizedResult = (result: AiRecognizedWorkoutResult, photoUrl?: string) => {
+    // Тип тренировки выбирается пользователем вручную (вкладками сверху).
+    const converted = convertAiExercises(result.exercises, workoutType);
+    setExercises(converted);
+    setAiGenerated(true);
+    setSelectedTemplateId(null);
+    setAiPhotoNeedsTypePick(true);
+    if (photoUrl) {
+      setAiPhotoUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return photoUrl;
+      });
+      setAiPhotoExpanded(false);
+    }
+    toast.success(`ИИ распознал ${converted.length} упражнений`);
   };
 
   const handleParseNotes = async () => {
@@ -360,6 +380,10 @@ export default function WorkoutFormBase({
   // ── Submit ────────────────────────────────────────────────────────
 
   const handleSubmit = async () => {
+    if (aiPhotoNeedsTypePick) {
+      toast.error('Выберите тип тренировки (Силовая / Кроссфит / Кардио)');
+      return;
+    }
     setSaving(true);
     try {
       await onSubmit({ date, time, workoutType, notes, exercises, selectedTemplateId });
@@ -434,7 +458,15 @@ export default function WorkoutFormBase({
       {/* Тип */}
       <div>
         <SectionLabel>Тип тренировки</SectionLabel>
-        <WorkoutTypeTabs value={workoutType} onChange={handleWorkoutTypeChange} />
+        <WorkoutTypeTabs
+          value={aiPhotoNeedsTypePick ? null : workoutType}
+          onChange={handleWorkoutTypeChange}
+        />
+        {aiPhotoNeedsTypePick && (
+          <p className="mt-2 text-[11px] text-amber-300/90">
+            После распознавания по фото выберите тип тренировки вручную.
+          </p>
+        )}
       </div>
 
       {/* headerSlot — e.g. assignee picker */}
@@ -526,7 +558,7 @@ export default function WorkoutFormBase({
             </p>
 
             <AiWorkoutRecognizer
-              onResult={handleAiResult}
+              onResult={handleAiRecognizedResult}
               triggerClassName="w-full flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-left hover:bg-emerald-500/15 transition-colors"
               triggerContent={
                 <>
@@ -543,7 +575,7 @@ export default function WorkoutFormBase({
             />
 
             <AiWorkoutGenerator
-              onResult={handleAiResult}
+              onResult={handleAiGeneratedResult}
               triggerClassName="w-full flex items-center gap-3 p-3 rounded-xl bg-violet-500/10 border border-violet-500/20 text-left hover:bg-violet-500/15 transition-colors"
               triggerContent={
                 <>
@@ -609,8 +641,8 @@ export default function WorkoutFormBase({
           toolbar={
             exercises.length > 0 ? (
               <div className="flex flex-wrap gap-3 mb-1">
-                <AiWorkoutGenerator onResult={handleAiResult} />
-                <AiWorkoutRecognizer onResult={handleAiResult} />
+                <AiWorkoutGenerator onResult={handleAiGeneratedResult} />
+                <AiWorkoutRecognizer onResult={handleAiRecognizedResult} />
               </div>
             ) : undefined
           }

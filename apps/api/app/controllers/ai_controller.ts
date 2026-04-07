@@ -2,7 +2,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import logger from '@adonisjs/core/services/logger'
 import limiter from '@adonisjs/limiter/services/main'
 import vine from '@vinejs/vine'
-import { YandexAiService, type AiWorkoutResult } from '#services/YandexAiService'
+import { YandexAiService, type AiWorkoutResult, type AiRecognizedWorkoutResult } from '#services/YandexAiService'
 import { AiBalanceService, InsufficientBalanceError } from '#services/AiBalanceService'
 import { ExerciseCatalog, type CatalogExercise } from '#services/ExerciseCatalog'
 import { tokenizeForMatch, tokenSubsetOverlap } from '#services/exercise_match_helpers'
@@ -94,9 +94,12 @@ export default class AiController {
     logger.info({ userId, mimeType: data.mimeType, base64Kb: Math.round(data.imageBase64.length / 1024) }, 'ai:recognize start')
     try {
       const result = await YandexAiService.recognizeFromImage(data.imageBase64, data.mimeType)
-      logger.info({ userId, exerciseCount: result.exercises.length, workoutType: result.workoutType }, 'ai:recognize ok')
-      const matched = matchExercisesToCatalog(result)
-      return response.ok({ data: matched })
+      logger.info({ userId, exerciseCount: result.exercises.length }, 'ai:recognize ok')
+      // Тип тренировки не определяем автоматически — только маппинг упражнений к каталогу
+      const pseudo: AiWorkoutResult = { workoutType: 'bodybuilding', exercises: result.exercises, notes: result.notes }
+      const matched = matchExercisesToCatalog(pseudo)
+      const out: AiRecognizedWorkoutResult = { workoutType: null, exercises: matched.exercises, notes: matched.notes }
+      return response.ok({ data: out })
     } catch (err: any) {
       logger.error({ userId, err: err?.message }, 'ai:recognize failed')
       return response.internalServerError({

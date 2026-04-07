@@ -30,6 +30,12 @@ export interface AiWorkoutResult {
   notes?: string
 }
 
+export interface AiRecognizedWorkoutResult {
+  workoutType: null
+  exercises: AiExercise[]
+  notes?: string
+}
+
 export interface AiBalance {
   balance: number
   costs: {
@@ -67,7 +73,7 @@ export const aiApi = {
    * imageBase64 — строка base64 без префикса data:...
    */
   recognizeWorkout: (imageBase64: string, mimeType: string) =>
-    privateApi.post<{ data: AiWorkoutResult }>('/ai/recognize-workout', {
+    privateApi.post<{ data: AiRecognizedWorkoutResult }>('/ai/recognize-workout', {
       imageBase64,
       mimeType,
     }),

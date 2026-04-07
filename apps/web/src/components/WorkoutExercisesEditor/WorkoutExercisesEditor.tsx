@@ -107,6 +107,7 @@ function SortableExerciseCard({
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id });
+  const [handlePressed, setHandlePressed] = useState(false);
   const style = {
     transform: transform ? CSS.Transform.toString({ ...transform, x: 0 }) : undefined,
     transition,
@@ -116,11 +117,15 @@ function SortableExerciseCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative min-w-0 ${isDragging ? 'z-30' : ''}`}
+      className={`min-w-0 ${isDragging ? 'z-30' : ''}`}
     >
       <div
-        className={`rounded-xl min-w-0 border transition-colors ${
-          isDragging ? 'opacity-90 shadow-lg ring-1 ring-white/25' : ''
+        className={`relative rounded-xl min-w-0 border transition-all duration-150 ${
+          isDragging
+            ? 'opacity-95 scale-[1.01] shadow-[0_0_20px_var(--color_primary_light)]/20 ring-2 ring-white/60 bg-(--color_bg_card_hover) border-white/20'
+            : handlePressed
+              ? 'ring-2 ring-white/40 shadow-[0_0_16px_var(--color_primary_light)]/15'
+              : ''
         } ${isInBlock ? 'bg-amber-500/10 border-amber-500/40' : 'bg-white/[0.07] border-white/10'}`}
       >
         <div className="p-3">
@@ -130,6 +135,10 @@ function SortableExerciseCard({
               type="button"
               className="shrink-0 p-0.5 rounded text-white/35 hover:text-white/60 cursor-grab active:cursor-grabbing touch-none select-none"
               title="Перетащить"
+              onPointerDownCapture={() => setHandlePressed(true)}
+              onPointerUpCapture={() => setHandlePressed(false)}
+              onPointerCancelCapture={() => setHandlePressed(false)}
+              onBlur={() => setHandlePressed(false)}
               {...listeners}
               {...attributes}
             >

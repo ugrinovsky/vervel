@@ -3,7 +3,7 @@ import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
 export type WorkoutType = 'crossfit' | 'bodybuilding' | 'cardio';
 
 interface Props {
-  value: WorkoutType;
+  value: WorkoutType | null;
   onChange: (type: WorkoutType) => void;
 }
 

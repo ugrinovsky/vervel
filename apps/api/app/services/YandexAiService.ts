@@ -33,6 +33,13 @@ export interface AiWorkoutResult {
   notes?: string
 }
 
+export interface AiRecognizedWorkoutResult {
+  /** После распознавания по фото тип должен выбрать пользователь */
+  workoutType: null
+  exercises: AiExercise[]
+  notes?: string
+}
+
 const ZONES_LIST = MUSCLE_ZONES.map((z) => `"${z}"`).join(',')
 
 // Парсинг текста после OCR с фото (recognizeFromImage). Логика как у заметок, всё на русском.
@@ -147,7 +154,10 @@ export class YandexAiService {
    * Шаг 1: Yandex Vision OCR → извлекает текст с фото (поддерживает рукопись)
    * Шаг 2: YandexGPT (текстовый, дешевле) → парсит текст в JSON тренировки
    */
-  static async recognizeFromImage(imageBase64: string, mimeType: string): Promise<AiWorkoutResult> {
+  static async recognizeFromImage(
+    imageBase64: string,
+    mimeType: string
+  ): Promise<AiRecognizedWorkoutResult> {
     const apiKey = env.get('YANDEX_CLOUD_API_KEY')!
     const folderId = env.get('YANDEX_FOLDER_ID')!
 
@@ -184,7 +194,9 @@ export class YandexAiService {
     )
     logger.info({ gptPreview: result.slice(0, 500) }, 'ai:gpt result')
 
-    return this.parseWorkoutJson(result, extractedText)
+    // workoutType намеренно НЕ выставляем: пользователь выбирает его явно.
+    const parsed = this.parseWorkoutJson(result, extractedText)
+    return { workoutType: null, exercises: parsed.exercises, notes: parsed.notes }
   }
 
   /**

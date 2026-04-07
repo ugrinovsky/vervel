@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CameraIcon, SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import AiLoadingView from '@/components/ui/AiLoadingView';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
-import { aiApi, type AiWorkoutResult } from '@/api/ai';
+import { aiApi, type AiRecognizedWorkoutResult } from '@/api/ai';
 import { useAiBalance } from '@/hooks/useAiBalance';
 
 const COST_RECOGNIZE = 10;
@@ -34,7 +34,7 @@ function readBase64(file: File): Promise<string> {
 }
 
 interface Props {
-  onResult: (result: AiWorkoutResult, photoUrl: string) => void;
+  onResult: (result: AiRecognizedWorkoutResult, photoUrl: string) => void;
   triggerClassName?: string;
   triggerContent?: React.ReactNode;
 }

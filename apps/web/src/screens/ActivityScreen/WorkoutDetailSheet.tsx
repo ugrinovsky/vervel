@@ -53,6 +53,7 @@ import WorkoutIntensityBar from '@/components/WorkoutIntensityBar/WorkoutIntensi
 
 interface FullWorkout {
   id: number;
+  date: string;
   workoutType: string;
   exercises: Array<{
     exerciseId: string;
@@ -442,7 +443,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
       : (fullWorkout!.rpe ?? undefined);
     const dateStr = isEditing
       ? `${getLocalDateISOString(editDate)}T${format(editTime, 'HH:mm')}:00`
-      : workout!.date;
+      : fullWorkout!.date;
     return {
       date: dateStr,
       workoutType: fullWorkout!.workoutType as 'crossfit' | 'bodybuilding' | 'cardio',
@@ -620,9 +621,11 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
     }
   };
 
-  const timeLabel = extractTime(workout?.date);
-  const dateLabel = workout?.date
-    ? format(parseLocalDate(workout.date.slice(0, 10)), 'd MMMM yyyy', { locale: ru })
+  // После сохранения date/time обновляются в fullWorkout, а `workout` (из списка) может остаться старым
+  const effectiveDateIso = fullWorkout?.date ?? workout?.date ?? null;
+  const timeLabel = extractTime(effectiveDateIso);
+  const dateLabel = effectiveDateIso
+    ? format(parseLocalDate(effectiveDateIso.slice(0, 10)), 'd MMMM yyyy', { locale: ru })
     : '';
 
   const hasMissingWeights = fullWorkout?.exercises.some(hasSetsNeedingWeight) ?? false;
@@ -631,7 +634,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
     (fullWorkout?.exercises.length ?? 0) === 0 &&
     !!fullWorkout?.notes?.trim();
   // Прошлая тренировка — можно оценивать и редактировать
-  const isPast = workout?.date ? parseApiDateTime(workout.date) <= now() : false;
+  const isPast = effectiveDateIso ? parseApiDateTime(effectiveDateIso) <= now() : false;
 
   return (
     <BottomSheet
@@ -678,12 +681,12 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
             )}
             {!isEditing && (
               <button
-                onClick={() => {
-              const dt = workout?.date ? parseApiDateTime(workout.date) : nowRoundedToHour();
-              setEditDate(dt);
-              setEditTime(dt);
-              setIsEditing(true);
-            }}
+                  onClick={() => {
+                    const dt = effectiveDateIso ? parseApiDateTime(effectiveDateIso) : nowRoundedToHour();
+                    setEditDate(dt);
+                    setEditTime(dt);
+                    setIsEditing(true);
+                  }}
                 className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-(--color_bg_card_hover) text-(--color_text_muted) border border-(--color_border) hover:text-white transition-colors"
               >
                 <PencilIcon className="w-3.5 h-3.5" />
