@@ -229,7 +229,9 @@ export default class AiController {
     if (!isFree && !(await this.chargeOrFail(userId, cost, 'Разбор программы тренировки через AI', response))) return
 
     try {
-      const result = await YandexAiService.parseWorkoutNotes(notes)
+      // Важно: "распознать по тексту" должен работать так же, как распознавание по фото (после OCR),
+      // иначе модель начинает "придумывать" упражнения и терять подходы/веса.
+      const result = await YandexAiService.parseWorkoutTextLikeOcr(notes)
       const matched = matchExercisesToCatalog(result)
       const workoutExercises = aiExercisesToWorkoutExercises(matched.exercises, matched.workoutType)
 
