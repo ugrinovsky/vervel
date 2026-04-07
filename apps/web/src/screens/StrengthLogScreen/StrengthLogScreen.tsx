@@ -41,8 +41,23 @@ import { useBalance } from '@/contexts/AuthContext';
 import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
 import type { ExerciseWithSets } from '@/types/Exercise';
 import { buildStrengthLogChartPoints, strengthLogProgressPercent } from './strengthLogChart';
+import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
 
 const GROUP_STD_PREFIX = 'std:';
+
+const STRENGTH_LOG_WT_SEP = '|wt:';
+
+/** Базовый ключ группы (без |wt:…) — для пинов и алиасов эталона */
+function strengthLogBaseGroupKey(exerciseId: string): string {
+  const i = exerciseId.indexOf(STRENGTH_LOG_WT_SEP);
+  return i < 0 ? exerciseId : exerciseId.slice(0, i);
+}
+
+type StrengthLogWtFilter = 'bodybuilding' | 'crossfit' | 'cardio';
+
+function strengthLogCompositePinKey(baseExerciseId: string, workoutType: StrengthLogWtFilter): string {
+  return `${baseExerciseId}${STRENGTH_LOG_WT_SEP}${workoutType}`;
+}
 
 function resolveStandardIdForRawExerciseId(
   exerciseId: string,
@@ -72,12 +87,13 @@ function resolveStandardIdForStrengthEntry(
     const n = Number(entry.standardId);
     if (Number.isFinite(n) && n > 0) return n;
   }
-  const viaAlias = aliases.find((x) => x.sourceExerciseId === entry.exerciseId);
+  const baseId = strengthLogBaseGroupKey(entry.exerciseId);
+  const viaAlias = aliases.find((x) => x.sourceExerciseId === baseId);
   if (viaAlias != null) {
     const n = Number(viaAlias.standardId);
     if (Number.isFinite(n) && n > 0) return n;
   }
-  const viaCatalog = standards.find((x) => x.catalogExerciseId === entry.exerciseId);
+  const viaCatalog = standards.find((x) => x.catalogExerciseId === baseId);
   return viaCatalog != null ? Number(viaCatalog.id) : null;
 }
 
@@ -286,7 +302,7 @@ function ExerciseCard({
             <button
               type="button"
               disabled={pinsBusy}
-              onClick={() => onUnpin(entry.exerciseId)}
+              onClick={() => onUnpin(strengthLogBaseGroupKey(entry.exerciseId))}
               className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-(--color_text_muted) hover:text-rose-300 hover:bg-rose-500/10 disabled:opacity-40"
               title="Убрать из закреплённых"
             >
@@ -297,7 +313,7 @@ function ExerciseCard({
             <button
               type="button"
               disabled={pinsBusy}
-              onClick={() => onPin(entry.exerciseId)}
+              onClick={() => onPin(strengthLogBaseGroupKey(entry.exerciseId))}
               className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-(--color_primary_light) hover:bg-(--color_primary_light)/10 disabled:opacity-40"
               title="Закрепить — в журнале останутся только выбранные"
             >
@@ -453,6 +469,7 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
   const [loading, setLoading] = useState(true);
   const [pinsBusy, setPinsBusy] = useState(false);
   const [search, setSearch] = useState('');
+  const [wtFilter, setWtFilter] = useState<StrengthLogWtFilter>('bodybuilding');
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historySearch, setHistorySearch] = useState('');
   const [standardsOpen, setStandardsOpen] = useState(false);
@@ -517,14 +534,26 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
   );
 
   const exerciseNameById = (id: string) =>
-    entries.find((e) => e.exerciseId === id)?.exerciseName ?? id.replace(/_/g, ' ');
+    entries.find((e) => strengthLogBaseGroupKey(e.exerciseId) === id)?.exerciseName ??
+    id.replace(/_/g, ' ');
 
   const openStandardsFor = useCallback(
     (entry: StrengthLogEntry) => {
       const resolved = resolveStandardIdForStrengthEntry(entry, standards, aliases);
       const std = resolved != null ? standards.find((s) => s.id === resolved) : null;
       setStandardsEntry(entry);
-      setStandardsLabelDraft((std?.displayLabel ?? entry.exerciseName).trim() || entry.exerciseName);
+      const nameForDraft = (() => {
+        const full = entry.exerciseName.trim();
+        const parts = full.split(' · ');
+        if (parts.length >= 2) {
+          const last = parts[parts.length - 1]!;
+          if (last === 'Силовая' || last === 'Кроссфит' || last === 'Кардио') {
+            return parts.slice(0, -1).join(' · ');
+          }
+        }
+        return full;
+      })();
+      setStandardsLabelDraft((std?.displayLabel ?? nameForDraft).trim() || nameForDraft);
       setStandardsCatalogId(std?.catalogExerciseId ?? null);
       setStandardsAliasSearch('');
       setStandardsPickerOpen(false);
@@ -697,7 +726,8 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
 
   const createStandardForEntry = async () => {
     if (!standardsEntry || standardsBusy) return;
-    if (standardsEntry.exerciseId.startsWith(GROUP_STD_PREFIX)) {
+    const baseExerciseId = strengthLogBaseGroupKey(standardsEntry.exerciseId);
+    if (baseExerciseId.startsWith(GROUP_STD_PREFIX)) {
       toast.error('Эта карточка уже сгруппирована по эталону');
       return;
     }
@@ -718,7 +748,7 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
       }
       const newId = res.data.data.id;
       const aliasRes = await athleteApi.postExerciseStandardAlias({
-        sourceExerciseId: standardsEntry.exerciseId,
+        sourceExerciseId: baseExerciseId,
         standardId: newId,
       });
       if (!aliasRes.data.success) {
@@ -769,15 +799,25 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
   const standardsLinkedSources =
     standardsSid != null ? aliases.filter((a) => a.standardId === standardsSid) : [];
 
-  const applyPins = async (exerciseIds: string[], successToast?: string) => {
+  const pinsForType = useMemo(() => {
+    const suf = `${STRENGTH_LOG_WT_SEP}${wtFilter}`;
+    return pinnedExerciseIds.filter((id) => id.endsWith(suf));
+  }, [pinnedExerciseIds, wtFilter]);
+
+  const applyPinsForType = async (nextBaseIds: string[], successToast?: string) => {
+    const otherPins = pinnedExerciseIds.filter((id) => !id.endsWith(`${STRENGTH_LOG_WT_SEP}${wtFilter}`));
+    const nextPinsForType = Array.from(new Set(nextBaseIds)).map((baseId) =>
+      strengthLogCompositePinKey(baseId, wtFilter),
+    );
+    const nextAll = [...otherPins, ...nextPinsForType];
     setPinsBusy(true);
     try {
-      const res = await athleteApi.putStrengthLogPins(exerciseIds);
+      const res = await athleteApi.putStrengthLogPins(nextAll);
       if (res.data.success) {
         setPayload(res.data.data);
         toast.success(
           successToast ??
-            (exerciseIds.length === 0 ? 'Закрепления сняты' : 'Список закреплений обновлён'),
+            (nextPinsForType.length === 0 ? 'Закрепления сняты' : 'Список закреплений обновлён'),
         );
       }
     } catch {
@@ -787,31 +827,39 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
     }
   };
 
-  const pinExercise = (exerciseId: string) => {
-    if (pinnedExerciseIds.includes(exerciseId)) {
+  const pinExercise = (baseExerciseId: string) => {
+    const pinKey = strengthLogCompositePinKey(baseExerciseId, wtFilter);
+    if (pinnedExerciseIds.includes(pinKey)) {
       toast.error('Уже закреплено');
       return;
     }
-    void applyPins([...pinnedExerciseIds, exerciseId], 'Закреплено');
+    const nextBase = [...pinsForType.map((id) => strengthLogBaseGroupKey(id)), baseExerciseId];
+    void applyPinsForType(nextBase, 'Закреплено');
   };
 
-  const unpinExercise = (exerciseId: string) => {
-    const next = pinnedExerciseIds.filter((id) => id !== exerciseId);
-    void applyPins(
-      next,
-      next.length === 0 ? 'Закрепления сняты — показаны все упражнения' : 'Убрано из закреплённых',
+  const unpinExercise = (baseExerciseId: string) => {
+    const nextBase = pinsForType
+      .map((id) => strengthLogBaseGroupKey(id))
+      .filter((id) => id !== baseExerciseId);
+    void applyPinsForType(
+      nextBase,
+      nextBase.length === 0 ? 'Закрепления сняты — показаны все упражнения' : 'Убрано из закреплённых',
     );
   };
 
   const addPinFromHistory = async (opt: WeightedExerciseOption) => {
-    if (pinnedExerciseIds.includes(opt.exerciseId)) {
+    if (pinnedExerciseIds.includes(strengthLogCompositePinKey(opt.exerciseId, wtFilter))) {
       toast.error('Уже в закреплённых');
       return;
     }
     setPinsBusy(true);
     try {
-      const next = [...pinnedExerciseIds, opt.exerciseId];
-      const res = await athleteApi.putStrengthLogPins(next);
+      const nextBase = [...pinsForType.map((id) => strengthLogBaseGroupKey(id)), opt.exerciseId];
+      const otherPins = pinnedExerciseIds.filter((id) => !id.endsWith(`${STRENGTH_LOG_WT_SEP}${wtFilter}`));
+      const nextPinsForType = Array.from(new Set(nextBase)).map((baseId) =>
+        strengthLogCompositePinKey(baseId, wtFilter),
+      );
+      const res = await athleteApi.putStrengthLogPins([...otherPins, ...nextPinsForType]);
       if (res.data.success) {
         setPayload(res.data.data);
         setHistoryOpen(false);
@@ -831,11 +879,14 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
       )
     : weightedExerciseOptions;
 
-  const filtered = search.trim()
-    ? entries.filter((e) =>
-        e.exerciseName.toLowerCase().includes(search.trim().toLowerCase()),
-      )
-    : entries;
+  const filtered = useMemo(() => {
+    let list = entries.filter((e) => e.workoutType === wtFilter);
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter((e) => e.exerciseName.toLowerCase().includes(q));
+    }
+    return list;
+  }, [entries, wtFilter, search]);
 
   const inner = (
     <div className={`w-full space-y-4 ${embedded ? '' : 'p-4 max-w-lg mx-auto'}`}>
@@ -854,7 +905,7 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
 
         {!loading && payload && (
           <div className="space-y-2 text-xs text-(--color_text_muted)">
-            {pinnedExerciseIds.length > 0 ? (
+            {pinsForType.length > 0 ? (
               <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                 <span className="text-(--color_text_muted)">
                   Показаны только закреплённые упражнения.
@@ -862,7 +913,7 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
                 <GhostButton
                   variant="outline-accent"
                   disabled={pinsBusy}
-                  onClick={() => applyPins([])}
+                  onClick={() => applyPinsForType([])}
                   className="w-full shrink-0 sm:w-auto whitespace-nowrap py-2"
                 >
                   Снять закрепления
@@ -878,7 +929,7 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
                   <GhostButton
                     variant="accent-soft"
                     disabled={pinsBusy}
-                    onClick={() => applyPins(suggestedPins)}
+                    onClick={() => applyPinsForType(suggestedPins)}
                     className="bg-(--color_primary)/20 border-(--color_primary_light)/30"
                   >
                     Закрепить топ‑{suggestedPins.length} по частоте
@@ -891,19 +942,19 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
                     onClick={() => setHistoryOpen(true)}
                     className="w-full py-2.5 text-(--color_text_secondary) hover:text-white"
                   >
-                    Выбрать из истории (в т.ч. после ИИ)
+                    Выбрать из истории
                   </GhostButton>
                 )}
               </>
             )}
-            {pinnedExerciseIds.length > 0 && weightedExerciseOptions.length > 0 && (
+            {pinsForType.length > 0 && weightedExerciseOptions.length > 0 && (
               <GhostButton
-                variant="outline-accent"
+                variant="solid"
                 disabled={pinsBusy}
                 onClick={() => setHistoryOpen(true)}
-                className="w-full py-2 rounded-xl"
+                className="w-full py-2.5 text-(--color_text_secondary) hover:text-white"
               >
-                + Добавить из истории (кастомные и любые id)
+                Выбрать из истории
               </GhostButton>
             )}
             {standards.length > 0 && unlinkedTotalCount > 0 && aiFeatureEnabled && (
@@ -930,6 +981,25 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
                 </p>
               </div>
             )}
+          </div>
+        )}
+
+        {!loading && payload && entries.length > 0 && (
+          <div className="grid grid-cols-3 gap-1.5">
+            {(['bodybuilding', 'crossfit', 'cardio'] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setWtFilter(t)}
+                className={`py-2 px-1.5 sm:px-2 rounded-xl text-[11px] sm:text-xs font-medium transition-colors ${
+                  wtFilter === t
+                    ? 'bg-(--color_primary_light) text-white'
+                    : 'bg-(--color_bg_card_hover) text-(--color_text_muted) hover:text-white border border-(--color_border)'
+                }`}
+              >
+                {WORKOUT_TYPE_CONFIG[t]}
+              </button>
+            ))}
           </div>
         )}
 
@@ -1074,7 +1144,10 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
                 <button
                   key={o.exerciseId}
                   type="button"
-                  disabled={pinsBusy || pinnedExerciseIds.includes(o.exerciseId)}
+                        disabled={
+                          pinsBusy ||
+                          pinnedExerciseIds.includes(strengthLogCompositePinKey(o.exerciseId, wtFilter))
+                        }
                   onClick={() => addPinFromHistory(o)}
                   className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-white/5 disabled:opacity-40"
                 >
@@ -1243,7 +1316,11 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
 
         {filtered.length === 0 && !loading && (
           <div className="text-center py-16 text-(--color_text_muted) text-sm">
-            {search ? 'Упражнение не найдено' : 'Нет данных с указанным весом за год'}
+            {search.trim()
+              ? 'Упражнение не найдено'
+              : entries.length > 0
+                ? 'Нет карточек для выбранного типа тренировки'
+                : 'Нет данных с указанным весом за год'}
           </div>
         )}
 
@@ -1253,7 +1330,7 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
               <ExerciseCard
                 entry={entry}
                 linkedToStandard={resolveStandardIdForStrengthEntry(entry, standards, aliases) !== null}
-                pinnedOnly={pinnedExerciseIds.length > 0}
+                pinnedOnly={pinsForType.length > 0}
                 pinsBusy={pinsBusy}
                 onPin={pinExercise}
                 onUnpin={unpinExercise}
@@ -1263,7 +1340,7 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
           ))}
         </div>
 
-        {!loading && pinnedExerciseIds.length === 0 && suggestedPins.length > 0 && (
+        {!loading && pinsForType.length === 0 && suggestedPins.length > 0 && (
           <div className={`${cardClass} rounded-xl p-3 text-xs text-(--color_text_muted)`}>
             <div className="font-medium text-white/90 mb-2">Часто встречаются</div>
             <ul className="space-y-1">

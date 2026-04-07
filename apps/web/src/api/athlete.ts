@@ -18,9 +18,13 @@ export interface StrengthLogDashboardMetric {
   lastWorkedAt: string | null;
 }
 
+export type StrengthLogWorkoutType = 'bodybuilding' | 'crossfit' | 'cardio';
+
 export interface StrengthLogEntry {
   exerciseId: string;
   exerciseName: string;
+  /** Тип тренировки для карточки (бэкенд: составной exerciseId с суффиксом |wt:…) */
+  workoutType?: StrengthLogWorkoutType;
   sessions: StrengthLogSession[];
   standardId: number | null;
   dashboardMetric: StrengthLogDashboardMetric | null;

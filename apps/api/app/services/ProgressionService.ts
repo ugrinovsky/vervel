@@ -18,6 +18,50 @@ import env from '#start/env';
 
 const STD_PREFIX = 'std:';
 
+/** Разделение карточек журнала силы по типу тренировки (сила / кроссфит / кардио). */
+const STRENGTH_LOG_WT_SEP = '|wt:' as const;
+
+type StrengthLogWorkoutType = 'bodybuilding' | 'crossfit' | 'cardio';
+
+function parseStrengthLogCompositeKey(composite: string): {
+  baseGroupKey: string;
+  workoutType: StrengthLogWorkoutType | null;
+} {
+  const idx = composite.indexOf(STRENGTH_LOG_WT_SEP);
+  if (idx < 0) {
+    return { baseGroupKey: composite, workoutType: null };
+  }
+  const baseGroupKey = composite.slice(0, idx);
+  const wt = composite.slice(idx + STRENGTH_LOG_WT_SEP.length);
+  if (wt === 'bodybuilding' || wt === 'crossfit' || wt === 'cardio') {
+    return { baseGroupKey, workoutType: wt };
+  }
+  return { baseGroupKey: composite, workoutType: null };
+}
+
+function strengthLogCompositeKey(
+  baseGk: string,
+  workoutType: StrengthLogWorkoutType
+): string {
+  return `${baseGk}${STRENGTH_LOG_WT_SEP}${workoutType}`;
+}
+
+function strengthLogNameWithWorkoutSuffix(
+  baseName: string,
+  workoutType: StrengthLogWorkoutType | null | undefined
+): string {
+  // Тип тренировки показываем вкладками на фронте, а не дописываем в имя упражнения.
+  return baseName;
+}
+
+function ensureCompositePinnedKey(pinKey: string): string {
+  // Backward compatibility: old pins were stored as base ids (no |wt:…).
+  // Treat them as bodybuilding pins by default.
+  const parsed = parseStrengthLogCompositeKey(pinKey);
+  if (parsed.workoutType) return pinKey;
+  return strengthLogCompositeKey(pinKey, 'bodybuilding');
+}
+
 type StandardRow = { id: number; catalogExerciseId: string | null; displayLabel: string };
 
 type StandardContext = {
@@ -157,10 +201,11 @@ export class ProgressionService {
 
   private static mergeSetsForGroupKey(
     exercises: WorkoutExercise[],
-    groupKey: string,
+    compositeGroupKey: string,
     ctx: StandardContext
   ): WorkoutSet[] | null {
-    const stdId = ProgressionService.parseStandardGroupKey(groupKey);
+    const { baseGroupKey } = parseStrengthLogCompositeKey(compositeGroupKey);
+    const stdId = ProgressionService.parseStandardGroupKey(baseGroupKey);
     if (stdId !== null) {
       const standard = ctx.standardsById.get(stdId);
       if (!standard) return null;
@@ -174,7 +219,7 @@ export class ProgressionService {
     }
     const matches = exercises.filter(
       (ex) =>
-        ProgressionService.workoutExerciseHasPositiveWeight(ex) && ex.exerciseId === groupKey
+        ProgressionService.workoutExerciseHasPositiveWeight(ex) && ex.exerciseId === baseGroupKey
     );
     if (matches.length === 0) return null;
     const sets = matches.flatMap((ex) => ex.sets ?? []);
@@ -182,8 +227,14 @@ export class ProgressionService {
     return sets;
   }
 
-  private static oneRmForGroupKey(w: Workout, groupKey: string, ctx: StandardContext): number {
-    const merged = ProgressionService.mergeSetsForGroupKey(w.exercises ?? [], groupKey, ctx);
+  private static oneRmForGroupKey(w: Workout, compositeGroupKey: string, ctx: StandardContext): number {
+    const { workoutType } = parseStrengthLogCompositeKey(compositeGroupKey);
+    if (workoutType && w.workoutType !== workoutType) return 0;
+    const merged = ProgressionService.mergeSetsForGroupKey(
+      w.exercises ?? [],
+      compositeGroupKey,
+      ctx
+    );
     if (!merged?.length) return 0;
     return maxEpley(merged);
   }
@@ -425,9 +476,12 @@ export class ProgressionService {
         .orderBy('date', 'asc'),
     ]);
 
-    const pinnedExerciseIds = pinnedRows.map((r) => r.exerciseId);
+    const pinnedExerciseIds = pinnedRows.map((r) => ensureCompositePinnedKey(r.exerciseId));
 
-    const { entries: allEntries, sessionCounts } = this.buildGroupedStrengthLog(workoutsDesc, ctx);
+    const { entries: allEntries, sessionCountsByBaseKey } = this.buildGroupedStrengthLog(
+      workoutsDesc,
+      ctx
+    );
     await this.enrichStrengthLogNamesFromDb(allEntries, ctx);
 
     const weightedExerciseOptions = await this.buildWeightedExerciseOptionsForUser(userId);
@@ -450,7 +504,19 @@ export class ProgressionService {
       const entries = this.buildPinnedGroupedStrengthLog(workoutsDesc, pinnedExerciseIds, ctx);
       await this.enrichStrengthLogNamesFromDb(entries, ctx);
       const pinOrder = new Map(pinnedExerciseIds.map((id, i) => [id, i]));
-      entries.sort((a, b) => (pinOrder.get(a.exerciseId) ?? 999) - (pinOrder.get(b.exerciseId) ?? 999));
+      const wtOrder: Record<StrengthLogWorkoutType, number> = {
+        bodybuilding: 0,
+        crossfit: 1,
+        cardio: 2,
+      };
+      entries.sort((a, b) => {
+        const pa = pinOrder.get(a.exerciseId) ?? 999;
+        const pb = pinOrder.get(b.exerciseId) ?? 999;
+        if (pa !== pb) return pa - pb;
+        return (
+          (a.workoutType ? wtOrder[a.workoutType] : 9) - (b.workoutType ? wtOrder[b.workoutType] : 9)
+        );
+      });
       for (const e of entries) {
         e.dashboardMetric = this.computeDashboardMetricForGroup(e.exerciseId, workoutsAsc400, ctx);
       }
@@ -466,7 +532,7 @@ export class ProgressionService {
     }
 
     allEntries.sort((a, b) => a.exerciseName.localeCompare(b.exerciseName, 'ru'));
-    const suggestedPins = pickTopExerciseIdsBySessionCount(sessionCounts, 5);
+    const suggestedPins = pickTopExerciseIdsBySessionCount(sessionCountsByBaseKey, 5);
 
     return {
       entries: allEntries,
@@ -480,7 +546,7 @@ export class ProgressionService {
   }
 
   static async replaceStrengthLogPins(userId: number, exerciseIds: string[]): Promise<void> {
-    const unique = normalizePinnedExerciseIdList(exerciseIds);
+    const unique = normalizePinnedExerciseIdList(exerciseIds).map((id) => ensureCompositePinnedKey(id));
 
     await db.transaction(async (trx) => {
       await UserPinnedExercise.query({ client: trx }).where('userId', userId).delete();
@@ -902,23 +968,29 @@ export class ProgressionService {
     ctx: StandardContext
   ): StrengthLogEntry[] {
     const entries: StrengthLogEntry[] = [];
+    for (const rawPinKey of pinnedGroupKeys) {
+      const composite = ensureCompositePinnedKey(rawPinKey);
+      const { baseGroupKey, workoutType } = parseStrengthLogCompositeKey(composite);
+      if (!workoutType) continue;
 
-    for (const pinKey of pinnedGroupKeys) {
       const sessions: StrengthLogSession[] = [];
       for (const w of workouts) {
-        const merged = this.mergeSetsForGroupKey(w.exercises ?? [], pinKey, ctx);
+        if (w.workoutType !== workoutType) continue;
+        const merged = this.mergeSetsForGroupKey(w.exercises ?? [], composite, ctx);
         if (!merged?.length) continue;
         sessions.push(this.sessionDto(w, merged));
         if (sessions.length >= 6) break;
       }
       if (sessions.length === 0) continue;
-      const stdId = this.resolveStandardIdForExerciseId(pinKey, ctx);
+      const stdId = this.resolveStandardIdForExerciseId(baseGroupKey, ctx);
+      const baseName =
+        stdId !== null
+          ? ctx.standardsById.get(stdId)?.displayLabel ?? baseGroupKey
+          : this.fallbackStrengthLogName(baseGroupKey);
       entries.push({
-        exerciseId: pinKey,
-        exerciseName:
-          stdId !== null
-            ? ctx.standardsById.get(stdId)?.displayLabel ?? pinKey
-            : this.fallbackStrengthLogName(pinKey),
+        exerciseId: composite,
+        exerciseName: strengthLogNameWithWorkoutSuffix(baseName, workoutType),
+        workoutType,
         sessions,
         standardId: stdId,
         dashboardMetric: null,
@@ -933,32 +1005,39 @@ export class ProgressionService {
     ctx: StandardContext
   ): {
     entries: StrengthLogEntry[];
-    sessionCounts: Map<string, number>;
+    /** Для «Часто встречаются» — без суффикса типа тренировки. */
+    sessionCountsByBaseKey: Map<string, number>;
   } {
     const groupSessionsMap = new Map<
       string,
-      { name: string; standardId: number | null; sessions: StrengthLogSession[] }
+      {
+        name: string;
+        standardId: number | null;
+        sessions: StrengthLogSession[];
+        workoutType: StrengthLogWorkoutType;
+      }
     >();
-    const sessionCounts = new Map<string, number>();
+    const sessionCountsByBaseKey = new Map<string, number>();
 
     for (const w of workouts) {
       const countedForWorkout = new Set<string>();
       for (const ex of w.exercises ?? []) {
         if (!this.workoutExerciseHasPositiveWeight(ex) || !ex.sets?.length) continue;
 
-        const gk = this.resolveGroupKey(ex.exerciseId, ctx);
+        const baseGk = this.resolveGroupKey(ex.exerciseId, ctx);
+        const compositeGk = strengthLogCompositeKey(baseGk, w.workoutType);
 
-        if (!countedForWorkout.has(gk)) {
-          countedForWorkout.add(gk);
-          sessionCounts.set(gk, (sessionCounts.get(gk) ?? 0) + 1);
+        if (!countedForWorkout.has(compositeGk)) {
+          countedForWorkout.add(compositeGk);
+          sessionCountsByBaseKey.set(baseGk, (sessionCountsByBaseKey.get(baseGk) ?? 0) + 1);
         }
 
-        if (!groupSessionsMap.has(gk)) {
-          const stdId = this.parseStandardGroupKey(gk);
+        if (!groupSessionsMap.has(compositeGk)) {
+          const stdId = this.parseStandardGroupKey(baseGk);
           let initialName: string;
           if (stdId !== null) {
             const row = ctx.standardsById.get(stdId);
-            initialName = row?.displayLabel ?? gk;
+            initialName = row?.displayLabel ?? baseGk;
           } else if (ex.exerciseId.startsWith('custom:')) {
             initialName = ex.name?.trim()
               ? capitalizeFirstForDisplay(ex.name.trim())
@@ -968,15 +1047,16 @@ export class ProgressionService {
           } else {
             initialName = ex.name?.trim() || ex.exerciseId;
           }
-          groupSessionsMap.set(gk, {
-            name: initialName,
+          groupSessionsMap.set(compositeGk, {
+            name: strengthLogNameWithWorkoutSuffix(initialName, w.workoutType),
             standardId: stdId,
             sessions: [],
+            workoutType: w.workoutType,
           });
         }
-        const entry = groupSessionsMap.get(gk)!;
+        const entry = groupSessionsMap.get(compositeGk)!;
         if (entry.sessions.length < 6 && !entry.sessions.some((s) => s.workoutId === w.id)) {
-          const merged = this.mergeSetsForGroupKey(w.exercises ?? [], gk, ctx);
+          const merged = this.mergeSetsForGroupKey(w.exercises ?? [], compositeGk, ctx);
           if (merged?.length) {
             entry.sessions.push(this.sessionDto(w, merged));
           }
@@ -986,15 +1066,16 @@ export class ProgressionService {
 
     const entries: StrengthLogEntry[] = [...groupSessionsMap.entries()]
       .filter(([, v]) => v.sessions.length > 0)
-      .map(([exerciseId, { name, sessions, standardId }]) => ({
+      .map(([exerciseId, { name, sessions, standardId, workoutType }]) => ({
         exerciseId,
         exerciseName: name,
+        workoutType,
         sessions,
         standardId,
         dashboardMetric: null,
       }));
 
-    return { entries, sessionCounts };
+    return { entries, sessionCountsByBaseKey };
   }
 
   private static async enrichStrengthLogNamesFromDb(
@@ -1002,19 +1083,23 @@ export class ProgressionService {
     ctx: StandardContext
   ): Promise<void> {
     for (const e of entries) {
-      const stdIdFromKey = this.parseStandardGroupKey(e.exerciseId);
+      const { baseGroupKey } = parseStrengthLogCompositeKey(e.exerciseId);
+      const stdIdFromKey = this.parseStandardGroupKey(baseGroupKey);
       const stdId = stdIdFromKey !== null ? stdIdFromKey : e.standardId;
       if (stdId !== null) {
         const row = ctx.standardsById.get(stdId);
         if (row) {
-          e.exerciseName = capitalizeFirstForDisplay(row.displayLabel);
+          e.exerciseName = strengthLogNameWithWorkoutSuffix(
+            capitalizeFirstForDisplay(row.displayLabel),
+            e.workoutType
+          );
         }
         continue;
       }
     }
 
     const ids = entries
-      .map((e) => e.exerciseId)
+      .map((e) => parseStrengthLogCompositeKey(e.exerciseId).baseGroupKey)
       .filter((id) => !id.startsWith('custom:') && !id.startsWith(STD_PREFIX));
     const titleMap = new Map<string, string>();
     if (ids.length > 0) {
@@ -1024,20 +1109,22 @@ export class ProgressionService {
       }
     }
     for (const e of entries) {
-      if (e.exerciseId.startsWith('custom:')) continue;
-      if (e.exerciseId.startsWith(STD_PREFIX)) continue;
-      const linkedStd = this.parseStandardGroupKey(e.exerciseId) ?? e.standardId;
+      const { baseGroupKey } = parseStrengthLogCompositeKey(e.exerciseId);
+      if (baseGroupKey.startsWith('custom:')) continue;
+      if (baseGroupKey.startsWith(STD_PREFIX)) continue;
+      const linkedStd = this.parseStandardGroupKey(baseGroupKey) ?? e.standardId;
       if (linkedStd !== null) continue;
-      const dbTitle = titleMap.get(e.exerciseId);
-      const cat = ExerciseCatalog.find(e.exerciseId);
+      const dbTitle = titleMap.get(baseGroupKey);
+      const cat = ExerciseCatalog.find(baseGroupKey);
       if (dbTitle) {
-        e.exerciseName = dbTitle;
+        e.exerciseName = strengthLogNameWithWorkoutSuffix(dbTitle, e.workoutType);
       } else if (cat) {
-        e.exerciseName = cat.title;
+        e.exerciseName = strengthLogNameWithWorkoutSuffix(cat.title, e.workoutType);
       }
     }
     for (const e of entries) {
-      if (e.exerciseId.startsWith(STD_PREFIX)) continue;
+      const { baseGroupKey } = parseStrengthLogCompositeKey(e.exerciseId);
+      if (baseGroupKey.startsWith(STD_PREFIX)) continue;
       if (e.exerciseName.includes('_') && !e.exerciseName.includes(' ')) {
         e.exerciseName = e.exerciseName.replace(/_/g, ' ');
       }
@@ -1086,6 +1173,8 @@ export interface StrengthLogDashboardMetric {
 export interface StrengthLogEntry {
   exerciseId: string;
   exerciseName: string;
+  /** Тип тренировки для этой карточки (суффикс в exerciseId: |wt:…) */
+  workoutType?: StrengthLogWorkoutType;
   sessions: StrengthLogSession[];
   standardId: number | null;
   dashboardMetric: StrengthLogDashboardMetric | null;

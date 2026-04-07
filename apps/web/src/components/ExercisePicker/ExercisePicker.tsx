@@ -142,9 +142,7 @@ export default function ExercisePicker({ onSelect, workoutType, open: controlled
               className="flex flex-col"
               style={{ height: 'calc(90dvh - 140px)' }}
             >
-              {/* Scrollable grid */}
               <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 pb-4">
-                {/* Count */}
                 <p className="text-xs text-(--color_text_muted) mb-3">
                   {filtered.length} упражнений
                 </p>
@@ -165,7 +163,6 @@ export default function ExercisePicker({ onSelect, workoutType, open: controlled
                 )}
               </div>
 
-              {/* Filter bar at bottom */}
               <div className="shrink-0 border-t border-(--color_border) pt-3">
                 <ExerciseFilterBar
                   exerciseCount={exercises.length}
@@ -177,7 +174,6 @@ export default function ExercisePicker({ onSelect, workoutType, open: controlled
                   zoneFilter={zoneFilter}
                   onZoneChange={setZoneFilter}
                   availableZones={availableZones}
-
                 />
               </div>
             </motion.div>

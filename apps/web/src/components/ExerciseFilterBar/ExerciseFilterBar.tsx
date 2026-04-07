@@ -1,5 +1,5 @@
 import { useRef, useCallback, useLayoutEffect, useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import AppInput from '@/components/ui/AppInput';
 import type { ExerciseCategory, MuscleZone } from '@/types/Exercise';
@@ -83,14 +83,15 @@ function ChipRow({
   const btnRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const [pill, setPill] = useState<{ left: number; width: number } | null>(null);
 
-  // Measure active chip position relative to the row (offsetLeft = parent-relative)
   useLayoutEffect(() => {
     const activeBtn = btnRefs.current.get(activeKey ?? '__none__');
-    if (!activeBtn) { setPill(null); return; }
+    if (!activeBtn) {
+      setPill(null);
+      return;
+    }
     setPill({ left: activeBtn.offsetLeft, width: activeBtn.offsetWidth });
   }, [activeKey, chips]);
 
-  // Scroll active chip into view
   useEffect(() => {
     const activeBtn = btnRefs.current.get(activeKey ?? '__none__');
     activeBtn?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
@@ -98,7 +99,6 @@ function ChipRow({
 
   return (
     <div ref={rowRef} className="relative flex gap-2 overflow-x-auto pb-0.5 no-scrollbar">
-      {/* Sliding pill — animates left/width, both parent-relative */}
       {pill && (
         <motion.div
           className="absolute top-0 bottom-0.5 rounded-full bg-(--color_primary_light) pointer-events-none"
