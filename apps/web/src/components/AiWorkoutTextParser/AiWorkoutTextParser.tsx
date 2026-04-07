@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { DocumentTextIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { aiApi } from '@/api/ai';
+import AccentButton from '@/components/ui/AccentButton';
 
 interface Props {
   onResult: (payload: {
@@ -83,7 +84,7 @@ export default function AiWorkoutTextParser({ onResult, triggerClassName, trigge
         onClick={() => setOpen(true)}
         className={
           triggerClassName ??
-          'w-full flex items-center gap-3 p-3 rounded-xl bg-sky-500/10 border border-sky-500/20 text-left hover:bg-sky-500/15 transition-colors'
+          'w-full flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-left hover:bg-emerald-500/15 transition-colors'
         }
       >
         {triggerContent ?? (
@@ -93,7 +94,7 @@ export default function AiWorkoutTextParser({ onResult, triggerClassName, trigge
               <span className="block text-sm font-medium text-white">Распознать по тексту</span>
               <span className="block text-xs text-(--color_text_muted)">ИИ распарсит в упражнения</span>
             </span>
-            <span className="text-sky-400/60 text-base shrink-0">→</span>
+            <span className="text-emerald-400/60 text-base shrink-0">→</span>
           </>
         )}
       </button>
@@ -123,15 +124,17 @@ export default function AiWorkoutTextParser({ onResult, triggerClassName, trigge
             </p>
           )}
 
-          <button
+          <AccentButton
             type="button"
             onClick={() => void run()}
-            disabled={busy || text.trim().length < 5}
-            className="w-full py-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            disabled={text.trim().length < 5}
+            loading={busy}
+            loadingText="Распознаём…"
+            className="gap-2 !bg-emerald-600 hover:!bg-emerald-500"
           >
             <SparklesIcon className="w-4 h-4" />
-            {busy ? 'Распознаём…' : 'Распарсить текст'}
-          </button>
+            Распарсить текст
+          </AccentButton>
         </div>
       </BottomSheet>
     </>

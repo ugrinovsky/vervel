@@ -693,11 +693,20 @@ export default function WorkoutFormBase({
           toolbar={
             exercises.length > 0 ? (
               <div className="flex flex-wrap gap-3 mb-1">
-                <AiWorkoutGenerator onResult={handleAiGeneratedResult} />
-                <AiWorkoutRecognizer onResult={handleAiRecognizedResult} />
+                <AiWorkoutRecognizer
+                  onResult={handleAiRecognizedResult}
+                  triggerContent={
+                    <>
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="text-[13px] leading-none">📸</span>
+                        <span>Распознать по фото</span>
+                      </span>
+                    </>
+                  }
+                />
                 <AiWorkoutTextParser
                   onResult={handleAiTextParsed}
-                  triggerClassName="flex items-center gap-1.5 text-xs text-sky-400 hover:text-sky-300 transition-colors"
+                  triggerClassName="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
                   triggerContent={
                     <>
                       <span>📝</span>
@@ -705,6 +714,8 @@ export default function WorkoutFormBase({
                     </>
                   }
                 />
+                <AiWorkoutGenerator onResult={handleAiGeneratedResult} />
+                <span className="text-xs text-white/40 self-center">· 10₽</span>
               </div>
             ) : undefined
           }
