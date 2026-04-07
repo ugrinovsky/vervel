@@ -333,18 +333,24 @@ export default function WorkoutFormBase({
     setIsParsing(true);
     try {
       const res = await aiApi.parseNotesText(notes);
-      const { workoutType: parsedType, exercises: parsedExercises, warning } = res.data;
+      const { exercises: parsedExercises, warning } = res.data;
       const nameMap = new Map(
         res.data.previewItems.map((item: any) => [item.exerciseId, item.name])
       );
-      const converted: ExerciseData[] = parsedExercises.map((ex: any) => ({
+      const baseConverted: ExerciseData[] = parsedExercises.map((ex: any) => ({
         exerciseId: ex.exerciseId,
-        name: nameMap.get(ex.exerciseId) ?? ex.exerciseId.replace(/_/g, ' '),
+        name:
+          nameMap.get(ex.exerciseId) ??
+          String(ex.exerciseId).replace(/^custom:/, '').replace(/_/g, ' '),
         setsDetail: ex.sets?.map((s: any) => ({ reps: s.reps ?? 10, weight: s.weight })) ?? [],
         sets: ex.sets?.length ?? 3,
         blockId: ex.blockId,
       }));
-      setWorkoutType(parsedType);
+
+      // Тип тренировки не определяем автоматически.
+      // Но данные с бэка приходят в "силовом" формате (reps/weight), поэтому при необходимости
+      // конвертируем их в текущий выбранный workoutType.
+      const converted = convertExercisesForType(baseConverted, 'bodybuilding', workoutType);
       setExercises(converted);
       setAiGenerated(true);
       setSelectedTemplateId(null);
@@ -360,7 +366,6 @@ export default function WorkoutFormBase({
 
   const handleAiTextParsed = (payload: {
     sourceText: string;
-    parsedType: 'crossfit' | 'bodybuilding' | 'cardio';
     previewItems: Array<{
       exerciseId: string;
       name: string;
@@ -380,24 +385,25 @@ export default function WorkoutFormBase({
     const nameMap = new Map(payload.previewItems.map((item) => [item.exerciseId, item.name]));
     const baseConverted: ExerciseData[] = payload.exercises.map((ex: any) => ({
       exerciseId: ex.exerciseId,
-      name: nameMap.get(ex.exerciseId) ?? ex.exerciseId.replace(/_/g, ' '),
+      name:
+        nameMap.get(ex.exerciseId) ??
+        String(ex.exerciseId).replace(/^custom:/, '').replace(/_/g, ' '),
       setsDetail: ex.sets?.map((s: any) => ({ reps: s.reps ?? 10, weight: s.weight })) ?? [],
       sets: ex.sets?.length ?? 3,
       blockId: ex.blockId,
       duration: ex.sets?.[0]?.time ? Math.round(Number(ex.sets?.[0]?.time ?? 0) / 60) : undefined,
     }));
 
-    const converted =
-      payload.parsedType === workoutType
-        ? baseConverted
-        : convertExercisesForType(baseConverted, payload.parsedType as WorkoutType, workoutType);
+    // С бэка "по тексту" приходит силовой формат по умолчанию (bodybuilding),
+    // а тип тренировки пользователь выбирает сам вкладками — поэтому конвертируем под текущий.
+    const converted = convertExercisesForType(baseConverted, 'bodybuilding', workoutType);
 
     setNotes(payload.sourceText);
     setExercises(converted);
     setAiGenerated(true);
     setSelectedTemplateId(null);
     if (payload.warning) toast(payload.warning, { icon: '⚠️' });
-    else toast.success(`ИИ разобрал ${converted.length} упражнений`);
+    else toast.success(`ИИ разобрал ${baseConverted.length} упражнений`);
   };
 
   // ── Template picker ───────────────────────────────────────────────

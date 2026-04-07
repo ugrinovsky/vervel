@@ -78,7 +78,7 @@ const chatValidator = vine.compile(
 export default class AiController {
   /**
    * POST /ai/recognize-workout
-   * Атлет: загружает фото → проверка баланса → AI распознаёт → матчинг к каталогу
+   * Атлет: загружает фото → проверка баланса → AI распознаёт (без матчингa к каталогу)
    */
   async recognizeWorkout({ auth, request, response }: HttpContext) {
     if (!YandexAiService.isEnabled()) {
@@ -95,10 +95,9 @@ export default class AiController {
     try {
       const result = await YandexAiService.recognizeFromImage(data.imageBase64, data.mimeType)
       logger.info({ userId, exerciseCount: result.exercises.length }, 'ai:recognize ok')
-      // Тип тренировки не определяем автоматически — только маппинг упражнений к каталогу
-      const pseudo: AiWorkoutResult = { workoutType: 'bodybuilding', exercises: result.exercises, notes: result.notes }
-      const matched = matchExercisesToCatalog(pseudo)
-      const out: AiRecognizedWorkoutResult = { workoutType: null, exercises: matched.exercises, notes: matched.notes }
+      // Тип тренировки выбирает пользователь вручную.
+      // Матчинг к каталогу отключён, чтобы не было "рандомных" подмен упражнений.
+      const out: AiRecognizedWorkoutResult = { workoutType: null, exercises: result.exercises, notes: result.notes }
       return response.ok({ data: out })
     } catch (err: any) {
       logger.error({ userId, err: err?.message }, 'ai:recognize failed')
@@ -180,9 +179,11 @@ export default class AiController {
         const weights = allSets.map((s) => s.weight).filter((w): w is number => w != null)
         const weightMin = weights.length ? Math.min(...weights) : undefined
         const weightMax = weights.length ? Math.max(...weights) : undefined
+        const isCustom = ex.exerciseId.startsWith('custom:')
         return {
           exerciseId: ex.exerciseId,
-          name: catalogMap.get(ex.exerciseId) ?? ex.exerciseId.replace(/_/g, ' '),
+          // В UI показываем человеческое имя, а не internal id custom:*
+          name: catalogMap.get(ex.exerciseId) ?? (isCustom ? ex.name : ex.exerciseId.replace(/_/g, ' ')),
           sets: allSets.length,
           reps: allSets[0]?.reps,
           weight: weightMin,
@@ -232,8 +233,9 @@ export default class AiController {
       // Важно: "распознать по тексту" должен работать так же, как распознавание по фото (после OCR),
       // иначе модель начинает "придумывать" упражнения и терять подходы/веса.
       const result = await YandexAiService.parseWorkoutTextLikeOcr(notes)
-      const matched = matchExercisesToCatalog(result)
-      const workoutExercises = aiExercisesToWorkoutExercises(matched.exercises, matched.workoutType)
+      // Тип тренировки пользователь выбирает вручную — AI не должен проставлять его автоматически.
+      // Для превью и сетов берём силовой формат (веса/повторы) по умолчанию.
+      const workoutExercises = aiExercisesToWorkoutExercises(result.exercises, 'bodybuilding')
 
       const uniqueIds = new Set(workoutExercises.map((e) => e.exerciseId))
       const hasDuplicates = uniqueIds.size < workoutExercises.length
@@ -247,7 +249,8 @@ export default class AiController {
         const weightMax = weights.length ? Math.max(...weights) : undefined
         return {
           exerciseId: ex.exerciseId,
-          name: catalogMap.get(ex.exerciseId) ?? ex.exerciseId.replace(/_/g, ' '),
+          // Матчинг отключён: показываем распознанное имя.
+          name: catalogMap.get(ex.exerciseId) ?? ex.name,
           sets: allSets.length,
           reps: allSets[0]?.reps,
           weight: weightMin,
@@ -257,7 +260,7 @@ export default class AiController {
 
       const balance = await AiBalanceService.getBalance(userId)
       return response.ok({
-        workoutType: matched.workoutType,
+        workoutType: null,
         previewItems,
         exercises: workoutExercises,
         warning: tooFew
@@ -521,6 +524,16 @@ function matchExercisesToCatalog(result: AiWorkoutResult): AiWorkoutResult {
     }
 
     if (found) {
+      // Safety: avoid "random" mismatches (e.g. matching by a single generic token like "тяга/сгибания").
+      // If the match is not obviously close by token similarity, keep it as custom:* instead of polluting data.
+      const similarity = aiNameSimilarity(aiEx.name, found.title)
+      if (similarity < 0.6) {
+        logger.warn(
+          { name: aiEx.name, candidateId: found.id, candidateTitle: found.title, similarity },
+          'ai:match weak similarity — will keep as custom'
+        )
+        return aiEx
+      }
       logger.info({ name: aiEx.name, exerciseId: found.id }, 'ai:match hit')
       return { ...aiEx, exerciseId: found.id }
     }

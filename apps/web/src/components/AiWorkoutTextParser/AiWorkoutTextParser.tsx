@@ -3,11 +3,12 @@ import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { DocumentTextIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { aiApi } from '@/api/ai';
 import AccentButton from '@/components/ui/AccentButton';
+import AiLoadingView from '@/components/ui/AiLoadingView';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface Props {
   onResult: (payload: {
     sourceText: string;
-    parsedType: 'crossfit' | 'bodybuilding' | 'cardio';
     previewItems: Array<{
       exerciseId: string;
       name: string;
@@ -34,6 +35,11 @@ export default function AiWorkoutTextParser({ onResult, triggerClassName, trigge
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const LOADING_STEPS = useMemo(
+    () => ['Чищу текст…', 'Разбираю упражнения…', 'Проверяю подходы и веса…', 'Собираю результат…'],
+    []
+  );
+
   const header = useMemo(
     () => (
       <div className="flex items-center gap-2">
@@ -43,7 +49,7 @@ export default function AiWorkoutTextParser({ onResult, triggerClassName, trigge
         <span className="text-lg font-bold text-white">Разбор текста</span>
       </div>
     ),
-    [],
+    []
   );
 
   const close = () => {
@@ -62,7 +68,6 @@ export default function AiWorkoutTextParser({ onResult, triggerClassName, trigge
       const res = await aiApi.parseNotesText(notes);
       onResult({
         sourceText: notes,
-        parsedType: res.data.workoutType,
         previewItems: res.data.previewItems,
         exercises: res.data.exercises,
         warning: res.data.warning,
@@ -92,7 +97,9 @@ export default function AiWorkoutTextParser({ onResult, triggerClassName, trigge
             <span className="text-xl shrink-0">📝</span>
             <span className="flex-1 min-w-0">
               <span className="block text-sm font-medium text-white">Распознать по тексту</span>
-              <span className="block text-xs text-(--color_text_muted)">ИИ распарсит в упражнения</span>
+              <span className="block text-xs text-(--color_text_muted)">
+                ИИ распознает по тексту
+              </span>
             </span>
             <span className="text-emerald-400/60 text-base shrink-0">→</span>
           </>
@@ -100,44 +107,53 @@ export default function AiWorkoutTextParser({ onResult, triggerClassName, trigge
       </button>
 
       <BottomSheet id="ai-workout-text-parser" open={open} onClose={close} header={header}>
-        <div className="space-y-4 pb-4">
-          <p className="text-sm text-(--color_text_muted)">
-            Вставьте программу тренировки — ИИ распарсит упражнения, подходы и веса.
-          </p>
+        <AnimatePresence mode="wait">
+          {busy ? (
+            <AiLoadingView key="loading" steps={LOADING_STEPS} />
+          ) : (
+            <motion.div
+              key="form"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-4 pb-4"
+            >
+              <p className="text-sm text-(--color_text_muted)">
+                Вставьте программу тренировки — ИИ распарсит упражнения, подходы и веса.
+              </p>
 
-          <div className="relative">
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder={`Например:
+              <div className="relative">
+                <textarea
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder={`Например:
 Жим лёжа 3×10 60кг
 Тяга 3×12 40кг
 Подтягивания - макс`}
-              rows={6}
-              className="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-white text-sm resize-none outline-none focus:border-emerald-400/60 transition-colors placeholder:text-white/30"
-            />
-          </div>
+                  rows={6}
+                  className="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-white text-sm resize-none outline-none focus:border-emerald-400/60 transition-colors placeholder:text-white/30"
+                />
+              </div>
 
-          {error && (
-            <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
-              {error}
-            </p>
+              {error && (
+                <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
+                  {error}
+                </p>
+              )}
+
+              <AccentButton
+                type="button"
+                onClick={() => void run()}
+                disabled={text.trim().length < 5}
+                className="gap-2 !bg-emerald-600 hover:!bg-emerald-500"
+              >
+                <SparklesIcon className="w-4 h-4" />
+                Распарсить текст
+              </AccentButton>
+            </motion.div>
           )}
-
-          <AccentButton
-            type="button"
-            onClick={() => void run()}
-            disabled={text.trim().length < 5}
-            loading={busy}
-            loadingText="Распознаём…"
-            className="gap-2 !bg-emerald-600 hover:!bg-emerald-500"
-          >
-            <SparklesIcon className="w-4 h-4" />
-            Распарсить текст
-          </AccentButton>
-        </div>
+        </AnimatePresence>
       </BottomSheet>
     </>
   );
 }
-

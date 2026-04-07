@@ -13,13 +13,27 @@ export function convertExercisesForType(
   newType: WorkoutType,
 ): ExerciseData[] {
   if (oldType !== 'cardio' && newType !== 'cardio') {
+    // Импорт из AI (parse-notes-text) уже приходит в формате силовой: полный setsDetail.
+    // Раньше при oldType===newType===bodybuilding мы всё равно затирали setsDetail тремя копиями
+    // из ex.reps/ex.weight (часто null у ИИ) → пустые кг и «10» вместо реальных повторов.
+    if (oldType === newType) return exercises
+
     return exercises.map((ex) => {
       if (newType === 'crossfit') {
         const { setsDetail, sets: _c, blockId: _b, ...rest } = ex
-        return { ...rest, reps: setsDetail?.[0]?.reps ?? ex.reps ?? 10, weight: setsDetail?.[0]?.weight ?? ex.weight }
+        return {
+          ...rest,
+          reps: setsDetail?.[0]?.reps ?? ex.reps ?? 10,
+          weight: setsDetail?.[0]?.weight ?? ex.weight,
+          // сохраняем подходы — при переключении обратно на силовую данные не потеряются
+          setsDetail: setsDetail?.length ? setsDetail : undefined,
+        }
       }
       const { wodType: _w, timeCap: _t, rounds: _r, ...rest } = ex
       if (rest.duration != null) return rest
+      if (rest.setsDetail && rest.setsDetail.length > 0) {
+        return { ...rest, sets: rest.setsDetail.length }
+      }
       return {
         ...rest,
         setsDetail: [

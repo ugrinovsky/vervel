@@ -10,7 +10,8 @@ describe('convertExercisesForType: bodybuilding → crossfit', () => {
     const [result] = convertExercisesForType([ex], 'bodybuilding', 'crossfit')
     expect(result.reps).toBe(8)
     expect(result.weight).toBe(80)
-    expect(result.setsDetail).toBeUndefined()
+    // setsDetail сохраняем, чтобы при переключении обратно на силовую не терять пирамиду
+    expect(result.setsDetail).toEqual([{ reps: 8, weight: 80 }, { reps: 6, weight: 90 }])
     expect(result.sets).toBeUndefined()
   })
 

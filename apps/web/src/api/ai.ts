@@ -110,7 +110,7 @@ export const aiApi = {
    */
   parseNotesText: (notes: string) =>
     privateApi.post<{
-      workoutType: 'crossfit' | 'bodybuilding' | 'cardio'
+      workoutType: null
       previewItems: Array<{ exerciseId: string; name: string; sets: number; reps?: number; weight?: number; weightMax?: number }>
       exercises: Array<{ exerciseId: string; type: string; sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>; blockId?: string }>
       warning: string | null
