@@ -15,10 +15,29 @@ export function capitalizeFirstForDisplay(s: string): string {
 /** Разбиение на токены для матчинга рус/англ названий (Unicode-буквы и цифры). */
 const TOKEN_SPLIT = /[^\p{L}\p{N}]+/u
 
-export function tokenizeForMatch(s: string): string[] {
-  return s
-    .trim()
+/**
+ * Общая нормализация для матчинга/стабильных ключей.
+ * - Unicode NFKC
+ * - нижний регистр
+ * - ё → е
+ * - разные тире → '-'
+ * - множественные пробелы → один пробел
+ *
+ * Синхронно с apps/web/src/utils/textNormalize.ts
+ */
+export function normalizeExerciseLabel(s: string): string {
+  const t = String(s ?? '')
+    .normalize('NFKC')
     .toLowerCase()
+    .replace(/ё/g, 'е')
+    .replace(/[\u2013\u2014–—]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return t
+}
+
+export function tokenizeForMatch(s: string): string[] {
+  return normalizeExerciseLabel(s)
     .split(TOKEN_SPLIT)
     .filter((t) => t.length >= 2)
 }
@@ -55,12 +74,7 @@ export function displayNameMatchesCatalogTitle(displayName: string, catalogTitle
  * Синхронно с apps/web/src/utils/canonicalCustomExerciseKey.ts
  */
 export function canonicalCustomExerciseKey(label: string): string {
-  const t = label.trim().replace(/\s+/g, ' ')
+  const t = normalizeExerciseLabel(label)
   if (!t) return 'unnamed'
   return t
-    .normalize('NFKC')
-    .toLowerCase()
-    .replace(/ё/g, 'е')
-    .replace(/[\u2013\u2014–—]/g, '-')
-    .trim()
 }

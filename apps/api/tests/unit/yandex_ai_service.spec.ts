@@ -63,6 +63,33 @@ test.group('YandexAiService: parseWorkoutJson', () => {
     }
   })
 
+  test('переключает workoutType на crossfit по маркерам AMRAP/EMOM в контексте', ({ assert }) => {
+    const json = JSON.stringify({
+      workoutType: 'bodybuilding',
+      exercises: [{ name: 'Burpee', displayName: 'Бёрпи', sets: 1, reps: 10 }],
+    })
+    const result = svc.parseWorkoutJson(json, 'AMRAP 12 min\nBurpees 10')
+    assert.equal(result.workoutType, 'crossfit')
+  })
+
+  test('переключает workoutType на cardio по duration без веса', ({ assert }) => {
+    const json = JSON.stringify({
+      workoutType: 'bodybuilding',
+      exercises: [{ name: 'Run', displayName: 'Бег', sets: 1, duration: 30, weight: null }],
+    })
+    const result = svc.parseWorkoutJson(json, 'Бег 30 мин')
+    assert.equal(result.workoutType, 'cardio')
+  })
+
+  test('если ИИ вернул cardio, но есть вес — корректирует на bodybuilding', ({ assert }) => {
+    const json = JSON.stringify({
+      workoutType: 'cardio',
+      exercises: [{ name: 'Bench', displayName: 'Жим', sets: 3, reps: 10, weight: 80 }],
+    })
+    const result = svc.parseWorkoutJson(json, 'Жим 3х10 80кг')
+    assert.equal(result.workoutType, 'bodybuilding')
+  })
+
   test('нормализует sets — минимум 1 при нулевом значении', ({ assert }) => {
     const json = JSON.stringify({
       workoutType: 'bodybuilding',

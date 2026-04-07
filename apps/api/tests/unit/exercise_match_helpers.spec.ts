@@ -3,6 +3,7 @@ import {
   capitalizeFirstForDisplay,
   canonicalCustomExerciseKey,
   displayNameMatchesCatalogTitle,
+  normalizeExerciseLabel,
   tokenSubsetOverlap,
   tokenizeForMatch,
 } from '#services/exercise_match_helpers'
@@ -21,6 +22,10 @@ test.group('tokenizeForMatch', () => {
   test('keeps cyrillic words length >= 2', ({ assert }) => {
     const t = tokenizeForMatch('Румынская тяга с гантелями')
     assert.isTrue(t.includes('румынская') && t.includes('тяга') && t.includes('гантелями'))
+  })
+
+  test('treats ё as е', ({ assert }) => {
+    assert.deepEqual(tokenizeForMatch('Жим лёжа'), tokenizeForMatch('Жим лежа'))
   })
 })
 
@@ -55,5 +60,14 @@ test.group('canonicalCustomExerciseKey', () => {
 
   test('normalizes unicode dashes', ({ assert }) => {
     assert.equal(canonicalCustomExerciseKey('Тяга — штанга'), canonicalCustomExerciseKey('Тяга - штанга'))
+  })
+})
+
+test.group('normalizeExerciseLabel', () => {
+  test('unifies ё/е, dashes and spaces', ({ assert }) => {
+    assert.equal(
+      normalizeExerciseLabel('  Жим — лёжа  '),
+      normalizeExerciseLabel('жим - лежа')
+    )
   })
 })

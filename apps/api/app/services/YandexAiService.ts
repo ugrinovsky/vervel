@@ -184,7 +184,7 @@ export class YandexAiService {
     )
     logger.info({ gptPreview: result.slice(0, 500) }, 'ai:gpt result')
 
-    return this.parseWorkoutJson(result)
+    return this.parseWorkoutJson(result, extractedText)
   }
 
   /**
@@ -207,7 +207,7 @@ export class YandexAiService {
       4096
     )
 
-    return this.parseWorkoutJson(result)
+    return this.parseWorkoutJson(result, notes)
   }
 
   /**
@@ -227,7 +227,7 @@ export class YandexAiService {
       env.get('YANDEX_GPT_PARSE_MODEL', 'yandexgpt')
     )
 
-    return this.parseWorkoutJson(result)
+    return this.parseWorkoutJson(result, prompt)
   }
 
   /**
@@ -496,7 +496,85 @@ export class YandexAiService {
     return text
   }
 
-  private static parseWorkoutJson(raw: string): AiWorkoutResult {
+  private static inferWorkoutType(
+    current: 'crossfit' | 'bodybuilding' | 'cardio',
+    exercises: AiExercise[],
+    contextText?: string
+  ): 'crossfit' | 'bodybuilding' | 'cardio' {
+    const text = (contextText ?? '').toLowerCase()
+
+    // Cardio signals (OCR/text)
+    const cardioMarkers = [
+      'бег',
+      'беговая',
+      'run',
+      'pace',
+      'пульс',
+      'zone 2',
+      'зона 2',
+      'вело',
+      'велосипед',
+      'bike',
+      'airbike',
+      'assault',
+      'echo bike',
+      'row',
+      'rowing',
+      'греб',
+      'ski',
+      'ski erg',
+      'эллипс',
+      'эллиптичес',
+      'ходьба',
+      'шаги',
+      'йога',
+      'растяж',
+      'mobility',
+      'stretch',
+    ]
+
+    // CrossFit signals (OCR/text)
+    const crossfitMarkers = [
+      'amrap',
+      'эмом',
+      'emom',
+      'tabata',
+      'фор тайм',
+      'for time',
+      'ft',
+      'time cap',
+      'tc',
+      'на время',
+      'wod',
+      'раунд',
+      'round',
+      'круг',
+      'круговая',
+      'интерв',
+      'rx',
+    ]
+
+    const hasDuration = exercises.some((e) => (e.duration ?? 0) > 0 || e.setData?.some((s) => (s.time ?? 0) > 0))
+    const hasWeight = exercises.some((e) => (e.weight ?? 0) > 0 || e.setData?.some((s) => (s.weight ?? 0) > 0))
+
+    // Strong overrides from structured data first
+    if (hasDuration && !hasWeight) return 'cardio'
+
+    // Strong overrides from OCR/text markers
+    if (crossfitMarkers.some((m) => text.includes(m))) return 'crossfit'
+    // Distance units must be tied to numbers, иначе "Жим" ложно матчится по "м"
+    const hasDistance =
+      /\b\d+(?:[.,]\d+)?\s*(км|km|м|m|метр(?:а|ов)?|meters?)\b/i.test(text) ||
+      /\b(?:км|km)\s*\d+(?:[.,]\d+)?\b/i.test(text)
+    if (hasDistance || cardioMarkers.some((m) => text.includes(m))) return 'cardio'
+
+    // Safety correction: if model said cardio, but we clearly have weights → likely not cardio
+    if (current === 'cardio' && hasWeight) return 'bodybuilding'
+
+    return current
+  }
+
+  private static parseWorkoutJson(raw: string, contextText?: string): AiWorkoutResult {
     const cleaned = raw
       .replace(/```json\n?/g, '')
       .replace(/```\n?/g, '')
@@ -512,7 +590,7 @@ export class YandexAiService {
     }
 
     const validTypes = ['crossfit', 'bodybuilding', 'cardio'] as const
-    const workoutType = validTypes.includes(parsed.workoutType) ? parsed.workoutType : 'bodybuilding'
+    const parsedType = validTypes.includes(parsed.workoutType) ? parsed.workoutType : 'bodybuilding'
 
     const exercises: AiExercise[] = (Array.isArray(parsed.exercises) ? parsed.exercises : []).map(
       (ex: any) => {
@@ -546,7 +624,7 @@ export class YandexAiService {
     )
 
     return {
-      workoutType,
+      workoutType: this.inferWorkoutType(parsedType, exercises, contextText),
       exercises,
       notes: parsed.notes ? String(parsed.notes) : undefined,
     }

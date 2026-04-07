@@ -451,6 +451,15 @@ function bestMatchByTitleTokenOverlap(
   return best?.ex
 }
 
+function aiNameSimilarity(a: string, b: string): number {
+  const aTokens = tokenizeForMatch(a)
+  const bTokens = tokenizeForMatch(b)
+  if (aTokens.length === 0 || bTokens.length === 0) return 0
+  const forward = tokenSubsetOverlap(aTokens, bTokens)
+  const backward = tokenSubsetOverlap(bTokens, aTokens)
+  return Math.max(forward, backward)
+}
+
 /**
  * Матчит упражнения из AI-ответа к реальным ID каталога.
  * Детерминированные шаги + пересечение токенов с русским title из каталога.
@@ -514,6 +523,32 @@ function matchExercisesToCatalog(result: AiWorkoutResult): AiWorkoutResult {
     logger.info({ name: aiEx.name }, 'ai:match miss — will use custom: prefix')
     return aiEx
   })
+
+  // Guardrail: avoid merging two different movements into one catalog id inside a single AI result.
+  // If duplicates happen but names are not similar enough, drop exerciseId for the weaker entries
+  // so they become custom:* and won't contaminate strength log / analytics.
+  const byId = new Map<string, number>()
+  for (let i = 0; i < exercises.length; i++) {
+    const id = exercises[i]?.exerciseId
+    if (!id) continue
+    if (!byId.has(id)) {
+      byId.set(id, i)
+      continue
+    }
+    const firstIdx = byId.get(id)!
+    const first = exercises[firstIdx]!
+    const cur = exercises[i]!
+    const sim = aiNameSimilarity(first.name, cur.name)
+    if (sim < 0.6) {
+      logger.warn(
+        { exerciseId: id, a: first.name, b: cur.name, similarity: sim },
+        'ai:match duplicate id with low similarity — downgrading to custom'
+      )
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { exerciseId: _drop, ...rest } = cur as any
+      exercises[i] = rest
+    }
+  }
 
   return { ...result, exercises }
 }

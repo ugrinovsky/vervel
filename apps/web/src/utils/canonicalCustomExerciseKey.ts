@@ -4,13 +4,10 @@
  *
  * Держите в синхроне с apps/api/app/services/exercise_match_helpers.ts → canonicalCustomExerciseKey
  */
+import { normalizeExerciseLabel } from './textNormalize';
+
 export function canonicalCustomExerciseKey(label: string): string {
-  const t = label.trim().replace(/\s+/g, ' ')
-  if (!t) return 'unnamed'
-  return t
-    .normalize('NFKC')
-    .toLowerCase()
-    .replace(/ё/g, 'е')
-    .replace(/[\u2013\u2014–—]/g, '-')
-    .trim()
+  const t = normalizeExerciseLabel(label);
+  if (!t) return 'unnamed';
+  return t;
 }
