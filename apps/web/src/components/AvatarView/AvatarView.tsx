@@ -33,7 +33,9 @@ type Phase = 'destroyed' | 'recovering' | 'almost_ready' | 'recovered' | 'untrai
 
 function getPhase(zone: ZoneState): Phase {
   if (zone.intensity === 0 && zone.peakLoad === 0) return 'untrained';
-  if (zone.lastTrainedDaysAgo <= 1 && zone.peakLoad >= 0.3) return 'destroyed';
+  // "Перегружено" должно зависеть от текущей усталости (intensity), а не от пика в окне.
+  // Иначе даже слегка нагруженные зоны в свежей тренировке могут выглядеть как "перегружены".
+  if ((zone.lastTrainedDaysAgo ?? 999) <= 1 && zone.intensity >= 0.3) return 'destroyed';
   if (zone.intensity >= 0.4) return 'recovering';
   if (zone.intensity >= 0.1) return 'almost_ready';
   return 'recovered';
