@@ -83,6 +83,15 @@ describe('parseApiDateTime', () => {
     expect(d.getDate()).toBe(10)
   })
 
+  it('парсит только дату YYYY-MM-DD как полночь локально (силовой журнал / API)', () => {
+    const d = parseApiDateTime('2026-01-02')
+    expect(d.getFullYear()).toBe(2026)
+    expect(d.getMonth()).toBe(0)
+    expect(d.getDate()).toBe(2)
+    expect(d.getHours()).toBe(0)
+    expect(d.getMinutes()).toBe(0)
+  })
+
   it('round-trip с toApiDateTime', () => {
     const date = new Date(2024, 3, 20)
     const time = new Date(2024, 0, 1, 18, 45)

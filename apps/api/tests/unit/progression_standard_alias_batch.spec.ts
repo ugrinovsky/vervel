@@ -203,3 +203,69 @@ test.group('ProgressionService: getStrengthLog и лимит ИИ', () => {
     }
   });
 });
+
+test.group('ProgressionService: mergeDuplicateExerciseStandards', (group) => {
+  let user: User;
+
+  group.each.setup(async () => {
+    user = await createTestUser();
+  });
+
+  group.each.teardown(async () => {
+    await cleanupUser(user.id);
+  });
+
+  test('два эталона с одинаковым названием — один остаётся, алиас с большего id переносится', async ({
+    assert,
+  }) => {
+    const a = await ProgressionService.createExerciseStandard(user.id, 'Жим штанги лёжа', null);
+    const b = await ProgressionService.createExerciseStandard(user.id, 'Жим штанги лёжа', null);
+    assert.notEqual(a.id, b.id);
+    const kept = Math.min(a.id, b.id);
+    const removed = Math.max(a.id, b.id);
+    await ProgressionService.setExerciseStandardAlias(user.id, 'custom:merge_test_dup', removed);
+    const r = await ProgressionService.mergeDuplicateExerciseStandards(user.id);
+    assert.equal(r.mergedGroups, 1);
+    assert.equal(r.details[0].keptStandardId, kept);
+    assert.deepEqual(r.details[0].removedStandardIds, [removed]);
+    assert.equal(r.details[0].aliasesRepointed, 1);
+    const list = await ProgressionService.listExerciseStandards(user.id);
+    assert.lengthOf(list, 1);
+    const alias = await UserExerciseStandardAlias.query()
+      .where('userId', user.id)
+      .where('sourceExerciseId', 'custom:merge_test_dup')
+      .first();
+    assert.isDefined(alias);
+    assert.equal(alias!.standardId, kept);
+  });
+
+  test('разные catalogExerciseId при одном названии — ошибка, строки не трогаем', async ({ assert }) => {
+    await ProgressionService.createExerciseStandard(user.id, 'Дубль каталога', 'Romanian_Deadlift');
+    await ProgressionService.createExerciseStandard(user.id, 'Дубль каталога', 'Barbell_Lunge');
+    await assert.rejects(
+      () => ProgressionService.mergeDuplicateExerciseStandards(user.id),
+      /разные привязки к каталогу/,
+    );
+    const list = await ProgressionService.listExerciseStandards(user.id);
+    assert.lengthOf(list, 2);
+  });
+
+  test('при пустом каталоге у канона переносится catalog с дубликата', async ({ assert }) => {
+    const a = await ProgressionService.createExerciseStandard(user.id, 'Один эталон', null);
+    const b = await ProgressionService.createExerciseStandard(user.id, 'Один эталон', 'Romanian_Deadlift');
+    assert.isBelow(a.id, b.id);
+    await ProgressionService.mergeDuplicateExerciseStandards(user.id);
+    const list = await ProgressionService.listExerciseStandards(user.id);
+    assert.lengthOf(list, 1);
+    assert.equal(list[0].id, a.id);
+    assert.equal(list[0].catalogExerciseId, 'Romanian_Deadlift');
+  });
+
+  test('слияние по нормализации ё/е в названии', async ({ assert }) => {
+    await ProgressionService.createExerciseStandard(user.id, 'Упражнение лёжа', null);
+    await ProgressionService.createExerciseStandard(user.id, 'Упражнение лежа', null);
+    const r = await ProgressionService.mergeDuplicateExerciseStandards(user.id);
+    assert.equal(r.mergedGroups, 1);
+    assert.lengthOf(await ProgressionService.listExerciseStandards(user.id), 1);
+  });
+});

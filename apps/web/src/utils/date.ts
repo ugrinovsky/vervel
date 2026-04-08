@@ -91,9 +91,14 @@ export function toApiDateTime(date: Date, time: Date): string {
  * as a local date so no conversion happens.
  */
 export function parseApiDateTime(dateStr: string): Date {
-  const local = dateStr.slice(0, 19); // "YYYY-MM-DDTHH:mm:ss"
-  const [datePart, timePart] = local.split('T');
+  const trimmed = dateStr.trim();
+  const hasTime = trimmed.includes('T');
+  const local = hasTime ? trimmed.slice(0, 19) : trimmed.slice(0, 10);
+  const [datePart, timePart] = hasTime ? local.split('T') : [local, ''];
   const [y, mo, d] = datePart.split('-').map(Number);
+  if (!timePart) {
+    return new Date(y, mo - 1, d, 0, 0, 0);
+  }
   const [h, min, s] = timePart.split(':').map(Number);
   return new Date(y, mo - 1, d, h, min, s ?? 0);
 }

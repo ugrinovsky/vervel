@@ -14,7 +14,6 @@ import {
   capitalizeFirstForDisplay,
   normalizeExerciseLabel,
   tokenizeForMatch,
-  tokenSubsetOverlap,
 } from '#services/exercise_match_helpers';
 import {
   normalizePinnedExerciseIdList,
@@ -28,15 +27,6 @@ const STD_PREFIX = 'std:';
 const STRENGTH_LOG_WT_SEP = '|wt:' as const;
 
 type StrengthLogWorkoutType = 'bodybuilding' | 'crossfit' | 'cardio';
-
-function labelSimilarity(a: string, b: string): number {
-  const aTokens = tokenizeForMatch(a);
-  const bTokens = tokenizeForMatch(b);
-  if (aTokens.length < 2 || bTokens.length < 2) return 0;
-  const forward = tokenSubsetOverlap(aTokens, bTokens);
-  const backward = tokenSubsetOverlap(bTokens, aTokens);
-  return Math.max(forward, backward);
-}
 
 function parseStrengthLogCompositeKey(composite: string): {
   baseGroupKey: string;
@@ -823,6 +813,105 @@ export class ProgressionService {
     await row.delete();
   }
 
+  /**
+   * Объединяет эталоны с одинаковым нормализованным displayLabel (минимальный id остаётся).
+   * Алиасы с дубликатов переносятся на оставшийся эталон; при единственном catalogExerciseId в группе
+   * дописывается в канонический, если там было пусто.
+   */
+  static async mergeDuplicateExerciseStandards(
+    userId: number
+  ): Promise<MergeDuplicateExerciseStandardsResult> {
+    const rows = await UserExerciseStandard.query().where('userId', userId).orderBy('id', 'asc');
+    const byNorm = new Map<string, UserExerciseStandard[]>();
+    for (const r of rows) {
+      const k = normalizeExerciseLabel(r.displayLabel);
+      const arr = byNorm.get(k) ?? [];
+      arr.push(r);
+      byNorm.set(k, arr);
+    }
+    const groups = [...byNorm.values()].filter((g) => g.length > 1);
+    if (groups.length === 0) {
+      return { mergedGroups: 0, details: [] };
+    }
+
+    const details: MergeDuplicateExerciseStandardsDetail[] = [];
+
+    await db.transaction(async (trx) => {
+      for (const group of groups) {
+        group.sort((a, b) => a.id - b.id);
+        const canon = group[0]!;
+        const dups = group.slice(1);
+        const catalogs = new Set(
+          group.map((g) => g.catalogExerciseId).filter((c): c is string => Boolean(c?.trim()))
+        );
+        if (catalogs.size > 1) {
+          throw new Error(
+            `Не удалось объединить дубликаты «${canon.displayLabel.trim()}»: разные привязки к каталогу (id: ${group.map((g) => g.id).join(', ')}). Оставьте одну привязку или переименуйте эталоны.`
+          );
+        }
+        const [onlyCat] = [...catalogs];
+        const canonRow = await UserExerciseStandard.query({ client: trx })
+          .where('userId', userId)
+          .where('id', canon.id)
+          .first();
+        if (!canonRow) {
+          throw new Error('Эталон не найден');
+        }
+        const canonHadCatalog = Boolean(canonRow.catalogExerciseId?.trim());
+
+        let aliasesRepointed = 0;
+        for (const dup of dups) {
+          const aliasRows = await UserExerciseStandardAlias.query({ client: trx })
+            .where('userId', userId)
+            .where('standardId', dup.id);
+          aliasesRepointed += aliasRows.length;
+          if (aliasRows.length > 0) {
+            await UserExerciseStandardAlias.query({ client: trx })
+              .where('userId', userId)
+              .where('standardId', dup.id)
+              .update({ standardId: canon.id });
+          }
+          await UserExerciseStandard.query({ client: trx })
+            .where('userId', userId)
+            .where('id', dup.id)
+            .delete();
+        }
+
+        // Каталог на канон — только после удаления дубликатов, иначе unique (user_id, catalog_exercise_id).
+        if (!canonHadCatalog && onlyCat) {
+          const canonAfter = await UserExerciseStandard.query({ client: trx })
+            .where('userId', userId)
+            .where('id', canon.id)
+            .first();
+          if (canonAfter && !canonAfter.catalogExerciseId?.trim()) {
+            canonAfter.catalogExerciseId = onlyCat;
+            canonAfter.useTransaction(trx);
+            await canonAfter.save();
+          }
+        }
+
+        details.push({
+          displayLabel: canon.displayLabel.trim(),
+          keptStandardId: canon.id,
+          removedStandardIds: dups.map((d) => d.id),
+          aliasesRepointed,
+        });
+      }
+    });
+
+    logger.info(
+      {
+        event: 'progression:merge-duplicate-exercise-standards',
+        userId,
+        mergedGroups: details.length,
+        details,
+      },
+      'ProgressionService.mergeDuplicateExerciseStandards'
+    );
+
+    return { mergedGroups: details.length, details };
+  }
+
   static async setExerciseStandardAlias(
     userId: number,
     sourceExerciseId: string,
@@ -999,8 +1088,11 @@ export class ProgressionService {
 
   /**
    * ИИ: предложить связи «упражнение из истории → эталон» (только из уже известных id).
+   * Сначала сливаем дубликаты эталонов по названию — и в промпт уходит один id на подпись (как после шага в контроллере).
    */
   static async suggestStandardAliasLinksWithAi(userId: number): Promise<StandardLinkSuggestionDTO[]> {
+    const mergeDup = await this.mergeDuplicateExerciseStandards(userId);
+
     const standards = await this.listExerciseStandards(userId);
     if (standards.length === 0) {
       throw new Error('Сначала создайте хотя бы один эталон');
@@ -1023,11 +1115,8 @@ export class ProgressionService {
 
     const seen = new Set<string>();
     const out: StandardLinkSuggestionDTO[] = [];
-    const MIN_SIMILARITY_FOR_AI_STANDARD_LINK = 0.75;
     let skippedInvalidIds = 0;
     let skippedDuplicate = 0;
-    let skippedLowSimilarity = 0;
-    const lowSimilaritySamples: Array<{ src: string; standardId: number; sim: number }> = [];
 
     for (const link of rawLinks) {
       const src = link.sourceExerciseId?.trim();
@@ -1042,14 +1131,6 @@ export class ProgressionService {
 
       const exName = nameById.get(src) ?? src;
       const stdLabel = labelById.get(link.standardId) ?? String(link.standardId);
-      const sim = labelSimilarity(exName, stdLabel);
-      if (sim < MIN_SIMILARITY_FOR_AI_STANDARD_LINK) {
-        skippedLowSimilarity += 1;
-        if (lowSimilaritySamples.length < 12) {
-          lowSimilaritySamples.push({ src, standardId: link.standardId, sim });
-        }
-        continue;
-      }
 
       seen.add(src);
       out.push({
@@ -1064,6 +1145,12 @@ export class ProgressionService {
       {
         event: 'progression:ai-suggest-standard-links:result',
         userId,
+        mergeDuplicateGroupsInThisCall: mergeDup.mergedGroups,
+        mergeDuplicateDetailIds: mergeDup.details.map((d) => ({
+          label: d.displayLabel,
+          kept: d.keptStandardId,
+          removed: d.removedStandardIds,
+        })),
         standardsCount: standards.length,
         candidatesCount: candidates.length,
         rawLinksFromAi: rawLinks.length,
@@ -1072,9 +1159,6 @@ export class ProgressionService {
         suggestions: out,
         skippedInvalidIds,
         skippedDuplicate,
-        skippedLowSimilarity,
-        lowSimilaritySamples,
-        minSimilarity: MIN_SIMILARITY_FOR_AI_STANDARD_LINK,
       },
       'ProgressionService.suggestStandardAliasLinksWithAi'
     );
@@ -1327,6 +1411,18 @@ export interface ExerciseStandardDTO {
   displayLabel: string;
   /** normalizeExerciseLabel(title каталога) для неявного слияния с custom:…; null если нет каталога или слишком короткое имя */
   catalogTitleNormalized: string | null;
+}
+
+export interface MergeDuplicateExerciseStandardsDetail {
+  displayLabel: string;
+  keptStandardId: number;
+  removedStandardIds: number[];
+  aliasesRepointed: number;
+}
+
+export interface MergeDuplicateExerciseStandardsResult {
+  mergedGroups: number;
+  details: MergeDuplicateExerciseStandardsDetail[];
 }
 
 export interface ExerciseStandardAliasDTO {
