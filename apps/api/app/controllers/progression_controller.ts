@@ -199,15 +199,6 @@ export default class ProgressionController {
       return response.ok({ success: true, data: { suggestions: [], balance } })
     }
 
-    try {
-      await ProgressionService.mergeDuplicateExerciseStandards(userId)
-    } catch (e: any) {
-      return response.badRequest({
-        success: false,
-        message: e?.message ?? 'Не удалось подготовить эталоны перед запросом к ИИ',
-      })
-    }
-
     const cost = AiBalanceService.COST_SUGGEST_STANDARD_LINKS
     try {
       await AiBalanceService.charge(userId, cost, 'ИИ: подсказки связей с эталонами')

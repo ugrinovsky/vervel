@@ -1088,11 +1088,9 @@ export class ProgressionService {
 
   /**
    * ИИ: предложить связи «упражнение из истории → эталон» (только из уже известных id).
-   * Сначала сливаем дубликаты эталонов по названию — и в промпт уходит один id на подпись (как после шага в контроллере).
+   * Смысл совпадений определяет только модель по промпту; здесь лишь проверка id и дедуп по source.
    */
   static async suggestStandardAliasLinksWithAi(userId: number): Promise<StandardLinkSuggestionDTO[]> {
-    const mergeDup = await this.mergeDuplicateExerciseStandards(userId);
-
     const standards = await this.listExerciseStandards(userId);
     if (standards.length === 0) {
       throw new Error('Сначала создайте хотя бы один эталон');
@@ -1145,12 +1143,6 @@ export class ProgressionService {
       {
         event: 'progression:ai-suggest-standard-links:result',
         userId,
-        mergeDuplicateGroupsInThisCall: mergeDup.mergedGroups,
-        mergeDuplicateDetailIds: mergeDup.details.map((d) => ({
-          label: d.displayLabel,
-          kept: d.keptStandardId,
-          removed: d.removedStandardIds,
-        })),
         standardsCount: standards.length,
         candidatesCount: candidates.length,
         rawLinksFromAi: rawLinks.length,
