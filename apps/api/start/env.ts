@@ -52,6 +52,8 @@ export default await Env.create(new URL('../', import.meta.url), {
   YANDEX_FOLDER_ID: Env.schema.string.optional(),
   YANDEX_OCR_MODEL: Env.schema.string.optional(),
   YANDEX_GPT_MODEL: Env.schema.string.optional(),
+  /** Модель для парсинга тренировок и ИИ-связей эталонов (callGpt с override). См. галерею в консоли Yandex Cloud. */
+  YANDEX_GPT_PARSE_MODEL: Env.schema.string.optional(),
 
   /*
   |----------------------------------------------------------

@@ -631,15 +631,19 @@ test.group('Trainer routes: доступ тренеру', () => {
 // ─── OAuth: защита и базовая логика ──────────────────────────────────────────
 
 test.group('OAuth: защита и базовая логика', () => {
-  // Редиректы: клиент следует за ними, поэтому проверяем только что нет 500
-  test('GET /oauth/vk/redirect → не 500 (редирект на VK)', async ({ client, assert }) => {
-    const response = await client.get('/oauth/vk/redirect')
+  // Без redirects(0) клиент уходит на внешний OAuth (VK/Yandex) и может зависнуть в CI
+  test('GET /oauth/vk/redirect → 3xx на VK authorize, не 500', async ({ client, assert }) => {
+    const response = await client.get('/oauth/vk/redirect').redirects(0)
     assert.notEqual(response.status(), 500)
+    assert.oneOf(response.status(), [301, 302, 303, 307, 308])
+    assert.include((response.headers().location ?? '').toLowerCase(), 'oauth.vk.com')
   })
 
-  test('GET /oauth/yandex/redirect → не 500 (редирект на Yandex)', async ({ client, assert }) => {
-    const response = await client.get('/oauth/yandex/redirect')
+  test('GET /oauth/yandex/redirect → 3xx на Yandex authorize, не 500', async ({ client, assert }) => {
+    const response = await client.get('/oauth/yandex/redirect').redirects(0)
     assert.notEqual(response.status(), 500)
+    assert.oneOf(response.status(), [301, 302, 303, 307, 308])
+    assert.include((response.headers().location ?? '').toLowerCase(), 'oauth.yandex.ru')
   })
 
   test('GET /oauth/invalid/redirect → 400', async ({ client }) => {
