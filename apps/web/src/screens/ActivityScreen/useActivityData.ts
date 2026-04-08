@@ -9,12 +9,21 @@ import type { WorkoutTimelineEntry, WorkoutStats } from '@/types/Analytics';
 const DEFAULT_DURATION = 60;
 const CALORIES_PER_KG = 0.05;
 
-function findWorkoutByDate(timeline: WorkoutTimelineEntry[], dateStr: string) {
-  return timeline.find((w) => format(parseApiDateTime(w.date), 'yyyy-MM-dd') === dateStr);
-}
-
 function filterWorkoutsByDate(timeline: WorkoutTimelineEntry[], dateStr: string) {
   return timeline.filter((w) => format(parseApiDateTime(w.date), 'yyyy-MM-dd') === dateStr);
+}
+
+const LOAD_RANK: Record<string, number> = { none: 0, low: 1, medium: 2, high: 3 };
+
+function maxLoadLevel(
+  levels: Array<WorkoutTimelineEntry['loadLevel'] | undefined>
+): DayData['load'] {
+  let r = 0;
+  for (const l of levels) {
+    const v = l ? (LOAD_RANK[l] ?? 0) : 0;
+    if (v > r) r = v;
+  }
+  return (['none', 'low', 'medium', 'high'] as const)[r];
 }
 
 export interface DayStats {
@@ -98,16 +107,18 @@ export function useActivityData(draftDate?: string | null) {
     return Array.from({ length: daysInMonth }, (_, i) => {
       const date = new Date(year, month, i + 1);
       const dateKey = format(date, 'yyyy-MM-dd');
-      const workout = findWorkoutByDate(stats.timeline, dateKey);
+      const dayWs = filterWorkoutsByDate(stats.timeline, dateKey);
+      const first = dayWs[0];
 
       return {
         date,
-        workoutsCount: workout ? 1 : 0,
-        load: (workout?.loadLevel ?? 'none') as DayData['load'],
-        workoutType: workout?.type as DayData['workoutType'],
-        intensity: workout?.intensity,
-        fromTrainer: workout?.scheduledWorkoutId != null,
+        load: dayWs.length ? maxLoadLevel(dayWs.map((w) => w.loadLevel)) : 'none',
+        workoutType: first?.type as DayData['workoutType'],
+        intensity: dayWs.length ? Math.max(0, ...dayWs.map((w) => w.intensity ?? 0)) : undefined,
+        fromTrainer: dayWs.some((w) => w.scheduledWorkoutId != null),
         hasDraft: draftDate === dateKey,
+        hasMissingWeights: dayWs.some((w) => w.hasMissingWeights),
+        hasMissingRpe: dayWs.some((w) => w.hasMissingRpe),
       };
     });
   }, [stats, currentMonth, draftDate]);

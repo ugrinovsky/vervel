@@ -1,6 +1,8 @@
 import { test } from '@japa/runner';
+import { DateTime } from 'luxon';
 import db from '@adonisjs/lucid/services/db';
 import User from '#models/user';
+import Workout from '#models/workout';
 import UserExerciseStandardAlias from '#models/user_exercise_standard_alias';
 import UserExerciseStandardLinkBatchSnapshot from '#models/user_exercise_standard_link_batch_snapshot';
 import { ProgressionService } from '#services/ProgressionService';
@@ -29,6 +31,7 @@ async function cleanupUser(userId: number) {
   }
   await db.from('user_exercise_standard_aliases').where('user_id', userId).delete();
   await db.from('user_exercise_standards').where('user_id', userId).delete();
+  await db.from('workouts').where('user_id', userId).delete();
   await db.from('users').where('id', userId).delete();
 }
 
@@ -133,6 +136,68 @@ test.group('ProgressionService: getStrengthLog и лимит ИИ', () => {
       assert.isNumber(log.aiStandardLinkSuggestMaxCandidates);
       assert.isAtLeast(log.aiStandardLinkSuggestMaxCandidates, 1);
       assert.isAtMost(log.aiStandardLinkSuggestMaxCandidates, 200);
+    } finally {
+      await cleanupUser(user.id);
+    }
+  });
+
+  test('custom:… с тем же названием, что title каталога эталона, сливается с Romanian_Deadlift без алиаса', async ({
+    assert,
+  }) => {
+    const user = await createTestUser();
+    try {
+      await ProgressionService.createExerciseStandard(
+        user.id,
+        'Румынская тяга',
+        'Romanian_Deadlift',
+      );
+      await Workout.create({
+        userId: user.id,
+        date: DateTime.fromISO('2026-02-01T10:00:00.000Z'),
+        workoutType: 'bodybuilding',
+        exercises: [
+          {
+            exerciseId: 'Romanian_Deadlift',
+            type: 'strength',
+            name: 'Румынская тяга',
+            sets: [{ id: 's1', reps: 5, weight: 80 }],
+          },
+        ],
+        zonesLoad: {},
+        totalIntensity: 0,
+        totalVolume: 0,
+        notes: null,
+        rpe: null,
+        scheduledWorkoutId: null,
+      });
+      await Workout.create({
+        userId: user.id,
+        date: DateTime.fromISO('2026-02-02T10:00:00.000Z'),
+        workoutType: 'bodybuilding',
+        exercises: [
+          {
+            exerciseId: 'custom:румынская тяга',
+            type: 'strength',
+            name: 'Румынская тяга',
+            sets: [{ id: 's2', reps: 5, weight: 85 }],
+          },
+        ],
+        zonesLoad: {},
+        totalIntensity: 0,
+        totalVolume: 0,
+        notes: null,
+        rpe: null,
+        scheduledWorkoutId: null,
+      });
+
+      const log = await ProgressionService.getStrengthLog(user.id);
+      const bb = log.entries.filter((e) => e.workoutType === 'bodybuilding');
+      const romanian = bb.filter((e) => e.exerciseName.toLowerCase().includes('румын'));
+      assert.equal(romanian.length, 1);
+      assert.equal(romanian[0]!.sessions.length, 2);
+      const stdRow = log.standards.find((s) => s.catalogExerciseId === 'Romanian_Deadlift');
+      assert.isDefined(stdRow);
+      assert.equal(stdRow!.catalogTitleNormalized, 'румынская тяга');
     } finally {
       await cleanupUser(user.id);
     }

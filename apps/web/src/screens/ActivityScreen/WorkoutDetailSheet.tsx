@@ -12,7 +12,8 @@ import { parseApiDateTime, parseLocalDate, nowRoundedToHour, today, now } from '
 import { exercisesApi } from '@/api/exercises';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
 import type { Exercise } from '@/types/Exercise';
-import { getWorkoutTypeLabel, exerciseIdToLabel } from './utils';
+import { getWorkoutTypeLabel } from './utils';
+import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
 import { formatVolume } from '@/constants/AnalyticsConstants';
 import { WOD_CONFIG, type WodType } from '@/constants/workoutTypes';
 import { getZoneLabel } from '@/util/zones';
@@ -637,6 +638,14 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
   // Прошлая тренировка — можно оценивать и редактировать
   const isPast = effectiveDateIso ? parseApiDateTime(effectiveDateIso) <= now() : false;
 
+  const hasMissingRpeDisplay = fullWorkout
+    ? isPast &&
+      !isEditing &&
+      fullWorkout.workoutType !== 'crossfit' &&
+      (fullWorkout.exercises?.length ?? 0) > 0 &&
+      (fullWorkout.rpe == null || !Number.isFinite(Number(fullWorkout.rpe)) || Number(fullWorkout.rpe) < 1)
+    : Boolean(workout?.hasMissingRpe);
+
   return (
     <BottomSheet
       id="activity-workout-detail"
@@ -678,6 +687,11 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
             {isPast && hasMissingWeights && !isEditing && (
               <span className="text-xs px-2 py-1 bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30">
                 ⚠ нет весов
+              </span>
+            )}
+            {hasMissingRpeDisplay && (
+              <span className="text-xs px-2 py-1 bg-sky-500/15 text-sky-200 rounded-full border border-sky-500/35">
+                ⭐ нет оценки
               </span>
             )}
             {!isEditing && (
@@ -730,6 +744,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
           <WorkoutIntensityBar
             intensity={fullWorkout.totalIntensity}
             hasMissingWeights={hasMissingWeights}
+            hasMissingRpe={hasMissingRpeDisplay}
           />
 
           {/* ── RPE — оценка (только прошедшая силовая/кардио, вне режима редактирования) ── */}
@@ -772,8 +787,9 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
               <div className="flex flex-col">
                 {!isEditing
                   ? fullWorkout.exercises.map((ex, i, arr) => {
-                      const name =
-                        ex.name ?? exerciseMap.get(ex.exerciseId)?.title ?? exerciseIdToLabel(ex.exerciseId);
+                      const name = exerciseIdForDisplay(
+                        ex.name ?? exerciseMap.get(ex.exerciseId)?.title ?? ex.exerciseId,
+                      );
                       const isLinkedToNext =
                         i < arr.length - 1 && !!ex.blockId && ex.blockId === arr[i + 1].blockId;
                       const isLast = i === arr.length - 1;
@@ -808,10 +824,9 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
                         <InsertStartRow onClick={() => { setEditingExIdx(null); setInsertAt(0); }} />
                         <SortableContext items={editSortIds} strategy={verticalListSortingStrategy}>
                           {editExercises.map((ex, i, arr) => {
-                            const name =
-                              ex.name ??
-                              exerciseMap.get(ex.exerciseId)?.title ??
-                              exerciseIdToLabel(ex.exerciseId);
+                            const name = exerciseIdForDisplay(
+                              ex.name ?? exerciseMap.get(ex.exerciseId)?.title ?? ex.exerciseId,
+                            );
                             const isLinkedToNext =
                               i < arr.length - 1 && !!ex.blockId && ex.blockId === arr[i + 1].blockId;
                             const isLast = i === arr.length - 1;
@@ -968,9 +983,11 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
           open={true}
           exercise={toExerciseWithSets(
             editExercises[editingExIdx],
-            editExercises[editingExIdx].name
-              ?? exerciseMap.get(editExercises[editingExIdx].exerciseId)?.title
-              ?? exerciseIdToLabel(editExercises[editingExIdx].exerciseId)
+            exerciseIdForDisplay(
+              editExercises[editingExIdx].name ??
+                exerciseMap.get(editExercises[editingExIdx].exerciseId)?.title ??
+                editExercises[editingExIdx].exerciseId,
+            )
           )}
           workoutType={(fullWorkout?.workoutType ?? 'bodybuilding') as WorkoutType}
           onClose={() => setEditingExIdx(null)}
@@ -993,7 +1010,11 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
         <div className="space-y-4 pt-2">
           <div>
             <span className="text-xs text-(--color_text_muted) mb-1 block">Интенсивность</span>
-            <WorkoutIntensityBar intensity={workout?.intensity ?? 0} />
+            <WorkoutIntensityBar
+              intensity={workout?.intensity ?? 0}
+              hasMissingWeights={workout?.hasMissingWeights}
+              hasMissingRpe={workout?.hasMissingRpe}
+            />
           </div>
           {(workout?.volume ?? 0) > 0 && (
             <div>

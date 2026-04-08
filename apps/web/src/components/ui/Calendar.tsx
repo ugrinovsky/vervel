@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { format, startOfMonth, isSameDay, isToday, getDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CalendarDaysIcon } from '@heroicons/react/24/outline';
+import { CalendarDaysIcon, ScaleIcon, StarIcon } from '@heroicons/react/24/outline';
 
 export type LoadType = 'none' | 'low' | 'medium' | 'high';
 
@@ -13,6 +13,10 @@ export interface DayData {
   intensity?: number;
   fromTrainer?: boolean;
   hasDraft?: boolean;
+  /** В этот день есть тренировка с подходами без веса (силовые). */
+  hasMissingWeights?: boolean;
+  /** В этот день есть прошлая тренировка без RPE (где оценка учитывается). */
+  hasMissingRpe?: boolean;
 }
 
 export interface TrainerDayData {
@@ -61,6 +65,26 @@ function countToLoad(count: number): LoadType {
   if (count === 1) return 'low';
   if (count === 2) return 'medium';
   return 'high';
+}
+
+function StrikethroughMiniIcon({
+  kind,
+  title,
+}: {
+  kind: 'weight' | 'rpe';
+  title: string;
+}) {
+  const Icon = kind === 'weight' ? ScaleIcon : StarIcon;
+  const color = kind === 'weight' ? 'text-amber-200/90' : 'text-sky-200/90';
+  return (
+    <span className="relative inline-flex shrink-0" title={title} aria-label={title}>
+      <Icon className={`w-3 h-3 ${color}`} />
+      <span
+        className="pointer-events-none absolute left-1/2 top-1/2 w-[13px] max-w-[180%] h-[1.5px] -translate-x-1/2 -translate-y-1/2 rotate-[42deg] bg-red-500/90 rounded-full"
+        aria-hidden
+      />
+    </span>
+  );
 }
 
 export default function Calendar(props: CalendarProps) {
@@ -149,7 +173,7 @@ export default function Calendar(props: CalendarProps) {
           className="grid grid-cols-7 gap-2"
         >
           {Array.from({ length: startDayIndex }, (_, i) => (
-            <div key={`empty-${i}`} className="h-12" />
+            <div key={`empty-${i}`} className={props.mode === 'load' ? 'min-h-14' : 'h-12'} />
           ))}
 
           {props.mode === 'count'
@@ -189,23 +213,45 @@ export default function Calendar(props: CalendarProps) {
                 const isCurrentDay = isToday(day.date);
                 const hasLoad = day.load !== 'none';
                 const hideTrainer = props.hideTrainerBadge ?? false;
+                const showDataIssueIcons =
+                  hasLoad && (Boolean(day.hasMissingWeights) || Boolean(day.hasMissingRpe));
+                const issueTitleParts = [
+                  day.hasMissingWeights ? 'нет весов в подходах' : '',
+                  day.hasMissingRpe ? 'нет оценки нагрузки' : '',
+                ].filter(Boolean);
+                const dayTitle =
+                  issueTitleParts.length > 0
+                    ? `${format(day.date, 'd MMMM yyyy', { locale: ru })} — ${issueTitleParts.join(', ')}`
+                    : `${format(day.date, 'd MMMM yyyy', { locale: ru })}${hasLoad ? ' — нагрузка' : ''}`;
                 return (
                   <button
                     key={i}
                     onClick={() => props.onSelect(day)}
                     className={`
-                      relative h-12 rounded-lg transition-all duration-200
-                      flex items-center justify-center
+                      relative min-h-14 py-1 rounded-lg transition-all duration-200
+                      flex flex-col items-center justify-center gap-0.5
                       ${loadColors[day.load]}
                       ${isActive ? 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-gray-900 scale-105' : 'hover:opacity-90 hover:scale-105'}
                       ${isCurrentDay && !isActive ? 'ring-1 ring-white/40' : ''}
                       ${!hasLoad ? 'hover:bg-(--color_bg_card_hover)' : ''}
                     `}
-                    title={`${format(day.date, 'd MMMM yyyy', { locale: ru })} — нагрузка`}
+                    title={dayTitle}
                   >
-                    <span className={`text-sm font-bold ${hasLoad ? 'text-white' : 'text-(--color_text_muted)'} ${isCurrentDay ? '!text-emerald-300' : ''}`}>
+                    <span
+                      className={`text-sm font-bold leading-none ${hasLoad ? 'text-white' : 'text-(--color_text_muted)'} ${isCurrentDay ? '!text-emerald-300' : ''}`}
+                    >
                       {format(day.date, 'd')}
                     </span>
+                    {showDataIssueIcons && (
+                      <div className="flex items-center justify-center gap-0.5">
+                        {day.hasMissingWeights && (
+                          <StrikethroughMiniIcon kind="weight" title="Нет весов в подходах" />
+                        )}
+                        {day.hasMissingRpe && (
+                          <StrikethroughMiniIcon kind="rpe" title="Нет оценки нагрузки (1–5)" />
+                        )}
+                      </div>
+                    )}
                     {isCurrentDay && (
                       <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full" />
                     )}
@@ -258,6 +304,14 @@ export default function Calendar(props: CalendarProps) {
                   <span className="text-xs text-(--color_text_secondary)">Черновик</span>
                 </div>
               )}
+              <div className="flex items-center gap-2">
+                <StrikethroughMiniIcon kind="weight" title="Нет весов" />
+                <span className="text-xs text-(--color_text_secondary)">Нет весов в подходах</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <StrikethroughMiniIcon kind="rpe" title="Нет оценки" />
+                <span className="text-xs text-(--color_text_secondary)">Нет оценки нагрузки</span>
+              </div>
             </div>
           </div>
         )}

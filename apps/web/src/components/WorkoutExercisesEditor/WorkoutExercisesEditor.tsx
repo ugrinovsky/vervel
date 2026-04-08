@@ -11,6 +11,7 @@ import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
 import type { ExerciseData } from '@/api/trainer';
 import type { ExerciseWithSets } from '@/types/Exercise';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
+import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
 import { useLayoutEffect, useState } from 'react';
 import { ArrowsRightLeftIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import {
@@ -147,7 +148,9 @@ function SortableExerciseCard({
             <span className="shrink-0 text-[10px] font-mono text-white/30 w-4 text-right tabular-nums">
               {String(index + 1).padStart(2, '0')}
             </span>
-            <p className="flex-1 text-sm font-medium text-white leading-snug min-w-0 truncate">{ex.name}</p>
+            <p className="flex-1 text-sm font-medium text-white leading-snug min-w-0 truncate">
+              {exerciseIdForDisplay(ex.name)}
+            </p>
             <button
               type="button"
               onClick={onReplace}

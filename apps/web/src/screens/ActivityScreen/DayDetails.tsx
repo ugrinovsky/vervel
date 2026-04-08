@@ -103,6 +103,7 @@ const timeLabel = extractTime(workout.date);
       <WorkoutIntensityBar
         intensity={workout.intensity ?? 0}
         hasMissingWeights={workout.hasMissingWeights}
+        hasMissingRpe={workout.hasMissingRpe}
         className="mb-2"
       />
 
@@ -161,6 +162,7 @@ export default function DayDetails({ date, workouts, onDeleted, onRefresh, readO
   const [localIntensities, setLocalIntensities] = useState<Record<number, number>>({});
   const navigate = useNavigate();
   const hasWorkouts = workouts.length > 0;
+  const hasAnyDataIssues = workouts.some((w) => w.hasMissingWeights || w.hasMissingRpe);
 
   const draftForThisDay = draft && draft.date
     ? format(new Date(draft.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
@@ -211,6 +213,11 @@ export default function DayDetails({ date, workouts, onDeleted, onRefresh, readO
               {hasWorkouts && (
                 <p className="text-sm text-(--color_text_muted) mt-0.5">
                   {pluralWorkouts(workouts.length)}
+                </p>
+              )}
+              {hasWorkouts && hasAnyDataIssues && (
+                <p className="text-xs text-(--color_text_muted) mt-1.5 leading-snug">
+                  Есть записи без весов или без оценки нагрузки — смотрите подсказки на карточках ниже.
                 </p>
               )}
             </div>

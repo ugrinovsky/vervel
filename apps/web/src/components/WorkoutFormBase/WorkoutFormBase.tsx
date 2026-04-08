@@ -37,6 +37,7 @@ import {
 } from './workoutTypeConversion';
 import { workoutsApi } from '@/api/workouts';
 import { profileApi } from '@/api/profile';
+import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
 
 function parseDraftDate(value: string | null | undefined): Date | null {
   if (!value) return null;
@@ -365,7 +366,7 @@ export default function WorkoutFormBase({
       exerciseId: ex.exerciseId,
       name:
         nameMap.get(ex.exerciseId) ??
-        String(ex.exerciseId).replace(/^custom:/, '').replace(/_/g, ' '),
+        exerciseIdForDisplay(String(ex.exerciseId)),
       zones: Array.isArray(ex.zones) ? ex.zones : undefined,
       bodyweight: ex.bodyweight,
       setsDetail: ex.sets?.map((s: any) => ({ reps: s.reps ?? 10, weight: s.weight })) ?? [],

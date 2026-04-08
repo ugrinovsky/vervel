@@ -42,6 +42,8 @@ import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
 import type { ExerciseWithSets } from '@/types/Exercise';
 import { buildStrengthLogChartPoints, strengthLogProgressPercent } from './strengthLogChart';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
+import { normalizeExerciseLabel } from '@/utils/textNormalize';
+import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
 
 const GROUP_STD_PREFIX = 'std:';
 
@@ -75,7 +77,13 @@ function resolveStandardIdForRawExerciseId(
     if (Number.isFinite(n) && n > 0) return n;
   }
   const viaCatalog = standards.find((x) => x.catalogExerciseId === exerciseId);
-  return viaCatalog != null ? Number(viaCatalog.id) : null;
+  if (viaCatalog != null) return Number(viaCatalog.id);
+  if (exerciseId.startsWith('custom:')) {
+    const norm = normalizeExerciseLabel(exerciseId.slice('custom:'.length));
+    const s = standards.find((x) => x.catalogTitleNormalized && x.catalogTitleNormalized === norm);
+    if (s != null) return Number(s.id);
+  }
+  return null;
 }
 
 function resolveStandardIdForStrengthEntry(
@@ -94,7 +102,13 @@ function resolveStandardIdForStrengthEntry(
     if (Number.isFinite(n) && n > 0) return n;
   }
   const viaCatalog = standards.find((x) => x.catalogExerciseId === baseId);
-  return viaCatalog != null ? Number(viaCatalog.id) : null;
+  if (viaCatalog != null) return Number(viaCatalog.id);
+  if (baseId.startsWith('custom:')) {
+    const norm = normalizeExerciseLabel(baseId.slice('custom:'.length));
+    const s = standards.find((x) => x.catalogTitleNormalized && x.catalogTitleNormalized === norm);
+    if (s != null) return Number(s.id);
+  }
+  return null;
 }
 
 function formatShortDashDate(iso: string | null): string {
@@ -254,7 +268,7 @@ function ExerciseCard({
       <div className="px-4 pt-3 pb-2 border-b border-(--color_border) flex items-center justify-between gap-2">
         <div className="text-sm font-bold text-white min-w-0 flex-1 leading-snug">
           <div className="flex items-center gap-2 flex-wrap">
-            <span>{entry.exerciseName}</span>
+            <span>{exerciseIdForDisplay(entry.exerciseName)}</span>
             {linkedToStandard && (
               <span className="text-[10px] font-medium text-(--color_primary_light)/80 px-1.5 py-0.5 rounded bg-(--color_primary_light)/10">
                 эталон
@@ -533,9 +547,11 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
     [weightedExerciseOptions, standards, aliases],
   );
 
-  const exerciseNameById = (id: string) =>
-    entries.find((e) => strengthLogBaseGroupKey(e.exerciseId) === id)?.exerciseName ??
-    id.replace(/_/g, ' ');
+  const exerciseNameById = (id: string) => {
+    const fromEntry = entries.find((e) => strengthLogBaseGroupKey(e.exerciseId) === id)?.exerciseName;
+    if (fromEntry) return exerciseIdForDisplay(fromEntry);
+    return exerciseIdForDisplay(id);
+  };
 
   const openStandardsFor = useCallback(
     (entry: StrengthLogEntry) => {
@@ -543,7 +559,7 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
       const std = resolved != null ? standards.find((s) => s.id === resolved) : null;
       setStandardsEntry(entry);
       const nameForDraft = (() => {
-        const full = entry.exerciseName.trim();
+        const full = exerciseIdForDisplay(entry.exerciseName).trim();
         const parts = full.split(' · ');
         if (parts.length >= 2) {
           const last = parts[parts.length - 1]!;
@@ -781,6 +797,22 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
     }
   };
 
+  const removeAliasFromCurrentStandard = async (sourceExerciseId: string) => {
+    if (standardsBusy) return;
+    setStandardsBusy(true);
+    try {
+      const res = await athleteApi.removeExerciseStandardAlias(sourceExerciseId);
+      if (res.data.success) {
+        toast.success('Вариант откреплён');
+        await load();
+      }
+    } catch {
+      toast.error('Не удалось открепить');
+    } finally {
+      setStandardsBusy(false);
+    }
+  };
+
   const onCatalogPickedForStandard = (ex: ExerciseWithSets) => {
     setStandardsCatalogId(String(ex.exerciseId));
     setStandardsPickerOpen(false);
@@ -789,11 +821,18 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
   const standardsSid = effectiveStandardIdForSheet;
   const standardsAliasCandidates =
     standardsSid != null
-      ? weightedExerciseOptions.filter((o) => !aliases.some((a) => a.sourceExerciseId === o.exerciseId))
+      ? weightedExerciseOptions.filter((o) => {
+          if (aliases.some((a) => a.sourceExerciseId === o.exerciseId)) return false;
+          const resolved = resolveStandardIdForRawExerciseId(o.exerciseId, standards, aliases);
+          if (resolved === standardsSid) return false;
+          return true;
+        })
       : [];
   const standardsAliasFiltered = standardsAliasSearch.trim()
     ? standardsAliasCandidates.filter((o) =>
-        o.exerciseName.toLowerCase().includes(standardsAliasSearch.trim().toLowerCase()),
+        exerciseIdForDisplay(o.exerciseName)
+          .toLowerCase()
+          .includes(standardsAliasSearch.trim().toLowerCase()),
       )
     : standardsAliasCandidates;
   const standardsLinkedSources =
@@ -875,7 +914,9 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
 
   const historyFiltered = historySearch.trim()
     ? weightedExerciseOptions.filter((o) =>
-        o.exerciseName.toLowerCase().includes(historySearch.trim().toLowerCase()),
+        exerciseIdForDisplay(o.exerciseName)
+          .toLowerCase()
+          .includes(historySearch.trim().toLowerCase()),
       )
     : weightedExerciseOptions;
 
@@ -883,7 +924,7 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
     let list = entries.filter((e) => e.workoutType === wtFilter);
     if (search.trim()) {
       const q = search.trim().toLowerCase();
-      list = list.filter((e) => e.exerciseName.toLowerCase().includes(q));
+      list = list.filter((e) => exerciseIdForDisplay(e.exerciseName).toLowerCase().includes(q));
     }
     return list;
   }, [entries, wtFilter, search]);
@@ -1094,7 +1135,7 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
                         }
                       />
                       <span className="min-w-0">
-                        <span className="text-white block">{s.exerciseName}</span>
+                        <span className="text-white block">{exerciseIdForDisplay(s.exerciseName)}</span>
                         <span className="text-[11px] text-(--color_text_muted)">
                           → эталон «{s.standardLabel}»
                         </span>
@@ -1151,7 +1192,7 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
                   onClick={() => addPinFromHistory(o)}
                   className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-white/5 disabled:opacity-40"
                 >
-                  <div className="text-sm text-white">{o.exerciseName}</div>
+                  <div className="text-sm text-white">{exerciseIdForDisplay(o.exerciseName)}</div>
                   {o.isCustom && (
                     <div className="text-[10px] text-(--color_text_muted) mt-0.5">
                       Не из каталога
@@ -1168,7 +1209,9 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
           open={standardsOpen && standardsEntry != null}
           onClose={closeStandardsSheet}
           emoji="⭐"
-          title={standardsEntry ? `Эталон: ${standardsEntry.exerciseName}` : 'Эталон'}
+          title={
+            standardsEntry ? `Эталон: ${exerciseIdForDisplay(standardsEntry.exerciseName)}` : 'Эталон'
+          }
         >
           {standardsEntry && (
             <div className="space-y-4 pb-4 text-sm">
@@ -1249,8 +1292,21 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
                       </div>
                       <ul className="space-y-1 max-h-28 overflow-y-auto text-xs">
                         {standardsLinkedSources.map((a) => (
-                          <li key={a.sourceExerciseId} className="text-white/90">
-                            {exerciseNameById(a.sourceExerciseId)}
+                          <li
+                            key={a.sourceExerciseId}
+                            className="flex items-center justify-between gap-2 text-white/90"
+                          >
+                            <span className="min-w-0 break-words">
+                              {exerciseNameById(a.sourceExerciseId)}
+                            </span>
+                            <button
+                              type="button"
+                              disabled={standardsBusy}
+                              onClick={() => void removeAliasFromCurrentStandard(a.sourceExerciseId)}
+                              className="shrink-0 text-[10px] text-(--color_primary_light) underline underline-offset-2 disabled:opacity-40"
+                            >
+                              Открепить
+                            </button>
                           </li>
                         ))}
                       </ul>
@@ -1282,7 +1338,7 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
                             onClick={() => void addAliasToCurrentStandard(o.exerciseId, standardsSid)}
                             className="w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 disabled:opacity-40"
                           >
-                            <div className="text-sm text-white">{o.exerciseName}</div>
+                            <div className="text-sm text-white">{exerciseIdForDisplay(o.exerciseName)}</div>
                             {o.isCustom && (
                               <div className="text-[10px] text-(--color_text_muted)">Не из каталога</div>
                             )}

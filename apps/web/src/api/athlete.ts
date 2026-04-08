@@ -41,6 +41,8 @@ export interface ExerciseStandardDTO {
   id: number;
   catalogExerciseId: string | null;
   displayLabel: string;
+  /** С бэкенда: normalize(title каталога) для слияния с custom:… без строки в aliases */
+  catalogTitleNormalized: string | null;
 }
 
 export interface ExerciseStandardAliasDTO {

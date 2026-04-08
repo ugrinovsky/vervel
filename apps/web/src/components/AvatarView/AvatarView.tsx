@@ -8,6 +8,7 @@ import { getZoneLabel } from '@/util/zones';
 import { workoutsApi, type ZoneWorkout } from '@/api/workouts';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
+import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
 
 /**
  * Normalizes short API zone keys (from ExerciseCatalog) and legacy seeder keys
@@ -172,7 +173,7 @@ function ZoneWorkoutCard({ workout: w }: { workout: ZoneWorkout }) {
         <div className="flex flex-wrap gap-1 px-3 pb-3">
           {w.exercises.map((ex) => (
             <span key={ex.exerciseId} className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.07] text-white/70">
-              {ex.name}
+              {exerciseIdForDisplay(ex.name?.trim() ? ex.name : ex.exerciseId)}
             </span>
           ))}
         </div>

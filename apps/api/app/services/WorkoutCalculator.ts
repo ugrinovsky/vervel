@@ -2,6 +2,7 @@ import { ExerciseCatalog, type CatalogExercise } from '#services/ExerciseCatalog
 import Workout, { WorkoutExercise, WorkoutSet } from '#models/workout';
 import UserMeasurement from '#models/user_measurement';
 import logger from '@adonisjs/core/services/logger'
+import { epochDate, nowDate, wallClockDate } from '#utils/date'
 
 /* ------------------------------------------------------------------ */
 /* Types */
@@ -95,8 +96,8 @@ export class WorkoutCalculator {
     const [datePart, timePart] = local.split('T')
     const [y, mo, d] = (datePart ?? '').split('-').map(Number)
     const [h, min, s] = (timePart ?? '').split(':').map(Number)
-    if (!y || !mo || !d) return new Date(0)
-    return new Date(y, mo - 1, d, h || 0, min || 0, s || 0)
+    if (!y || !mo || !d) return epochDate()
+    return wallClockDate(y, mo, d, h || 0, min || 0, s || 0)
   }
   /**
    * Главная точка входа
@@ -334,18 +335,25 @@ export class WorkoutCalculator {
     totalIntensity: number,
     rpe?: number | null
   ): { zonesLoadAbs: Record<string, number>; totalIntensity: number } {
+    // No RPE provided = neutral (treat as "3/5"), don't change calculated load.
     if (rpe == null) return { zonesLoadAbs, totalIntensity }
     const n = Number(rpe)
     if (!Number.isFinite(n) || n <= 0) return { zonesLoadAbs, totalIntensity }
-    const denom = n <= 5 ? 5 : 10
-    const rpeFactor = Math.min(n / denom, 1)
+
+    // Convert to 1..5 scale (UI) while still supporting stored 1..10.
+    const rpe5 = Math.max(1, Math.min(n <= 5 ? n : n / 2, 5))
+    // Scale around "neutral" 3/5:
+    // 1/5 -> 0.70, 3/5 -> 1.00, 5/5 -> 1.30 (linear).
+    const slope = 0.15
+    const rpeFactor = Math.max(0.5, Math.min(1 + (rpe5 - 3) * slope, 1.5))
+
     const scaled: Record<string, number> = {}
     for (const [zone, load] of Object.entries(zonesLoadAbs)) {
-      scaled[zone] = Math.min((Number(load) || 0) * rpeFactor, NORMALIZATION.MAX_ZONE_LOAD)
+      scaled[zone] = Math.max(0, (Number(load) || 0) * rpeFactor)
     }
     return {
       zonesLoadAbs: scaled,
-      totalIntensity: Math.min(totalIntensity * rpeFactor, NORMALIZATION.MAX_ZONE_LOAD),
+      totalIntensity: Math.max(0, totalIntensity * rpeFactor),
     }
   }
 
@@ -365,7 +373,7 @@ export class WorkoutCalculator {
    */
   static async calculateRecoveryState(
     workouts: Workout[],
-    now: Date = new Date()
+    now: Date = nowDate()
   ): Promise<{
     zones: Record<string, { intensity: number; lastTrainedDaysAgo: number; peakLoad: number }>;
     missingWeights: {
@@ -564,7 +572,9 @@ export class WorkoutCalculator {
 
   static async calculatePeriodStats(
     workouts: Workout[],
-    period: string = 'custom'
+    period: string = 'custom',
+    /** Для тестов и детерминизма (например, hasMissingRpe vs «будущее»). */
+    at: Date = nowDate()
   ): Promise<{
     workoutsCount: number;
     totalVolume: number;
@@ -581,6 +591,7 @@ export class WorkoutCalculator {
       loadLevel: 'none' | 'low' | 'medium' | 'high';
       zones: Record<string, number>;
       hasMissingWeights?: boolean;
+      hasMissingRpe?: boolean;
     }>;
     period: string;
   }> {
@@ -650,15 +661,32 @@ export class WorkoutCalculator {
       });
     }
 
+    const statsNow = at;
     const timeline = workouts.map((w, i) => {
       const volume = Number(w.totalVolume) || 0;
       const intensity =
         typeof w.totalIntensity === 'string' ? parseFloat(w.totalIntensity) : w.totalIntensity || 0;
       const hasExercises = Array.isArray(w.exercises) && w.exercises.length > 0;
       const hasMissingWeights = Array.isArray(w.exercises) && w.exercises.some((ex) =>
-        !ex.bodyweight && (ex.sets ?? []).some((s) => (s.reps ?? 0) > 0 && !s.weight)
+        !ex.bodyweight &&
+        (ex.sets ?? []).some((s) => {
+          const reps = Number(s.reps) || 0;
+          const weight = s.weight;
+          return reps > 0 && (weight == null || Number(weight) === 0);
+        })
       );
-      const zonesAbs = perWorkoutZonesAbs[i] ?? {}
+      const zonesAbs = perWorkoutZonesAbs[i] ?? {};
+      const storedAbsForRpe = (w as any).zonesLoadAbs as Record<string, number> | null | undefined;
+      const hasWorkoutContent = hasExercises || hasMeaningfulZonesLoad(storedAbsForRpe);
+      const workoutDate = WorkoutCalculator.toWallClockJsDate((w as any).date);
+      const rawDaysAgo =
+        (statsNow.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24);
+      const isFuture = rawDaysAgo < 0;
+      const rawRpe = (w as any).rpe;
+      const nRpe = Number(rawRpe);
+      const hasRpe = rawRpe != null && rawRpe !== '' && Number.isFinite(nRpe) && nRpe >= 1;
+      const rpeTracked = w.workoutType !== 'crossfit';
+      const hasMissingRpe = rpeTracked && !isFuture && hasWorkoutContent && !hasRpe;
       return {
         id: w.id,
         date: w.date.toString(),
@@ -670,6 +698,7 @@ export class WorkoutCalculator {
         // For timeline we keep a relative profile (good for charts) derived from absolute zones.
         zones: WorkoutCalculator.toRelativeZonesLoad(zonesAbs),
         hasMissingWeights,
+        hasMissingRpe,
       };
     });
 

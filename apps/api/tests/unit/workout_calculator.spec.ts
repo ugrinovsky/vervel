@@ -310,20 +310,22 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
   });
 
   /* -------------------------------- RPE -------------------------------- */
-  test('rpe масштабирует нагрузку: factor = rpe/5 (rpe=5 → без изменений, rpe=2.5 → половина)', async ({ assert }) => {
+  test('rpe масштабирует нагрузку вокруг "нейтрального" 3/5', async ({ assert }) => {
     const exercise = createExercise('ex1', ['грудь'], 1.0);
     WorkoutCalculator['loadExercises'] = async () => new Map([['ex1', exercise]]);
 
     const input = [{ exerciseId: 'ex1', type: 'strength' as const, sets: [{ id: '1', reps: 10, weight: 100 }] }];
 
-    // rpe=5 → factor=1 → результат совпадает с отсутствием rpe
-    const noRpe  = await WorkoutCalculator.calculateZoneLoads(input, 'bodybuilding');
-    const rpe5   = await WorkoutCalculator.calculateZoneLoads(input, 'bodybuilding', 5);
-    // rpe=2.5 → factor=0.5 → половина от базовой нагрузки
-    const rpe2_5 = await WorkoutCalculator.calculateZoneLoads(input, 'bodybuilding', 2.5);
+    // null/undefined = neutral (как 3/5)
+    const noRpe = await WorkoutCalculator.calculateZoneLoads(input, 'bodybuilding');
+    const rpe3 = await WorkoutCalculator.calculateZoneLoads(input, 'bodybuilding', 3);
 
-    assert.closeTo(rpe5.totalIntensity, noRpe.totalIntensity, 0.001);
-    assert.closeTo(rpe2_5.totalIntensity, noRpe.totalIntensity * 0.5, 0.001);
+    const rpe5 = await WorkoutCalculator.calculateZoneLoads(input, 'bodybuilding', 5);
+    const rpe1 = await WorkoutCalculator.calculateZoneLoads(input, 'bodybuilding', 1);
+
+    assert.closeTo(rpe3.totalIntensity, noRpe.totalIntensity, 0.001);
+    assert.isAbove(rpe5.totalIntensity, noRpe.totalIntensity);
+    assert.isBelow(rpe1.totalIntensity, noRpe.totalIntensity);
   });
 
   test('rpe=null не меняет результат', async ({ assert }) => {
@@ -630,5 +632,49 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     ]);
     const result = await WorkoutCalculator.calculatePeriodStats([w], 'week');
     assert.isTrue((result.timeline[0] as any).hasMissingWeights);
+  });
+
+  test('calculatePeriodStats: прошлая тренировка с контентом без rpe → hasMissingRpe', async ({ assert }) => {
+    const at = new Date('2026-06-15T12:00:00Z');
+    const w = createWorkout(
+      'w1',
+      'bodybuilding',
+      { ноги: 1 },
+      1000,
+      0.5,
+      new Date('2026-06-10T10:00:00Z'),
+      [
+        {
+          exerciseId: 'squat',
+          type: 'strength' as const,
+          sets: [{ id: '1', reps: 5, weight: 60 }],
+        },
+      ],
+      null
+    );
+    const result = await WorkoutCalculator.calculatePeriodStats([w], 'week', at);
+    assert.isTrue(result.timeline[0].hasMissingRpe);
+  });
+
+  test('calculatePeriodStats: будущая тренировка без rpe → hasMissingRpe false', async ({ assert }) => {
+    const at = new Date('2026-06-15T12:00:00Z');
+    const w = createWorkout(
+      'w1',
+      'bodybuilding',
+      { ноги: 1 },
+      1000,
+      0.5,
+      new Date('2026-06-20T10:00:00Z'),
+      [
+        {
+          exerciseId: 'squat',
+          type: 'strength' as const,
+          sets: [{ id: '1', reps: 5, weight: 60 }],
+        },
+      ],
+      null
+    );
+    const result = await WorkoutCalculator.calculatePeriodStats([w], 'week', at);
+    assert.isFalse(result.timeline[0].hasMissingRpe);
   });
 });

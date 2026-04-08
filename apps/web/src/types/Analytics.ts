@@ -8,6 +8,8 @@ export interface WorkoutTimelineEntry {
   scheduledWorkoutId?: number | null; // Если назначено тренером
   loadLevel?: 'none' | 'low' | 'medium' | 'high'; // Вычисляется бэкендом
   hasMissingWeights?: boolean;
+  /** Прошлая тренировка без RPE (для типов, где оценка учитывается; не crossfit). */
+  hasMissingRpe?: boolean;
 }
 
 export interface WorkoutStats {

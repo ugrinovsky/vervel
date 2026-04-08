@@ -1,6 +1,6 @@
 import Workout from '#models/workout';
 import { WorkoutCalculator } from '#services/WorkoutCalculator';
-import { getWeekStart } from '#utils/date';
+import { cloneDate, getWeekStart, nowDate, parseIsoToDate } from '#utils/date';
 import { HttpContext } from '@adonisjs/core/http';
 import logger from '@adonisjs/core/services/logger'
 
@@ -19,8 +19,8 @@ export default class AvatarsController {
 
       if (mode === 'recovery') {
         // Режим «текущее состояние» — берём тренировки за 14 дней, применяем decay
-        const now = new Date();
-        const startDate = new Date();
+        const now = nowDate();
+        const startDate = nowDate();
         startDate.setDate(startDate.getDate() - 14);
         const weekStart = getWeekStart(now);
 
@@ -59,11 +59,11 @@ export default class AvatarsController {
 
       // Режим «за период» — старое поведение
       let startDate: Date;
-      let endDate = new Date();
+      let endDate = nowDate();
 
       if (from && to) {
-        startDate = new Date(from);
-        endDate = new Date(to);
+        startDate = parseIsoToDate(from);
+        endDate = parseIsoToDate(to);
       } else {
         startDate = this.calculateStartDate(period);
       }
@@ -92,8 +92,8 @@ export default class AvatarsController {
    * Рассчитать дату начала на основе периода
    */
   private calculateStartDate(period: string): Date {
-    const now = new Date();
-    const startDate = new Date(now);
+    const now = nowDate();
+    const startDate = cloneDate(now);
 
     switch (period) {
       case 'day':

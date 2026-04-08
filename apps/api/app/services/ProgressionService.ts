@@ -9,7 +9,12 @@ import { YandexAiService } from '#services/YandexAiService';
 import type { TransactionClientContract } from '@adonisjs/lucid/types/database';
 import type { WorkoutExercise, WorkoutSet } from '#models/workout';
 import { ExerciseCatalog } from '#services/ExerciseCatalog';
-import { capitalizeFirstForDisplay } from '#services/exercise_match_helpers';
+import {
+  capitalizeFirstForDisplay,
+  normalizeExerciseLabel,
+  tokenizeForMatch,
+  tokenSubsetOverlap,
+} from '#services/exercise_match_helpers';
 import {
   normalizePinnedExerciseIdList,
   pickTopExerciseIdsBySessionCount,
@@ -22,6 +27,15 @@ const STD_PREFIX = 'std:';
 const STRENGTH_LOG_WT_SEP = '|wt:' as const;
 
 type StrengthLogWorkoutType = 'bodybuilding' | 'crossfit' | 'cardio';
+
+function labelSimilarity(a: string, b: string): number {
+  const aTokens = tokenizeForMatch(a);
+  const bTokens = tokenizeForMatch(b);
+  if (aTokens.length < 2 || bTokens.length < 2) return 0;
+  const forward = tokenSubsetOverlap(aTokens, bTokens);
+  const backward = tokenSubsetOverlap(bTokens, aTokens);
+  return Math.max(forward, backward);
+}
 
 function parseStrengthLogCompositeKey(composite: string): {
   baseGroupKey: string;
@@ -68,6 +82,11 @@ type StandardContext = {
   standardsById: Map<number, StandardRow>;
   aliasToStandardId: Map<string, number>;
   catalogToStandardId: Map<string, number>;
+  /**
+   * custom:… суффикс после normalizeExerciseLabel совпадает с нормализованным русским title
+   * каталожного упражнения эталона (тот же смысл, что и каталог, без строки в aliases).
+   */
+  normalizedCustomLabelToStandardId: Map<string, number>;
 };
 
 /**
@@ -126,6 +145,20 @@ export interface GroupLeaderboardEntry {
 
 export class ProgressionService {
   /**
+   * Текст custom:id совпадает с title каталожного упражнения эталона (после normalizeExerciseLabel).
+   * Короткие односложные названия не матчим — меньше ложных слияний («жим», «тяга»).
+   */
+  private static implicitCustomMatchesCatalogTitle(
+    customNormalized: string,
+    catalogTitle: string
+  ): boolean {
+    const titleNorm = normalizeExerciseLabel(catalogTitle);
+    if (!customNormalized || customNormalized !== titleNorm) return false;
+    const toks = tokenizeForMatch(catalogTitle);
+    return toks.length >= 2 || titleNorm.length >= 10;
+  }
+
+  /**
    * Сколько несвязанных упражнений максимум уходит в один платный запрос ИИ (связи с эталонами).
    * Env: AI_STANDARD_LINK_SUGGEST_MAX_CANDIDATES
    */
@@ -149,6 +182,12 @@ export class ProgressionService {
     if (viaAlias !== undefined) return viaAlias;
     const viaCatalog = ctx.catalogToStandardId.get(exerciseId);
     if (viaCatalog !== undefined) return viaCatalog;
+    if (exerciseId.startsWith('custom:')) {
+      const raw = exerciseId.slice('custom:'.length).trim();
+      const n = normalizeExerciseLabel(raw);
+      const sid = ctx.normalizedCustomLabelToStandardId.get(n);
+      if (sid !== undefined) return sid;
+    }
     return null;
   }
 
@@ -159,6 +198,7 @@ export class ProgressionService {
     ]);
     const standardsById = new Map<number, StandardRow>();
     const catalogToStandardId = new Map<string, number>();
+    const normalizedCustomLabelToStandardId = new Map<string, number>();
     for (const s of standards) {
       standardsById.set(s.id, {
         id: s.id,
@@ -167,13 +207,29 @@ export class ProgressionService {
       });
       if (s.catalogExerciseId) {
         catalogToStandardId.set(s.catalogExerciseId, s.id);
+        const cat = ExerciseCatalog.find(s.catalogExerciseId);
+        if (cat) {
+          const n = normalizeExerciseLabel(cat.title);
+          if (
+            n &&
+            this.implicitCustomMatchesCatalogTitle(n, cat.title) &&
+            !normalizedCustomLabelToStandardId.has(n)
+          ) {
+            normalizedCustomLabelToStandardId.set(n, s.id);
+          }
+        }
       }
     }
     const aliasToStandardId = new Map<string, number>();
     for (const a of aliases) {
       aliasToStandardId.set(a.sourceExerciseId, a.standardId);
     }
-    return { standardsById, aliasToStandardId, catalogToStandardId };
+    return {
+      standardsById,
+      aliasToStandardId,
+      catalogToStandardId,
+      normalizedCustomLabelToStandardId,
+    };
   }
 
   private static resolveGroupKey(exerciseId: string, ctx: StandardContext): string {
@@ -185,17 +241,32 @@ export class ProgressionService {
     if (viaCatalog !== undefined) {
       return `${STD_PREFIX}${viaCatalog}`;
     }
+    if (exerciseId.startsWith('custom:')) {
+      const raw = exerciseId.slice('custom:'.length).trim();
+      const n = normalizeExerciseLabel(raw);
+      const sid = ctx.normalizedCustomLabelToStandardId.get(n);
+      if (sid !== undefined) {
+        return `${STD_PREFIX}${sid}`;
+      }
+    }
     return exerciseId;
   }
 
   private static exerciseMatchesStandard(
     ex: WorkoutExercise,
     standard: StandardRow,
-    aliasToStandardId: Map<string, number>
+    ctx: StandardContext
   ): boolean {
     if (!ProgressionService.workoutExerciseHasPositiveWeight(ex)) return false;
-    if (aliasToStandardId.get(ex.exerciseId) === standard.id) return true;
+    if (ctx.aliasToStandardId.get(ex.exerciseId) === standard.id) return true;
     if (standard.catalogExerciseId && ex.exerciseId === standard.catalogExerciseId) return true;
+    if (standard.catalogExerciseId && ex.exerciseId.startsWith('custom:')) {
+      const cat = ExerciseCatalog.find(standard.catalogExerciseId);
+      if (!cat) return false;
+      const raw = ex.exerciseId.slice('custom:'.length).trim();
+      const n = normalizeExerciseLabel(raw);
+      return this.implicitCustomMatchesCatalogTitle(n, cat.title);
+    }
     return false;
   }
 
@@ -210,7 +281,7 @@ export class ProgressionService {
       const standard = ctx.standardsById.get(stdId);
       if (!standard) return null;
       const matches = exercises.filter((ex) =>
-        ProgressionService.exerciseMatchesStandard(ex, standard, ctx.aliasToStandardId)
+        ProgressionService.exerciseMatchesStandard(ex, standard, ctx)
       );
       if (matches.length === 0) return null;
       const sets = matches.flatMap((ex) => ex.sets ?? []);
@@ -486,11 +557,19 @@ export class ProgressionService {
 
     const weightedExerciseOptions = await this.buildWeightedExerciseOptionsForUser(userId);
 
-    const standards = [...ctx.standardsById.values()].map((s) => ({
-      id: s.id,
-      catalogExerciseId: s.catalogExerciseId,
-      displayLabel: s.displayLabel,
-    }));
+    const standards = [...ctx.standardsById.values()].map((s) => {
+      const cat = s.catalogExerciseId ? ExerciseCatalog.find(s.catalogExerciseId) : undefined;
+      const catalogTitleNormalized =
+        cat && this.implicitCustomMatchesCatalogTitle(normalizeExerciseLabel(cat.title), cat.title)
+          ? normalizeExerciseLabel(cat.title)
+          : null;
+      return {
+        id: s.id,
+        catalogExerciseId: s.catalogExerciseId,
+        displayLabel: s.displayLabel,
+        catalogTitleNormalized,
+      };
+    });
     const aliases = [...ctx.aliasToStandardId.entries()].map(([sourceExerciseId, standardId]) => ({
       sourceExerciseId,
       standardId,
@@ -659,11 +738,19 @@ export class ProgressionService {
 
   static async listExerciseStandards(userId: number): Promise<ExerciseStandardDTO[]> {
     const rows = await UserExerciseStandard.query().where('userId', userId).orderBy('id', 'asc');
-    return rows.map((r) => ({
-      id: r.id,
-      catalogExerciseId: r.catalogExerciseId,
-      displayLabel: r.displayLabel,
-    }));
+    return rows.map((r) => {
+      const cat = r.catalogExerciseId ? ExerciseCatalog.find(r.catalogExerciseId) : undefined;
+      const catalogTitleNormalized =
+        cat && this.implicitCustomMatchesCatalogTitle(normalizeExerciseLabel(cat.title), cat.title)
+          ? normalizeExerciseLabel(cat.title)
+          : null;
+      return {
+        id: r.id,
+        catalogExerciseId: r.catalogExerciseId,
+        displayLabel: r.displayLabel,
+        catalogTitleNormalized,
+      };
+    });
   }
 
   static async createExerciseStandard(
@@ -690,10 +777,17 @@ export class ProgressionService {
       catalogExerciseId: cat,
       displayLabel: label,
     });
+    const catEx = row.catalogExerciseId ? ExerciseCatalog.find(row.catalogExerciseId) : undefined;
+    const catalogTitleNormalized =
+      catEx &&
+      this.implicitCustomMatchesCatalogTitle(normalizeExerciseLabel(catEx.title), catEx.title)
+        ? normalizeExerciseLabel(catEx.title)
+        : null;
     return {
       id: row.id,
       catalogExerciseId: row.catalogExerciseId,
       displayLabel: row.displayLabel,
+      catalogTitleNormalized,
     };
   }
 
@@ -791,7 +885,8 @@ export class ProgressionService {
   }
 
   /**
-   * Упражнения с весом за год, ещё не попавшие ни под эталон (ни алиас, ни catalog_id эталона).
+   * Упражнения с весом за год, ещё не попавшие под эталон:
+   * нет алиаса, нет прямого catalog id, нет неявного совпадения custom:… с title каталога эталона.
    */
   static async listUnlinkedStrengthExerciseCandidates(
     userId: number,
@@ -927,6 +1022,7 @@ export class ProgressionService {
 
     const seen = new Set<string>();
     const out: StandardLinkSuggestionDTO[] = [];
+    const MIN_SIMILARITY_FOR_AI_STANDARD_LINK = 0.75;
 
     for (const link of rawLinks) {
       const src = link.sourceExerciseId?.trim();
@@ -936,12 +1032,20 @@ export class ProgressionService {
       if (seen.has(src)) {
         continue;
       }
+
+      const exName = nameById.get(src) ?? src;
+      const stdLabel = labelById.get(link.standardId) ?? String(link.standardId);
+      const sim = labelSimilarity(exName, stdLabel);
+      if (sim < MIN_SIMILARITY_FOR_AI_STANDARD_LINK) {
+        continue;
+      }
+
       seen.add(src);
       out.push({
         sourceExerciseId: src,
         standardId: link.standardId,
-        exerciseName: nameById.get(src) ?? src,
-        standardLabel: labelById.get(link.standardId) ?? String(link.standardId),
+        exerciseName: exName,
+        standardLabel: stdLabel,
       });
     }
 
@@ -1191,6 +1295,8 @@ export interface ExerciseStandardDTO {
   id: number;
   catalogExerciseId: string | null;
   displayLabel: string;
+  /** normalizeExerciseLabel(title каталога) для неявного слияния с custom:…; null если нет каталога или слишком короткое имя */
+  catalogTitleNormalized: string | null;
 }
 
 export interface ExerciseStandardAliasDTO {

@@ -4,7 +4,7 @@ import { DateTime } from 'luxon'
 import emitter from '@adonisjs/core/services/emitter'
 
 import { PeriodizationService } from '#services/PeriodizationService'
-import { parseDateRange } from '#utils/date'
+import { nowDate, parseIsoToDate, parseDateRange } from '#utils/date'
 import User from '#models/user'
 import Workout from '#models/workout'
 import TrainerAthlete from '#models/trainer_athlete'
@@ -284,8 +284,8 @@ export default class TrainerController {
     const mode = request.input('mode', 'recovery')
 
     if (mode === 'recovery') {
-      const now = new Date()
-      const startDate = new Date()
+      const now = nowDate()
+      const startDate = nowDate()
       startDate.setDate(startDate.getDate() - 14)
 
       const workouts = await Workout.query()
@@ -303,11 +303,11 @@ export default class TrainerController {
     const to = request.input('to')
 
     let startDate: Date
-    let endDate = new Date()
+    let endDate = nowDate()
 
     if (from && to) {
-      startDate = new Date(from)
-      endDate = new Date(to)
+      startDate = parseIsoToDate(from)
+      endDate = parseIsoToDate(to)
     } else {
       startDate = this.calculateStartDate(period)
     }
