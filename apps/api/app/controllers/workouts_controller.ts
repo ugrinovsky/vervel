@@ -27,6 +27,7 @@ export default class WorkoutsController {
       notes: data.notes || '',
       rpe: data.rpe ?? null,
       zonesLoad: calculated.zonesLoad,
+      zonesLoadAbs: calculated.zonesLoadAbs,
       totalIntensity: calculated.totalIntensity,
       totalVolume: calculated.totalVolume,
     });
@@ -99,6 +100,7 @@ export default class WorkoutsController {
       notes: data.notes || '',
       rpe: data.rpe ?? null,
       zonesLoad: calculated.zonesLoad,
+      zonesLoadAbs: calculated.zonesLoadAbs,
       totalIntensity: calculated.totalIntensity,
       totalVolume: calculated.totalVolume,
     });

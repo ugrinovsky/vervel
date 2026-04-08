@@ -305,6 +305,7 @@ export default class AiController {
       workoutType,
       exercises,
       zonesLoad: calculated.zonesLoad,
+      zonesLoadAbs: calculated.zonesLoadAbs,
       totalIntensity: calculated.totalIntensity,
       totalVolume: calculated.totalVolume,
     })

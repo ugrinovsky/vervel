@@ -8,7 +8,16 @@ import logger from '@adonisjs/core/services/logger'
 /* ------------------------------------------------------------------ */
 
 export interface WorkoutCalculationResult {
+  /**
+   * Relative per-session muscle profile (0..1), used for UI charts.
+   * This is derived from `zonesLoadAbs` by scaling to the max zone within the workout.
+   */
   zonesLoad: Record<string, number>;
+  /**
+   * Absolute per-session muscle load (0..1-ish), used for recovery/analytics.
+   * Not normalized to the max zone.
+   */
+  zonesLoadAbs: Record<string, number>;
   totalIntensity: number;
   totalVolume: number;
 }
@@ -80,8 +89,10 @@ export class WorkoutCalculator {
     rpe?: number | null,
     userId?: number
   ): Promise<WorkoutCalculationResult> {
-    const zoneLoads: Record<string, number> = {};
+    const zoneLoadsAbs: Record<string, number> = {};
     let totalVolume = 0;
+    let totalExerciseLoad = 0;
+    let countedExercises = 0;
 
     let userBodyWeight: number | null = null;
     if (userId && exercises.some(e => e.bodyweight)) {
@@ -117,25 +128,36 @@ export class WorkoutCalculator {
       const { load, volume } = this.calculateExerciseLoad(entry, input, workoutType, userBodyWeight);
 
       totalVolume += volume;
+      if (load > 0) {
+        totalExerciseLoad += load;
+        countedExercises += 1;
+      }
 
+      // If exercise targets multiple zones, distribute its load between them
+      // to avoid double-counting (e.g. RDL: back+legs).
+      const perZoneLoad = load / Math.max(zones.length, 1);
       for (const zone of zones) {
-        zoneLoads[zone] = (zoneLoads[zone] ?? 0) + load;
+        zoneLoadsAbs[zone] = (zoneLoadsAbs[zone] ?? 0) + perZoneLoad;
       }
     }
 
-    const result = this.normalizeResult(zoneLoads, totalVolume);
+    const baseTotalIntensity = Math.min(
+      totalExerciseLoad / Math.max(countedExercises, 1),
+      NORMALIZATION.MAX_ZONE_LOAD
+    )
 
-    // RPE scales the stored load on a 1–5 UI scale: RPE 5 (Максимум) = 100%, RPE 3 (Норм) = 60%, RPE 1 = 20%.
-    // This reflects the athlete's actual perceived effort — if it felt easy, it stresses muscles less.
-    if (rpe != null) {
-      const rpeFactor = rpe / 5;
-      for (const zone of Object.keys(result.zonesLoad)) {
-        result.zonesLoad[zone] = Math.min(result.zonesLoad[zone] * rpeFactor, NORMALIZATION.MAX_ZONE_LOAD);
-      }
-      result.totalIntensity = Math.min(result.totalIntensity * rpeFactor, NORMALIZATION.MAX_ZONE_LOAD);
+    // Apply RPE to the absolute load (this represents perceived stress).
+    const { zonesLoadAbs: zonesLoadAbsScaled, totalIntensity: totalIntensityScaled } =
+      this.applyRpe(zoneLoadsAbs, baseTotalIntensity, rpe)
+
+    const zonesLoadRel = this.toRelativeZonesLoad(zonesLoadAbsScaled)
+
+    return {
+      zonesLoad: zonesLoadRel,
+      zonesLoadAbs: zonesLoadAbsScaled,
+      totalIntensity: totalIntensityScaled,
+      totalVolume,
     }
-
-    return result;
   }
 
   /* ---------------------------------------------------------------- */
@@ -197,11 +219,13 @@ export class WorkoutCalculator {
       totalNormalizedLoad += normalizedVolume;
     });
 
-    // Усредняем нагрузку по подходам
-    const avgNormalizedLoad = totalNormalizedLoad / input.sets.length;
+    // Суммируем нагрузку по подходам (капим до 1.0).
+    // Это позволяет 2–3 тяжелым сета́м давать «полную» нагрузку,
+    // а малый вес/объём — частичную.
+    const normalizedLoad = Math.min(totalNormalizedLoad, NORMALIZATION.MAX_ZONE_LOAD);
 
     return {
-      load: baseIntensity * avgNormalizedLoad,
+      load: baseIntensity * normalizedLoad,
       volume: totalVolume,
     };
   }
@@ -254,33 +278,39 @@ export class WorkoutCalculator {
     return 'none';
   }
 
-  private static normalizeResult(
-    zoneLoads: Record<string, number>,
-    totalVolume: number
-  ): WorkoutCalculationResult {
-    const values = Object.values(zoneLoads);
-
-    if (values.length === 0) {
-      return {
-        zonesLoad: {},
-        totalIntensity: 0,
-        totalVolume: 0,
-      };
+  private static toRelativeZonesLoad(zonesLoadAbs: Record<string, number>): Record<string, number> {
+    const values = Object.values(zonesLoadAbs)
+    if (values.length === 0) return {}
+    const maxLoad = Math.max(...values, NORMALIZATION.MIN_DENOMINATOR)
+    const rel: Record<string, number> = {}
+    for (const [zone, load] of Object.entries(zonesLoadAbs)) {
+      rel[zone] = Math.min((Number(load) || 0) / maxLoad, NORMALIZATION.MAX_ZONE_LOAD)
     }
+    return rel
+  }
 
-    const maxLoad = Math.max(...values, NORMALIZATION.MIN_DENOMINATOR);
-
-    Object.keys(zoneLoads).forEach((zone) => {
-      zoneLoads[zone] = Math.min(zoneLoads[zone] / maxLoad, NORMALIZATION.MAX_ZONE_LOAD);
-    });
-
-    const totalIntensity = values.reduce((a, b) => a + b, 0) / Math.max(values.length, 1);
-
+  /**
+   * RPE scaling.
+   * - UI uses 1..5, DB constraint currently allows 1..10. Support both.
+   */
+  private static applyRpe(
+    zonesLoadAbs: Record<string, number>,
+    totalIntensity: number,
+    rpe?: number | null
+  ): { zonesLoadAbs: Record<string, number>; totalIntensity: number } {
+    if (rpe == null) return { zonesLoadAbs, totalIntensity }
+    const n = Number(rpe)
+    if (!Number.isFinite(n) || n <= 0) return { zonesLoadAbs, totalIntensity }
+    const denom = n <= 5 ? 5 : 10
+    const rpeFactor = Math.min(n / denom, 1)
+    const scaled: Record<string, number> = {}
+    for (const [zone, load] of Object.entries(zonesLoadAbs)) {
+      scaled[zone] = Math.min((Number(load) || 0) * rpeFactor, NORMALIZATION.MAX_ZONE_LOAD)
+    }
     return {
-      zonesLoad: zoneLoads,
-      totalIntensity: Math.min(totalIntensity, NORMALIZATION.MAX_ZONE_LOAD),
-      totalVolume,
-    };
+      zonesLoadAbs: scaled,
+      totalIntensity: Math.min(totalIntensity * rpeFactor, NORMALIZATION.MAX_ZONE_LOAD),
+    }
   }
 
   /**
@@ -343,8 +373,9 @@ export class WorkoutCalculator {
       // Otherwise recalculate from exercises (older DB rows may have zonesLoad={}).
       // This also avoids "zeroing" zones in tests/rows that intentionally provide zonesLoad.
       let zonesLoad: Record<string, number> = {};
-      if (hasMeaningfulZonesLoad(workout.zonesLoad as any)) {
-        zonesLoad = { ...(workout.zonesLoad as any) };
+      const storedAbs = (workout as any).zonesLoadAbs as Record<string, number> | null | undefined
+      if (hasMeaningfulZonesLoad(storedAbs as any)) {
+        zonesLoad = { ...(storedAbs as any) };
       } else if (Array.isArray(workout.exercises) && workout.exercises.length > 0) {
         const calc = await WorkoutCalculator.calculateZoneLoads(
           workout.exercises,
@@ -352,9 +383,9 @@ export class WorkoutCalculator {
           workout.rpe,
           workout.userId
         );
-        zonesLoad = calc.zonesLoad;
+        zonesLoad = calc.zonesLoadAbs;
       } else {
-        zonesLoad = (workout.zonesLoad as any) || {};
+        zonesLoad = (storedAbs as any) || {};
       }
 
       debugWorkouts.push({
@@ -447,11 +478,12 @@ export class WorkoutCalculator {
       };
     }
 
-    /** По каждой тренировке: сохранённые зоны или пересчёт из exercises (старые записи в БД часто с пустым zonesLoad). */
-    const perWorkoutZones: Record<string, number>[] = [];
+    /** По каждой тренировке: абсолютные зоны (новые) или пересчёт из exercises. */
+    const perWorkoutZonesAbs: Record<string, number>[] = [];
     for (const workout of workouts) {
-      if (hasMeaningfulZonesLoad(workout.zonesLoad)) {
-        perWorkoutZones.push({ ...workout.zonesLoad! });
+      const abs = (workout as any).zonesLoadAbs as Record<string, number> | null | undefined
+      if (hasMeaningfulZonesLoad(abs as any)) {
+        perWorkoutZonesAbs.push({ ...(abs as any) });
         continue;
       }
       if (Array.isArray(workout.exercises) && workout.exercises.length > 0) {
@@ -461,9 +493,9 @@ export class WorkoutCalculator {
           workout.rpe,
           workout.userId
         );
-        perWorkoutZones.push({ ...calc.zonesLoad });
+        perWorkoutZonesAbs.push({ ...calc.zonesLoadAbs });
       } else {
-        perWorkoutZones.push({});
+        perWorkoutZonesAbs.push({});
       }
     }
 
@@ -486,8 +518,8 @@ export class WorkoutCalculator {
       const type = workout.workoutType || 'unknown';
       byType[type] = (byType[type] || 0) + 1;
 
-      const zonesLoad = perWorkoutZones[i] ?? {};
-      Object.entries(zonesLoad).forEach(([zone, load]) => {
+      const zonesLoadAbs = perWorkoutZonesAbs[i] ?? {};
+      Object.entries(zonesLoadAbs).forEach(([zone, load]) => {
         zones[zone] = (zones[zone] || 0) + (Number(load) || 0);
       });
     });
@@ -508,6 +540,7 @@ export class WorkoutCalculator {
       const hasMissingWeights = Array.isArray(w.exercises) && w.exercises.some((ex) =>
         !ex.bodyweight && (ex.sets ?? []).some((s) => (s.reps ?? 0) > 0 && !s.weight)
       );
+      const zonesAbs = perWorkoutZonesAbs[i] ?? {}
       return {
         id: w.id,
         date: w.date.toString(),
@@ -516,7 +549,8 @@ export class WorkoutCalculator {
         type: w.workoutType || 'unknown',
         scheduledWorkoutId: w.scheduledWorkoutId ?? null,
         loadLevel: WorkoutCalculator.getLoadLevel(volume, intensity, hasExercises),
-        zones: { ...(perWorkoutZones[i] ?? {}) },
+        // For timeline we keep a relative profile (good for charts) derived from absolute zones.
+        zones: WorkoutCalculator.toRelativeZonesLoad(zonesAbs),
         hasMissingWeights,
       };
     });

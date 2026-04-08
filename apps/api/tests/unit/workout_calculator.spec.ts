@@ -27,6 +27,9 @@ const createWorkout = (
     id,
     workoutType: type,
     zonesLoad,
+    // In production we now use zonesLoadAbs (absolute) for recovery/stats.
+    // For unit tests, default it to zonesLoad unless explicitly overridden.
+    zonesLoadAbs: zonesLoad,
     totalVolume,
     totalIntensity,
     exercises,
@@ -53,6 +56,7 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
 
     assert.equal(result.totalVolume, 10000);
     assert.equal(result.zonesLoad.ноги, 1);
+    assert.isAbove(result.zonesLoadAbs.ноги, 0);
     assert.equal(result.totalIntensity, 0.8);
   });
 
@@ -84,6 +88,7 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
 
     // expectedLoad = 0.6 * ((1 * 1 * (50 / 100)) / 10) = 0.6 * 0.05 = 0.03
     assert.closeTo(result.zonesLoad.плечи, 1, 0.001); // после нормализации к max=0.03 → 1
+    assert.closeTo(result.zonesLoadAbs.плечи, 0.03, 0.001); // абсолютная нагрузка
     assert.closeTo(result.totalIntensity, 0.03, 0.001); // среднее = load / 1
   });
 
@@ -132,6 +137,9 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     assert.equal(result.totalVolume, 0);
     assert.closeTo(result.zonesLoad.ноги, 1, 0.001);
     assert.closeTo(result.zonesLoad.выносливость, 1, 0.001);
+    // Абсолютная нагрузка распределена между зонами
+    assert.closeTo(result.zonesLoadAbs.ноги, 0.35, 0.001);
+    assert.closeTo(result.zonesLoadAbs.выносливость, 0.35, 0.001);
     assert.equal(result.totalIntensity, 0.7);
   });
 
@@ -406,8 +414,9 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     // loadLevel должен присутствовать в каждой записи
     assert.equal(result.timeline[0].loadLevel, 'low'); // volume=1000 → low
     assert.equal(result.timeline[1].loadLevel, 'low'); // volume=500 → low
-    assert.deepEqual(result.timeline[0].zones, { ноги: 3, руки: 1 });
-    assert.deepEqual(result.timeline[1].zones, { ноги: 1, грудь: 2 });
+    // timeline.zones is a *relative* profile derived from absolute zones
+    assert.deepEqual(result.timeline[0].zones, { ноги: 1, руки: 1 / 3 });
+    assert.deepEqual(result.timeline[1].zones, { ноги: 0.5, грудь: 1 });
   });
 
   test('calculatePeriodStats: пустой zonesLoad пересчитывается из упражнений (каталог)', async ({ assert }) => {

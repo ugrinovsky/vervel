@@ -41,7 +41,7 @@ async function createAthleteWorkouts(
 
   const workoutExercises = toWorkoutExercises(workoutData.exercises, workoutData.type)
 
-  let calculated = { zonesLoad: {} as Record<string, number>, totalIntensity: 0, totalVolume: 0 }
+  let calculated = { zonesLoad: {} as Record<string, number>, zonesLoadAbs: {} as Record<string, number>, totalIntensity: 0, totalVolume: 0 }
   if (workoutExercises.length > 0) {
     try {
       calculated = await WorkoutCalculator.calculateZoneLoads(workoutExercises, workoutData.type)
@@ -59,6 +59,7 @@ async function createAthleteWorkouts(
         exercises: workoutExercises,
         notes: workoutData.notes || '',
         zonesLoad: calculated.zonesLoad,
+        zonesLoadAbs: (calculated as any).zonesLoadAbs ?? {},
         totalIntensity: calculated.totalIntensity,
         totalVolume: calculated.totalVolume,
         scheduledWorkoutId,

@@ -101,6 +101,15 @@ export default class Workout extends compose(BaseModel, SoftDeletes) {
   })
   declare zonesLoad: Record<string, number>;
 
+  @column({
+    prepare: (value) => JSON.stringify(value),
+    consume: (value) => {
+      if (typeof value !== 'string') return value
+      try { return JSON.parse(value) } catch { return {} }
+    },
+  })
+  declare zonesLoadAbs: Record<string, number>;
+
   @column()
   declare totalIntensity: number;
 
