@@ -267,7 +267,13 @@ export class ProgressionService {
     ctx: StandardContext
   ): WorkoutSet[] | null {
     const { baseGroupKey } = parseStrengthLogCompositeKey(compositeGroupKey);
-    const stdId = ProgressionService.parseStandardGroupKey(baseGroupKey);
+    let stdId = ProgressionService.parseStandardGroupKey(baseGroupKey);
+    // Закрепление часто хранит сырой catalog id (Romanian_Deadlift), а не std:N — тогда без этой
+    // ветки custom:* и другие варианты эталона не попадали бы в ту же карточку.
+    if (stdId === null) {
+      const resolved = this.resolveStandardIdForExerciseId(baseGroupKey, ctx);
+      if (resolved !== null) stdId = resolved;
+    }
     if (stdId !== null) {
       const standard = ctx.standardsById.get(stdId);
       if (!standard) return null;

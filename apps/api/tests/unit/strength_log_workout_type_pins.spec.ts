@@ -143,5 +143,41 @@ test.group('ProgressionService: strength log split by workoutType and pins', (gr
     assert.deepEqual(log.pinnedExerciseIds, ['Pull-Up|wt:bodybuilding']);
     assert.deepEqual(log.entries.map((e) => e.exerciseId), ['Pull-Up|wt:bodybuilding']);
   });
+
+  test('pins: закрепление Romanian_Deadlift|wt: включает custom:румынская тяга при эталоне с каталогом', async ({
+    assert,
+  }) => {
+    await ProgressionService.createExerciseStandard(user.id, 'Румынская тяга', 'Romanian_Deadlift');
+    await createStrengthWorkout({
+      userId: user.id,
+      dateIso: '2026-01-01T10:00:00.000Z',
+      workoutType: 'bodybuilding',
+      exerciseId: 'Romanian_Deadlift',
+      weight: 50,
+    });
+    await Workout.create({
+      userId: user.id,
+      date: DateTime.fromISO('2026-01-03T10:00:00.000Z'),
+      workoutType: 'bodybuilding',
+      exercises: [
+        {
+          exerciseId: 'custom:румынская тяга',
+          type: 'strength',
+          name: 'Румынская тяга',
+          sets: [{ id: 's1', reps: 5, weight: 55 }],
+        },
+      ],
+      zonesLoad: {},
+      totalIntensity: 0,
+      totalVolume: 0,
+      notes: null,
+      rpe: null,
+      scheduledWorkoutId: null,
+    });
+    await ProgressionService.replaceStrengthLogPins(user.id, ['Romanian_Deadlift|wt:bodybuilding']);
+    const log = await ProgressionService.getStrengthLog(user.id);
+    assert.equal(log.entries.length, 1);
+    assert.equal(log.entries[0]?.sessions.length, 2);
+  });
 });
 
