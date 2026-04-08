@@ -29,7 +29,7 @@ import type { ExerciseData, WorkoutTemplate } from '@/api/trainer';
 import type { AiRecognizedWorkoutResult, AiWorkoutResult } from '@/api/ai';
 import { aiApi } from '@/api/ai';
 import { WORKOUT_TYPE_CONFIG, DEFAULT_WORKOUT_TYPE } from '@/constants/workoutTypes';
-import { nowRoundedToHour, today, parseTimeString, parseLocalDate } from '@/utils/date';
+import { nowRoundedToHour, today, parseTimeString, parseLocalDate, toDateKey } from '@/utils/date';
 import {
   convertExercisesForType,
   convertAiExercises,
@@ -37,6 +37,17 @@ import {
 } from './workoutTypeConversion';
 import { workoutsApi } from '@/api/workouts';
 import { profileApi } from '@/api/profile';
+
+function parseDraftDate(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  // New format: local date key "YYYY-MM-DD"
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return parseLocalDate(value);
+  // Legacy format: ISO string (often produced by Date#toISOString(), i.e. UTC).
+  // Parse as Date first (applies timezone), then take local Y-M-D to avoid day drift on reload.
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
 
 export interface WorkoutFormData {
   date: Date;
@@ -113,11 +124,15 @@ export default function WorkoutFormBase({
     !!localDraft && (localDraft.exercises.length > 0 || !!localDraft.notes);
 
   const [draftRestored, setDraftRestored] = useState(hasMeaningfulDraft);
+  // When user clears/resets the draft, there may already be an in-flight getDraft() request.
+  // This flag prevents that stale response from re-applying old date/time/notes/exercises.
+  const ignoreDbDraftRef = useRef(false);
 
   // ── Form state (initialized from draft or props) ──────────────────
   const [date, setDate] = useState<Date>(() => {
     if (initialDate) return initialDate;
-    if (localDraft?.date) return parseLocalDate(localDraft.date.slice(0, 10));
+    const draftDate = parseDraftDate(localDraft?.date);
+    if (draftDate) return draftDate;
     return today();
   });
 
@@ -143,8 +158,6 @@ export default function WorkoutFormBase({
   const [aiPhotoExpanded, setAiPhotoExpanded] = useState(false);
   /** Только для распознавания по фото: требуем явный выбор типа тренировки пользователем */
   const [aiPhotoNeedsTypePick, setAiPhotoNeedsTypePick] = useState(false);
-  const [isParsing, setIsParsing] = useState(false);
-  const [parseCost, setParseCost] = useState<number | null>(null);
 
   // ── Auto-save to localStorage (immediate) + DB (debounced) ───────
   const dbSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -156,7 +169,8 @@ export default function WorkoutFormBase({
       workoutType,
       notes,
       exercises,
-      date: date.toISOString(),
+      // Store local calendar day (no timezone) to avoid UTC drift on reload.
+      date: toDateKey(date),
       time: `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`,
       savedAt: Date.now(),
     };
@@ -183,17 +197,24 @@ export default function WorkoutFormBase({
     workoutsApi
       .getDraft()
       .then((res) => {
+        if (ignoreDbDraftRef.current) return;
         const dbDraft = res.data?.data as WorkoutFormDraft | null;
         if (!dbDraft) return;
         const localSavedAt = localDraft?.savedAt ?? 0;
         if (dbDraft.savedAt > localSavedAt) {
+          const dbHasMeaningful =
+            (dbDraft.exercises?.length ?? 0) > 0 || !!dbDraft.notes?.trim();
           // DB draft is newer — silently apply it
           if (dbDraft.workoutType) setWorkoutType(dbDraft.workoutType);
           if (dbDraft.notes != null) setNotes(dbDraft.notes);
           if (dbDraft.exercises?.length) setExercises(dbDraft.exercises);
-          if (dbDraft.date && !initialDate) setDate(parseLocalDate(dbDraft.date.slice(0, 10)));
-          if (dbDraft.time) setTime(parseTimeString(dbDraft.time));
-          if (dbDraft.exercises?.length > 0 || dbDraft.notes) setDraftRestored(true);
+          // Important: don't override today's date with an "empty" DB draft.
+          if (dbHasMeaningful && dbDraft.date && !initialDate) {
+            const d = parseDraftDate(dbDraft.date);
+            if (d) setDate(d);
+          }
+          if (dbHasMeaningful && dbDraft.time) setTime(parseTimeString(dbDraft.time));
+          if (dbHasMeaningful) setDraftRestored(true);
         }
       })
       .catch(() => {
@@ -204,6 +225,7 @@ export default function WorkoutFormBase({
   // ── Clear draft (localStorage + DB) ──────────────────────────────
   const clearDraft = () => {
     if (!storageKey) return;
+    ignoreDbDraftRef.current = true;
     localStorage.removeItem(storageKey);
     workoutsApi.clearDraft().catch(() => {
       /* silent */
@@ -243,14 +265,6 @@ export default function WorkoutFormBase({
     resetToInitial();
     toast.success('Форма очищена');
   };
-
-  // ── Fetch AI costs once on mount ─────────────────────────────────
-  useEffect(() => {
-    aiApi
-      .getBalance()
-      .then((res) => setParseCost(res.data.costs.parseNotes))
-      .catch(() => {});
-  }, []);
 
   // ── Fetch athlete body weight once on mount ───────────────────────
   useEffect(() => {
@@ -328,42 +342,6 @@ export default function WorkoutFormBase({
     toast.success(`ИИ распознал ${converted.length} упражнений`);
   };
 
-  const handleParseNotes = async () => {
-    if (!notes.trim()) return;
-    setIsParsing(true);
-    try {
-      const res = await aiApi.parseNotesText(notes);
-      const { exercises: parsedExercises, warning } = res.data;
-      const nameMap = new Map(
-        res.data.previewItems.map((item: any) => [item.exerciseId, item.name])
-      );
-      const baseConverted: ExerciseData[] = parsedExercises.map((ex: any) => ({
-        exerciseId: ex.exerciseId,
-        name:
-          nameMap.get(ex.exerciseId) ??
-          String(ex.exerciseId).replace(/^custom:/, '').replace(/_/g, ' '),
-        setsDetail: ex.sets?.map((s: any) => ({ reps: s.reps ?? 10, weight: s.weight })) ?? [],
-        sets: ex.sets?.length ?? 3,
-        blockId: ex.blockId,
-      }));
-
-      // Тип тренировки не определяем автоматически.
-      // Но данные с бэка приходят в "силовом" формате (reps/weight), поэтому при необходимости
-      // конвертируем их в текущий выбранный workoutType.
-      const converted = convertExercisesForType(baseConverted, 'bodybuilding', workoutType);
-      setExercises(converted);
-      setAiGenerated(true);
-      setSelectedTemplateId(null);
-      if (warning) toast(warning, { icon: '⚠️' });
-      else toast.success(`ИИ разобрал ${converted.length} упражнений`);
-    } catch (err: any) {
-      const msg = err?.response?.data?.message;
-      toast.error(msg ?? 'Не удалось разобрать программу');
-    } finally {
-      setIsParsing(false);
-    }
-  };
-
   const handleAiTextParsed = (payload: {
     sourceText: string;
     previewItems: Array<{
@@ -388,6 +366,8 @@ export default function WorkoutFormBase({
       name:
         nameMap.get(ex.exerciseId) ??
         String(ex.exerciseId).replace(/^custom:/, '').replace(/_/g, ' '),
+      zones: Array.isArray(ex.zones) ? ex.zones : undefined,
+      bodyweight: ex.bodyweight,
       setsDetail: ex.sets?.map((s: any) => ({ reps: s.reps ?? 10, weight: s.weight })) ?? [],
       sets: ex.sets?.length ?? 3,
       blockId: ex.blockId,
@@ -464,42 +444,6 @@ export default function WorkoutFormBase({
           </button>
         </div>
       )}
-
-      {/* Заметки / программа — сверху */}
-      <div>
-        <SectionLabel>{notesLabel}</SectionLabel>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder={notesPlaceholder}
-          rows={4}
-          className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none placeholder:text-(--color_text_muted) leading-relaxed"
-        />
-        {notes.trim() && (
-          <button
-            type="button"
-            onClick={handleParseNotes}
-            disabled={isParsing}
-            className="mt-2 flex items-center gap-1.5 text-sm text-(--color_primary_light) hover:opacity-80 transition-opacity disabled:opacity-40"
-          >
-            {isParsing ? (
-              <>
-                <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                Разбираю программу...
-              </>
-            ) : (
-              <>
-                ✨ Конвертировать в упражнения
-                {parseCost != null && (
-                  <span className="opacity-50 text-xs">
-                    · {parseCost === 0 ? 'бесплатно' : `${parseCost}₽`}
-                  </span>
-                )}
-              </>
-            )}
-          </button>
-        )}
-      </div>
 
       {/* Когда */}
       <div>
@@ -697,7 +641,7 @@ export default function WorkoutFormBase({
             setAiGenerated(false);
           }}
           toolbar={
-            exercises.length > 0 ? (
+            exercises.length > 0 && !aiGenerated ? (
               <div className="flex flex-wrap gap-3 mb-1">
                 <AiWorkoutRecognizer
                   onResult={handleAiRecognizedResult}
@@ -730,12 +674,24 @@ export default function WorkoutFormBase({
 
       {/* Actions */}
       <div className="flex flex-col gap-2 pt-1">
+        {/* Заметки / программа — перед сохранением */}
+        <div>
+          <SectionLabel>{notesLabel}</SectionLabel>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder={notesPlaceholder}
+            rows={4}
+            className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none placeholder:text-(--color_text_muted) leading-relaxed"
+          />
+        </div>
+
         {hasFormContent && (
           <GhostButton
-            variant="link"
+            variant="accent-soft"
             onClick={handleClearForm}
             disabled={saving}
-            className="text-sm self-start hover:text-white"
+            className="text-sm"
           >
             Очистить форму
           </GhostButton>

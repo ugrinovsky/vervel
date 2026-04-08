@@ -44,7 +44,8 @@ interface WorkoutInlineFormProps {
   preselectedTime?: string;
   initialGroups?: TrainerGroupItem[];
   initialAthletes?: AthleteListItem[];
-  onSuccess?: () => void;
+  /** Called after successful create/update (scheduledDate returned as API datetime string). */
+  onSuccess?: (scheduledDate: string) => void;
   onCancel?: () => void;
   /** Skip outer card wrapper — use when rendering inside BottomSheet */
   noCard?: boolean;
@@ -196,7 +197,7 @@ export default function WorkoutInlineForm({
         }));
         toast.success('Тренировка создана');
       }
-      onSuccess?.();
+      onSuccess?.(scheduledDate);
     } catch {
       toast.error(editWorkout ? 'Ошибка обновления тренировки' : 'Ошибка создания тренировки');
       throw new Error('submit failed');

@@ -1,6 +1,7 @@
 import { ExerciseCatalog, type CatalogExercise } from '#services/ExerciseCatalog'
 import Workout, { WorkoutExercise, WorkoutSet } from '#models/workout';
 import UserMeasurement from '#models/user_measurement';
+import logger from '@adonisjs/core/services/logger'
 
 /* ------------------------------------------------------------------ */
 /* Types */
@@ -46,6 +47,31 @@ function hasMeaningfulZonesLoad(zonesLoad: Record<string, number> | null | undef
 
 export class WorkoutCalculator {
   /**
+   * Converts a stored workout date into a JS Date treating the value as a wall-clock local datetime.
+   * Important: the app intentionally stores/uses datetimes without timezone semantics in the UI.
+   * If we use Luxon's absolute timestamps here, a workout saved as "19:00+00" would become "22:00"
+   * in UTC+3 and could be incorrectly treated as a future workout and skipped.
+   */
+  private static toWallClockJsDate(value: any): Date {
+    if (value instanceof Date) return value
+    if (value && typeof value.toJSDate === 'function') {
+      // Luxon DateTime (or compatible) – use its JS date.
+      return value.toJSDate()
+    }
+    const iso = typeof value === 'string'
+      ? value
+      : (value && typeof value.toISO === 'function')
+        ? value.toISO()
+        : String(value ?? '')
+
+    const local = iso.slice(0, 19) // "YYYY-MM-DDTHH:mm:ss"
+    const [datePart, timePart] = local.split('T')
+    const [y, mo, d] = (datePart ?? '').split('-').map(Number)
+    const [h, min, s] = (timePart ?? '').split(':').map(Number)
+    if (!y || !mo || !d) return new Date(0)
+    return new Date(y, mo - 1, d, h || 0, min || 0, s || 0)
+  }
+  /**
    * Главная точка входа
    */
   static async calculateZoneLoads(
@@ -72,8 +98,10 @@ export class WorkoutCalculator {
     for (const input of exercises) {
       const catalogEntry = exerciseMap.get(input.exerciseId);
 
-      // Use catalog entry if found; otherwise fall back to AI-provided zones
-      const zones = catalogEntry?.zones ?? input.zones;
+      // Prefer zones coming with the workout payload (AI-provided / custom),
+      // because exerciseId matching can be wrong and would otherwise override correct zones.
+      // Fallback to catalog zones when input has none.
+      const zones = (input.zones && input.zones.length > 0) ? input.zones : catalogEntry?.zones;
       if (!zones || zones.length === 0) continue;
 
       const entry: CatalogExercise = catalogEntry ?? {
@@ -269,14 +297,14 @@ export class WorkoutCalculator {
    *  - lastTrainedDaysAgo: дней с последнего раза, когда зона получила нагрузку
    *  - peakLoad: max нагрузка по зоне за один сеанс в окне, нормализованная к 0–1
    */
-  static calculateRecoveryState(
+  static async calculateRecoveryState(
     workouts: Workout[],
     now: Date = new Date()
-  ): {
+  ): Promise<{
     zones: Record<string, { intensity: number; lastTrainedDaysAgo: number; peakLoad: number }>;
     totalWorkouts: number;
     lastWorkoutDaysAgo: number | null;
-  } {
+  }> {
     const DECAY_LAMBDA = 0.3;
     const rawZones: Record<string, number> = {};
     const zoneLastTrained: Record<string, number> = {};
@@ -288,18 +316,60 @@ export class WorkoutCalculator {
 
     let minDaysAgo = Infinity;
 
+    const debugWorkouts: Array<{
+      id: number | string | null
+      date: string
+      workoutType: any
+      daysAgo: number
+      skippedFuture: boolean
+      exercisesCount: number
+      exercisesZonesCount: number
+      zonesLoad: Record<string, number>
+    }> = []
+
     for (const workout of workouts) {
-      const workoutDate = workout.date.toJSDate
-        ? workout.date.toJSDate()
-        : new Date(workout.date.toString());
-      const daysAgo = (now.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24);
-      // Skip future workouts — they haven't happened yet
-      if (daysAgo < 0) continue;
+      const workoutDate = WorkoutCalculator.toWallClockJsDate((workout as any).date)
+      const rawDaysAgo = (now.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24);
+      const isFuture = rawDaysAgo < 0
+      // For the avatar "recovery" view we still want to reflect the most recent workload
+      // even if the workout time is later today (wall-clock/timezone artefacts, edits, etc.).
+      // So we clamp future workouts to daysAgo=0 instead of skipping them.
+      const daysAgo = isFuture ? 0 : rawDaysAgo
       const decayFactor = Math.exp(-DECAY_LAMBDA * daysAgo);
 
       if (daysAgo < minDaysAgo) minDaysAgo = daysAgo;
 
-      const zonesLoad = workout.zonesLoad || {};
+      // Prefer stored zonesLoad when it already has meaningful data (fast + stable).
+      // Otherwise recalculate from exercises (older DB rows may have zonesLoad={}).
+      // This also avoids "zeroing" zones in tests/rows that intentionally provide zonesLoad.
+      let zonesLoad: Record<string, number> = {};
+      if (hasMeaningfulZonesLoad(workout.zonesLoad as any)) {
+        zonesLoad = { ...(workout.zonesLoad as any) };
+      } else if (Array.isArray(workout.exercises) && workout.exercises.length > 0) {
+        const calc = await WorkoutCalculator.calculateZoneLoads(
+          workout.exercises,
+          workout.workoutType,
+          workout.rpe,
+          workout.userId
+        );
+        zonesLoad = calc.zonesLoad;
+      } else {
+        zonesLoad = (workout.zonesLoad as any) || {};
+      }
+
+      debugWorkouts.push({
+        id: (workout as any).id ?? null,
+        date: String((workout as any).date),
+        workoutType: (workout as any).workoutType,
+        daysAgo,
+        skippedFuture: isFuture,
+        exercisesCount: Array.isArray((workout as any).exercises) ? (workout as any).exercises.length : 0,
+        exercisesZonesCount: Array.isArray((workout as any).exercises)
+          ? (workout as any).exercises.filter((e: any) => Array.isArray(e?.zones) && e.zones.length > 0).length
+          : 0,
+        zonesLoad,
+      })
+
       for (const [zone, load] of Object.entries(zonesLoad)) {
         const numLoad = Number(load) || 0;
         const decayed = numLoad * decayFactor;
@@ -326,6 +396,15 @@ export class WorkoutCalculator {
         peakLoad: Math.min(zonePeakLoad[zone] / maxPeak, NORMALIZATION.MAX_ZONE_LOAD),
       };
     }
+
+    logger.info(
+      {
+        workoutCount: workouts.length,
+        workouts: debugWorkouts,
+        computedZones: zones,
+      },
+      'avatar:recovery calculator'
+    )
 
     return {
       zones,

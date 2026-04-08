@@ -146,7 +146,9 @@ export default class ScheduledWorkoutController {
       })
     }
 
-    const parsedDate = DateTime.fromISO(scheduledDate)
+    // Client sends wall-clock local datetime without timezone suffix (e.g. "2026-04-07T15:00:00").
+    // Parse it as UTC to preserve the same wall-clock time end-to-end.
+    const parsedDate = DateTime.fromISO(scheduledDate, { zone: 'utc' })
 
     const workout = await ScheduledWorkout.create({
       trainerId: trainer.id,
@@ -209,7 +211,10 @@ export default class ScheduledWorkoutController {
       'notes',
     ])
 
-    if (scheduledDate) workout.scheduledDate = DateTime.fromISO(scheduledDate)
+    if (scheduledDate) {
+      // Preserve wall-clock time (see create()).
+      workout.scheduledDate = DateTime.fromISO(scheduledDate, { zone: 'utc' })
+    }
     if (workoutData) workout.workoutData = workoutData
     if (assignedTo) workout.assignedTo = assignedTo
     if (status) workout.status = status

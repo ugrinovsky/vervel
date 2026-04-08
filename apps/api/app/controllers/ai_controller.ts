@@ -43,6 +43,7 @@ const applyParsedWorkoutValidator = vine.compile(
     exercises: vine.array(
       vine.object({
         exerciseId: vine.string(),
+        name: vine.string().optional(),
         type: vine.enum(['strength', 'cardio', 'wod'] as const),
         sets: vine
           .array(
@@ -56,6 +57,11 @@ const applyParsedWorkoutValidator = vine.compile(
           )
           .optional(),
         blockId: vine.string().optional(),
+        zones: vine.array(vine.string()).optional(),
+        bodyweight: vine.boolean().optional(),
+        duration: vine.number().optional(),
+        rounds: vine.number().optional(),
+        wodType: vine.enum(['amrap', 'fortime', 'emom', 'tabata'] as const).optional(),
       })
     ),
   })

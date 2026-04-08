@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { motion } from 'framer-motion';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
@@ -19,6 +20,14 @@ export default function WorkoutForm() {
 
   const initialDate = prefillDate ? parseLocalDate(prefillDate) : undefined;
   const storageKey = user ? `workout_draft_${user.id}` : undefined;
+
+  // If we came from Calendar with a prefilled date, apply it once and clear the route state.
+  // Otherwise the same history entry would keep forcing the old date on future visits.
+  useEffect(() => {
+    if (!prefillDate) return;
+    navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSubmit = async (data: WorkoutFormData) => {
     if (!data.exercises.length) {

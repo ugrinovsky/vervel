@@ -134,7 +134,8 @@ function extractTime(dateStr?: string): string | null {
 // Есть ли подходы с повторами без веса (атлет должен дополнить)
 function hasSetsNeedingWeight(ex: FullWorkout['exercises'][number]): boolean {
   if (ex.bodyweight) return false;
-  return (ex.sets ?? []).some((s) => (s.reps ?? 0) > 0 && !s.weight);
+  // weight can legitimately be 0 (e.g. bodyweight / no external load). Missing = null/undefined.
+  return (ex.sets ?? []).some((s) => (s.reps ?? 0) > 0 && s.weight == null);
 }
 
 /* ─── Секции ─────────────────────────────────────────────────────────  */

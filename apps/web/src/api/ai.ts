@@ -100,7 +100,18 @@ export const aiApi = {
     privateApi.post<{
       workoutType: 'crossfit' | 'bodybuilding' | 'cardio'
       previewItems: Array<{ exerciseId: string; name: string; sets: number; reps?: number; weight?: number; weightMax?: number }>
-      exercises: Array<{ exerciseId: string; type: string; sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>; blockId?: string }>
+      exercises: Array<{
+        exerciseId: string;
+        name?: string;
+        zones?: string[];
+        bodyweight?: boolean;
+        type: string;
+        duration?: number;
+        rounds?: number;
+        wodType?: 'amrap' | 'emom' | 'fortime' | 'tabata';
+        sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>;
+        blockId?: string;
+      }>
       warning: string | null
       balance: number
     }>('/ai/parse-workout-notes', { workoutId }),
@@ -112,7 +123,18 @@ export const aiApi = {
     privateApi.post<{
       workoutType: null
       previewItems: Array<{ exerciseId: string; name: string; sets: number; reps?: number; weight?: number; weightMax?: number }>
-      exercises: Array<{ exerciseId: string; type: string; sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>; blockId?: string }>
+      exercises: Array<{
+        exerciseId: string;
+        name?: string;
+        zones?: string[];
+        bodyweight?: boolean;
+        type: string;
+        duration?: number;
+        rounds?: number;
+        wodType?: 'amrap' | 'emom' | 'fortime' | 'tabata';
+        sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>;
+        blockId?: string;
+      }>
       warning: string | null
       balance: number
     }>('/ai/parse-notes-text', { notes }),
@@ -123,7 +145,18 @@ export const aiApi = {
   applyParsedWorkout: (
     workoutId: number,
     workoutType: 'crossfit' | 'bodybuilding' | 'cardio',
-    exercises: Array<{ exerciseId: string; type: string; sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>; blockId?: string }>
+    exercises: Array<{
+      exerciseId: string;
+      name?: string;
+      zones?: string[];
+      bodyweight?: boolean;
+      type: string;
+      duration?: number;
+      rounds?: number;
+      wodType?: 'amrap' | 'emom' | 'fortime' | 'tabata';
+      sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>;
+      blockId?: string;
+    }>
   ) =>
     privateApi.post<{ data: unknown }>('/ai/apply-parsed-workout', { workoutId, workoutType, exercises }),
 }

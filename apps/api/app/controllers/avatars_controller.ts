@@ -2,6 +2,7 @@ import Workout from '#models/workout';
 import { WorkoutCalculator } from '#services/WorkoutCalculator';
 import { getWeekStart } from '#utils/date';
 import { HttpContext } from '@adonisjs/core/http';
+import logger from '@adonisjs/core/services/logger'
 
 export default class AvatarsController {
   /**
@@ -27,13 +28,24 @@ export default class AvatarsController {
           Workout.query()
             .where('userId', user.id)
             .where('date', '>=', startDate)
-            .where('date', '<=', now)
             .orderBy('date', 'asc'),
           Workout.query().where('userId', user.id).where('date', '<=', now).count('* as total'),
           Workout.query().where('userId', user.id).where('date', '>=', weekStart).where('date', '<=', now).count('* as total'),
         ]);
 
-        const stats = WorkoutCalculator.calculateRecoveryState(workouts);
+        const stats = await WorkoutCalculator.calculateRecoveryState(workouts);
+
+        logger.info(
+          {
+            userId: user.id,
+            rangeStart: startDate.toISOString(),
+            workoutCount: workouts.length,
+            workoutDates: workouts.map((w) => String((w as any).date)),
+            zonesKeys: Object.keys(stats.zones ?? {}),
+            zones: stats.zones,
+          },
+          'avatar:recovery debug'
+        )
 
         return response.json({
           success: true,

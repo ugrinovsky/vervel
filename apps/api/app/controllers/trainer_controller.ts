@@ -291,10 +291,9 @@ export default class TrainerController {
       const workouts = await Workout.query()
         .where('userId', athleteId)
         .where('date', '>=', startDate)
-        .where('date', '<=', now)
         .orderBy('date', 'asc')
 
-      const stats = WorkoutCalculator.calculateRecoveryState(workouts)
+      const stats = await WorkoutCalculator.calculateRecoveryState(workouts)
 
       return response.json({ success: true, data: stats })
     }

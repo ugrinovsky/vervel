@@ -575,6 +575,14 @@ export default function TrainerCalendarScreen() {
     setEditingWorkout(workout);
   };
 
+  const handleWorkoutSaved = (scheduledDate: string) => {
+    const dt = parseApiDateTime(scheduledDate);
+    const month = startOfMonth(dt);
+    setSelectedDate(dt);
+    setCurrentMonth(month);
+    loadWorkouts(month);
+  };
+
   return (
     <Screen className="trainer-calendar-screen">
       <div className="flex flex-col px-4 w-full">
@@ -800,7 +808,7 @@ export default function TrainerCalendarScreen() {
               key={editingWorkout.id}
               editWorkout={editingWorkout}
               noCard
-              onSuccess={() => { setEditingWorkout(null); loadWorkouts(currentMonth); }}
+              onSuccess={(scheduledDate) => { setEditingWorkout(null); handleWorkoutSaved(scheduledDate); }}
               onCancel={() => setEditingWorkout(null)}
             />
           )
@@ -841,7 +849,7 @@ export default function TrainerCalendarScreen() {
                 initialGroups={groups}
                 initialAthletes={athletes}
                 noCard
-                onSuccess={() => { setSelectedTime(null); loadWorkouts(currentMonth); }}
+                onSuccess={(scheduledDate) => { setSelectedTime(null); handleWorkoutSaved(scheduledDate); }}
                 onCancel={() => setSelectedTime(null)}
               />
             ) : (

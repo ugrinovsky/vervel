@@ -19,7 +19,9 @@ export default class WorkoutsController {
 
     const workout = await Workout.create({
       userId: user.id,
-      date: DateTime.fromISO(data.date),
+      // Client sends wall-clock local datetime without timezone suffix (e.g. "2026-04-07T15:00:00").
+      // Parse it as UTC to preserve the same wall-clock time end-to-end.
+      date: DateTime.fromISO(data.date, { zone: 'utc' }),
       workoutType: data.workoutType,
       exercises: data.exercises,
       notes: data.notes || '',
@@ -91,7 +93,7 @@ export default class WorkoutsController {
     const calculated = await WorkoutCalculator.calculateZoneLoads(data.exercises, data.workoutType, data.rpe, user.id);
 
     workout.merge({
-      date: DateTime.fromISO(data.date),
+      date: DateTime.fromISO(data.date, { zone: 'utc' }),
       workoutType: data.workoutType,
       exercises: data.exercises,
       notes: data.notes || '',

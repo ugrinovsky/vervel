@@ -11,6 +11,10 @@ export interface ExerciseData {
   duration?: number
   notes?: string
   blockId?: string
+  /** AI-provided zones (used when exerciseId is custom:* or missing in catalog) */
+  zones?: string[]
+  /** Bodyweight movement — weight can be omitted/0 */
+  bodyweight?: boolean
 }
 
 /**
@@ -27,7 +31,15 @@ export function toWorkoutExercises(
     .map((ex) => {
       if (workoutType === 'cardio') {
         const set: WorkoutSet = { id: crypto.randomUUID(), time: (ex.duration ?? 20) * 60 }
-        return { exerciseId: ex.exerciseId!, type: 'cardio' as const, sets: [set] }
+        return {
+          exerciseId: ex.exerciseId!,
+          name: ex.name,
+          zones: ex.zones && ex.zones.length > 0 ? ex.zones : undefined,
+          type: 'cardio' as const,
+          sets: [set],
+          blockId: ex.blockId,
+          bodyweight: ex.bodyweight,
+        }
       }
       const sets: WorkoutSet[] = Array.from({ length: ex.sets ?? 3 }, () => ({
         id: crypto.randomUUID(),
@@ -36,8 +48,12 @@ export function toWorkoutExercises(
       }))
       return {
         exerciseId: ex.exerciseId!,
+        name: ex.name,
+        zones: ex.zones && ex.zones.length > 0 ? ex.zones : undefined,
         type: workoutType === 'crossfit' ? ('wod' as const) : ('strength' as const),
         sets,
+        blockId: ex.blockId,
+        bodyweight: ex.bodyweight,
       }
     })
 }
