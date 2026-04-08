@@ -8,6 +8,12 @@ export interface ZoneState {
 
 export interface AvatarRecoveryStats {
   zones: Record<string, ZoneState>;
+  missingWeights?: {
+    workoutsCount: number;
+    setsCount: number;
+    lastWorkoutId: number | null;
+    lastWorkoutDate: string | null;
+  };
   totalWorkouts: number;
   lastWorkoutDaysAgo: number | null;
   allTimeWorkouts: number;

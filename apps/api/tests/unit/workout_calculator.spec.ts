@@ -73,6 +73,29 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     assert.equal(result.totalIntensity, 0);
   });
 
+  test('бодибилдинг: weight=0 не обнуляет нагрузку (считаем по reps)', async ({ assert }) => {
+    const exercise = createExercise('exZ', ['biceps'], 0.7);
+    WorkoutCalculator['loadExercises'] = async () => new Map([['exZ', exercise]]);
+
+    const result = await WorkoutCalculator.calculateZoneLoads(
+      [{
+        exerciseId: 'exZ',
+        type: 'strength' as const,
+        sets: [
+          { id: '1', reps: 12, weight: 0 },
+          { id: '2', reps: 12, weight: 0 },
+          { id: '3', reps: 12, weight: 0 },
+        ]
+      }],
+      'bodybuilding'
+    );
+
+    assert.isAbove(result.zonesLoadAbs.biceps, 0);
+    assert.equal(result.zonesLoad.biceps, 1);
+    assert.isAbove(result.totalIntensity, 0);
+    assert.equal(result.totalVolume, 0); // weight unknown → volume stays 0
+  });
+
   test('бодибилдинг: малый вес дает частичную нагрузку < 1', async ({ assert }) => {
     const exercise = createExercise('ex2', ['плечи'], 0.6);
     WorkoutCalculator['loadExercises'] = async () => new Map([['ex2', exercise]]);

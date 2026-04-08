@@ -63,6 +63,12 @@ export default function AvatarScreen() {
   const [allTimeWorkouts, setAllTimeWorkouts] = useState(0);
   const [thisWeekWorkouts, setThisWeekWorkouts] = useState(0);
   const [lastWorkoutDaysAgo, setLastWorkoutDaysAgo] = useState<number | null>(null);
+  const [missingWeights, setMissingWeights] = useState<{
+    workoutsCount: number;
+    setsCount: number;
+    lastWorkoutId: number | null;
+    lastWorkoutDate: string | null;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [todayWorkout, setTodayWorkout] = useState<TodayWorkout | null>(null);
 
@@ -81,6 +87,7 @@ export default function AvatarScreen() {
           setAllTimeWorkouts(d.allTimeWorkouts ?? d.totalWorkouts);
           setThisWeekWorkouts(d.thisWeekWorkouts ?? 0);
           setLastWorkoutDaysAgo(d.lastWorkoutDaysAgo);
+          setMissingWeights(d.missingWeights ?? null);
         }
         if (workoutsRes.data.success) {
           const todayStr = toDateKey(new Date());
@@ -195,6 +202,31 @@ export default function AvatarScreen() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Missing weights warning */}
+        {!loading && missingWeights && missingWeights.setsCount > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 rounded-2xl p-4 bg-amber-500/10 border border-amber-500/30"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-amber-300">Точность карты снижена</p>
+                <p className="text-xs text-amber-400/70 mt-1">
+                  В последних тренировках есть подходы без веса ({missingWeights.setsCount}). Заполните веса — нагрузка по мышцам станет точнее.
+                </p>
+              </div>
+              <AccentButton
+                size="sm"
+                onClick={() => navigate('/calendar')}
+                className="shrink-0"
+              >
+                Заполнить
+              </AccentButton>
+            </div>
+          </motion.div>
+        )}
 
         {/* Онбординг для новых пользователей */}
         {isNewUser ? (

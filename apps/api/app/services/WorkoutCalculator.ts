@@ -29,6 +29,12 @@ export interface WorkoutCalculationResult {
 const BODYBUILDING = {
   WEIGHT_NORMALIZATION_DIVIDER: 100,
   MAX_NORMALIZED_VOLUME: 10,
+  /**
+   * If athlete didn't log the weight (often saved as 0), we still want a non-zero
+   * muscle stimulus based on reps so zones don't become 0.
+   * This value is only used for load calculation, not for volume.
+   */
+  MISSING_WEIGHT_FALLBACK_KG: 1,
 };
 
 const CROSSFIT = {
@@ -206,12 +212,30 @@ export class WorkoutCalculator {
     // Считаем по каждому подходу
     input.sets.forEach((set: WorkoutSet) => {
       const reps = set.reps || 0;
-      const weight = (set.weight && set.weight > 0) ? set.weight : (input.bodyweight ? (userBodyWeight ?? 0) : 0);
+      const loggedWeight =
+        typeof set.weight === 'number' && Number.isFinite(set.weight) ? set.weight : null
 
-      totalVolume += reps * weight;
+      // If the athlete explicitly provided a weight, always prefer it (even if bodyweight=true).
+      // Otherwise, when bodyweight=true we use the athlete's body weight (if available).
+      // For non-bodyweight exercises without a logged weight, volume stays 0 but load uses a minimal fallback.
+      const explicit = loggedWeight != null && loggedWeight > 0 ? loggedWeight : null
+
+      const weightForVolume = explicit
+        ? explicit
+        : input.bodyweight
+          ? (userBodyWeight ?? 0)
+          : 0
+
+      const weightForLoad = explicit
+        ? explicit
+        : input.bodyweight
+          ? (userBodyWeight ?? 0)
+          : BODYBUILDING.MISSING_WEIGHT_FALLBACK_KG
+
+      totalVolume += reps * weightForVolume;
 
       const normalizedVolume = Math.min(
-        (reps * (weight / BODYBUILDING.WEIGHT_NORMALIZATION_DIVIDER)) /
+        (reps * (weightForLoad / BODYBUILDING.WEIGHT_NORMALIZATION_DIVIDER)) /
           BODYBUILDING.MAX_NORMALIZED_VOLUME,
         NORMALIZATION.MAX_ZONE_LOAD
       );
@@ -332,6 +356,12 @@ export class WorkoutCalculator {
     now: Date = new Date()
   ): Promise<{
     zones: Record<string, { intensity: number; lastTrainedDaysAgo: number; peakLoad: number }>;
+    missingWeights: {
+      workoutsCount: number;
+      setsCount: number;
+      lastWorkoutId: number | null;
+      lastWorkoutDate: string | null;
+    };
     totalWorkouts: number;
     lastWorkoutDaysAgo: number | null;
   }> {
@@ -341,10 +371,20 @@ export class WorkoutCalculator {
     const zonePeakLoad: Record<string, number> = {};
 
     if (workouts.length === 0) {
-      return { zones: {}, totalWorkouts: 0, lastWorkoutDaysAgo: null };
+      return {
+        zones: {},
+        missingWeights: { workoutsCount: 0, setsCount: 0, lastWorkoutId: null, lastWorkoutDate: null },
+        totalWorkouts: 0,
+        lastWorkoutDaysAgo: null,
+      };
     }
 
     let minDaysAgo = Infinity;
+    let missingSetsCount = 0
+    const workoutsWithMissingWeights = new Set<number>()
+    let lastMissingWorkoutId: number | null = null
+    let lastMissingWorkoutDate: string | null = null
+    let lastMissingWorkoutDaysAgo: number | null = null
 
     const debugWorkouts: Array<{
       id: number | string | null
@@ -401,6 +441,30 @@ export class WorkoutCalculator {
         zonesLoad,
       })
 
+      // Missing weights diagnostics (for UI warning).
+      // For strength-like workouts we consider a set "missing weight" when reps>0 and weight is null/undefined/0
+      // and it's not explicitly marked as bodyweight.
+      const exs = Array.isArray((workout as any).exercises) ? (workout as any).exercises : []
+      for (const ex of exs) {
+        if (ex?.bodyweight) continue
+        const sets = Array.isArray(ex?.sets) ? ex.sets : []
+        for (const s of sets) {
+          const reps = Number(s?.reps) || 0
+          const w = s?.weight
+          const isMissing = reps > 0 && (w == null || Number(w) === 0)
+          if (!isMissing) continue
+          missingSetsCount += 1
+          const wid = Number((workout as any).id)
+          if (Number.isFinite(wid)) workoutsWithMissingWeights.add(wid)
+          // Track the most recent workout (smallest daysAgo)
+          if (lastMissingWorkoutDaysAgo == null || daysAgo < lastMissingWorkoutDaysAgo) {
+            lastMissingWorkoutId = Number.isFinite(wid) ? wid : null
+            lastMissingWorkoutDate = String((workout as any).date ?? null)
+            lastMissingWorkoutDaysAgo = daysAgo
+          }
+        }
+      }
+
       for (const [zone, load] of Object.entries(zonesLoad)) {
         const numLoad = Number(load) || 0;
         const decayed = numLoad * decayFactor;
@@ -439,6 +503,12 @@ export class WorkoutCalculator {
 
     return {
       zones,
+      missingWeights: {
+        workoutsCount: workoutsWithMissingWeights.size,
+        setsCount: missingSetsCount,
+        lastWorkoutId: lastMissingWorkoutId,
+        lastWorkoutDate: lastMissingWorkoutDate,
+      },
       totalWorkouts: workouts.length,
       lastWorkoutDaysAgo: minDaysAgo === Infinity ? null : Math.round(minDaysAgo),
     };
