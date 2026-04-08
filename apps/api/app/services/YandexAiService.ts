@@ -396,6 +396,16 @@ export class YandexAiService {
       candidates: candidates.map((c) => ({ exerciseId: c.exerciseId, exerciseName: c.exerciseName })),
     }
 
+    logger.info(
+      {
+        event: 'ai:suggest-standard-links:request',
+        standardsCount: standards.length,
+        candidatesCount: candidates.length,
+        payload,
+      },
+      'YandexAiService.suggestStrengthLogStandardLinks: request'
+    )
+
     const raw = await this.callGpt(
       folderId,
       SUGGEST_STANDARD_LINKS_PROMPT,
@@ -410,7 +420,16 @@ export class YandexAiService {
     let parsed: { links?: unknown }
     try {
       parsed = JSON.parse(cleaned) as { links?: unknown }
-    } catch {
+    } catch (e) {
+      logger.warn(
+        {
+          event: 'ai:suggest-standard-links:json-error',
+          cleanedLength: cleaned.length,
+          cleanedPreview: cleaned.slice(0, 800),
+          err: String(e),
+        },
+        'YandexAiService.suggestStrengthLogStandardLinks: JSON parse failed'
+      )
       throw new Error('AI вернул некорректный JSON для связей с эталонами')
     }
 
@@ -426,6 +445,19 @@ export class YandexAiService {
       if (!sid || !Number.isFinite(stdNum)) continue
       out.push({ sourceExerciseId: sid, standardId: stdNum })
     }
+
+    const maxLoggedRaw = 16_000
+    logger.info(
+      {
+        event: 'ai:suggest-standard-links:response',
+        cleanedLength: cleaned.length,
+        rawResponse: cleaned.length <= maxLoggedRaw ? cleaned : `${cleaned.slice(0, maxLoggedRaw)}…(truncated)`,
+        parsedLinksCount: linksRaw.length,
+        normalizedLinksCount: out.length,
+        links: out,
+      },
+      'YandexAiService.suggestStrengthLogStandardLinks: response'
+    )
 
     return out
   }

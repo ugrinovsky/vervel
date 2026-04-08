@@ -34,6 +34,7 @@ import {
   type StrengthLogDashboardMetric,
   type StrengthLogEntry,
   type StrengthLogPayload,
+  type StrengthLogSession,
   type WeightedExerciseOption,
 } from '@/api/athlete';
 import { aiApi } from '@/api/ai';
@@ -44,6 +45,7 @@ import { buildStrengthLogChartPoints, strengthLogProgressPercent } from './stren
 import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
 import { normalizeExerciseLabel } from '@/utils/textNormalize';
 import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
+import { parseApiDateTime, toDateKey, toTimeKey } from '@/utils/date';
 
 const GROUP_STD_PREFIX = 'std:';
 
@@ -187,11 +189,15 @@ const MONTH_ABBR_RU = [
   'дек',
 ] as const;
 
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
+/** Заголовок колонки: если в этой карточке несколько сессий в один день — добавляем время. */
+function formatSessionColumnHeader(s: StrengthLogSession, sessionsOnLocalDay: Map<string, number>): string {
+  const d = parseApiDateTime(s.date);
   const day = d.getDate();
   const mon = MONTH_ABBR_RU[d.getMonth()];
-  return `${day} ${mon}.`;
+  const base = `${day} ${mon}.`;
+  const key = toDateKey(d);
+  if ((sessionsOnLocalDay.get(key) ?? 0) <= 1) return base;
+  return `${base} ${toTimeKey(d)}`;
 }
 
 function StrengthLogChartTooltip({
@@ -240,6 +246,14 @@ function ExerciseCard({
 }) {
   const [viewMode, setViewMode] = useState<CardViewMode>('table');
   const sessions = [...entry.sessions].reverse(); // oldest → newest
+  const sessionsOnLocalDay = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const s of sessions) {
+      const k = toDateKey(parseApiDateTime(s.date));
+      m.set(k, (m.get(k) ?? 0) + 1);
+    }
+    return m;
+  }, [sessions]);
   const maxSets = Math.max(...sessions.map((s) => s.sets.length), 0);
   const chartData = useMemo(
     () => buildStrengthLogChartPoints(entry).map((p) => ({ name: p.label, kg: p.value })),
@@ -413,7 +427,7 @@ function ExerciseCard({
                     })}
                   >
                     <span className="block text-[11px] leading-tight whitespace-nowrap tabular-nums">
-                      {formatDate(s.date)}
+                      {formatSessionColumnHeader(s, sessionsOnLocalDay)}
                     </span>
                   </th>
                 ))}

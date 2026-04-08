@@ -66,6 +66,32 @@ describe('buildStrengthLogChartPoints', () => {
     };
     expect(buildStrengthLogChartPoints(entry)).toHaveLength(0);
   });
+
+  it('разные подписи для двух сессий в один календарный день (график не схлопывается)', () => {
+    const entry: StrengthLogEntry = {
+      exerciseId: 'Romanian_Deadlift',
+      exerciseName: 'Румынская',
+      sessions: [
+        {
+          date: '2026-04-03T18:00:00+00:00',
+          workoutId: 2,
+          sets: [{ weight: 50, reps: 8 }],
+          best1RM: null,
+        },
+        {
+          date: '2026-04-03T09:00:00+00:00',
+          workoutId: 1,
+          sets: [{ weight: 40, reps: 10 }],
+          best1RM: null,
+        },
+      ],
+      standardId: null,
+      dashboardMetric: null,
+    };
+    const pts = buildStrengthLogChartPoints(entry);
+    expect(pts).toHaveLength(2);
+    expect(pts[0].label).not.toBe(pts[1].label);
+  });
 });
 
 describe('strengthLogProgressPercent', () => {

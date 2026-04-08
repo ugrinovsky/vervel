@@ -615,6 +615,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
       const updated = res.data as FullWorkout;
       setFullWorkout(updated);
       onUpdate?.(fullWorkout.id, updated.totalIntensity);
+      onRefresh?.();
     } catch {
       setRpe(fullWorkout.rpe ?? null); // откат
       toast.error('Не удалось сохранить оценку');

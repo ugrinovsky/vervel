@@ -1,4 +1,5 @@
 import type { StrengthLogEntry, StrengthLogSession } from '@/api/athlete';
+import { parseApiDateTime, toDateKey, toTimeKey } from '@/utils/date';
 
 export function maxWeightInSets(sets: { weight?: number }[]): number {
   let m = 0;
@@ -28,15 +29,22 @@ export interface StrengthLogChartPoint {
 export function buildStrengthLogChartPoints(entry: StrengthLogEntry): StrengthLogChartPoint[] {
   const chron = [...entry.sessions].reverse();
   const out: StrengthLogChartPoint[] = [];
+  /** Сколько точек уже добавили на этот календарный день (локально) — иначе Recharts схлопывает «3 апр.» в одну. */
+  const indexOnLocalDay = new Map<string, number>();
   for (const s of chron) {
     const v = strengthSessionKgValue(s);
-    if (v != null && v > 0) {
-      out.push({
-        label: formatChartDayLabel(s.date),
-        value: Math.round(v * 10) / 10,
-        date: s.date,
-      });
-    }
+    if (v == null || v <= 0) continue;
+    const dk = toDateKey(parseApiDateTime(s.date));
+    const idx = indexOnLocalDay.get(dk) ?? 0;
+    indexOnLocalDay.set(dk, idx + 1);
+    const baseLabel = formatChartDayLabel(s.date);
+    const label =
+      idx === 0 ? baseLabel : `${baseLabel} · ${toTimeKey(parseApiDateTime(s.date))}`;
+    out.push({
+      label,
+      value: Math.round(v * 10) / 10,
+      date: s.date,
+    });
   }
   return out;
 }
@@ -57,6 +65,6 @@ export function strengthLogProgressPercent(entry: StrengthLogEntry): number | nu
 }
 
 export function formatChartDayLabel(iso: string): string {
-  const d = new Date(iso);
+  const d = parseApiDateTime(iso);
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 }

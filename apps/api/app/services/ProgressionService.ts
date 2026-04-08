@@ -1,4 +1,5 @@
 import { DateTime } from 'luxon';
+import logger from '@adonisjs/core/services/logger';
 import Workout from '#models/workout';
 import UserPinnedExercise from '#models/user_pinned_exercise';
 import UserExerciseStandard from '#models/user_exercise_standard';
@@ -1023,13 +1024,19 @@ export class ProgressionService {
     const seen = new Set<string>();
     const out: StandardLinkSuggestionDTO[] = [];
     const MIN_SIMILARITY_FOR_AI_STANDARD_LINK = 0.75;
+    let skippedInvalidIds = 0;
+    let skippedDuplicate = 0;
+    let skippedLowSimilarity = 0;
+    const lowSimilaritySamples: Array<{ src: string; standardId: number; sim: number }> = [];
 
     for (const link of rawLinks) {
       const src = link.sourceExerciseId?.trim();
       if (!src || !candidateIds.has(src) || !stdIds.has(link.standardId)) {
+        skippedInvalidIds += 1;
         continue;
       }
       if (seen.has(src)) {
+        skippedDuplicate += 1;
         continue;
       }
 
@@ -1037,6 +1044,10 @@ export class ProgressionService {
       const stdLabel = labelById.get(link.standardId) ?? String(link.standardId);
       const sim = labelSimilarity(exName, stdLabel);
       if (sim < MIN_SIMILARITY_FOR_AI_STANDARD_LINK) {
+        skippedLowSimilarity += 1;
+        if (lowSimilaritySamples.length < 12) {
+          lowSimilaritySamples.push({ src, standardId: link.standardId, sim });
+        }
         continue;
       }
 
@@ -1048,6 +1059,25 @@ export class ProgressionService {
         standardLabel: stdLabel,
       });
     }
+
+    logger.info(
+      {
+        event: 'progression:ai-suggest-standard-links:result',
+        userId,
+        standardsCount: standards.length,
+        candidatesCount: candidates.length,
+        rawLinksFromAi: rawLinks.length,
+        rawLinksSample: rawLinks.slice(0, 30),
+        acceptedSuggestions: out.length,
+        suggestions: out,
+        skippedInvalidIds,
+        skippedDuplicate,
+        skippedLowSimilarity,
+        lowSimilaritySamples,
+        minSimilarity: MIN_SIMILARITY_FOR_AI_STANDARD_LINK,
+      },
+      'ProgressionService.suggestStandardAliasLinksWithAi'
+    );
 
     return out;
   }
