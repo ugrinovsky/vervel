@@ -69,6 +69,11 @@ export default function AvatarScreen() {
     lastWorkoutId: number | null;
     lastWorkoutDate: string | null;
   } | null>(null);
+  const [missingRpe, setMissingRpe] = useState<{
+    workoutsCount: number;
+    lastWorkoutId: number | null;
+    lastWorkoutDate: string | null;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [todayWorkout, setTodayWorkout] = useState<TodayWorkout | null>(null);
 
@@ -88,6 +93,7 @@ export default function AvatarScreen() {
           setThisWeekWorkouts(d.thisWeekWorkouts ?? 0);
           setLastWorkoutDaysAgo(d.lastWorkoutDaysAgo);
           setMissingWeights(d.missingWeights ?? null);
+          setMissingRpe(d.missingRpe ?? null);
         }
         if (workoutsRes.data.success) {
           const todayStr = toDateKey(new Date());
@@ -223,6 +229,33 @@ export default function AvatarScreen() {
                 className="shrink-0"
               >
                 Заполнить
+              </AccentButton>
+            </div>
+          </motion.div>
+        )}
+
+        {!loading && missingRpe && missingRpe.workoutsCount > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 rounded-2xl p-4 bg-sky-500/10 border border-sky-500/30"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-sky-200">Оцените тренировки</p>
+                <p className="text-xs text-sky-300/80 mt-1">
+                  Можно указать, как ощущалась нагрузка (шкала 1–5 в карточке тренировки) — так карта восстановления и прогресс будут точнее.
+                  {missingRpe.workoutsCount > 1
+                    ? ` Не хватает оценки у ${missingRpe.workoutsCount} тренировок.`
+                    : ''}
+                </p>
+              </div>
+              <AccentButton
+                size="sm"
+                onClick={() => navigate('/calendar')}
+                className="shrink-0"
+              >
+                К календарю
               </AccentButton>
             </div>
           </motion.div>

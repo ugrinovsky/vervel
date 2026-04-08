@@ -14,6 +14,12 @@ export interface AvatarRecoveryStats {
     lastWorkoutId: number | null;
     lastWorkoutDate: string | null;
   };
+  /** Сессии без субъективной оценки нагрузки (RPE). */
+  missingRpe?: {
+    workoutsCount: number;
+    lastWorkoutId: number | null;
+    lastWorkoutDate: string | null;
+  };
   totalWorkouts: number;
   lastWorkoutDaysAgo: number | null;
   allTimeWorkouts: number;

@@ -50,6 +50,18 @@ const NORMALIZATION = {
   MAX_ZONE_LOAD: 1,
 };
 
+/**
+ * Avatar recovery: displayed intensity = 1 − exp(−k × decayedAbs), where decayedAbs is the per-zone
+ * max over sessions of (zonesLoadAbs × time decay). Smooth saturation so abs loads > 1 still map into 0..1.
+ */
+export const RECOVERY_INTENSITY_SATURATION_K = 1.2;
+
+function recoveryDisplayIntensity(decayedAbs: number): number {
+  const x = Math.max(0, Number(decayedAbs) || 0);
+  if (x <= 0) return 0;
+  return 1 - Math.exp(-RECOVERY_INTENSITY_SATURATION_K * x);
+}
+
 /** Есть ли сохранённая карта зон с ненулевой нагрузкой (пустой объект — пересчитываем из упражнений). */
 function hasMeaningfulZonesLoad(zonesLoad: Record<string, number> | null | undefined): boolean {
   if (!zonesLoad || typeof zonesLoad !== 'object') return false;
@@ -347,7 +359,7 @@ export class WorkoutCalculator {
    * Для **одной** тренировки: сегодня = 100% вклада, 1д ≈ 74%, 2д ≈ 55%, …
    *
    * Для каждой зоны возвращает:
-   *  - intensity: затухший вклад от «самого тяжёлого» сеанса в окне (0–1)
+   *  - intensity: отображаемая усталость 0–1, 1 − exp(−k × decayedAbs), k = RECOVERY_INTENSITY_SATURATION_K
    *  - lastTrainedDaysAgo: дней с последнего раза, когда зона получила нагрузку
    *  - peakLoad: max нагрузка по зоне за один сеанс в окне, нормализованная к 0–1
    */
@@ -359,6 +371,12 @@ export class WorkoutCalculator {
     missingWeights: {
       workoutsCount: number;
       setsCount: number;
+      lastWorkoutId: number | null;
+      lastWorkoutDate: string | null;
+    };
+    /** Прошедшие сессии с контентом, но без оценки субъективной нагрузки (RPE). */
+    missingRpe: {
+      workoutsCount: number;
       lastWorkoutId: number | null;
       lastWorkoutDate: string | null;
     };
@@ -374,6 +392,7 @@ export class WorkoutCalculator {
       return {
         zones: {},
         missingWeights: { workoutsCount: 0, setsCount: 0, lastWorkoutId: null, lastWorkoutDate: null },
+        missingRpe: { workoutsCount: 0, lastWorkoutId: null, lastWorkoutDate: null },
         totalWorkouts: 0,
         lastWorkoutDaysAgo: null,
       };
@@ -385,6 +404,11 @@ export class WorkoutCalculator {
     let lastMissingWorkoutId: number | null = null
     let lastMissingWorkoutDate: string | null = null
     let lastMissingWorkoutDaysAgo: number | null = null
+
+    const workoutsMissingRpe = new Set<number>()
+    let lastMissingRpeWorkoutId: number | null = null
+    let lastMissingRpeWorkoutDate: string | null = null
+    let lastMissingRpeDaysAgo: number | null = null
 
     const debugWorkouts: Array<{
       id: number | string | null
@@ -465,6 +489,25 @@ export class WorkoutCalculator {
         }
       }
 
+      // Subjective load (RPE): nudge UI when the session clearly happened but no rating was saved.
+      const exListForRpe = Array.isArray((workout as any).exercises) ? (workout as any).exercises : []
+      const storedAbsForRpe = (workout as any).zonesLoadAbs as Record<string, number> | null | undefined
+      const hasWorkoutContent =
+        exListForRpe.length > 0 || hasMeaningfulZonesLoad(storedAbsForRpe)
+      const rawRpe = (workout as any).rpe
+      const nRpe = Number(rawRpe)
+      const hasRpe =
+        rawRpe != null && rawRpe !== '' && Number.isFinite(nRpe) && nRpe >= 1
+      if (!isFuture && hasWorkoutContent && !hasRpe) {
+        const wid = Number((workout as any).id)
+        if (Number.isFinite(wid)) workoutsMissingRpe.add(wid)
+        if (lastMissingRpeDaysAgo == null || daysAgo < lastMissingRpeDaysAgo) {
+          lastMissingRpeWorkoutId = Number.isFinite(wid) ? wid : null
+          lastMissingRpeWorkoutDate = String((workout as any).date ?? null)
+          lastMissingRpeDaysAgo = daysAgo
+        }
+      }
+
       for (const [zone, load] of Object.entries(zonesLoad)) {
         const numLoad = Number(load) || 0;
         const decayed = numLoad * decayFactor;
@@ -478,7 +521,7 @@ export class WorkoutCalculator {
     }
 
     // peakLoad: пик за один сеанс по зоне, нормализованный по максимуму среди зон
-    // intensity: абсолютный cap 1.0 (уже не раздувается суммой сеансов)
+    // intensity: сглаженная сатурация от decayedAbs (не жёсткий min(..., 1))
     const peakValues = Object.values(zonePeakLoad);
     const maxPeak = Math.max(...peakValues, NORMALIZATION.MIN_DENOMINATOR);
 
@@ -486,7 +529,7 @@ export class WorkoutCalculator {
 
     for (const zone of Object.keys(rawZones)) {
       zones[zone] = {
-        intensity: Math.min(rawZones[zone], NORMALIZATION.MAX_ZONE_LOAD),
+        intensity: recoveryDisplayIntensity(rawZones[zone]),
         lastTrainedDaysAgo: Math.round(zoneLastTrained[zone] ?? 0),
         peakLoad: Math.min(zonePeakLoad[zone] / maxPeak, NORMALIZATION.MAX_ZONE_LOAD),
       };
@@ -508,6 +551,11 @@ export class WorkoutCalculator {
         setsCount: missingSetsCount,
         lastWorkoutId: lastMissingWorkoutId,
         lastWorkoutDate: lastMissingWorkoutDate,
+      },
+      missingRpe: {
+        workoutsCount: workoutsMissingRpe.size,
+        lastWorkoutId: lastMissingRpeWorkoutId,
+        lastWorkoutDate: lastMissingRpeWorkoutDate,
       },
       totalWorkouts: workouts.length,
       lastWorkoutDaysAgo: minDaysAgo === Infinity ? null : Math.round(minDaysAgo),

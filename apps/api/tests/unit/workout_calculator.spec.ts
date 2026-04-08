@@ -1,5 +1,14 @@
 import { test } from '@japa/runner';
-import { WorkoutCalculator } from '#services/WorkoutCalculator';
+import {
+  WorkoutCalculator,
+  RECOVERY_INTENSITY_SATURATION_K,
+} from '#services/WorkoutCalculator';
+
+function expectedRecoveryIntensity(decayedAbs: number): number {
+  const x = Math.max(0, decayedAbs);
+  if (x <= 0) return 0;
+  return 1 - Math.exp(-RECOVERY_INTENSITY_SATURATION_K * x);
+}
 
 /**
  * Создаем упрощенный мок упражнения, чтобы не тянуть зависимости базы данных
@@ -21,7 +30,8 @@ const createWorkout = (
   totalVolume: number,
   totalIntensity: number | string,
   date = new Date(),
-  exercises: any[] = [{ exerciseId: 'ex1' }]
+  exercises: any[] = [{ exerciseId: 'ex1' }],
+  rpe: number | null = 5
 ) =>
   ({
     id,
@@ -33,6 +43,7 @@ const createWorkout = (
     totalVolume,
     totalIntensity,
     exercises,
+    rpe,
     date,
   }) as any;
 
@@ -362,6 +373,11 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     assert.deepEqual(r.zones, {});
     assert.equal(r.totalWorkouts, 0);
     assert.isNull(r.lastWorkoutDaysAgo);
+    assert.deepEqual(r.missingRpe, {
+      workoutsCount: 0,
+      lastWorkoutId: null,
+      lastWorkoutDate: null,
+    });
   });
 
   test('calculateRecoveryState: несколько тренировок одной зоны не суммируют усталость', async ({ assert }) => {
@@ -370,8 +386,8 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     const w1 = createWorkout('1', 'bodybuilding', { legs: 1 }, 100, 0.5, day);
     const w2 = createWorkout('2', 'crossfit', { legs: 1 }, 100, 0.5, day);
     const r = await WorkoutCalculator.calculateRecoveryState([w1, w2], now);
-    const expected = Math.exp(-0.3 * 2);
-    assert.closeTo(r.zones.legs.intensity, expected, 0.02);
+    const decayed = Math.exp(-0.3 * 2);
+    assert.closeTo(r.zones.legs.intensity, expectedRecoveryIntensity(decayed), 0.02);
     assert.equal(r.zones.legs.peakLoad, 1);
   });
 
@@ -384,7 +400,65 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     const r = await WorkoutCalculator.calculateRecoveryState([wRecent, wOld], now);
     const fromRecent = 0.4 * Math.exp(-0.3 * 1);
     const fromOld = 1 * Math.exp(-0.3 * 11);
-    assert.closeTo(r.zones.legs.intensity, Math.max(fromRecent, fromOld), 0.02);
+    const decayed = Math.max(fromRecent, fromOld);
+    assert.closeTo(r.zones.legs.intensity, expectedRecoveryIntensity(decayed), 0.02);
+  });
+
+  test('calculateRecoveryState: большой abs decayed не даёт жёсткого клипа 1.0', async ({ assert }) => {
+    const now = new Date('2026-04-05T12:00:00.000Z');
+    const day = new Date('2026-04-05T12:00:00.000Z');
+    const w = createWorkout('1', 'bodybuilding', { legs: 2 }, 100, 0.5, day);
+    const r = await WorkoutCalculator.calculateRecoveryState([w], now);
+    assert.closeTo(r.zones.legs.intensity, expectedRecoveryIntensity(2), 0.02);
+    assert.isBelow(r.zones.legs.intensity, 0.99);
+  });
+
+  test('calculateRecoveryState: missingRpe только для прошедших сессий с контентом без оценки', async ({
+    assert,
+  }) => {
+    const now = new Date('2026-04-05T12:00:00.000Z');
+    const past = new Date('2026-04-04T12:00:00.000Z');
+    const future = new Date('2026-04-10T12:00:00.000Z');
+    const wPast = createWorkout(
+      '1',
+      'bodybuilding',
+      { legs: 1 },
+      100,
+      0.5,
+      past,
+      [{ exerciseId: 'ex1' }],
+      null
+    );
+    const wFuture = createWorkout(
+      '2',
+      'bodybuilding',
+      { legs: 1 },
+      100,
+      0.5,
+      future,
+      [{ exerciseId: 'ex1' }],
+      null
+    );
+    const r = await WorkoutCalculator.calculateRecoveryState([wPast, wFuture], now);
+    assert.equal(r.missingRpe.workoutsCount, 1);
+    assert.equal(r.missingRpe.lastWorkoutId, 1);
+  });
+
+  test('calculateRecoveryState: missingRpe пусто при заполненном RPE', async ({ assert }) => {
+    const now = new Date('2026-04-05T12:00:00.000Z');
+    const past = new Date('2026-04-04T12:00:00.000Z');
+    const w = createWorkout(
+      '1',
+      'bodybuilding',
+      { legs: 1 },
+      100,
+      0.5,
+      past,
+      [{ exerciseId: 'ex1' }],
+      4
+    );
+    const r = await WorkoutCalculator.calculateRecoveryState([w], now);
+    assert.equal(r.missingRpe.workoutsCount, 0);
   });
 
   /* -------------------------------- CALCULATE PERIOD STATS -------------------------------- */
