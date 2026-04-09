@@ -3,6 +3,7 @@ import logger from '@adonisjs/core/services/logger'
 import limiter from '@adonisjs/limiter/services/main'
 import vine from '@vinejs/vine'
 import { YandexAiService, type AiWorkoutResult, type AiRecognizedWorkoutResult } from '#services/YandexAiService'
+import { AiZonesService } from '#services/AiZonesService'
 import { AiBalanceService, InsufficientBalanceError } from '#services/AiBalanceService'
 import { ExerciseCatalog, type CatalogExercise } from '#services/ExerciseCatalog'
 import { tokenizeForMatch, tokenSubsetOverlap } from '#services/exercise_match_helpers'
@@ -100,6 +101,7 @@ export default class AiController {
     logger.info({ userId, mimeType: data.mimeType, base64Kb: Math.round(data.imageBase64.length / 1024) }, 'ai:recognize start')
     try {
       const result = await YandexAiService.recognizeFromImage(data.imageBase64, data.mimeType)
+      result.exercises = await AiZonesService.refineZonesForExercises(result.exercises)
       logger.info({ userId, exerciseCount: result.exercises.length }, 'ai:recognize ok')
       // Тип тренировки выбирает пользователь вручную.
       // Матчинг к каталогу отключён, чтобы не было "рандомных" подмен упражнений.
@@ -131,6 +133,7 @@ export default class AiController {
 
     try {
       const result = await YandexAiService.generateFromText(data.prompt)
+      result.exercises = await AiZonesService.refineZonesForExercises(result.exercises)
       const matched = matchExercisesToCatalog(result)
       return response.ok({ data: matched })
     } catch (err: any) {
@@ -170,6 +173,7 @@ export default class AiController {
 
     try {
       const result = await YandexAiService.parseWorkoutNotes(workout.notes)
+      result.exercises = await AiZonesService.refineZonesForExercises(result.exercises)
       const matched = matchExercisesToCatalog(result)
       const workoutExercises = aiExercisesToWorkoutExercises(matched.exercises, matched.workoutType)
 
@@ -239,6 +243,7 @@ export default class AiController {
       // Важно: "распознать по тексту" должен работать так же, как распознавание по фото (после OCR),
       // иначе модель начинает "придумывать" упражнения и терять подходы/веса.
       const result = await YandexAiService.parseWorkoutTextLikeOcr(notes)
+      result.exercises = await AiZonesService.refineZonesForExercises(result.exercises)
       // Тип тренировки пользователь выбирает вручную — AI не должен проставлять его автоматически.
       // Для превью и сетов берём силовой формат (веса/повторы) по умолчанию.
       const workoutExercises = aiExercisesToWorkoutExercises(result.exercises, 'bodybuilding')
