@@ -282,6 +282,30 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     assert.deepEqual(result.zonesLoad, {});
   });
 
+  test('бодибилдинг: zoneWeights перекашивает доли между зонами (румынка)', async ({ assert }) => {
+    const exercise = createExercise('rdl', ['glutes', 'legs', 'back'], 1.0)
+    WorkoutCalculator['loadExercises'] = async () => new Map([['rdl', exercise]])
+
+    const result = await WorkoutCalculator.calculateZoneLoads(
+      [
+        {
+          exerciseId: 'rdl',
+          type: 'strength' as const,
+          zones: ['glutes', 'legs', 'back'],
+          zoneWeights: { glutes: 0.5, legs: 0.3, back: 0.2 },
+          sets: [{ id: '1', reps: 10, weight: 100 }],
+        },
+      ],
+      'bodybuilding'
+    )
+
+    const g = result.zonesLoadAbs.glutes!
+    const l = result.zonesLoadAbs.legs!
+    const b = result.zonesLoadAbs.back!
+    assert.closeTo(g / l, 0.5 / 0.3, 0.001)
+    assert.closeTo(g / b, 0.5 / 0.2, 0.001)
+  })
+
   test('кастомное и каталожное упражнения вместе: zones считаются корректно', async ({ assert }) => {
     const catalogEx = createExercise('Romanian_Deadlift', ['back', 'glutes', 'legs'], 0.7);
     WorkoutCalculator['loadExercises'] = async () => new Map([['Romanian_Deadlift', catalogEx]]);

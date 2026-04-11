@@ -1,6 +1,7 @@
 import { ExerciseCatalog, type CatalogExercise } from '#services/ExerciseCatalog'
 import Workout, { WorkoutExercise, WorkoutSet } from '#models/workout';
-import UserMeasurement from '#models/user_measurement';
+import UserMeasurement from '#models/user_measurement'
+import { distributeZoneWeights } from '#utils/zone_weights';
 import logger from '@adonisjs/core/services/logger'
 import { epochDate, nowDate, wallClockDate } from '#utils/date'
 
@@ -152,11 +153,12 @@ export class WorkoutCalculator {
         countedExercises += 1;
       }
 
-      // If exercise targets multiple zones, distribute its load between them
-      // to avoid double-counting (e.g. RDL: back+legs).
-      const perZoneLoad = load / Math.max(zones.length, 1);
-      for (const zone of zones) {
-        zoneLoadsAbs[zone] = (zoneLoadsAbs[zone] ?? 0) + perZoneLoad;
+      // If exercise targets multiple zones, split load by zoneWeights (AI) or equally.
+      const weightShares = distributeZoneWeights(zones, input.zoneWeights);
+      for (let i = 0; i < zones.length; i++) {
+        const zone = zones[i]!;
+        const share = weightShares[i] ?? 1 / Math.max(zones.length, 1);
+        zoneLoadsAbs[zone] = (zoneLoadsAbs[zone] ?? 0) + load * share;
       }
     }
 

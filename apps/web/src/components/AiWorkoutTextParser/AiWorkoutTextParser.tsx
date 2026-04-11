@@ -1,30 +1,13 @@
 import { useMemo, useState } from 'react';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { DocumentTextIcon, SparklesIcon } from '@heroicons/react/24/outline';
-import { aiApi } from '@/api/ai';
+import { aiApi, type AiTextParseUiPayload } from '@/api/ai';
 import AccentButton from '@/components/ui/AccentButton';
 import AiLoadingView from '@/components/ui/AiLoadingView';
 import { AnimatePresence, motion } from 'framer-motion';
 
 interface Props {
-  onResult: (payload: {
-    sourceText: string;
-    previewItems: Array<{
-      exerciseId: string;
-      name: string;
-      sets: number;
-      reps?: number;
-      weight?: number;
-      weightMax?: number;
-    }>;
-    exercises: Array<{
-      exerciseId: string;
-      type: string;
-      sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>;
-      blockId?: string;
-    }>;
-    warning: string | null;
-  }) => void;
+  onResult: (payload: AiTextParseUiPayload) => void;
   triggerClassName?: string;
   triggerContent?: React.ReactNode;
 }

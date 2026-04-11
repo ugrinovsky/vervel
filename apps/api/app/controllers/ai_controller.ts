@@ -1,9 +1,11 @@
+import { randomUUID } from 'node:crypto'
 import type { HttpContext } from '@adonisjs/core/http'
 import logger from '@adonisjs/core/services/logger'
 import limiter from '@adonisjs/limiter/services/main'
 import vine from '@vinejs/vine'
 import { YandexAiService, type AiWorkoutResult, type AiRecognizedWorkoutResult } from '#services/YandexAiService'
 import { AiZonesService } from '#services/AiZonesService'
+import type { AiParseChainCtx } from '#services/ai_parse_chain'
 import { AiBalanceService, InsufficientBalanceError } from '#services/AiBalanceService'
 import { ExerciseCatalog, type CatalogExercise } from '#services/ExerciseCatalog'
 import { tokenizeForMatch, tokenSubsetOverlap } from '#services/exercise_match_helpers'
@@ -11,7 +13,6 @@ import AchievementService from '#services/AchievementService'
 import Workout from '#models/workout'
 import { WorkoutCalculator } from '#services/WorkoutCalculator'
 import { aiExercisesToWorkoutExercises } from '#services/WorkoutConverter'
-
 const recognizeValidator = vine.compile(
   vine.object({
     imageBase64: vine.string().trim().minLength(100),
@@ -59,6 +60,7 @@ const applyParsedWorkoutValidator = vine.compile(
           .optional(),
         blockId: vine.string().optional(),
         zones: vine.array(vine.string()).optional(),
+        zoneWeights: vine.record(vine.number().min(0).max(1)).optional(),
         bodyweight: vine.boolean().optional(),
         duration: vine.number().optional(),
         rounds: vine.number().optional(),
@@ -98,17 +100,39 @@ export default class AiController {
 
     if (!(await this.chargeOrFail(userId, cost, 'Распознавание тренировки по фото', response))) return
 
-    logger.info({ userId, mimeType: data.mimeType, base64Kb: Math.round(data.imageBase64.length / 1024) }, 'ai:recognize start')
+    const traceId = randomUUID()
+    const chain: AiParseChainCtx = { traceId, userId, route: 'POST /ai/recognize-workout' }
+    logger.info(
+      { traceId, userId, route: chain.route, step: 'controller.start', mimeType: data.mimeType, base64Kb: Math.round(data.imageBase64.length / 1024) },
+      'ai:chain'
+    )
     try {
-      const result = await YandexAiService.recognizeFromImage(data.imageBase64, data.mimeType)
-      result.exercises = await AiZonesService.refineZonesForExercises(result.exercises)
-      logger.info({ userId, exerciseCount: result.exercises.length }, 'ai:recognize ok')
+      const result = await YandexAiService.recognizeFromImage(data.imageBase64, data.mimeType, chain)
+      result.exercises = await AiZonesService.refineZonesForExercises(result.exercises, chain)
+      logger.info(
+        {
+          traceId,
+          userId,
+          route: chain.route,
+          step: 'controller.response',
+          exerciseCount: result.exercises.length,
+          exercises: result.exercises.map((e) => ({
+            name: e.name,
+            displayName: e.displayName,
+            zones: e.zones ?? null,
+          })),
+        },
+        'ai:chain'
+      )
       // Тип тренировки выбирает пользователь вручную.
       // Матчинг к каталогу отключён, чтобы не было "рандомных" подмен упражнений.
       const out: AiRecognizedWorkoutResult = { workoutType: null, exercises: result.exercises, notes: result.notes }
       return response.ok({ data: out })
     } catch (err: any) {
-      logger.error({ userId, err: err?.message }, 'ai:recognize failed')
+      logger.error(
+        { traceId, userId, route: chain.route, step: 'controller.error', err: err?.message },
+        'ai:chain'
+      )
       return response.internalServerError({
         message: 'Не удалось распознать тренировку',
         detail: err?.message,
@@ -131,12 +155,35 @@ export default class AiController {
 
     if (!(await this.chargeOrFail(userId, cost, 'Генерация тренировки AI', response))) return
 
+    const traceId = randomUUID()
+    const chain: AiParseChainCtx = { traceId, userId, route: 'POST /ai/generate-workout' }
+    logger.info({ traceId, userId, route: chain.route, step: 'controller.start' }, 'ai:chain')
+
     try {
-      const result = await YandexAiService.generateFromText(data.prompt)
-      result.exercises = await AiZonesService.refineZonesForExercises(result.exercises)
+      const result = await YandexAiService.generateFromText(data.prompt, chain)
+      result.exercises = await AiZonesService.refineZonesForExercises(result.exercises, chain)
       const matched = matchExercisesToCatalog(result)
+      logger.info(
+        {
+          traceId,
+          userId,
+          route: chain.route,
+          step: 'controller.response',
+          workoutType: matched.workoutType,
+          exercises: matched.exercises.map((e) => ({
+            name: e.name,
+            exerciseId: e.exerciseId,
+            zones: e.zones ?? null,
+          })),
+        },
+        'ai:chain'
+      )
       return response.ok({ data: matched })
     } catch (err: any) {
+      logger.error(
+        { traceId, userId, route: chain.route, step: 'controller.error', err: err?.message },
+        'ai:chain'
+      )
       return response.internalServerError({
         message: 'Не удалось сгенерировать тренировку',
         detail: err?.message,
@@ -171,11 +218,34 @@ export default class AiController {
 
     if (!isFree && !(await this.chargeOrFail(userId, cost, 'Разбор программы тренировки через AI', response))) return
 
+    const traceId = randomUUID()
+    const chain: AiParseChainCtx = { traceId, userId, route: 'POST /ai/parse-workout-notes' }
+    logger.info(
+      { traceId, userId, route: chain.route, step: 'controller.start', workoutId, notesChars: workout.notes.length },
+      'ai:chain'
+    )
+
     try {
-      const result = await YandexAiService.parseWorkoutNotes(workout.notes)
-      result.exercises = await AiZonesService.refineZonesForExercises(result.exercises)
+      const result = await YandexAiService.parseWorkoutNotes(workout.notes, chain)
+      result.exercises = await AiZonesService.refineZonesForExercises(result.exercises, chain)
       const matched = matchExercisesToCatalog(result)
       const workoutExercises = aiExercisesToWorkoutExercises(matched.exercises, matched.workoutType)
+
+      logger.info(
+        {
+          traceId,
+          userId,
+          route: chain.route,
+          step: 'controller.after_catalog',
+          workoutType: matched.workoutType,
+          exercises: matched.exercises.map((e) => ({
+            name: e.name,
+            exerciseId: e.exerciseId,
+            zones: e.zones ?? null,
+          })),
+        },
+        'ai:chain'
+      )
 
       // Проверка качества: дубликаты или слишком мало упражнений
       const uniqueIds = new Set(workoutExercises.map((e) => e.exerciseId))
@@ -194,6 +264,7 @@ export default class AiController {
           exerciseId: ex.exerciseId,
           // В UI показываем человеческое имя, а не internal id custom:*
           name: catalogMap.get(ex.exerciseId) ?? (isCustom ? ex.name : ex.exerciseId.replace(/_/g, ' ')),
+          zones: ex.zones && ex.zones.length > 0 ? ex.zones : null,
           sets: allSets.length,
           reps: allSets[0]?.reps,
           weight: weightMin,
@@ -202,6 +273,22 @@ export default class AiController {
       })
 
       const balance = await AiBalanceService.getBalance(userId)
+      logger.info(
+        {
+          traceId,
+          userId,
+          route: chain.route,
+          step: 'controller.response',
+          previewCount: previewItems.length,
+          workoutExercises: workoutExercises.map((ex) => ({
+            exerciseId: ex.exerciseId,
+            name: ex.name,
+            zones: ex.zones ?? null,
+            sets: ex.sets?.length ?? 0,
+          })),
+        },
+        'ai:chain'
+      )
       return response.ok({
         workoutType: matched.workoutType,
         previewItems,
@@ -214,6 +301,10 @@ export default class AiController {
         balance,
       })
     } catch (err: any) {
+      logger.error(
+        { traceId, userId, route: chain.route, step: 'controller.error', err: err?.message },
+        'ai:chain'
+      )
       return response.internalServerError({
         message: 'Не удалось разобрать программу тренировки',
         detail: err?.message,
@@ -239,14 +330,25 @@ export default class AiController {
 
     if (!isFree && !(await this.chargeOrFail(userId, cost, 'Разбор программы тренировки через AI', response))) return
 
+    const traceId = randomUUID()
+    const chain: AiParseChainCtx = { traceId, userId, route: 'POST /ai/parse-notes-text' }
+    logger.info(
+      { traceId, userId, route: chain.route, step: 'controller.start', notesChars: notes.length, notesPreview: notes.slice(0, 400) },
+      'ai:chain'
+    )
+
     try {
       // Важно: "распознать по тексту" должен работать так же, как распознавание по фото (после OCR),
       // иначе модель начинает "придумывать" упражнения и терять подходы/веса.
-      const result = await YandexAiService.parseWorkoutTextLikeOcr(notes)
-      result.exercises = await AiZonesService.refineZonesForExercises(result.exercises)
-      // Тип тренировки пользователь выбирает вручную — AI не должен проставлять его автоматически.
-      // Для превью и сетов берём силовой формат (веса/повторы) по умолчанию.
-      const workoutExercises = aiExercisesToWorkoutExercises(result.exercises, 'bodybuilding')
+      const result = await YandexAiService.parseWorkoutTextLikeOcr(notes, chain)
+      result.exercises = await AiZonesService.refineZonesForExercises(result.exercises, chain)
+      const toMatch: AiWorkoutResult = {
+        ...result,
+        workoutType: result.workoutType ?? 'bodybuilding',
+      }
+      const matched = matchExercisesToCatalog(toMatch)
+      // Тип тренировки пользователь выбирает вручную — в ответе всегда null; сеты считаем как силовые.
+      const workoutExercises = aiExercisesToWorkoutExercises(matched.exercises, 'bodybuilding')
 
       const uniqueIds = new Set(workoutExercises.map((e) => e.exerciseId))
       const hasDuplicates = uniqueIds.size < workoutExercises.length
@@ -260,8 +362,8 @@ export default class AiController {
         const weightMax = weights.length ? Math.max(...weights) : undefined
         return {
           exerciseId: ex.exerciseId,
-          // Матчинг отключён: показываем распознанное имя.
           name: catalogMap.get(ex.exerciseId) ?? ex.name,
+          zones: ex.zones && ex.zones.length > 0 ? ex.zones : null,
           sets: allSets.length,
           reps: allSets[0]?.reps,
           weight: weightMin,
@@ -270,6 +372,22 @@ export default class AiController {
       })
 
       const balance = await AiBalanceService.getBalance(userId)
+      logger.info(
+        {
+          traceId,
+          userId,
+          route: chain.route,
+          step: 'controller.response',
+          previewCount: previewItems.length,
+          workoutExercises: workoutExercises.map((ex) => ({
+            exerciseId: ex.exerciseId,
+            name: ex.name,
+            zones: ex.zones ?? null,
+            sets: ex.sets?.length ?? 0,
+          })),
+        },
+        'ai:chain'
+      )
       return response.ok({
         workoutType: null,
         previewItems,
@@ -282,6 +400,10 @@ export default class AiController {
         balance,
       })
     } catch (err: any) {
+      logger.error(
+        { traceId, userId, route: chain.route, step: 'controller.error', err: err?.message },
+        'ai:chain'
+      )
       return response.internalServerError({
         message: 'Не удалось разобрать программу тренировки',
         detail: err?.message,
@@ -452,6 +574,11 @@ export default class AiController {
 const TOKEN_OVERLAP_MIN = 0.7
 const KW_MIN_FOR_NAME_INCLUDES_KW = 4
 
+/** Одно слово без контекста → канонический id каталога (иначе ловим первое «…жим…» в списке). */
+const DEFAULT_CATALOG_ID_FOR_SINGLE_TOKEN: Record<string, string> = {
+  жим: 'Barbell_Bench_Press_-_Medium_Grip',
+}
+
 function bestMatchByTitleTokenOverlap(
   nameTokens: string[],
   catalog: CatalogExercise[]
@@ -491,6 +618,20 @@ function matchExercisesToCatalog(result: AiWorkoutResult): AiWorkoutResult {
   const exercises = result.exercises.map((aiEx) => {
     const nameLower = aiEx.name.trim().toLowerCase()
     const nameTokens = tokenizeForMatch(aiEx.name)
+
+    if (nameTokens.length === 1) {
+      const defId = DEFAULT_CATALOG_ID_FOR_SINGLE_TOKEN[nameTokens[0]!]
+      if (defId) {
+        const defEx = catalog.find((e) => e.id === defId)
+        if (defEx) {
+          logger.info(
+            { name: aiEx.name, exerciseId: defEx.id, via: 'single_token_default' },
+            'ai:match hit'
+          )
+          return { ...aiEx, exerciseId: defEx.id }
+        }
+      }
+    }
 
     // 1. Точное совпадение по нормализованному ID
     let found = catalog.find((ex) => ex.id.replace(/_/g, ' ').toLowerCase() === nameLower)

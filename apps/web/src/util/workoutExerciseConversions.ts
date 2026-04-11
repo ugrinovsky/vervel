@@ -42,6 +42,7 @@ export function exerciseDataToWorkoutExercise(
       exerciseId: ex.exerciseId!,
       name: ex.name,
       zones: ex.zones,
+      zoneWeights: ex.zoneWeights,
       type: 'cardio',
       duration: minutes * 60,
     };
@@ -51,6 +52,7 @@ export function exerciseDataToWorkoutExercise(
       exerciseId: ex.exerciseId!,
       name: ex.name,
       zones: ex.zones,
+      zoneWeights: ex.zoneWeights,
       type: 'wod',
       wodType: ex.wodType,
       timeCap: ex.timeCap,
@@ -63,6 +65,7 @@ export function exerciseDataToWorkoutExercise(
     exerciseId: ex.exerciseId!,
     name: ex.name,
     zones: ex.zones,
+    zoneWeights: ex.zoneWeights,
     type: 'strength',
     bodyweight: ex.bodyweight,
     sets: (ex.setsDetail ?? []).map((s) => ({

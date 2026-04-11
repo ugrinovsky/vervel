@@ -76,6 +76,7 @@ export interface ExerciseData {
   notes?: string;       // тренерский комментарий к упражнению
   blockId?: string;     // упражнения с одинаковым blockId — суперсет
   zones?: string[];     // зоны мышц от AI (для аналитики если упражнение не в каталоге)
+  zoneWeights?: Record<string, number>; // доли нагрузки по зонам (сумма 1)
   setsDetail?: ExerciseSetDetail[]; // per-set data (pyramid support, bodybuilding only)
   // CrossFit / WOD fields
   wodType?: 'amrap' | 'fortime' | 'emom' | 'tabata';

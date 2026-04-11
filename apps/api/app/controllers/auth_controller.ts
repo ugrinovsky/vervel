@@ -31,8 +31,22 @@ export default class AuthController {
     // Rate limit: 10 login attempts per IP per 15 minutes
     const loginLimit = limiter.use({ requests: 10, duration: '15 mins', blockDuration: '30 mins' });
     const loginLimitRes = await loginLimit.attempt(`login_ip_${ip}`, async () => {
-      const email = request.input('email');
-      const password = request.input('password');
+      const emailRaw = request.input('email');
+      const passwordRaw = request.input('password');
+      if (
+        emailRaw == null ||
+        passwordRaw == null ||
+        typeof emailRaw !== 'string' ||
+        typeof passwordRaw !== 'string' ||
+        !emailRaw.trim()
+      ) {
+        return response.badRequest({
+          message:
+            'В теле запроса ожидается JSON: {"email":"…","password":"…"} (заголовок Content-Type: application/json).',
+        });
+      }
+      const email = emailRaw.trim();
+      const password = passwordRaw;
 
       const user = await User.query().where('email', email).first();
       if (!user) {

@@ -71,6 +71,8 @@ export function aiExercisesToWorkoutExercises(
       ex.exerciseId ?? `custom:${canonicalCustomExerciseKey(ex.displayName ?? ex.name)}`
     const name = ex.displayName ?? ex.name
     const zones = ex.zones && ex.zones.length > 0 ? ex.zones : undefined
+    const zoneWeights =
+      ex.zoneWeights && Object.keys(ex.zoneWeights).length > 0 ? ex.zoneWeights : undefined
 
     if (workoutType === 'cardio') {
       const set: WorkoutSet = { id: crypto.randomUUID(), time: (ex.duration ?? 20) * 60 }
@@ -78,6 +80,7 @@ export function aiExercisesToWorkoutExercises(
         exerciseId,
         name,
         zones,
+        zoneWeights,
         type: 'cardio' as const,
         sets: [set],
         blockId: ex.supersetGroup ?? undefined,
@@ -100,6 +103,7 @@ export function aiExercisesToWorkoutExercises(
       exerciseId,
       name,
       zones,
+      zoneWeights,
       type: workoutType === 'crossfit' ? ('wod' as const) : ('strength' as const),
       sets,
       blockId: ex.supersetGroup ?? undefined,

@@ -26,7 +26,11 @@ import {
 import AccentButton from '@/components/ui/AccentButton';
 import GhostButton from '@/components/ui/GhostButton';
 import type { ExerciseData, WorkoutTemplate } from '@/api/trainer';
-import type { AiRecognizedWorkoutResult, AiWorkoutResult } from '@/api/ai';
+import type {
+  AiRecognizedWorkoutResult,
+  AiTextParseUiPayload,
+  AiWorkoutResult,
+} from '@/api/ai';
 import { aiApi } from '@/api/ai';
 import { WORKOUT_TYPE_CONFIG, DEFAULT_WORKOUT_TYPE } from '@/constants/workoutTypes';
 import { nowRoundedToHour, today, parseTimeString, parseLocalDate, toDateKey } from '@/utils/date';
@@ -343,24 +347,7 @@ export default function WorkoutFormBase({
     toast.success(`ИИ распознал ${converted.length} упражнений`);
   };
 
-  const handleAiTextParsed = (payload: {
-    sourceText: string;
-    previewItems: Array<{
-      exerciseId: string;
-      name: string;
-      sets: number;
-      reps?: number;
-      weight?: number;
-      weightMax?: number;
-    }>;
-    exercises: Array<{
-      exerciseId: string;
-      type: string;
-      sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>;
-      blockId?: string;
-    }>;
-    warning: string | null;
-  }) => {
+  const handleAiTextParsed = (payload: AiTextParseUiPayload) => {
     const nameMap = new Map(payload.previewItems.map((item) => [item.exerciseId, item.name]));
     const baseConverted: ExerciseData[] = payload.exercises.map((ex: any) => ({
       exerciseId: ex.exerciseId,
@@ -368,6 +355,8 @@ export default function WorkoutFormBase({
         nameMap.get(ex.exerciseId) ??
         exerciseIdForDisplay(String(ex.exerciseId)),
       zones: Array.isArray(ex.zones) ? ex.zones : undefined,
+      zoneWeights:
+        ex.zoneWeights && typeof ex.zoneWeights === 'object' ? ex.zoneWeights : undefined,
       bodyweight: ex.bodyweight,
       setsDetail: ex.sets?.map((s: any) => ({ reps: s.reps ?? 10, weight: s.weight })) ?? [],
       sets: ex.sets?.length ?? 3,

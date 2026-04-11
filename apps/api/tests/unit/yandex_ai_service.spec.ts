@@ -1,6 +1,9 @@
 import { test } from '@japa/runner'
 import { YandexAiService } from '#services/YandexAiService'
-import { normalizeWorkoutTextForParsing } from '#services/ai_workout_ocr_parse'
+import {
+  normalizeWorkoutTextForParsing,
+  shouldSkipWorkoutProgramCleanup,
+} from '#services/ai_workout_ocr_parse'
 
 // Доступ к приватным методам через приведение типа
 const svc = YandexAiService as any
@@ -197,6 +200,14 @@ test.group('YandexAiService: parseWorkoutJson', () => {
     assert.equal(svc.parseWorkoutJson(json).exercises[0].supersetGroup, 'A')
   })
 
+  test('shouldSkipWorkoutProgramCleanup: одна строка → true', ({ assert }) => {
+    assert.isTrue(shouldSkipWorkoutProgramCleanup('румынская тяга 3 подхода на 12 раз'))
+  })
+
+  test('shouldSkipWorkoutProgramCleanup: две непустые строки → false', ({ assert }) => {
+    assert.isFalse(shouldSkipWorkoutProgramCleanup('грудь\nжим 3x10'))
+  })
+
   test('нормализация входного текста: только пробелы/переносы/trim (без семантики)', ({ assert }) => {
     const input = `За 10 минут
 
@@ -223,6 +234,23 @@ test.group('YandexAiService: parseWorkoutJson', () => {
       exercises: [{ name: 'Pull-Up', displayName: '', sets: 3 }],
     })
     assert.equal(svc.parseWorkoutJson(json).exercises[0].displayName, 'Pull-Up')
+  })
+
+  test('parseWorkoutJson: заглушка в name, нормальное displayName — копирует в name', ({ assert }) => {
+    const json = JSON.stringify({
+      workoutType: 'bodybuilding',
+      exercises: [
+        {
+          name: 'не указано',
+          displayName: 'Румынская тяга',
+          sets: 3,
+          reps: 12,
+        },
+      ],
+    })
+    const r = svc.parseWorkoutJson(json)
+    assert.equal(r.exercises[0].name, 'Румынская тяга')
+    assert.equal(r.exercises[0].displayName, 'Румынская тяга')
   })
 
   test('обрабатывает пустой массив упражнений', ({ assert }) => {

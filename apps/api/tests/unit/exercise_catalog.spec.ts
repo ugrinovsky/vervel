@@ -139,3 +139,17 @@ test.group('ExerciseCatalog: findMany()', () => {
     assert.equal(result.size, 1)
   })
 })
+
+test.group('ExerciseCatalog: keywords (AI match)', () => {
+  test('у длинного названия с «жим» нет отдельного keyword «жим»', ({ assert }) => {
+    const ex = ExerciseCatalog.find('Alternating_Cable_Shoulder_Press')
+    assert.isDefined(ex)
+    assert.isFalse(ex!.keywords.includes('жим'))
+  })
+
+  test('жим лёжа тоже без отдельного keyword «жим» (матч по полному title)', ({ assert }) => {
+    const ex = ExerciseCatalog.find('Barbell_Bench_Press_-_Medium_Grip')
+    assert.isDefined(ex)
+    assert.isFalse(ex!.keywords.includes('жим'))
+  })
+})

@@ -84,6 +84,8 @@ export function convertAiExercises(
       name: ex.displayName ?? ex.name,
       notes: ex.notes,
       zones: ex.zones && ex.zones.length > 0 ? ex.zones : undefined,
+      zoneWeights:
+        ex.zoneWeights && Object.keys(ex.zoneWeights).length > 0 ? ex.zoneWeights : undefined,
     }
 
     // Assign blockId for superset grouping (bodybuilding only)

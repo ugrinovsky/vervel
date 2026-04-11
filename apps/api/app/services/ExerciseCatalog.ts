@@ -78,6 +78,24 @@ const INTENSITY_BY_LEVEL: Record<string, number> = {
   expert: 0.9,
 }
 
+/**
+ * Однословные «семейства» движений: в keywords не кладём их отдельно, если в названии ≥2 токенов,
+ * иначе «Жим» матчится на первое упражнение с токеном «жим» в длинном title (напр. жим на блоке).
+ */
+const AMBIGUOUS_MOVEMENT_TOKENS = new Set([
+  'жим',
+  'тяга',
+  'присед',
+  'выпад',
+  'подтягивания',
+  'разводка',
+  'сведение',
+  'разгибание',
+  'сгибание',
+  'подъем',
+  'подъём',
+])
+
 // GitHub raw URL для изображений из free-exercise-db
 const IMAGE_BASE_URL =
   'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises'
@@ -109,7 +127,11 @@ function loadCatalog(): Map<string, CatalogExerciseFull> {
     const words = phrase.split(' ').filter((w) => w.length > 2)
     const titleLower = ex.name.trim().toLowerCase()
     const titleTokens = tokenizeForMatch(ex.name)
-    const keywords = [...new Set([phrase, ...words, titleLower, ...titleTokens])]
+    const tokensForKeywords =
+      titleTokens.length >= 2
+        ? titleTokens.filter((t) => !AMBIGUOUS_MOVEMENT_TOKENS.has(t))
+        : titleTokens
+    const keywords = [...new Set([phrase, ...words, titleLower, ...tokensForKeywords])]
 
     const allImages = ex.images.map((img) => `${IMAGE_BASE_URL}/${img}`)
 

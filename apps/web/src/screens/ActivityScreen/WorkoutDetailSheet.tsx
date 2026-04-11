@@ -6,7 +6,7 @@ import { getLocalDateISOString } from '@/util/exercise';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { workoutsApi, type WorkoutSet } from '@/api/workouts';
-import { aiApi } from '@/api/ai';
+import { aiApi, type AiParseWorkoutNotesResponse } from '@/api/ai';
 import { profileApi } from '@/api/profile';
 import { parseApiDateTime, parseLocalDate, nowRoundedToHour, today, now } from '@/utils/date';
 import { exercisesApi } from '@/api/exercises';
@@ -382,12 +382,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const [parsePreview, setParsePreview] = useState<{
-    workoutType: 'crossfit' | 'bodybuilding' | 'cardio';
-    previewItems: Array<{ exerciseId: string; name: string; sets: number; reps?: number; weight?: number; weightMax?: number }>;
-    exercises: Array<{ exerciseId: string; type: string; sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>; blockId?: string }>;
-    warning: string | null;
-  } | null>(null);
+  const [parsePreview, setParsePreview] = useState<AiParseWorkoutNotesResponse | null>(null);
 
   useEffect(() => {
     if (!workout?.id) return;
@@ -942,9 +937,19 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
 
               <div className="space-y-1.5">
                 {parsePreview.previewItems.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between gap-2 py-1.5 border-b border-(--color_border) last:border-0">
-                    <span className="text-sm text-white leading-tight">{item.name}</span>
-                    <span className="text-xs text-(--color_text_muted) shrink-0 tabular-nums">
+                  <div
+                    key={i}
+                    className="flex items-start justify-between gap-2 py-1.5 border-b border-(--color_border) last:border-0"
+                  >
+                    <div className="min-w-0">
+                      <span className="text-sm text-white leading-tight">{item.name}</span>
+                      {item.zones && item.zones.length > 0 && (
+                        <span className="text-[10px] text-(--color_text_muted) block mt-0.5">
+                          {item.zones.map((z) => getZoneLabel(z)).join(' · ')}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs text-(--color_text_muted) shrink-0 tabular-nums text-right">
                       {item.sets > 0 ? `${item.sets} × ` : ''}
                       {item.reps ? `${item.reps} повт.` : ''}
                       {item.weight ? ` · ${item.weightMax ? `${item.weight}–${item.weightMax}` : item.weight} кг` : ''}

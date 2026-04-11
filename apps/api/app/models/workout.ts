@@ -37,6 +37,12 @@ export type WorkoutExercise = {
   zones?: string[];
 
   /**
+   * Доли нагрузки по зонам (ключи = элементы zones), сумма 1.
+   * От AI / уточняется после refine; без поля — поровну между zones.
+   */
+  zoneWeights?: Record<string, number>;
+
+  /**
    * Тип упражнения
    */
   type: 'strength' | 'cardio' | 'wod';

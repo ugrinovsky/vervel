@@ -22,6 +22,8 @@ export interface AiExercise {
   supersetGroup?: string
   /** Зоны мышц от AI (используются для аналитики, если упражнение не в каталоге) */
   zones?: string[]
+  /** Доли нагрузки по зонам (сумма 1), от AI */
+  zoneWeights?: Record<string, number>
 }
 
 export interface AiWorkoutResult {
@@ -34,6 +36,56 @@ export interface AiRecognizedWorkoutResult {
   workoutType: null
   exercises: AiExercise[]
   notes?: string
+}
+
+/** Превью-строка в ответах parse-workout-notes / parse-notes-text */
+export type AiParsedWorkoutPreviewItem = {
+  exerciseId: string
+  name: string
+  zones?: string[] | null
+  sets: number
+  reps?: number
+  weight?: number
+  weightMax?: number
+}
+
+/** Упражнение в том же ответе и в теле apply-parsed-workout */
+export type AiParsedWorkoutExercisePayload = {
+  exerciseId: string
+  name?: string
+  zones?: string[]
+  zoneWeights?: Record<string, number>
+  bodyweight?: boolean
+  type: string
+  duration?: number
+  rounds?: number
+  wodType?: 'amrap' | 'emom' | 'fortime' | 'tabata'
+  sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>
+  blockId?: string
+}
+
+export type AiParseWorkoutNotesResponse = {
+  workoutType: 'crossfit' | 'bodybuilding' | 'cardio'
+  previewItems: AiParsedWorkoutPreviewItem[]
+  exercises: AiParsedWorkoutExercisePayload[]
+  warning: string | null
+  balance: number
+}
+
+export type AiParseNotesTextResponse = {
+  workoutType: null
+  previewItems: AiParsedWorkoutPreviewItem[]
+  exercises: AiParsedWorkoutExercisePayload[]
+  warning: string | null
+  balance: number
+}
+
+/** То, что уходит в форму после parse-notes-text (без balance / workoutType с ответа). */
+export type AiTextParseUiPayload = {
+  sourceText: string
+  previewItems: AiParsedWorkoutPreviewItem[]
+  exercises: AiParsedWorkoutExercisePayload[]
+  warning: string | null
 }
 
 export interface AiBalance {
@@ -97,47 +149,13 @@ export const aiApi = {
    * Возвращает previewItems для отображения, exercises для передачи в applyParsedWorkout.
    */
   parseWorkoutNotes: (workoutId: number) =>
-    privateApi.post<{
-      workoutType: 'crossfit' | 'bodybuilding' | 'cardio'
-      previewItems: Array<{ exerciseId: string; name: string; sets: number; reps?: number; weight?: number; weightMax?: number }>
-      exercises: Array<{
-        exerciseId: string;
-        name?: string;
-        zones?: string[];
-        bodyweight?: boolean;
-        type: string;
-        duration?: number;
-        rounds?: number;
-        wodType?: 'amrap' | 'emom' | 'fortime' | 'tabata';
-        sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>;
-        blockId?: string;
-      }>
-      warning: string | null
-      balance: number
-    }>('/ai/parse-workout-notes', { workoutId }),
+    privateApi.post<AiParseWorkoutNotesResponse>('/ai/parse-workout-notes', { workoutId }),
 
   /**
    * Парсит произвольный текст (без workoutId) — для формы создания тренировки.
    */
   parseNotesText: (notes: string) =>
-    privateApi.post<{
-      workoutType: null
-      previewItems: Array<{ exerciseId: string; name: string; sets: number; reps?: number; weight?: number; weightMax?: number }>
-      exercises: Array<{
-        exerciseId: string;
-        name?: string;
-        zones?: string[];
-        bodyweight?: boolean;
-        type: string;
-        duration?: number;
-        rounds?: number;
-        wodType?: 'amrap' | 'emom' | 'fortime' | 'tabata';
-        sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>;
-        blockId?: string;
-      }>
-      warning: string | null
-      balance: number
-    }>('/ai/parse-notes-text', { notes }),
+    privateApi.post<AiParseNotesTextResponse>('/ai/parse-notes-text', { notes }),
 
   /**
    * Сохраняет упражнения после подтверждения превью (без повторного списания баланса).
@@ -145,18 +163,7 @@ export const aiApi = {
   applyParsedWorkout: (
     workoutId: number,
     workoutType: 'crossfit' | 'bodybuilding' | 'cardio',
-    exercises: Array<{
-      exerciseId: string;
-      name?: string;
-      zones?: string[];
-      bodyweight?: boolean;
-      type: string;
-      duration?: number;
-      rounds?: number;
-      wodType?: 'amrap' | 'emom' | 'fortime' | 'tabata';
-      sets?: Array<{ id: string; reps?: number; weight?: number; time?: number }>;
-      blockId?: string;
-    }>
+    exercises: AiParsedWorkoutExercisePayload[]
   ) =>
     privateApi.post<{ data: unknown }>('/ai/apply-parsed-workout', { workoutId, workoutType, exercises }),
 }
