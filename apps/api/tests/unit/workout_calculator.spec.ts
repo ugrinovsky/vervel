@@ -406,6 +406,15 @@ test.group('WorkoutCalculator (Калькулятор тренировок)', ()
     });
   });
 
+  test('calculateRecoveryState: зоны с нулевой нагрузкой не попадают в ответ', async ({ assert }) => {
+    const now = new Date('2026-04-05T12:00:00.000Z');
+    const day = new Date('2026-04-05T12:00:00.000Z');
+    const w = createWorkout('1', 'bodybuilding', { legs: 1, core: 0 }, 100, 0.5, day);
+    const r = await WorkoutCalculator.calculateRecoveryState([w], now);
+    assert.isUndefined((r.zones as any).core);
+    assert.isDefined(r.zones.legs);
+  });
+
   test('calculateRecoveryState: несколько тренировок одной зоны не суммируют усталость', async ({ assert }) => {
     const now = new Date('2026-04-05T12:00:00.000Z');
     const day = new Date('2026-04-03T12:00:00.000Z');

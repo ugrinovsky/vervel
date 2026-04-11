@@ -28,7 +28,7 @@ function zonesMapSystemPrompt(): string {
 Формат: {"zones":["zone1","zone2"]}
 
 Правила:
-- 1–4 зоны, только из списка: [${ZONES_LIST}]
+- Только зоны из списка: [${ZONES_LIST}]. Столько, сколько в движении реально значимо нагружается (не дополняй список искусственно).
 - Значения — строго как в списке (латиница).
 - Опирайся на смысл описания, не додумывай снаряд, если его не было в описании.`
 }
@@ -40,7 +40,7 @@ function stripMarkdownFences(raw: string): string {
 function normalizeZones(zones: unknown): string[] {
   const allowed = new Set(MUSCLE_ZONES as unknown as string[])
   const list = Array.isArray(zones) ? zones.map((z) => String(z)) : []
-  return [...new Set(list)].filter((z) => allowed.has(z)).slice(0, 4)
+  return [...new Set(list)].filter((z) => allowed.has(z))
 }
 
 function surfaceLabel(ex: AiExercise): string {

@@ -520,6 +520,9 @@ export class WorkoutCalculator {
 
       for (const [zone, load] of Object.entries(zonesLoad)) {
         const numLoad = Number(load) || 0;
+        // Не тащим в recovery зоны с 0 — иначе в API/UI появляются пустые строки с «Без нагрузки».
+        if (numLoad <= 0) continue;
+
         const decayed = numLoad * decayFactor;
         rawZones[zone] = Math.max(rawZones[zone] || 0, decayed);
         zonePeakLoad[zone] = Math.max(zonePeakLoad[zone] || 0, numLoad);
