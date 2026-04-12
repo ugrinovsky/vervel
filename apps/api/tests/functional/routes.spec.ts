@@ -402,6 +402,9 @@ test.group('Shared chats: защита', () => {
     { method: 'get', url: '/chats/1/messages' },
     { method: 'post', url: '/chats/1/messages' },
     { method: 'post', url: '/chats/1/read' },
+    { method: 'get', url: '/chats/giphy/status' },
+    { method: 'get', url: '/chats/giphy/categories' },
+    { method: 'get', url: '/chats/giphy/search' },
   ] as const
 
   for (const { method, url } of routes) {
@@ -410,6 +413,40 @@ test.group('Shared chats: защита', () => {
       response.assertStatus(401)
     })
   }
+
+  test('GET /chats/giphy/status авторизован: success + data.enabled boolean', async ({
+    client,
+    assert,
+  }) => {
+    const user = await athleteUser()
+    const response = await client.get('/chats/giphy/status').loginAs(user)
+    response.assertStatus(200)
+    const body = response.body() as { success: boolean; data: { enabled: boolean } }
+    assert.isTrue(body.success)
+    assert.property(body.data, 'enabled')
+    assert.isBoolean(body.data.enabled)
+  })
+
+  test('GET /chats/giphy/search: только category без tag → 400', async ({ client }) => {
+    const user = await athleteUser()
+    const response = await client.get('/chats/giphy/search').qs({ category: 'animals' }).loginAs(user)
+    response.assertStatus(400)
+  })
+
+  test('GET /chats/giphy/search: только tag без category → 400', async ({ client }) => {
+    const user = await athleteUser()
+    const response = await client.get('/chats/giphy/search').qs({ tag: 'cats' }).loginAs(user)
+    response.assertStatus(400)
+  })
+
+  test('GET /chats/giphy/search: category с / → 400', async ({ client }) => {
+    const user = await athleteUser()
+    const response = await client
+      .get('/chats/giphy/search')
+      .qs({ category: 'a/b', tag: 'x' })
+      .loginAs(user)
+    response.assertStatus(400)
+  })
 })
 
 // ─── Athlete routes ───────────────────────────────────────────────────────────

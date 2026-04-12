@@ -10,6 +10,7 @@ import AiChat from '@/components/AiChat/AiChat';
 import AccentButton from '@/components/ui/AccentButton';
 import ListButton from '@/components/ui/ListButton';
 import ToggleGroup from '@/components/ui/ToggleGroup';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 const TOP_UP_AMOUNTS = [100, 250, 500, 1000];
 
@@ -136,7 +137,7 @@ export default function WalletTab({ balance, inTrainerMode }: Props) {
           <p className="text-sm font-semibold text-white mb-3">История операций</p>
           {txLoading && transactions.length === 0 ? (
             <div className="flex justify-center py-2">
-              <div className="w-4 h-4 border-2 border-white/20 border-t-(--color_primary_light) rounded-full animate-spin" />
+              <LoadingSpinner size="xs" />
             </div>
           ) : transactions.length === 0 ? (
             <p className="text-xs text-(--color_text_muted) text-center py-2">Операций пока не было</p>

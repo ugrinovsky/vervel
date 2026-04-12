@@ -6,6 +6,7 @@ import Tabs from '@/components/ui/Tabs';
 import QrScanner from '@/components/QrScanner/QrScanner';
 import { trainerApi } from '@/api/trainer';
 import AccentButton from '@/components/ui/AccentButton';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AppInput from '@/components/ui/AppInput';
 
 interface Props {
@@ -71,7 +72,7 @@ function QrScanTab({ active, onAdded }: { active: boolean; onAdded: () => void }
   if (state === 'loading') {
     return (
       <div className="flex flex-col items-center gap-3 py-10">
-        <div className="w-8 h-8 border-2 border-(--color_primary_light) border-t-transparent rounded-full animate-spin" />
+        <LoadingSpinner variant="primaryArc" />
         <p className="text-sm text-(--color_text_muted)">Добавляем атлета...</p>
       </div>
     );

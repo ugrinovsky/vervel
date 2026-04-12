@@ -1,5 +1,6 @@
 import { PropsWithChildren, useRef, useState, useEffect } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import './styles.css';
 
 const PULL_TRIGGER = 62;
@@ -17,7 +18,7 @@ interface ScreenProps {
 function PageLoader() {
   return (
     <div className="flex items-center justify-center min-h-[60vh] w-full">
-      <div className="w-8 h-8 border-2 border-white/20 border-t-(--color_primary_light) rounded-full animate-spin" />
+      <LoadingSpinner />
     </div>
   );
 }
@@ -26,7 +27,7 @@ function PullSpinner({ progress, spinning }: { progress: number; spinning: boole
   const rotate = spinning ? undefined : progress * 270;
   return (
     <motion.div
-      className="rounded-full border-2 border-white/20 border-t-(--color_primary_light)"
+      className="flex items-center justify-center"
       style={{ width: INDICATOR_SIZE, height: INDICATOR_SIZE }}
       animate={spinning ? { rotate: 360 } : { rotate }}
       transition={
@@ -34,7 +35,9 @@ function PullSpinner({ progress, spinning }: { progress: number; spinning: boole
           ? { duration: 0.7, repeat: Infinity, ease: 'linear' }
           : { type: 'tween', duration: 0 }
       }
-    />
+    >
+      <LoadingSpinner size="pull" animated={false} />
+    </motion.div>
   );
 }
 

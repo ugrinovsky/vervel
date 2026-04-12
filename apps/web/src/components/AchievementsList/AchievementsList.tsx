@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import PillButton from '@/components/ui/PillButton';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LockClosedIcon, CheckBadgeIcon } from '@heroicons/react/24/outline';
 import { streakApi, type AchievementsData } from '@/api/streak';
@@ -50,7 +51,7 @@ export default function AchievementsList() {
   if (loading || !data) {
     return (
       <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border) flex justify-center">
-        <div className="w-6 h-6 border-2 border-white/20 border-t-(--color_primary_light) rounded-full animate-spin" />
+        <LoadingSpinner size="md" />
       </div>
     );
   }

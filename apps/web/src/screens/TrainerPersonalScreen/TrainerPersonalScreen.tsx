@@ -11,6 +11,7 @@ import FormField from '@/components/FormField';
 import AvatarCropModal from '@/components/AvatarCropModal/AvatarCropModal';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import AccentButton from '@/components/ui/AccentButton';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AppInput from '@/components/ui/AppInput';
 
 export default function TrainerPersonalScreen() {
@@ -196,7 +197,7 @@ export default function TrainerPersonalScreen() {
               </div>
               {uploadingPhoto && (
                 <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center">
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <LoadingSpinner size="sm" variant="light" />
                 </div>
               )}
             </button>

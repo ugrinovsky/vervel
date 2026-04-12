@@ -107,4 +107,11 @@ export default await Env.create(new URL('../', import.meta.url), {
   |----------------------------------------------------------
   */
   CORS_ALLOWED_ORIGINS: Env.schema.string.optional(),
+
+  /*
+  |----------------------------------------------------------
+  | Giphy — GIF search in chats (https://developers.giphy.com/)
+  |----------------------------------------------------------
+  */
+  GIPHY_API_KEY: Env.schema.string.optional(),
 })

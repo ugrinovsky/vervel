@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { privateApi } from '@/api/http/privateApi';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 export default function OAuthCallbackScreen() {
   const navigate = useNavigate();
@@ -35,7 +36,9 @@ export default function OAuthCallbackScreen() {
       }}
     >
       <div className="text-center">
-        <div className="animate-spin h-12 w-12 border-4 border-white border-t-transparent rounded-full mx-auto mb-4"></div>
+        <div className="mx-auto mb-4 flex justify-center">
+          <LoadingSpinner size="xl" variant="oauth" />
+        </div>
         <p className="text-white text-lg">Завершаем вход...</p>
       </div>
     </div>

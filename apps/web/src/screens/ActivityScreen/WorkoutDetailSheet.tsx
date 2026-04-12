@@ -19,6 +19,7 @@ import { WOD_CONFIG, type WodType } from '@/constants/workoutTypes';
 import { getZoneLabel } from '@/util/zones';
 import toast from 'react-hot-toast';
 import GhostButton from '@/components/ui/GhostButton';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 import { Bars3Icon, PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
@@ -696,7 +697,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
     >
       {loading && (
         <div className="flex justify-center py-10">
-          <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+          <LoadingSpinner size="md" variant="emeraldArc" />
         </div>
       )}
 
@@ -933,7 +934,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
                 <GhostButton onClick={handleParseNotes} disabled={isParsing} className="mt-4">
                   {isParsing ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white/40 border-t-transparent rounded-full animate-spin" />
+                      <LoadingSpinner size="xs" variant="trackDark" />
                       Разбираю программу...
                     </>
                   ) : (
@@ -989,7 +990,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
                   className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium bg-emerald-500 text-black hover:bg-emerald-400 transition-colors disabled:opacity-50"
                 >
                   {isApplying ? (
-                    <div className="w-4 h-4 border-2 border-black/40 border-t-transparent rounded-full animate-spin" />
+                    <LoadingSpinner size="xs" variant="trackLight" />
                   ) : (
                     'Сохранить'
                   )}

@@ -7,6 +7,7 @@ import { aiApi } from '@/api/ai';
 import { checkForNewAchievements } from '@/hooks/useAchievementToast';
 import { useAuth, useActiveMode } from '@/contexts/AuthContext';
 import { useAiBalance } from '@/hooks/useAiBalance';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { AI_CHAT_MIN_BALANCE as MIN_BALANCE } from '@/constants/ai';
 const DISPLAY_STEP = 20;
 const MAX_INPUT_LENGTH = 1000;
@@ -251,7 +252,7 @@ export default function AiChat({ open, onClose }: Props) {
               {/* Loading older indicator */}
               {hasMoreHistory && (
                 <div className="flex justify-center py-1">
-                  <div className="w-4 h-4 border-2 border-white/20 border-t-emerald-400 rounded-full animate-spin" />
+                  <LoadingSpinner size="xs" variant="emeraldAccent" />
                 </div>
               )}
 

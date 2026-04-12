@@ -16,6 +16,7 @@ import {
 } from '@/api/trainer';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import Tabs from '@/components/ui/Tabs';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/contexts/AuthContext';
 
 function buildWorkoutPreviewMessage(
@@ -252,7 +253,7 @@ export default function WorkoutInlineForm({
 
       {loadingAssignees ? (
         <div className="rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) flex items-center justify-center py-2.5">
-          <div className="w-4 h-4 border border-white/20 border-t-(--color_primary_light) rounded-full animate-spin" />
+          <LoadingSpinner size="xs" />
         </div>
       ) : (
         <div className="max-h-44 overflow-y-auto rounded-xl bg-(--color_bg_card_hover) divide-y divide-(--color_border) border border-(--color_border)">

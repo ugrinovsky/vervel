@@ -11,6 +11,7 @@ import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
 import WorkoutDetailSheet from '@/screens/ActivityScreen/WorkoutDetailSheet';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
 
 /**
@@ -272,7 +273,7 @@ export default function AvatarView({
       <div className="flex-shrink-0 lg:w-[360px] relative">
         {loading && (
           <div className="absolute inset-0 bg-black/30 rounded-2xl z-10 flex items-center justify-center">
-            <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <LoadingSpinner variant="light" />
           </div>
         )}
         <Avatar
@@ -466,7 +467,7 @@ export default function AvatarView({
                     </p>
                     {zoneWorkoutsLoading && (
                       <div className="flex items-center gap-2 text-xs text-(--color_text_muted)">
-                        <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
+                        <LoadingSpinner size="2xs" variant="light" />
                         Загрузка...
                       </div>
                     )}
@@ -474,13 +475,13 @@ export default function AvatarView({
                       <p className="text-xs text-(--color_text_muted)">Нет тренировок для этой зоны</p>
                     )}
                     {!zoneWorkoutsLoading && zoneWorkouts && zoneWorkouts.length > 0 && (
-                      <div className="flex flex-col gap-2 items-start max-w-full">
+                      <div className="flex flex-col gap-2 max-w-full">
                         {zoneWorkouts.map((w) => (
                           <button
                             key={w.id}
                             type="button"
                             onClick={() => openWorkoutFromZone(w)}
-                            className="w-fit max-w-full min-w-0 rounded-xl bg-(--color_bg_card) px-3 py-2.5 text-left transition-colors hover:bg-(--color_bg_card_hover) border border-white/5"
+                            className="w-full min-w-0 rounded-xl bg-(--color_bg_card) px-3 py-2.5 text-left transition-colors hover:bg-(--color_bg_card_hover) border border-white/5"
                           >
                             <div className="flex items-center gap-1.5 mb-1.5 min-w-0">
                               <span className="text-xs font-semibold text-white shrink-0 tabular-nums">

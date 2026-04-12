@@ -13,6 +13,7 @@ import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import ListButton from '@/components/ui/ListButton';
 import { CameraIcon } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface Props {
   data: ProfileData;
@@ -156,7 +157,7 @@ export default function ProfileTab({ data, trainerStats }: Props) {
             )}
             {uploadingPhoto && (
               <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center">
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <LoadingSpinner size="sm" variant="light" />
               </div>
             )}
           </button>

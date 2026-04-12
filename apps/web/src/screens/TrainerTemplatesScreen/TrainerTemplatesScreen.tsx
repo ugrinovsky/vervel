@@ -14,6 +14,7 @@ import { trainerApi, type WorkoutTemplate, type ExerciseData } from '@/api/train
 import { useNavigate } from 'react-router';
 import { PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AppInput from '@/components/ui/AppInput';
 import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
 import { WORKOUT_TYPE_CONFIG, exerciseBrief } from '@/constants/workoutTypes';
@@ -149,7 +150,7 @@ export default function TrainerTemplatesScreen() {
 
           {loading ? (
             <div className="flex justify-center py-6">
-              <div className="w-6 h-6 border-2 border-white/20 border-t-(--color_primary_light) rounded-full animate-spin" />
+              <LoadingSpinner size="md" />
             </div>
           ) : templates.length === 0 ? (
             <div className="py-4 space-y-3">

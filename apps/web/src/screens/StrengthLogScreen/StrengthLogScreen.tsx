@@ -12,6 +12,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import Screen from '@/components/Screen/Screen';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import BackButton from '@/components/BackButton/BackButton';
 import AnimatedBlock from '@/components/ui/AnimatedBlock';
@@ -1427,7 +1428,7 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
     if (loading) {
       return (
         <div className="flex justify-center py-16 w-full">
-          <div className="w-8 h-8 border-2 border-white/20 border-t-(--color_primary_light) rounded-full animate-spin" />
+          <LoadingSpinner />
         </div>
       );
     }

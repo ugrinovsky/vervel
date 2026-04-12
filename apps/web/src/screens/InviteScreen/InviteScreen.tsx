@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { athleteApi } from '@/api/athlete';
 import { useAuth } from '@/contexts/AuthContext';
 import AccentButton from '@/components/ui/AccentButton';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface InviteInfo {
   trainerName: string;
@@ -56,7 +57,7 @@ export default function InviteScreen() {
   if (loadingInfo) {
     return (
       <div className="min-h-screen bg-(--color_bg) flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+        <LoadingSpinner variant="soft" />
       </div>
     );
   }
