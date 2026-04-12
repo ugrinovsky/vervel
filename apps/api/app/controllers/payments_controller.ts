@@ -36,14 +36,13 @@ export default class PaymentsController {
    * Создаёт платёж ЮКасса и возвращает ссылку для оплаты.
    */
   async topup({ auth, request, response }: HttpContext) {
+    const data = await request.validateUsing(topupValidator)
+
     const shopId = env.get('YOOKASSA_SHOP_ID')
     const secretKey = env.get('YOOKASSA_SECRET_KEY')
-
     if (!shopId || !secretKey) {
       return response.serviceUnavailable({ message: 'Платежи временно недоступны' })
     }
-
-    const data = await request.validateUsing(topupValidator)
     const userId = auth.user!.id
     const idempotencyKey = crypto.randomUUID()
     const appUrl = env.get('APP_URL', 'http://localhost:5173')
