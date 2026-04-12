@@ -20,8 +20,10 @@ const PHASES = {
   accumulation: {
     name: 'Накопление',
     emoji: '📈',
-    trainer: 'Форма растёт. Продуктивная усталость — держите интенсивность, дайте телу адаптироваться.',
-    athlete: 'Форма растёт. Продуктивная усталость — держите интенсивность, дайте телу адаптироваться.',
+    trainer:
+      'Форма растёт. Продуктивная усталость — держите интенсивность, дайте телу адаптироваться.',
+    athlete:
+      'Форма растёт. Продуктивная усталость — держите интенсивность, дайте телу адаптироваться.',
   },
   intensification: {
     name: 'Интенсификация',
@@ -71,7 +73,7 @@ export class PeriodizationService {
       const key = toLocalDateKey(dateObj)
       const intensity =
         typeof w.totalIntensity === 'string'
-          ? parseFloat(w.totalIntensity)
+          ? Number.parseFloat(w.totalIntensity)
           : w.totalIntensity || 0
       const volume = Number(w.totalVolume) || 0
       const tl = (intensity * 0.7 + Math.min(volume / 5000, 1) * 0.3) * 100

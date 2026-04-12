@@ -3,7 +3,6 @@ import db from '@adonisjs/lucid/services/db'
 import User from '#models/user'
 import Chat from '#models/chat'
 
-
 // ─── helpers ───────────────────────────────────────────────────────────────
 
 let seq = 0
@@ -130,7 +129,9 @@ test.group('getUnreadCounts SQL: персональный чат', (group) => {
     await cleanupUsers([trainer.id, athlete.id])
   })
 
-  test('чат без сообщений возвращает unread=0 (включён в результат из-за LEFT JOIN)', async ({ assert }) => {
+  test('чат без сообщений возвращает unread=0 (включён в результат из-за LEFT JOIN)', async ({
+    assert,
+  }) => {
     const rows = await queryUnreadCounts(trainer.id)
     // Чат есть, но нет сообщений → WHERE m.id IS NULL → строка включена
     assert.equal(rows.length, 1)

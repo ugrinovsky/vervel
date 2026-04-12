@@ -5,7 +5,12 @@ export default class extends BaseSchema {
 
   async up() {
     this.schema.alterTable(this.tableName, (table) => {
-      table.integer('scheduled_workout_id').nullable().references('id').inTable('scheduled_workouts').onDelete('SET NULL')
+      table
+        .integer('scheduled_workout_id')
+        .nullable()
+        .references('id')
+        .inTable('scheduled_workouts')
+        .onDelete('SET NULL')
     })
   }
 

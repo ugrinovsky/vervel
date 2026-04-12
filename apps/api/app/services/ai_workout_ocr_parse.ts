@@ -13,7 +13,10 @@ const ZONES_LIST = MUSCLE_ZONES.map((z) => `"${z}"`).join(',')
 export function shouldSkipWorkoutProgramCleanup(input: string): boolean {
   const t = String(input ?? '').trim()
   if (t.length === 0 || t.length > 8000) return false
-  const lines = t.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0)
+  const lines = t
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0)
   return lines.length <= 1
 }
 
@@ -115,9 +118,12 @@ export function normalizeWorkoutTextForParsing(input: string): string {
     .replace(/\r/g, '\n')
     .normalize('NFKC')
 
-  const lines = raw
-    .split('\n')
-    .map((l) => l.replace(/\t/g, ' ').replace(/[ ]{2,}/g, ' ').trim())
+  const lines = raw.split('\n').map((l) =>
+    l
+      .replace(/\t/g, ' ')
+      .replace(/[ ]{2,}/g, ' ')
+      .trim()
+  )
 
   const out: string[] = []
   for (const line of lines) {

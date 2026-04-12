@@ -55,10 +55,12 @@ export function computeLevel(xp: number): LevelInfo {
   }
 
   const xpForCurrent = xpThresholdForLevel(level)
-  const xpForNext = level < 100 ? xpThresholdForLevel(level + 1) : xpForCurrent + xpForLevelUp(level)
+  const xpForNext =
+    level < 100 ? xpThresholdForLevel(level + 1) : xpForCurrent + xpForLevelUp(level)
   const xpInLevel = xp - xpForCurrent
   const xpNeededInLevel = xpForNext - xpForCurrent
-  const progressPct = xpNeededInLevel > 0 ? Math.min(100, Math.round((xpInLevel / xpNeededInLevel) * 100)) : 100
+  const progressPct =
+    xpNeededInLevel > 0 ? Math.min(100, Math.round((xpInLevel / xpNeededInLevel) * 100)) : 100
 
   return {
     level,
@@ -75,9 +77,9 @@ export const XP_REWARDS = {
   WORKOUT_COMPLETED: 10,
   WEEK_COMPLETED: 25,
   STREAK_RECORD: 50,
-  ACHIEVEMENT_SMALL: 30,   // streak/social ачивки
-  ACHIEVEMENT_MEDIUM: 75,  // workout/usage ачивки
-  ACHIEVEMENT_LARGE: 150,  // progress ачивки
+  ACHIEVEMENT_SMALL: 30, // streak/social ачивки
+  ACHIEVEMENT_MEDIUM: 75, // workout/usage ачивки
+  ACHIEVEMENT_LARGE: 150, // progress ачивки
   PERSONAL_RECORD: 75,
 } as const
 

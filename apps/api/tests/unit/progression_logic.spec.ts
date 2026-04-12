@@ -37,14 +37,20 @@ test.group('maxEpley', () => {
   })
 
   test('сеты без веса → 0', ({ assert }) => {
-    assert.equal(maxEpley([{ id: '1', reps: 10 }, { id: '2', time: 60 }]), 0)
+    assert.equal(
+      maxEpley([
+        { id: '1', reps: 10 },
+        { id: '2', time: 60 },
+      ]),
+      0
+    )
   })
 
   test('возвращает максимальный 1RM среди сетов', ({ assert }) => {
     const sets = [
-      { id: '1', weight: 100, reps: 3 },  // 1RM ≈ 110
-      { id: '2', weight: 80, reps: 10 },   // 1RM ≈ 106.7
-      { id: '3', weight: 60, reps: 15 },   // 1RM ≈ 90
+      { id: '1', weight: 100, reps: 3 }, // 1RM ≈ 110
+      { id: '2', weight: 80, reps: 10 }, // 1RM ≈ 106.7
+      { id: '3', weight: 60, reps: 15 }, // 1RM ≈ 90
     ]
     const best = maxEpley(sets)
     assert.approximately(best, epley1RM(100, 3), 0.01)

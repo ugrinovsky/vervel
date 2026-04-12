@@ -8,36 +8,36 @@ import { dirname, join } from 'node:path'
 // Маппинг мышц → зоны нашего приложения
 // ──────────────────────────────────────────────
 const MUSCLE_TO_ZONE: Record<string, string> = {
-  chest: 'chests',
-  abdominals: 'core',
-  lats: 'back',
+  'chest': 'chests',
+  'abdominals': 'core',
+  'lats': 'back',
   'middle back': 'back',
   'lower back': 'back',
-  traps: 'back',
-  biceps: 'biceps',
-  triceps: 'triceps',
-  shoulders: 'shoulders',
-  quadriceps: 'legs',
-  hamstrings: 'legs',
-  calves: 'legs',
-  abductors: 'legs',
-  adductors: 'legs',
-  glutes: 'glutes',
-  forearms: 'forearms',
-  neck: 'shoulders', // трапеции/шея → плечевой пояс
+  'traps': 'back',
+  'biceps': 'biceps',
+  'triceps': 'triceps',
+  'shoulders': 'shoulders',
+  'quadriceps': 'legs',
+  'hamstrings': 'legs',
+  'calves': 'legs',
+  'abductors': 'legs',
+  'adductors': 'legs',
+  'glutes': 'glutes',
+  'forearms': 'forearms',
+  'neck': 'shoulders', // трапеции/шея → плечевой пояс
 }
 
 // ──────────────────────────────────────────────
 // Маппинг категорий → наши категории
 // ──────────────────────────────────────────────
 const CATEGORY_MAP: Record<string, Exercise['category']> = {
-  strength: 'strength',
-  powerlifting: 'strength',
+  'strength': 'strength',
+  'powerlifting': 'strength',
   'olympic weightlifting': 'olympic',
-  plyometrics: 'functional',
-  strongman: 'functional',
-  cardio: 'cardio',
-  stretching: 'cardio',
+  'plyometrics': 'functional',
+  'strongman': 'functional',
+  'cardio': 'cardio',
+  'stretching': 'cardio',
 }
 
 // ──────────────────────────────────────────────
@@ -90,9 +90,9 @@ export default class FreeExerciseSeeder extends BaseSeeder {
   static environment: string[] = ['development', 'production']
 
   public async run() {
-    const __dirname = dirname(fileURLToPath(import.meta.url))
+    const seederDir = dirname(fileURLToPath(import.meta.url))
     const raw: RawExercise[] = JSON.parse(
-      readFileSync(join(__dirname, '../data/exercises.json'), 'utf-8')
+      readFileSync(join(seederDir, '../data/exercises.json'), 'utf-8')
     )
 
     const exercises = raw

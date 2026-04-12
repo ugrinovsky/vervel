@@ -5,7 +5,7 @@ import VideoCall from '#models/video_call'
 import TrainerAthlete from '#models/trainer_athlete'
 import TrainerGroup from '#models/trainer_group'
 import LiveKitService from '#services/LiveKitService'
-import { computeCallAction } from '#services/callLogic'
+import { computeCallAction } from '#services/call_logic'
 
 export default class VideoCallsController {
   /**
@@ -49,9 +49,8 @@ export default class VideoCallsController {
 
     let call = await VideoCall.findBy('room_name', roomName)
 
-    const roomAlive = call && call.status !== 'ended'
-      ? await LiveKitService.roomExists(roomName)
-      : false
+    const roomAlive =
+      call && call.status !== 'ended' ? await LiveKitService.roomExists(roomName) : false
     const action = computeCallAction(call, roomAlive)
 
     if (action.shouldCreateRoom) {
@@ -262,9 +261,7 @@ export default class VideoCallsController {
     const groupCall = await VideoCall.query()
       .whereNotNull('group_id')
       .whereIn('status', ['pending', 'active'])
-      .whereHas('group', (q) =>
-        q.whereHas('athletes', (aq) => aq.where('users.id', user.id))
-      )
+      .whereHas('group', (q) => q.whereHas('athletes', (aq) => aq.where('users.id', user.id)))
       .preload('trainer')
       .preload('group')
       .first()

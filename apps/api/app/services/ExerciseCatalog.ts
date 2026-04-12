@@ -38,38 +38,50 @@ interface RawExercise {
 // ──────────────────────────────────────────────
 
 /** Все зоны мышц, используемые в системе (source of truth) */
-export const MUSCLE_ZONES = ['chests', 'back', 'shoulders', 'biceps', 'triceps', 'legs', 'glutes', 'core', 'obliques', 'calves', 'forearms'] as const
-export type MuscleZone = typeof MUSCLE_ZONES[number]
+export const MUSCLE_ZONES = [
+  'chests',
+  'back',
+  'shoulders',
+  'biceps',
+  'triceps',
+  'legs',
+  'glutes',
+  'core',
+  'obliques',
+  'calves',
+  'forearms',
+] as const
+export type MuscleZone = (typeof MUSCLE_ZONES)[number]
 
 const MUSCLE_TO_ZONE: Record<string, string> = {
-  chest:          'chests',
-  abdominals:     'core',
-  obliques:       'obliques',
-  lats:           'back',
-  'middle back':  'back',
-  'lower back':   'back',
-  traps:          'back',
-  biceps:         'biceps',
-  triceps:        'triceps',
-  shoulders:      'shoulders',
-  quadriceps:     'legs',
-  hamstrings:     'legs',
-  calves:         'calves',   // separate zone, not merged into legs
-  abductors:      'legs',
-  adductors:      'legs',
-  glutes:         'glutes',
-  forearms:       'forearms',
-  neck:           'shoulders',
+  'chest': 'chests',
+  'abdominals': 'core',
+  'obliques': 'obliques',
+  'lats': 'back',
+  'middle back': 'back',
+  'lower back': 'back',
+  'traps': 'back',
+  'biceps': 'biceps',
+  'triceps': 'triceps',
+  'shoulders': 'shoulders',
+  'quadriceps': 'legs',
+  'hamstrings': 'legs',
+  'calves': 'calves', // separate zone, not merged into legs
+  'abductors': 'legs',
+  'adductors': 'legs',
+  'glutes': 'glutes',
+  'forearms': 'forearms',
+  'neck': 'shoulders',
 }
 
 const CATEGORY_MAP: Record<string, CatalogExercise['category']> = {
-  strength: 'strength',
-  powerlifting: 'strength',
+  'strength': 'strength',
+  'powerlifting': 'strength',
   'olympic weightlifting': 'olympic',
-  plyometrics: 'functional',
-  strongman: 'functional',
-  cardio: 'cardio',
-  stretching: 'cardio',
+  'plyometrics': 'functional',
+  'strongman': 'functional',
+  'cardio': 'cardio',
+  'stretching': 'cardio',
 }
 
 const INTENSITY_BY_LEVEL: Record<string, number> = {
@@ -97,16 +109,15 @@ const AMBIGUOUS_MOVEMENT_TOKENS = new Set([
 ])
 
 // GitHub raw URL для изображений из free-exercise-db
-const IMAGE_BASE_URL =
-  'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises'
+const IMAGE_BASE_URL = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises'
 
 // ──────────────────────────────────────────────
 // Singleton: загружается один раз при старте
 // ──────────────────────────────────────────────
 
 function loadCatalog(): Map<string, CatalogExerciseFull> {
-  const __dirname = dirname(fileURLToPath(import.meta.url))
-  const jsonPath = join(__dirname, '../../database/data/exercises.json')
+  const catalogDir = dirname(fileURLToPath(import.meta.url))
+  const jsonPath = join(catalogDir, '../../database/data/exercises.json')
   const raw: RawExercise[] = JSON.parse(readFileSync(jsonPath, 'utf-8'))
 
   const map = new Map<string, CatalogExerciseFull>()
@@ -153,9 +164,12 @@ function loadCatalog(): Map<string, CatalogExerciseFull> {
 
 // Загружаем один раз при импорте модуля
 const catalogMap: Map<string, CatalogExerciseFull> = loadCatalog()
-const catalogArray: CatalogExercise[] = [...catalogMap.values()].map(
-  ({ instructions: _i, allImages: _a, ...rest }) => rest
-)
+const catalogArray: CatalogExercise[] = [...catalogMap.values()].map((ex) => {
+  const { instructions, allImages, ...rest } = ex
+  void instructions
+  void allImages
+  return rest
+})
 
 // ──────────────────────────────────────────────
 // API
@@ -171,7 +185,9 @@ export const ExerciseCatalog = {
   find(id: string): CatalogExercise | undefined {
     const ex = catalogMap.get(id)
     if (!ex) return undefined
-    const { instructions: _i, allImages: _a, ...rest } = ex
+    const { instructions, allImages, ...rest } = ex
+    void instructions
+    void allImages
     return rest
   },
 
@@ -186,7 +202,9 @@ export const ExerciseCatalog = {
     for (const id of ids) {
       const ex = catalogMap.get(id)
       if (ex) {
-        const { instructions: _i, allImages: _a, ...rest } = ex
+        const { instructions, allImages, ...rest } = ex
+        void instructions
+        void allImages
         result.set(id, rest)
       }
     }

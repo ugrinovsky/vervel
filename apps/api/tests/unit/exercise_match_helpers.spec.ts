@@ -52,22 +52,19 @@ test.group('displayNameMatchesCatalogTitle', () => {
 
 test.group('canonicalCustomExerciseKey', () => {
   test('unifies case, ё/е, spaces for same custom id', ({ assert }) => {
-    assert.equal(
-      canonicalCustomExerciseKey('Жим  лёжа'),
-      canonicalCustomExerciseKey('жим лежа')
-    )
+    assert.equal(canonicalCustomExerciseKey('Жим  лёжа'), canonicalCustomExerciseKey('жим лежа'))
   })
 
   test('normalizes unicode dashes', ({ assert }) => {
-    assert.equal(canonicalCustomExerciseKey('Тяга — штанга'), canonicalCustomExerciseKey('Тяга - штанга'))
+    assert.equal(
+      canonicalCustomExerciseKey('Тяга — штанга'),
+      canonicalCustomExerciseKey('Тяга - штанга')
+    )
   })
 })
 
 test.group('normalizeExerciseLabel', () => {
   test('unifies ё/е, dashes and spaces', ({ assert }) => {
-    assert.equal(
-      normalizeExerciseLabel('  Жим — лёжа  '),
-      normalizeExerciseLabel('жим - лежа')
-    )
+    assert.equal(normalizeExerciseLabel('  Жим — лёжа  '), normalizeExerciseLabel('жим - лежа'))
   })
 })

@@ -1,5 +1,5 @@
 import db from '@adonisjs/lucid/services/db'
-import { computeLevel, XP_REWARDS, type XpRewardKey } from './xpLogic.js'
+import { computeLevel, XP_REWARDS, type XpRewardKey } from './xp_logic.js'
 
 export class XpService {
   /**

@@ -3,7 +3,11 @@ import type { HttpContext } from '@adonisjs/core/http'
 import logger from '@adonisjs/core/services/logger'
 import limiter from '@adonisjs/limiter/services/main'
 import vine from '@vinejs/vine'
-import { YandexAiService, type AiWorkoutResult, type AiRecognizedWorkoutResult } from '#services/YandexAiService'
+import {
+  YandexAiService,
+  type AiWorkoutResult,
+  type AiRecognizedWorkoutResult,
+} from '#services/YandexAiService'
 import { AiZonesService } from '#services/AiZonesService'
 import type { AiParseChainCtx } from '#services/ai_parse_chain'
 import { AiBalanceService, InsufficientBalanceError } from '#services/AiBalanceService'
@@ -98,16 +102,28 @@ export default class AiController {
     const userId = auth.user!.id
     const cost = AiBalanceService.COST_RECOGNIZE
 
-    if (!(await this.chargeOrFail(userId, cost, 'Распознавание тренировки по фото', response))) return
+    if (!(await this.chargeOrFail(userId, cost, 'Распознавание тренировки по фото', response)))
+      return
 
     const traceId = randomUUID()
     const chain: AiParseChainCtx = { traceId, userId, route: 'POST /ai/recognize-workout' }
     logger.info(
-      { traceId, userId, route: chain.route, step: 'controller.start', mimeType: data.mimeType, base64Kb: Math.round(data.imageBase64.length / 1024) },
+      {
+        traceId,
+        userId,
+        route: chain.route,
+        step: 'controller.start',
+        mimeType: data.mimeType,
+        base64Kb: Math.round(data.imageBase64.length / 1024),
+      },
       'ai:chain'
     )
     try {
-      const result = await YandexAiService.recognizeFromImage(data.imageBase64, data.mimeType, chain)
+      const result = await YandexAiService.recognizeFromImage(
+        data.imageBase64,
+        data.mimeType,
+        chain
+      )
       result.exercises = await AiZonesService.refineZonesForExercises(result.exercises, chain)
       logger.info(
         {
@@ -126,7 +142,11 @@ export default class AiController {
       )
       // Тип тренировки выбирает пользователь вручную.
       // Матчинг к каталогу отключён, чтобы не было "рандомных" подмен упражнений.
-      const out: AiRecognizedWorkoutResult = { workoutType: null, exercises: result.exercises, notes: result.notes }
+      const out: AiRecognizedWorkoutResult = {
+        workoutType: null,
+        exercises: result.exercises,
+        notes: result.notes,
+      }
       return response.ok({ data: out })
     } catch (err: any) {
       logger.error(
@@ -216,12 +236,23 @@ export default class AiController {
     const isFree = auth.user!.aiNotesFree
     const cost = isFree ? 0 : AiBalanceService.COST_PARSE_NOTES
 
-    if (!isFree && !(await this.chargeOrFail(userId, cost, 'Разбор программы тренировки через AI', response))) return
+    if (
+      !isFree &&
+      !(await this.chargeOrFail(userId, cost, 'Разбор программы тренировки через AI', response))
+    )
+      return
 
     const traceId = randomUUID()
     const chain: AiParseChainCtx = { traceId, userId, route: 'POST /ai/parse-workout-notes' }
     logger.info(
-      { traceId, userId, route: chain.route, step: 'controller.start', workoutId, notesChars: workout.notes.length },
+      {
+        traceId,
+        userId,
+        route: chain.route,
+        step: 'controller.start',
+        workoutId,
+        notesChars: workout.notes.length,
+      },
       'ai:chain'
     )
 
@@ -256,14 +287,18 @@ export default class AiController {
       const catalogMap = ExerciseCatalog.getIdToTitleMap()
       const previewItems = workoutExercises.map((ex) => {
         const allSets = ex.sets ?? []
-        const weights = allSets.map((s) => s.weight).filter((w): w is number => w != null)
+        const weights = allSets
+          .map((s) => s.weight)
+          .filter((w): w is number => w !== null && w !== undefined)
         const weightMin = weights.length ? Math.min(...weights) : undefined
         const weightMax = weights.length ? Math.max(...weights) : undefined
         const isCustom = ex.exerciseId.startsWith('custom:')
         return {
           exerciseId: ex.exerciseId,
           // В UI показываем человеческое имя, а не internal id custom:*
-          name: catalogMap.get(ex.exerciseId) ?? (isCustom ? ex.name : ex.exerciseId.replace(/_/g, ' ')),
+          name:
+            catalogMap.get(ex.exerciseId) ??
+            (isCustom ? ex.name : ex.exerciseId.replace(/_/g, ' ')),
           zones: ex.zones && ex.zones.length > 0 ? ex.zones : null,
           sets: allSets.length,
           reps: allSets[0]?.reps,
@@ -328,12 +363,23 @@ export default class AiController {
     const isFree = auth.user!.aiNotesFree
     const cost = isFree ? 0 : AiBalanceService.COST_PARSE_NOTES
 
-    if (!isFree && !(await this.chargeOrFail(userId, cost, 'Разбор программы тренировки через AI', response))) return
+    if (
+      !isFree &&
+      !(await this.chargeOrFail(userId, cost, 'Разбор программы тренировки через AI', response))
+    )
+      return
 
     const traceId = randomUUID()
     const chain: AiParseChainCtx = { traceId, userId, route: 'POST /ai/parse-notes-text' }
     logger.info(
-      { traceId, userId, route: chain.route, step: 'controller.start', notesChars: notes.length, notesPreview: notes.slice(0, 400) },
+      {
+        traceId,
+        userId,
+        route: chain.route,
+        step: 'controller.start',
+        notesChars: notes.length,
+        notesPreview: notes.slice(0, 400),
+      },
       'ai:chain'
     )
 
@@ -357,7 +403,9 @@ export default class AiController {
       const catalogMap = ExerciseCatalog.getIdToTitleMap()
       const previewItems = workoutExercises.map((ex) => {
         const allSets = ex.sets ?? []
-        const weights = allSets.map((s) => s.weight).filter((w): w is number => w != null)
+        const weights = allSets
+          .map((s) => s.weight)
+          .filter((w): w is number => w !== null && w !== undefined)
         const weightMin = weights.length ? Math.min(...weights) : undefined
         const weightMax = weights.length ? Math.max(...weights) : undefined
         return {
@@ -642,8 +690,10 @@ function matchExercisesToCatalog(result: AiWorkoutResult): AiWorkoutResult {
         const idPhrase = ex.id.replace(/_/g, ' ').toLowerCase()
         const idWordCount = idPhrase.split(' ').filter((w) => w !== '-').length
         const nameWordCount = nameLower.split(/\s+/).filter(Boolean).length
-        return (idPhrase.includes(nameLower) && nameWordCount / idWordCount >= 0.6)
-          || (idWordCount >= 3 && nameLower.includes(idPhrase))
+        return (
+          (idPhrase.includes(nameLower) && nameWordCount / idWordCount >= 0.6) ||
+          (idWordCount >= 3 && nameLower.includes(idPhrase))
+        )
       })
     }
 
@@ -665,7 +715,8 @@ function matchExercisesToCatalog(result: AiWorkoutResult): AiWorkoutResult {
             const nameWordCount = nameLower.split(/\s+/).filter(Boolean).length
             return nameWordCount / kwWordCount >= 0.6
           }
-          if (nameLower.includes(kwLower) && kwLower.length >= KW_MIN_FOR_NAME_INCLUDES_KW) return true
+          if (nameLower.includes(kwLower) && kwLower.length >= KW_MIN_FOR_NAME_INCLUDES_KW)
+            return true
           return false
         })
       )
@@ -715,12 +766,12 @@ function matchExercisesToCatalog(result: AiWorkoutResult): AiWorkoutResult {
         { exerciseId: id, a: first.name, b: cur.name, similarity: sim },
         'ai:match duplicate id with low similarity — downgrading to custom'
       )
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { exerciseId: _drop, ...rest } = cur as any
+
+      const { exerciseId: droppedExerciseId, ...rest } = cur as any
+      void droppedExerciseId
       exercises[i] = rest
     }
   }
 
   return { ...result, exercises }
 }
-

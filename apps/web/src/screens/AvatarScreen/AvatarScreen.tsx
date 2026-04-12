@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
@@ -76,6 +76,24 @@ export default function AvatarScreen() {
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [todayWorkout, setTodayWorkout] = useState<TodayWorkout | null>(null);
+
+  const reloadAvatarStats = useCallback(async () => {
+    try {
+      const avatarRes = await avatarApi.getRecoveryState();
+      if (avatarRes.data.success) {
+        const d = avatarRes.data.data;
+        setZones(d.zones);
+        setTotalWorkouts(d.totalWorkouts);
+        setAllTimeWorkouts(d.allTimeWorkouts ?? d.totalWorkouts);
+        setThisWeekWorkouts(d.thisWeekWorkouts ?? 0);
+        setLastWorkoutDaysAgo(d.lastWorkoutDaysAgo);
+        setMissingWeights(d.missingWeights ?? null);
+        setMissingRpe(d.missingRpe ?? null);
+      }
+    } catch (error) {
+      console.error('Failed to refresh avatar stats:', error);
+    }
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -216,8 +234,8 @@ export default function AvatarScreen() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-4 rounded-2xl p-4 bg-amber-500/10 border border-amber-500/30"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-3">
+              <div className="min-w-0 w-full sm:flex-1">
                 <p className="text-sm font-semibold text-amber-300">Точность карты снижена</p>
                 <p className="text-xs text-amber-400/70 mt-1">
                   В последних тренировках есть подходы без веса ({missingWeights.setsCount}). Заполните веса — нагрузка по мышцам станет точнее.
@@ -226,7 +244,7 @@ export default function AvatarScreen() {
               <AccentButton
                 size="sm"
                 onClick={() => navigate('/calendar')}
-                className="shrink-0"
+                className="shrink-0 self-start"
               >
                 Заполнить
               </AccentButton>
@@ -240,8 +258,8 @@ export default function AvatarScreen() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-4 rounded-2xl p-4 bg-sky-500/10 border border-sky-500/30"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-3">
+              <div className="min-w-0 w-full sm:flex-1">
                 <p className="text-sm font-semibold text-sky-200">Оцените тренировки</p>
                 <p className="text-xs text-sky-300/80 mt-1">
                   Можно указать, как ощущалась нагрузка (шкала 1–5 в карточке тренировки) — так карта восстановления и прогресс будут точнее.
@@ -253,7 +271,7 @@ export default function AvatarScreen() {
               <AccentButton
                 size="sm"
                 onClick={() => navigate('/calendar')}
-                className="shrink-0"
+                className="shrink-0 self-start"
               >
                 К календарю
               </AccentButton>
@@ -309,6 +327,7 @@ export default function AvatarScreen() {
                 lastWorkoutDaysAgo={lastWorkoutDaysAgo}
                 loading={loading}
                 gender={user?.gender ?? 'male'}
+                onWorkoutsMutated={reloadAvatarStats}
               />
             </AnimatedBlock>
           </>

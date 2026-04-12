@@ -4,12 +4,7 @@ export default class extends BaseSchema {
   async up() {
     this.schema.createTable('user_measurements', (table) => {
       table.increments('id')
-      table
-        .integer('user_id')
-        .unsigned()
-        .references('users.id')
-        .onDelete('CASCADE')
-        .notNullable()
+      table.integer('user_id').unsigned().references('users.id').onDelete('CASCADE').notNullable()
       // Тип показателя: 'body_weight', 'body_fat_pct', 'muscle_mass', 'visceral_fat', etc.
       table.string('type', 64).notNullable()
       table.decimal('value', 8, 3).notNullable()

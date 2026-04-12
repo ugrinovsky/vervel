@@ -39,7 +39,8 @@ test.group('AiZonesService', (group) => {
     let step = 0
     yandex.callGptRaw = async () => {
       step++
-      if (step === 1) return 'Сгибание в тазобедренном, нагрузка на ягодицы и заднюю поверхность бедра, спина стабилизирует.'
+      if (step === 1)
+        return 'Сгибание в тазобедренном, нагрузка на ягодицы и заднюю поверхность бедра, спина стабилизирует.'
       return JSON.stringify({ zones: ['glutes', 'legs', 'back'] })
     }
 
@@ -88,4 +89,3 @@ test.group('AiZonesService', (group) => {
     await wipeAnatomyCacheLabels('Жим лёжа')
   })
 })
-

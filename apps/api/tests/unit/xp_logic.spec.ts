@@ -1,5 +1,5 @@
 import { test } from '@japa/runner'
-import { computeLevel, xpThresholdForLevel, xpForLevelUp, XP_REWARDS } from '#services/xpLogic'
+import { computeLevel, xpThresholdForLevel, xpForLevelUp, XP_REWARDS } from '#services/xp_logic'
 
 test.group('xpLogic: пороги уровней', () => {
   test('уровень 1 начинается с 0 XP', ({ assert }) => {

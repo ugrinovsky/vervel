@@ -1,6 +1,9 @@
 import { test } from '@japa/runner'
 import db from '@adonisjs/lucid/services/db'
-import { ExerciseAnatomyService, EXERCISE_ANATOMY_PROMPT_VERSION } from '#services/ExerciseAnatomyService'
+import {
+  ExerciseAnatomyService,
+  EXERCISE_ANATOMY_PROMPT_VERSION,
+} from '#services/ExerciseAnatomyService'
 import { YandexAiService } from '#services/YandexAiService'
 import ExerciseAnatomyCache from '#models/exercise_anatomy_cache'
 import { normalizeExerciseLabel } from '#services/exercise_match_helpers'
@@ -36,7 +39,10 @@ test.group('ExerciseAnatomyService', (group) => {
     })
     assert.isNull(z)
 
-    const row = await ExerciseAnatomyCache.findBy('normalizedLabel', normalizeExerciseLabel('Жим лёжа'))
+    const row = await ExerciseAnatomyCache.findBy(
+      'normalizedLabel',
+      normalizeExerciseLabel('Жим лёжа')
+    )
     assert.isNull(row)
   })
 
@@ -59,7 +65,10 @@ test.group('ExerciseAnatomyService', (group) => {
     assert.deepEqual(z, ['chests', 'triceps', 'shoulders'])
     assert.equal(step, 2)
 
-    const row = await ExerciseAnatomyCache.findBy('normalizedLabel', normalizeExerciseLabel('Жим лёжа'))
+    const row = await ExerciseAnatomyCache.findBy(
+      'normalizedLabel',
+      normalizeExerciseLabel('Жим лёжа')
+    )
     assert.isNotNull(row)
     assert.equal(row!.status, 'ok')
     assert.equal(row!.promptVersion, EXERCISE_ANATOMY_PROMPT_VERSION)
@@ -111,7 +120,10 @@ test.group('ExerciseAnatomyService', (group) => {
     })
     assert.isNull(z)
 
-    const row = await ExerciseAnatomyCache.findBy('normalizedLabel', normalizeExerciseLabel('Абракадабра зона'))
+    const row = await ExerciseAnatomyCache.findBy(
+      'normalizedLabel',
+      normalizeExerciseLabel('Абракадабра зона')
+    )
     assert.isNotNull(row)
     assert.equal(row!.status, 'unknown')
 

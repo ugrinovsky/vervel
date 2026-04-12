@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router';
 import { motion } from 'framer-motion';
+import { ChevronRightIcon } from '@heroicons/react/24/outline';
 import Avatar from '@/components/Avatar/Avatar';
 import type { ZoneState } from '@/api/avatar';
 import type { BodyGender } from '@/components/Avatar/bodyZones';
@@ -9,6 +10,8 @@ import { workoutsApi, type ZoneWorkout } from '@/api/workouts';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
+import WorkoutDetailSheet from '@/screens/ActivityScreen/WorkoutDetailSheet';
+import type { WorkoutTimelineEntry } from '@/types/Analytics';
 
 /**
  * Normalizes short API zone keys (from ExerciseCatalog) and legacy seeder keys
@@ -150,44 +153,19 @@ function ZoneDetail({ zone }: { zone: ZoneState }) {
   );
 }
 
-function ZoneWorkoutCard({ workout: w }: { workout: ZoneWorkout }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="bg-(--color_bg_card) rounded-xl overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-3 py-2.5 text-left"
-      >
-        <span className="text-xs font-semibold text-white">
-          {new Date(w.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
-        </span>
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] text-(--color_text_muted)">
-            {WORKOUT_TYPE_CONFIG[w.workoutType] ?? w.workoutType}
-          </span>
-          <span className={`text-[10px] text-(--color_text_muted) transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
-        </div>
-      </button>
-      {open && (
-        <div className="flex flex-wrap gap-1 px-3 pb-3">
-          {w.exercises.map((ex) => (
-            <span key={ex.exerciseId} className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.07] text-white/70">
-              {exerciseIdForDisplay(ex.name?.trim() ? ex.name : ex.exerciseId)}
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 interface AvatarViewProps {
   zones: Record<string, ZoneState>;
   totalWorkouts: number;
   lastWorkoutDaysAgo: number | null;
   loading?: boolean;
   gender?: BodyGender;
+  /** После правок тренировки в шите — обновить карту восстановления */
+  onWorkoutsMutated?: () => void;
+  /**
+   * athlete_self — список тренировок по зоне и шит как у атлета в календаре.
+   * trainer_view — только сводка по зоне (список привязан к сессии атлета на API).
+   */
+  avatarContext?: 'athlete_self' | 'trainer_view';
 }
 
 export default function AvatarView({
@@ -196,10 +174,21 @@ export default function AvatarView({
   lastWorkoutDaysAgo,
   loading = false,
   gender = 'male',
+  onWorkoutsMutated,
+  avatarContext = 'athlete_self',
 }: AvatarViewProps) {
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [zoneWorkouts, setZoneWorkouts] = useState<ZoneWorkout[] | null>(null);
   const [zoneWorkoutsLoading, setZoneWorkoutsLoading] = useState(false);
+  const [detailWorkout, setDetailWorkout] = useState<WorkoutTimelineEntry | null>(null);
+
+  const openWorkoutFromZone = (w: ZoneWorkout) => {
+    setDetailWorkout({
+      id: w.id,
+      date: typeof w.date === 'string' ? w.date : String(w.date),
+      type: w.workoutType,
+    });
+  };
 
   const normalizedZones = useMemo(() => {
     const result: Record<string, ZoneState> = {};
@@ -243,26 +232,31 @@ export default function AvatarView({
   }, [zones]);
 
   useEffect(() => {
-    if (!selectedZone) {
+    if (!selectedZone || avatarContext !== 'athlete_self') {
       setZoneWorkouts(null);
       return;
     }
     let cancelled = false;
     setZoneWorkoutsLoading(true);
     setZoneWorkouts(null);
-    workoutsApi.byZone(selectedZone, 5).then((res) => {
-      if (!cancelled) {
-        setZoneWorkouts(res.data ?? []);
-        setZoneWorkoutsLoading(false);
-      }
-    }).catch(() => {
-      if (!cancelled) {
-        setZoneWorkouts([]);
-        setZoneWorkoutsLoading(false);
-      }
-    });
-    return () => { cancelled = true; };
-  }, [selectedZone]);
+    workoutsApi
+      .byZone(selectedZone, 5)
+      .then((res) => {
+        if (!cancelled) {
+          setZoneWorkouts(res.data ?? []);
+          setZoneWorkoutsLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setZoneWorkouts([]);
+          setZoneWorkoutsLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedZone, avatarContext]);
 
   const handleZoneClick = (zoneName: string) => {
     setSelectedZone((prev) => (prev === zoneName ? null : zoneName));
@@ -458,29 +452,89 @@ export default function AvatarView({
             <>
               <ZoneDetail zone={normalizedZones[selectedZone]} />
               <div className="mt-4 pt-4 border-t border-white/10">
-                <h4 className="text-xs font-semibold text-(--color_text_secondary) uppercase tracking-wider mb-3">
-                  Последние тренировки
-                </h4>
-                {zoneWorkoutsLoading && (
-                  <div className="flex items-center gap-2 text-xs text-(--color_text_muted)">
-                    <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
-                    Загрузка...
-                  </div>
-                )}
-                {!zoneWorkoutsLoading && zoneWorkouts?.length === 0 && (
-                  <p className="text-xs text-(--color_text_muted)">Нет тренировок для этой зоны</p>
-                )}
-                {!zoneWorkoutsLoading && zoneWorkouts && zoneWorkouts.length > 0 && (
-                  <div className="space-y-2">
-                    {zoneWorkouts.map((w) => (
-                      <ZoneWorkoutCard key={w.id} workout={w} />
-                    ))}
-                  </div>
+                {avatarContext === 'trainer_view' ? (
+                  <p className="text-[11px] text-(--color_text_muted) leading-relaxed">
+                    Список упражнений по зоне и открытие карточки тренировки доступны атлету в разделе «Карта нагрузки» в его приложении.
+                  </p>
+                ) : (
+                  <>
+                    <h4 className="text-xs font-semibold text-(--color_text_secondary) uppercase tracking-wider mb-1">
+                      Недавние тренировки
+                    </h4>
+                    <p className="text-[11px] text-(--color_text_muted) mb-3">
+                      Только упражнения, которые нагрузили эту зону. Нажмите строку — откроется карточка, как в календаре.
+                    </p>
+                    {zoneWorkoutsLoading && (
+                      <div className="flex items-center gap-2 text-xs text-(--color_text_muted)">
+                        <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
+                        Загрузка...
+                      </div>
+                    )}
+                    {!zoneWorkoutsLoading && zoneWorkouts?.length === 0 && (
+                      <p className="text-xs text-(--color_text_muted)">Нет тренировок для этой зоны</p>
+                    )}
+                    {!zoneWorkoutsLoading && zoneWorkouts && zoneWorkouts.length > 0 && (
+                      <div className="flex flex-col gap-2 items-start max-w-full">
+                        {zoneWorkouts.map((w) => (
+                          <button
+                            key={w.id}
+                            type="button"
+                            onClick={() => openWorkoutFromZone(w)}
+                            className="w-fit max-w-full min-w-0 rounded-xl bg-(--color_bg_card) px-3 py-2.5 text-left transition-colors hover:bg-(--color_bg_card_hover) border border-white/5"
+                          >
+                            <div className="flex items-center gap-1.5 mb-1.5 min-w-0">
+                              <span className="text-xs font-semibold text-white shrink-0 tabular-nums">
+                                {new Date(w.date).toLocaleDateString('ru-RU', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })}
+                              </span>
+                              <span className="text-(--color_text_muted) text-xs shrink-0" aria-hidden>
+                                ·
+                              </span>
+                              <span className="text-[10px] text-(--color_text_muted) min-w-0 truncate">
+                                {WORKOUT_TYPE_CONFIG[w.workoutType] ?? w.workoutType}
+                              </span>
+                              <ChevronRightIcon
+                                className="w-4 h-4 text-(--color_text_muted) shrink-0"
+                                aria-hidden
+                              />
+                            </div>
+                            {w.exercises.length > 0 ? (
+                              <div className="flex flex-wrap gap-1 max-w-full">
+                                {w.exercises.map((ex) => (
+                                  <span
+                                    key={ex.exerciseId}
+                                    className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.07] text-white/80"
+                                  >
+                                    {exerciseIdForDisplay(ex.name?.trim() ? ex.name : ex.exerciseId)}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-[10px] text-(--color_text_muted) leading-snug max-w-full">
+                                В упражнениях нет сохранённой разметки этой зоны — откройте тренировку, чтобы увидеть полный состав.
+                              </p>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </>
           )}
         </BottomSheet>
+
+        {avatarContext === 'athlete_self' && (
+          <WorkoutDetailSheet
+            workout={detailWorkout}
+            onClose={() => setDetailWorkout(null)}
+            onRefresh={onWorkoutsMutated}
+          />
+        )}
       </div>
     </motion.div>
   );

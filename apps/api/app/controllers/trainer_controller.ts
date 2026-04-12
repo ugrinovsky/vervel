@@ -18,11 +18,7 @@ import {
 } from '#validators/trainer_validator'
 
 export default class TrainerController {
-  private async linkAthlete(
-    trainer: User,
-    athlete: User,
-    response: HttpContext['response']
-  ) {
+  private async linkAthlete(trainer: User, athlete: User, response: HttpContext['response']) {
     const existing = await TrainerAthlete.query()
       .where('trainerId', trainer.id)
       .where('athleteId', athlete.id)
@@ -284,7 +280,6 @@ export default class TrainerController {
     const mode = request.input('mode', 'recovery')
 
     if (mode === 'recovery') {
-      const now = nowDate()
       const startDate = nowDate()
       startDate.setDate(startDate.getDate() - 14)
 

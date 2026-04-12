@@ -1,16 +1,16 @@
-import type { HttpContext } from '@adonisjs/core/http';
-import hash from '@adonisjs/core/services/hash';
-import logger from '@adonisjs/core/services/logger';
-import limiter from '@adonisjs/limiter/services/main';
-import db from '@adonisjs/lucid/services/db';
+import type { HttpContext } from '@adonisjs/core/http'
+import hash from '@adonisjs/core/services/hash'
+import logger from '@adonisjs/core/services/logger'
+import limiter from '@adonisjs/limiter/services/main'
+import db from '@adonisjs/lucid/services/db'
 
 // @ts-ignore — no types for this package
-import disposableDomains from 'disposable-email-domains' assert { type: 'json' };
-import User from '#models/user';
-import { registerValidator } from '#validators/auth_validator';
-import { AiBalanceService } from '#services/AiBalanceService';
+import disposableDomains from 'disposable-email-domains' assert { type: 'json' }
+import User from '#models/user'
+import { registerValidator } from '#validators/auth_validator'
+import { AiBalanceService } from '#services/AiBalanceService'
 
-const disposableSet: Set<string> = new Set(disposableDomains);
+const disposableSet: Set<string> = new Set(disposableDomains)
 
 const COOKIE_TTL = 60 * 60 * 24 * 30 // 30 days in seconds
 
@@ -26,16 +26,18 @@ export default class AuthController {
   }
 
   public async login({ request, response }: HttpContext) {
-    const ip = request.ip();
+    const ip = request.ip()
 
     // Rate limit: 10 login attempts per IP per 15 minutes
-    const loginLimit = limiter.use({ requests: 10, duration: '15 mins', blockDuration: '30 mins' });
+    const loginLimit = limiter.use({ requests: 10, duration: '15 mins', blockDuration: '30 mins' })
     const loginLimitRes = await loginLimit.attempt(`login_ip_${ip}`, async () => {
-      const emailRaw = request.input('email');
-      const passwordRaw = request.input('password');
+      const emailRaw = request.input('email')
+      const passwordRaw = request.input('password')
       if (
-        emailRaw == null ||
-        passwordRaw == null ||
+        emailRaw === null ||
+        emailRaw === undefined ||
+        passwordRaw === null ||
+        passwordRaw === undefined ||
         typeof emailRaw !== 'string' ||
         typeof passwordRaw !== 'string' ||
         !emailRaw.trim()
@@ -43,30 +45,30 @@ export default class AuthController {
         return response.badRequest({
           message:
             'В теле запроса ожидается JSON: {"email":"…","password":"…"} (заголовок Content-Type: application/json).',
-        });
+        })
       }
-      const email = emailRaw.trim();
-      const password = passwordRaw;
+      const email = emailRaw.trim()
+      const password = passwordRaw
 
-      const user = await User.query().where('email', email).first();
+      const user = await User.query().where('email', email).first()
       if (!user) {
-        return response.unauthorized({ message: 'Invalid credentials' });
+        return response.unauthorized({ message: 'Invalid credentials' })
       }
 
       // Check if user has password (not OAuth-only user)
       if (!user.password) {
         return response.unauthorized({
           message: 'Этот аккаунт использует социальный вход. Войдите через VK или Yandex.',
-        });
+        })
       }
 
-      const isValid = await hash.verify(user.password, password);
+      const isValid = await hash.verify(user.password, password)
       if (!isValid) {
-        return response.unauthorized({ message: 'Invalid credentials' });
+        return response.unauthorized({ message: 'Invalid credentials' })
       }
 
-      const token = await User.accessTokens.create(user);
-      this.setAuthCookie(response, token.value!.release());
+      const token = await User.accessTokens.create(user)
+      this.setAuthCookie(response, token.value!.release())
 
       return response.ok({
         user: {
@@ -77,64 +79,64 @@ export default class AuthController {
           gender: user.gender,
           themeHue: user.themeHue,
         },
-      });
-    });
+      })
+    })
 
     if (loginLimitRes === null) {
       return response.tooManyRequests({
         message: 'Слишком много попыток. Попробуйте через 30 минут.',
-      });
+      })
     }
 
-    return loginLimitRes;
+    return loginLimitRes
   }
 
   public async register({ request, response }: HttpContext) {
-    const ip = request.ip();
+    const ip = request.ip()
 
     // Rate limit: 5 registrations per IP per 10 minutes
     const registerLimit = limiter.use({
       requests: 5,
       duration: '10 mins',
       blockDuration: '60 mins',
-    });
-    const isLimited = await registerLimit.isBlocked(`register_ip_${ip}`);
+    })
+    const isLimited = await registerLimit.isBlocked(`register_ip_${ip}`)
     if (isLimited) {
       return response.tooManyRequests({
         message: 'Слишком много регистраций с этого адреса. Попробуйте позже.',
-      });
+      })
     }
 
     // Honeypot: if filled, silently reject (bots)
-    const honeypot = request.input('website', '');
+    const honeypot = request.input('website', '')
     if (honeypot) {
       return response.created({
         user: { id: 0, email: '', fullName: '', role: 'athlete', gender: null },
         token: '',
-      });
+      })
     }
 
-    const data = await request.validateUsing(registerValidator);
+    const data = await request.validateUsing(registerValidator)
 
-    const emailDomain = data.email.split('@')[1]?.toLowerCase();
+    const emailDomain = data.email.split('@')[1]?.toLowerCase()
     if (emailDomain && disposableSet.has(emailDomain)) {
       return response.unprocessableEntity({
         message: 'Временные почтовые адреса не допускаются. Используйте постоянный email.',
-      });
+      })
     }
 
-    const existing = await User.findBy('email', data.email);
+    const existing = await User.findBy('email', data.email)
     if (existing) {
-      const wantsAthlete = data.role === 'athlete' || data.role === 'both';
-      const wantsTrainer = data.role === 'trainer' || data.role === 'both';
-      const hasAthlete = existing.role === 'athlete' || existing.role === 'both';
-      const hasTrainer = existing.role === 'trainer' || existing.role === 'both';
+      const wantsAthlete = data.role === 'athlete' || data.role === 'both'
+      const wantsTrainer = data.role === 'trainer' || data.role === 'both'
+      const hasAthlete = existing.role === 'athlete' || existing.role === 'both'
+      const hasTrainer = existing.role === 'trainer' || existing.role === 'both'
 
       if ((wantsAthlete && !hasAthlete) || (wantsTrainer && !hasTrainer)) {
-        existing.role = 'both';
-        await existing.save();
-        const token = await User.accessTokens.create(existing);
-        this.setAuthCookie(response, token.value!.release());
+        existing.role = 'both'
+        await existing.save()
+        const token = await User.accessTokens.create(existing)
+        this.setAuthCookie(response, token.value!.release())
         return response.ok({
           user: {
             id: existing.id,
@@ -145,18 +147,18 @@ export default class AuthController {
             themeHue: existing.themeHue,
           },
           upgraded: true,
-        });
+        })
       }
 
-      return response.conflict({ message: 'Этот email уже зарегистрирован. Войдите в аккаунт.' });
+      return response.conflict({ message: 'Этот email уже зарегистрирован. Войдите в аккаунт.' })
     }
 
-    await registerLimit.increment(`register_ip_${ip}`);
+    await registerLimit.increment(`register_ip_${ip}`)
 
     // Validate referrer if provided: must exist, must be an athlete, must not exceed referral cap
-    let validRefId: number | null = null;
+    let validRefId: number | null = null
     if (data.refId) {
-      const referrer = await User.find(data.refId);
+      const referrer = await User.find(data.refId)
       if (referrer && referrer.isAthlete) {
         const referralCount = await db
           .from('balance_transactions')
@@ -164,10 +166,10 @@ export default class AuthController {
           .where('type', 'bonus')
           .where('description', 'like', 'Реферальный бонус%')
           .count('* as total')
-          .first();
-        const count = Number(referralCount?.total ?? 0);
+          .first()
+        const count = Number(referralCount?.total ?? 0)
         if (count < AiBalanceService.REFERRAL_CAP) {
-          validRefId = referrer.id;
+          validRefId = referrer.id
         }
       }
     }
@@ -179,7 +181,7 @@ export default class AuthController {
       role: data.role,
       gender: data.gender ?? null,
       referredById: validRefId,
-    });
+    })
 
     if (validRefId) {
       AiBalanceService.topup(
@@ -189,11 +191,11 @@ export default class AuthController {
         `Реферальный бонус за приглашение пользователя ${user.email}`
       ).catch((err: unknown) => {
         logger.error({ userId: validRefId, err }, 'auth:referral_bonus failed')
-      });
+      })
     }
 
-    const token = await User.accessTokens.create(user);
-    this.setAuthCookie(response, token.value!.release());
+    const token = await User.accessTokens.create(user)
+    this.setAuthCookie(response, token.value!.release())
 
     return response.created({
       user: {
@@ -204,23 +206,23 @@ export default class AuthController {
         gender: user.gender,
         themeHue: user.themeHue,
       },
-    });
+    })
   }
 
   public async me({ auth, response }: HttpContext) {
-    await auth.use('api').authenticate();
-    return response.ok({ user: auth.user });
+    await auth.use('api').authenticate()
+    return response.ok({ user: auth.user })
   }
 
   public async logout({ auth, response }: HttpContext) {
-    const user = auth.user!;
-    const token = user.currentAccessToken;
+    const user = auth.user!
+    const token = user.currentAccessToken
 
     if (token) {
-      await User.accessTokens.delete(user, token.identifier);
+      await User.accessTokens.delete(user, token.identifier)
     }
 
-    response.clearCookie('auth_token', { path: '/' });
-    return response.ok({ message: 'Logged out' });
+    response.clearCookie('auth_token', { path: '/' })
+    return response.ok({ message: 'Logged out' })
   }
 }

@@ -7,7 +7,7 @@ import TrainerGroup from '#models/trainer_group'
 import TrainerAthlete from '#models/trainer_athlete'
 import AchievementService from '#services/AchievementService'
 import DialogService from '#services/DialogService'
-import { resolveAfterId, formatSseEvent } from '#services/chatStreamLogic'
+import { resolveAfterId, formatSseEvent } from '#services/chat_stream_logic'
 import emitter from '@adonisjs/core/services/emitter'
 
 export default class ChatController {
@@ -70,7 +70,10 @@ export default class ChatController {
     const trainer = auth.user!
 
     // Verify trainer owns the chat
-    const chat = await Chat.query().where('id', params.chatId).where('trainerId', trainer.id).first()
+    const chat = await Chat.query()
+      .where('id', params.chatId)
+      .where('trainerId', trainer.id)
+      .first()
 
     if (!chat) {
       return response.notFound({ message: 'Чат не найден' })
@@ -117,7 +120,10 @@ export default class ChatController {
     }
 
     // Verify trainer owns the chat
-    const chat = await Chat.query().where('id', params.chatId).where('trainerId', trainer.id).first()
+    const chat = await Chat.query()
+      .where('id', params.chatId)
+      .where('trainerId', trainer.id)
+      .first()
 
     if (!chat) {
       return response.notFound({ message: 'Чат не найден' })
@@ -165,7 +171,10 @@ export default class ChatController {
     const trainer = auth.user!
 
     // Verify trainer owns the chat
-    const chat = await Chat.query().where('id', params.chatId).where('trainerId', trainer.id).first()
+    const chat = await Chat.query()
+      .where('id', params.chatId)
+      .where('trainerId', trainer.id)
+      .first()
 
     if (!chat) {
       return response.notFound({ message: 'Чат не найден' })
@@ -294,7 +303,13 @@ export default class ChatController {
 
     // Single query: join chats + messages + chat_reads, group by chat
     const rows = await db.rawQuery<{
-      rows: Array<{ chat_id: number; type: string; group_id: number | null; athlete_id: number | null; unread: number }>
+      rows: Array<{
+        chat_id: number
+        type: string
+        group_id: number | null
+        athlete_id: number | null
+        unread: number
+      }>
     }>(
       `SELECT
          c.id          AS chat_id,
@@ -381,16 +396,31 @@ export default class ChatController {
       for (const m of pending) {
         sendEvent(m.id, {
           type: 'message',
-          data: { id: m.id, content: m.content, senderId: m.senderId,
+          data: {
+            id: m.id,
+            content: m.content,
+            senderId: m.senderId,
             sender: { id: m.sender.id, fullName: m.sender.fullName, email: m.sender.email },
-            createdAt: m.createdAt },
+            createdAt: m.createdAt,
+          },
         })
         latestId = m.id
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     // Subscribe to new messages via emitter (zero DB polling)
-    const onNewMessage = (event: { chatId: number; message: { id: number; content: string; senderId: number; sender: { id: number; fullName: string | null; email: string }; createdAt: unknown } }) => {
+    const onNewMessage = (event: {
+      chatId: number
+      message: {
+        id: number
+        content: string
+        senderId: number
+        sender: { id: number; fullName: string | null; email: string }
+        createdAt: unknown
+      }
+    }) => {
       if (event.chatId !== chatId) return
       sendEvent(event.message.id, { type: 'message', data: event.message })
     }

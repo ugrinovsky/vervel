@@ -15,22 +15,31 @@ import Workout from '#models/workout'
  */
 export default class extends BaseSeeder {
   async run() {
-    const emails = ['ivan@example.com', 'maria@example.com', 'dmitry@example.com', 'anna@example.com']
+    const emails = [
+      'ivan@example.com',
+      'maria@example.com',
+      'dmitry@example.com',
+      'anna@example.com',
+    ]
     const users = await User.query().whereIn('email', emails)
     const byEmail = Object.fromEntries(users.map((u) => [u.email, u]))
 
-    const ivan   = byEmail['ivan@example.com']
-    const maria  = byEmail['maria@example.com']
+    const ivan = byEmail['ivan@example.com']
+    const maria = byEmail['maria@example.com']
     const dmitry = byEmail['dmitry@example.com']
-    const anna   = byEmail['anna@example.com']
+    const anna = byEmail['anna@example.com']
 
     // Удаляем старые тренировки этих атлетов (идемпотентность)
     await Workout.query()
-      .whereIn('userId', users.map((u) => u.id))
+      .whereIn(
+        'userId',
+        users.map((u) => u.id)
+      )
       .delete()
 
     const now = DateTime.now()
-    const day = (n: number) => now.minus({ days: n }).set({ hour: 10, minute: 0, second: 0, millisecond: 0 })
+    const day = (n: number) =>
+      now.minus({ days: n }).set({ hour: 10, minute: 0, second: 0, millisecond: 0 })
 
     await Workout.createMany([
       // ── Иван: грудь/трицепс ──────────────────────────────────────────

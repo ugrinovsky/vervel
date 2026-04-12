@@ -17,10 +17,5 @@
   "devDependencies": {
     "@types/heic-convert": "^2.1.0",
     "concurrently": "^9.2.1"
-  },
-  "dependencies": {
-    "framer-motion": "^12.33.0",
-    "react-markdown": "^10.1.0",
-    "recharts": "^3.7.0"
   }
 }

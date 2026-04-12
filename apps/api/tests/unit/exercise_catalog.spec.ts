@@ -109,7 +109,9 @@ test.group('ExerciseCatalog: findMany()', () => {
   })
 
   test('находит несколько упражнений по ID', ({ assert }) => {
-    const ids = ExerciseCatalog.all().slice(0, 3).map((e) => e.id)
+    const ids = ExerciseCatalog.all()
+      .slice(0, 3)
+      .map((e) => e.id)
     const result = ExerciseCatalog.findMany(ids)
     assert.equal(result.size, 3)
     for (const id of ids) {
@@ -125,7 +127,9 @@ test.group('ExerciseCatalog: findMany()', () => {
   })
 
   test('возвращённые упражнения не содержат instructions', ({ assert }) => {
-    const ids = ExerciseCatalog.all().slice(0, 2).map((e) => e.id)
+    const ids = ExerciseCatalog.all()
+      .slice(0, 2)
+      .map((e) => e.id)
     const result = ExerciseCatalog.findMany(ids)
     for (const ex of result.values()) {
       assert.notProperty(ex, 'instructions')

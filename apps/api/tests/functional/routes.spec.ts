@@ -164,7 +164,9 @@ test.group('Profile', () => {
 
 test.group('Measurements', () => {
   test('POST /profile/measurements → 401 без авторизации', async ({ client }) => {
-    const response = await client.post('/profile/measurements').json({ type: 'body_weight', value: 75 })
+    const response = await client
+      .post('/profile/measurements')
+      .json({ type: 'body_weight', value: 75 })
     response.assertStatus(401)
   })
 
@@ -200,10 +202,16 @@ test.group('Measurements', () => {
     response.assertStatus(400)
   })
 
-  test('GET /profile/measurements возвращает историю по умолчанию body_weight', async ({ client, assert }) => {
+  test('GET /profile/measurements возвращает историю по умолчанию body_weight', async ({
+    client,
+    assert,
+  }) => {
     const user = await athleteUser()
     // Сначала создаём замер
-    await client.post('/profile/measurements').loginAs(user).json({ type: 'body_weight', value: 77 })
+    await client
+      .post('/profile/measurements')
+      .loginAs(user)
+      .json({ type: 'body_weight', value: 77 })
     const response = await client.get('/profile/measurements').loginAs(user)
     response.assertStatus(200)
     response.assertBodyContains({ success: true })
@@ -213,9 +221,15 @@ test.group('Measurements', () => {
     assert.equal(body.data[0].type, 'body_weight')
   })
 
-  test('GET /profile/measurements?type=body_fat_pct фильтрует по типу', async ({ client, assert }) => {
+  test('GET /profile/measurements?type=body_fat_pct фильтрует по типу', async ({
+    client,
+    assert,
+  }) => {
     const user = await athleteUser()
-    await client.post('/profile/measurements').loginAs(user).json({ type: 'body_fat_pct', value: 18.5 })
+    await client
+      .post('/profile/measurements')
+      .loginAs(user)
+      .json({ type: 'body_fat_pct', value: 18.5 })
     const response = await client.get('/profile/measurements?type=body_fat_pct').loginAs(user)
     response.assertStatus(200)
     const body = response.body()
@@ -367,10 +381,7 @@ test.group('Payments routes: защита', () => {
 
   test('POST /payments/topup → 422 при некорректной сумме', async ({ client }) => {
     const user = await athleteUser()
-    const response = await client
-      .post('/payments/topup')
-      .loginAs(user)
-      .json({ amount: 999 }) // не входит в допустимые: 100/250/500/1000
+    const response = await client.post('/payments/topup').loginAs(user).json({ amount: 999 }) // не входит в допустимые: 100/250/500/1000
     response.assertStatus(422)
   })
 })
@@ -639,7 +650,10 @@ test.group('OAuth: защита и базовая логика', () => {
     assert.include((response.headers().location ?? '').toLowerCase(), 'oauth.vk.com')
   })
 
-  test('GET /oauth/yandex/redirect → 3xx на Yandex authorize, не 500', async ({ client, assert }) => {
+  test('GET /oauth/yandex/redirect → 3xx на Yandex authorize, не 500', async ({
+    client,
+    assert,
+  }) => {
     const response = await client.get('/oauth/yandex/redirect').redirects(0)
     assert.notEqual(response.status(), 500)
     assert.oneOf(response.status(), [301, 302, 303, 307, 308])
@@ -651,9 +665,15 @@ test.group('OAuth: защита и базовая логика', () => {
     response.assertStatus(400)
   })
 
-  test('GET /oauth/vk/callback с ?error=access_denied → редирект, не 500', async ({ client, assert }) => {
+  test('GET /oauth/vk/callback с ?error=access_denied → редирект, не 500', async ({
+    client,
+    assert,
+  }) => {
     // Отключаем следование редиректу, чтобы не коннектиться к фронту на 5173
-    const response = await client.get('/oauth/vk/callback').qs({ error: 'access_denied' }).redirects(0)
+    const response = await client
+      .get('/oauth/vk/callback')
+      .qs({ error: 'access_denied' })
+      .redirects(0)
     assert.notEqual(response.status(), 500)
   })
 
@@ -773,14 +793,11 @@ test.group('Workouts: CRUD детально', () => {
 
   test('POST /workouts создаёт тренировку', async ({ client }) => {
     const user = await athleteUser()
-    const response = await client
-      .post('/workouts')
-      .loginAs(user)
-      .json({
-        date: '2026-03-01',
-        workoutType: 'crossfit',
-        exercises: [],
-      })
+    const response = await client.post('/workouts').loginAs(user).json({
+      date: '2026-03-01',
+      workoutType: 'crossfit',
+      exercises: [],
+    })
     response.assertStatus(201)
   })
 

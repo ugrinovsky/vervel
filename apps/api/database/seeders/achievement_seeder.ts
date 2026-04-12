@@ -5,7 +5,15 @@ export default class extends BaseSeeder {
   async run() {
     // Удаляем старые streak-ачивки с day-based ключами
     await Achievement.query()
-      .whereIn('key', ['streak_3', 'streak_7', 'streak_14', 'streak_30', 'streak_60', 'streak_100', 'streak_365'])
+      .whereIn('key', [
+        'streak_3',
+        'streak_7',
+        'streak_14',
+        'streak_30',
+        'streak_60',
+        'streak_100',
+        'streak_365',
+      ])
       .delete()
 
     const achievements = [

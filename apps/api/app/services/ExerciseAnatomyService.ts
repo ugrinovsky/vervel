@@ -34,7 +34,10 @@ function zonesMapSystemPrompt(): string {
 }
 
 function stripMarkdownFences(raw: string): string {
-  return raw.replace(/```json\n?/gi, '').replace(/```\n?/g, '').trim()
+  return raw
+    .replace(/```json\n?/gi, '')
+    .replace(/```\n?/g, '')
+    .trim()
 }
 
 function normalizeZones(zones: unknown): string[] {
@@ -122,7 +125,9 @@ export class ExerciseAnatomyService {
         temperature: 0.1,
         modelId,
         maxTokens: 512,
-        llmLog: chain ? { chain, step: 'anatomy.biomechanics_llm' } : { step: 'anatomy.biomechanics_llm' },
+        llmLog: chain
+          ? { chain, step: 'anatomy.biomechanics_llm' }
+          : { step: 'anatomy.biomechanics_llm' },
       })
     } catch (e) {
       logger.warn({ err: String(e), label }, 'ExerciseAnatomyService: step1 failed')
@@ -145,7 +150,9 @@ export class ExerciseAnatomyService {
         temperature: 0.0,
         modelId,
         maxTokens: 256,
-        llmLog: chain ? { chain, step: 'anatomy.zones_map_llm' } : { step: 'anatomy.zones_map_llm' },
+        llmLog: chain
+          ? { chain, step: 'anatomy.zones_map_llm' }
+          : { step: 'anatomy.zones_map_llm' },
       })
     } catch (e) {
       logger.warn({ err: String(e), label }, 'ExerciseAnatomyService: step2 failed')
@@ -228,10 +235,7 @@ export class ExerciseAnatomyService {
       'ai:chain'
     )
 
-    const byNorm = new Map<
-      string,
-      { label: string; notes?: string | null; indices: number[] }
-    >()
+    const byNorm = new Map<string, { label: string; notes?: string | null; indices: number[] }>()
 
     exercises.forEach((ex, i) => {
       const label = surfaceLabel(ex)

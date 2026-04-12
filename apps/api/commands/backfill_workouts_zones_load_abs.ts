@@ -18,8 +18,7 @@ function hasMeaningfulZonesLoad(zonesLoad: Record<string, number> | null | undef
  */
 export default class BackfillWorkoutsZonesLoadAbs extends BaseCommand {
   static commandName = 'workouts:backfill-zones-load-abs'
-  static description =
-    'Пересчитать zones_load_abs и согласованные поля для существующих тренировок'
+  static description = 'Пересчитать zones_load_abs и согласованные поля для существующих тренировок'
 
   static options: CommandOptions = {
     startApp: true,

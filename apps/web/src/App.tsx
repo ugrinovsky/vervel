@@ -18,6 +18,7 @@ import DocsScreen from '@/screens/DocsScreen/DocsScreen';
 import AvatarScreen from '@/screens/AvatarScreen/AvatarScreen';
 import LandingScreen from '@/screens/LandingScreen/LandingScreen';
 import { AuthProvider, useAuth, useActiveMode } from '@/contexts/AuthContext';
+import { SheetStackProvider } from '@/contexts/SheetStackContext';
 import { useAchievementToast } from '@/hooks/useAchievementToast';
 import IncomingCallWatcher from '@/components/VideoCall/IncomingCallWatcher';
 
@@ -162,7 +163,9 @@ function AppContent(): JSX.Element {
 function App(): JSX.Element {
   return (
     <AuthProvider>
-      <AppContent />
+      <SheetStackProvider>
+        <AppContent />
+      </SheetStackProvider>
     </AuthProvider>
   );
 }

@@ -94,7 +94,9 @@ test.group('YandexAiService: parseWorkoutJson', () => {
     assert.equal(result.workoutType, 'cardio')
   })
 
-  test('не корректирует workoutType: crossfit остаётся crossfit даже если похоже на силовую', ({ assert }) => {
+  test('не корректирует workoutType: crossfit остаётся crossfit даже если похоже на силовую', ({
+    assert,
+  }) => {
     const json = JSON.stringify({
       workoutType: 'crossfit',
       exercises: [
@@ -133,7 +135,16 @@ test.group('YandexAiService: parseWorkoutJson', () => {
   test('reps, weight, duration — undefined если null', ({ assert }) => {
     const json = JSON.stringify({
       workoutType: 'bodybuilding',
-      exercises: [{ name: 'Curl', displayName: 'Сгибание', sets: 3, reps: null, weight: null, duration: null }],
+      exercises: [
+        {
+          name: 'Curl',
+          displayName: 'Сгибание',
+          sets: 3,
+          reps: null,
+          weight: null,
+          duration: null,
+        },
+      ],
     })
     const ex = svc.parseWorkoutJson(json).exercises[0]
     assert.isUndefined(ex.reps)
@@ -208,7 +219,9 @@ test.group('YandexAiService: parseWorkoutJson', () => {
     assert.isFalse(shouldSkipWorkoutProgramCleanup('грудь\nжим 3x10'))
   })
 
-  test('нормализация входного текста: только пробелы/переносы/trim (без семантики)', ({ assert }) => {
+  test('нормализация входного текста: только пробелы/переносы/trim (без семантики)', ({
+    assert,
+  }) => {
     const input = `За 10 минут
 
 Сгибания голени сидя
@@ -236,7 +249,9 @@ test.group('YandexAiService: parseWorkoutJson', () => {
     assert.equal(svc.parseWorkoutJson(json).exercises[0].displayName, 'Pull-Up')
   })
 
-  test('parseWorkoutJson: заглушка в name, нормальное displayName — копирует в name', ({ assert }) => {
+  test('parseWorkoutJson: заглушка в name, нормальное displayName — копирует в name', ({
+    assert,
+  }) => {
     const json = JSON.stringify({
       workoutType: 'bodybuilding',
       exercises: [

@@ -1,21 +1,26 @@
-import type { HttpContext } from '@adonisjs/core/http';
-import { DateTime } from 'luxon';
-import Workout from '#models/workout';
-import WorkoutDraft from '#models/workout_draft';
-import { WorkoutCalculator } from '#services/WorkoutCalculator';
-import { StreakService } from '#services/StreakService';
-import { createWorkoutValidator, updateWorkoutValidator } from '#validators/workout_validator';
-import { ExerciseCatalog } from '#services/ExerciseCatalog';
+import type { HttpContext } from '@adonisjs/core/http'
+import { DateTime } from 'luxon'
+import Workout from '#models/workout'
+import WorkoutDraft from '#models/workout_draft'
+import { WorkoutCalculator } from '#services/WorkoutCalculator'
+import { StreakService } from '#services/StreakService'
+import { createWorkoutValidator, updateWorkoutValidator } from '#validators/workout_validator'
+import { ExerciseCatalog } from '#services/ExerciseCatalog'
 
 export default class WorkoutsController {
   /**
    * Создать тренировку
    */
   async store({ request, auth, response }: HttpContext) {
-    const user = auth.user!;
-    const data = await request.validateUsing(createWorkoutValidator);
+    const user = auth.user!
+    const data = await request.validateUsing(createWorkoutValidator)
 
-    const calculated = await WorkoutCalculator.calculateZoneLoads(data.exercises, data.workoutType, data.rpe, user.id);
+    const calculated = await WorkoutCalculator.calculateZoneLoads(
+      data.exercises,
+      data.workoutType,
+      data.rpe,
+      user.id
+    )
 
     const workout = await Workout.create({
       userId: user.id,
@@ -30,10 +35,10 @@ export default class WorkoutsController {
       zonesLoadAbs: calculated.zonesLoadAbs,
       totalIntensity: calculated.totalIntensity,
       totalVolume: calculated.totalVolume,
-    });
+    })
 
     // Обновить streak после создания тренировки
-    const streakResult = await StreakService.updateStreakAfterWorkout(user.id, workout.date);
+    const streakResult = await StreakService.updateStreakAfterWorkout(user.id, workout.date)
 
     return response.created({
       workout,
@@ -47,51 +52,56 @@ export default class WorkoutsController {
           icon: a.icon,
         })),
       },
-    });
+    })
   }
 
   /**
    * Получить список тренировок
    */
   async index({ auth, request }: HttpContext) {
-    const user = auth.user!;
-    const page = request.input('page', 1);
-    const limit = request.input('limit', 20);
+    const user = auth.user!
+    const page = request.input('page', 1)
+    const limit = request.input('limit', 20)
 
     const workouts = await Workout.query()
       .where('userId', user.id)
       .orderBy('date', 'desc')
-      .paginate(page, limit);
+      .paginate(page, limit)
 
-    return workouts;
+    return workouts
   }
 
   /**
    * Получить одну тренировку
    */
   async show({ auth, params }: HttpContext) {
-    const user = auth.user!;
+    const user = auth.user!
     const workout = await Workout.query()
       .where('id', params.id)
       .where('userId', user.id)
-      .firstOrFail();
+      .firstOrFail()
 
-    return workout;
+    return workout
   }
 
   /**
    * Обновить тренировку
    */
   async update({ auth, params, request }: HttpContext) {
-    const user = auth.user!;
+    const user = auth.user!
     const workout = await Workout.query()
       .where('id', params.id)
       .where('userId', user.id)
-      .firstOrFail();
+      .firstOrFail()
 
-    const data = await request.validateUsing(updateWorkoutValidator);
+    const data = await request.validateUsing(updateWorkoutValidator)
 
-    const calculated = await WorkoutCalculator.calculateZoneLoads(data.exercises, data.workoutType, data.rpe, user.id);
+    const calculated = await WorkoutCalculator.calculateZoneLoads(
+      data.exercises,
+      data.workoutType,
+      data.rpe,
+      user.id
+    )
 
     workout.merge({
       date: DateTime.fromISO(data.date, { zone: 'utc' }),
@@ -103,26 +113,26 @@ export default class WorkoutsController {
       zonesLoadAbs: calculated.zonesLoadAbs,
       totalIntensity: calculated.totalIntensity,
       totalVolume: calculated.totalVolume,
-    });
+    })
 
-    await workout.save();
+    await workout.save()
 
-    return workout;
+    return workout
   }
 
   /**
    * Удалить тренировку
    */
   async destroy({ auth, params, response }: HttpContext) {
-    const user = auth.user!;
+    const user = auth.user!
     const workout = await Workout.query()
       .where('id', params.id)
       .where('userId', user.id)
-      .firstOrFail();
+      .firstOrFail()
 
-    await workout.delete();
+    await workout.delete()
 
-    return response.noContent();
+    return response.noContent()
   }
 
   /**
@@ -130,15 +140,15 @@ export default class WorkoutsController {
    * GET /workouts/by-zone?zone=chests&limit=5
    */
   async byZone({ auth, request, response }: HttpContext) {
-    const user = auth.user!;
-    const zone = request.input('zone');
-    const limit = Math.min(Number(request.input('limit', 5)), 20);
+    const user = auth.user!
+    const zone = request.input('zone')
+    const limit = Math.min(Number(request.input('limit', 5)), 20)
 
-    if (!zone) return response.badRequest({ message: 'zone is required' });
+    if (!zone) return response.badRequest({ message: 'zone is required' })
 
-    const catalogMap = ExerciseCatalog.getIdToTitleMap();
+    const catalogMap = ExerciseCatalog.getIdToTitleMap()
 
-    // Алиасы зон (как в AvatarView ZONE_NORMALIZE)
+    // Ключ силуэта / API (как в Avatar BODY_ZONE_TO_API) → алиасы ключей в exercises[].zones и zonesLoad*
     const ZONE_ALIASES: Record<string, string[]> = {
       backMuscles: ['back', 'trapezoids', 'traps'],
       legMuscles: ['legs'],
@@ -148,57 +158,91 @@ export default class WorkoutsController {
       obliquePress: ['obliques'],
       chests: ['chest'],
       biceps: ['arms'],
-    };
-    const aliases = [zone, ...(ZONE_ALIASES[zone] ?? [])];
+    }
+    const aliases = [...new Set([zone, ...(ZONE_ALIASES[zone] ?? [])])]
+
+    const workoutTouchesZone = (w: Workout): boolean => {
+      const rel = w.zonesLoad as Record<string, number> | null | undefined
+      if (rel && typeof rel === 'object') {
+        if (aliases.some((a) => (Number(rel[a]) || 0) > 0)) return true
+      }
+      const abs = (w as any).zonesLoadAbs as Record<string, number> | null | undefined
+      if (abs && typeof abs === 'object') {
+        if (aliases.some((a) => (Number(abs[a]) || 0) > 0)) return true
+      }
+      return false
+    }
+
+    const exerciseTouchesZone = (ex: Record<string, unknown>): boolean => {
+      const zs = Array.isArray(ex.zones) ? ex.zones : []
+      for (const z of zs) {
+        if (aliases.includes(String(z))) return true
+      }
+      const zw = ex.zoneWeights
+      if (zw !== null && zw !== undefined && typeof zw === 'object' && !Array.isArray(zw)) {
+        for (const a of aliases) {
+          const v = Number((zw as Record<string, unknown>)[a])
+          if (Number.isFinite(v) && v > 0) return true
+        }
+      }
+      return false
+    }
 
     const workouts = await Workout.query()
       .where('userId', user.id)
       .orderBy('date', 'desc')
-      .limit(50); // берём больше, фильтруем ниже
+      .limit(50) // берём больше, фильтруем ниже
 
     const filtered = workouts
-      .filter((w) => {
-        const load = w.zonesLoad as Record<string, number> | null;
-        if (!load) return false;
-        return aliases.some((alias) => (load[alias] ?? 0) > 0);
-      })
+      .filter(workoutTouchesZone)
       .slice(0, limit)
       .map((w) => {
-        const load = w.zonesLoad as Record<string, number>;
-        const zoneLoad = aliases.reduce((max, alias) => Math.max(max, load[alias] ?? 0), 0);
-        const exercises = ((w.exercises as any[]) ?? []).map((ex: any) => ({
+        const load = (w.zonesLoad as Record<string, number> | null) ?? {}
+        const abs = ((w as any).zonesLoadAbs as Record<string, number> | null) ?? {}
+        const zoneLoad = Math.max(
+          aliases.reduce((max, alias) => Math.max(max, Number(load[alias]) || 0), 0),
+          aliases.reduce((max, alias) => Math.max(max, Number(abs[alias]) || 0), 0)
+        )
+        const rawEx = ((w.exercises as any[]) ?? []).filter((ex) =>
+          exerciseTouchesZone(ex as Record<string, unknown>)
+        )
+        const exercises = rawEx.map((ex: any) => ({
           exerciseId: ex.exerciseId,
-          name: catalogMap.get(ex.exerciseId) ?? ex.name ?? ex.exerciseId?.replace(/^custom:/, '').replace(/_/g, ' ') ?? '—',
-        }));
+          name:
+            catalogMap.get(ex.exerciseId) ??
+            ex.name ??
+            ex.exerciseId?.replace(/^custom:/, '').replace(/_/g, ' ') ??
+            '—',
+        }))
         return {
           id: w.id,
           date: w.date,
           workoutType: w.workoutType,
           zoneLoad,
           exercises,
-        };
-      });
+        }
+      })
 
-    return response.ok(filtered);
+    return response.ok(filtered)
   }
 
   /**
    * Получить черновик тренировки
    */
   async getDraft({ auth, response }: HttpContext) {
-    const user = auth.user!;
-    const draft = await WorkoutDraft.findBy('userId', user.id);
-    return response.ok({ success: true, data: draft?.payload ?? null });
+    const user = auth.user!
+    const draft = await WorkoutDraft.findBy('userId', user.id)
+    return response.ok({ success: true, data: draft?.payload ?? null })
   }
 
   /**
    * Сохранить черновик тренировки
    */
   async saveDraft({ auth, request, response }: HttpContext) {
-    const user = auth.user!;
-    const payload = request.body();
-    await WorkoutDraft.updateOrCreate({ userId: user.id }, { payload });
-    return response.ok({ success: true });
+    const user = auth.user!
+    const payload = request.body()
+    await WorkoutDraft.updateOrCreate({ userId: user.id }, { payload })
+    return response.ok({ success: true })
   }
 
   /**
@@ -208,39 +252,39 @@ export default class WorkoutsController {
     const workout = await Workout.query()
       .where('scheduledWorkoutId', params.scheduledWorkoutId)
       .where('userId', auth.user!.id)
-      .first();
-    if (!workout) return response.notFound({ message: 'Тренировка не найдена' });
-    return response.ok(workout);
+      .first()
+    if (!workout) return response.notFound({ message: 'Тренировка не найдена' })
+    return response.ok(workout)
   }
 
   async clearDraft({ auth, response }: HttpContext) {
-    const user = auth.user!;
-    await WorkoutDraft.query().where('userId', user.id).delete();
-    return response.ok({ success: true });
+    const user = auth.user!
+    await WorkoutDraft.query().where('userId', user.id).delete()
+    return response.ok({ success: true })
   }
 
   /**
    * Статистика за период
    */
   async stats({ auth, request, response }: HttpContext) {
-    const user = auth.user!;
+    const user = auth.user!
 
-    const from = request.input('from');
-    const to = request.input('to');
+    const from = request.input('from')
+    const to = request.input('to')
 
     if (!from || !to) {
       return response.badRequest({
         message: 'Query parameters "from" and "to" are required',
-      });
+      })
     }
 
     const workouts = await Workout.query()
       .where('userId', user.id)
       .whereBetween('date', [from, to])
-      .orderBy('date', 'asc');
+      .orderBy('date', 'asc')
 
-    const stats = await WorkoutCalculator.calculatePeriodStats(workouts);
+    const stats = await WorkoutCalculator.calculatePeriodStats(workouts)
 
-    return response.ok(stats);
+    return response.ok(stats)
   }
 }

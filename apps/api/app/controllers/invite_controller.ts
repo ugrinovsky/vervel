@@ -69,7 +69,11 @@ export default class InviteController {
   async getReferralStats({ auth, response }: HttpContext) {
     const user = auth.user!
 
-    const countRow = await db.from('users').where('referred_by_id', user.id).count('* as total').first()
+    const countRow = await db
+      .from('users')
+      .where('referred_by_id', user.id)
+      .count('* as total')
+      .first()
     const count = Number(countRow?.total ?? 0)
     const totalEarned = count * AiBalanceService.REFERRAL_BONUS
 

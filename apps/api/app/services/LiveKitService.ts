@@ -8,8 +8,7 @@ const livekitUrl = env.get('LIVEKIT_URL') ?? 'ws://localhost:7880'
 // LIVEKIT_HOST — internal HTTP URL for server-to-server calls (e.g. http://livekit:7880 in Docker)
 // Falls back to converting LIVEKIT_URL ws→http for local dev outside Docker
 const livekitHost =
-  env.get('LIVEKIT_HOST') ??
-  livekitUrl.replace(/^wss/, 'https').replace(/^ws/, 'http')
+  env.get('LIVEKIT_HOST') ?? livekitUrl.replace(/^wss/, 'https').replace(/^ws/, 'http')
 
 const roomService = new RoomServiceClient(livekitHost, apiKey, apiSecret)
 

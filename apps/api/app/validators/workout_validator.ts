@@ -1,4 +1,4 @@
-import vine from '@vinejs/vine';
+import vine from '@vinejs/vine'
 
 export const createWorkoutValidator = vine.compile(
   vine.object({
@@ -34,6 +34,6 @@ export const createWorkoutValidator = vine.compile(
       })
     ),
   })
-);
+)
 
-export const updateWorkoutValidator = createWorkoutValidator;
+export const updateWorkoutValidator = createWorkoutValidator

@@ -6,7 +6,7 @@ import TrainerAthlete from '#models/trainer_athlete'
 import db from '@adonisjs/lucid/services/db'
 import type UserStreak from '#models/user_streak'
 import { XpService } from './XpService.js'
-import type { XpRewardKey } from './xpLogic.js'
+import type { XpRewardKey } from './xp_logic.js'
 import { ProgressionService } from './ProgressionService.js'
 
 export default class AchievementService {
@@ -27,9 +27,7 @@ export default class AchievementService {
     const existingIds = new Set(existingUserAchievements.map((ua) => ua.achievementId))
 
     const unearnedTypes = new Set(
-      allAchievements
-        .filter((a) => !existingIds.has(a.id))
-        .map((a) => a.requirementType)
+      allAchievements.filter((a) => !existingIds.has(a.id)).map((a) => a.requirementType)
     )
 
     // Ленивая загрузка счётчиков — только нужных типов
@@ -51,10 +49,7 @@ export default class AchievementService {
 
     let groupsJoined = 0
     if (unearnedTypes.has('groups_joined')) {
-      const result = await db
-        .from('group_athletes')
-        .where('athlete_id', userId)
-        .count('* as total')
+      const result = await db.from('group_athletes').where('athlete_id', userId).count('* as total')
       groupsJoined = Number((result[0] as any).total ?? 0)
     }
 

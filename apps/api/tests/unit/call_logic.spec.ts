@@ -1,5 +1,5 @@
 import { test } from '@japa/runner'
-import { computeCallAction } from '#services/callLogic'
+import { computeCallAction } from '#services/call_logic'
 
 test.group('computeCallAction: нет записи в БД', () => {
   test('создаёт комнату и уведомляет', ({ assert }) => {

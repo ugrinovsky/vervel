@@ -121,7 +121,7 @@ function formatSet(set: WorkoutSet, type: string): string {
 function exerciseVolume(sets?: WorkoutSet[]): number {
   return (sets ?? []).reduce((acc, s) => acc + (s.reps ?? 0) * (s.weight ?? 0), 0);
 }
-function extractTime(dateStr?: string): string | null {
+function extractTime(dateStr?: string | null): string | null {
   if (!dateStr) return null;
   try {
     const d = parseApiDateTime(dateStr);
@@ -642,19 +642,54 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
       (fullWorkout.rpe == null || !Number.isFinite(Number(fullWorkout.rpe)) || Number(fullWorkout.rpe) < 1)
     : Boolean(workout?.hasMissingRpe);
 
+  const startEditWorkout = () => {
+    const dt = effectiveDateIso ? parseApiDateTime(effectiveDateIso) : nowRoundedToHour();
+    setEditDate(dt);
+    setEditTime(dt);
+    setIsEditing(true);
+  };
+
   return (
     <BottomSheet
       id="activity-workout-detail"
       open={workout !== null}
       onClose={onClose}
       header={
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-lg font-bold text-white shrink-0">
+        <div className="flex flex-col gap-2 min-w-0 w-full pr-1">
+          <span className="text-lg font-bold text-white leading-tight truncate">
             {getWorkoutTypeLabel(workout?.type ?? 'unknown')}
           </span>
-          <span className="text-sm text-(--color_text_muted) truncate">{dateLabel}</span>
-          {timeLabel && (
-            <span className="text-sm font-semibold text-white/70 tabular-nums shrink-0">{timeLabel}</span>
+          {!isEditing && (
+            <button
+              type="button"
+              onClick={startEditWorkout}
+              className="group flex items-center gap-2.5 w-full max-w-full rounded-xl px-3 py-2.5 text-left border border-(--color_border) bg-(--color_bg_card_hover)/60 hover:bg-(--color_bg_card_hover) hover:border-white/20 transition-colors"
+            >
+              <span className="min-w-0 flex-1 text-sm leading-snug">
+                {effectiveDateIso ? (
+                  <>
+                    <span className="text-(--color_text_secondary) group-hover:text-(--color_text_primary)">
+                      {dateLabel}
+                    </span>
+                    {timeLabel ? (
+                      <>
+                        <span className="mx-1.5 text-(--color_text_muted)">·</span>
+                        <span className="text-(--color_text_muted) tabular-nums">{timeLabel}</span>
+                      </>
+                    ) : null}
+                  </>
+                ) : (
+                  <span className="text-(--color_text_muted)">Указать дату и время</span>
+                )}
+              </span>
+              <span className="flex items-center gap-1 shrink-0 text-xs font-medium text-(--color_primary_icon)">
+                <PencilIcon className="w-4 h-4 opacity-90" />
+                {effectiveDateIso ? 'Изменить' : 'Выбрать'}
+              </span>
+            </button>
+          )}
+          {isEditing && (
+            <span className="text-xs text-(--color_text_muted)">Редактирование даты, времени и упражнений</span>
           )}
         </div>
       }
@@ -689,20 +724,6 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
               <span className="text-xs px-2 py-1 bg-sky-500/15 text-sky-200 rounded-full border border-sky-500/35">
                 ⭐ нет оценки
               </span>
-            )}
-            {!isEditing && (
-              <button
-                  onClick={() => {
-                    const dt = effectiveDateIso ? parseApiDateTime(effectiveDateIso) : nowRoundedToHour();
-                    setEditDate(dt);
-                    setEditTime(dt);
-                    setIsEditing(true);
-                  }}
-                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-(--color_bg_card_hover) text-(--color_text_muted) border border-(--color_border) hover:text-white transition-colors"
-              >
-                <PencilIcon className="w-3.5 h-3.5" />
-                Редактировать
-              </button>
             )}
           </div>
 

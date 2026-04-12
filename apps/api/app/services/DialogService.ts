@@ -130,12 +130,14 @@ const LIST_DIALOGS_SQL = `
 
 function getInitials(name: string | null, email: string | null): string {
   const source = name ?? email ?? ''
-  return source
-    .split(' ')
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2) || '?'
+  return (
+    source
+      .split(' ')
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || '?'
+  )
 }
 
 export default class DialogService {

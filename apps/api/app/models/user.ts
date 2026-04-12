@@ -1,113 +1,113 @@
-import { DateTime } from 'luxon';
-import hash from '@adonisjs/core/services/hash';
-import { compose } from '@adonisjs/core/helpers';
-import { BaseModel, column, hasMany, hasOne } from '@adonisjs/lucid/orm';
-import type { HasMany, HasOne } from '@adonisjs/lucid/types/relations';
-import { withAuthFinder } from '@adonisjs/auth/mixins/lucid';
-import { DbAccessTokensProvider } from '@adonisjs/auth/access_tokens';
-import TrainerAthlete from './trainer_athlete.js';
-import TrainerGroup from './trainer_group.js';
-import UserStreak from './user_streak.js';
-import UserAchievement from './user_achievement.js';
-import OAuthProvider from './oauth_provider.js';
-import Chat from './chat.js';
-import Message from './message.js';
-import ScheduledWorkout from './scheduled_workout.js';
+import { DateTime } from 'luxon'
+import hash from '@adonisjs/core/services/hash'
+import { compose } from '@adonisjs/core/helpers'
+import { BaseModel, column, hasMany, hasOne } from '@adonisjs/lucid/orm'
+import type { HasMany, HasOne } from '@adonisjs/lucid/types/relations'
+import { withAuthFinder } from '@adonisjs/auth/mixins/lucid'
+import { DbAccessTokensProvider } from '@adonisjs/auth/access_tokens'
+import TrainerAthlete from './trainer_athlete.js'
+import TrainerGroup from './trainer_group.js'
+import UserStreak from './user_streak.js'
+import UserAchievement from './user_achievement.js'
+import OAuthProvider from './oauth_provider.js'
+import Chat from './chat.js'
+import Message from './message.js'
+import ScheduledWorkout from './scheduled_workout.js'
 import WorkoutTemplate from './workout_template.js'
 import UserMeasurement from './user_measurement.js'
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
   uids: ['email'],
   passwordColumnName: 'password',
-});
+})
 
 export default class User extends compose(BaseModel, AuthFinder) {
   @column({ isPrimary: true })
-  declare id: number;
+  declare id: number
 
   @column()
-  declare fullName: string | null;
+  declare fullName: string | null
 
   @column()
-  declare email: string;
+  declare email: string
 
   @column({ serializeAs: null })
-  declare password: string | null;
+  declare password: string | null
 
   @column()
-  declare role: 'athlete' | 'trainer' | 'both';
+  declare role: 'athlete' | 'trainer' | 'both'
 
   @column()
-  declare bio: string | null;
+  declare bio: string | null
 
   @column()
-  declare specializations: string[] | null;
+  declare specializations: string[] | null
 
   @column()
-  declare education: string | null;
+  declare education: string | null
 
   @column()
-  declare photoUrl: string | null;
+  declare photoUrl: string | null
 
   @column()
-  declare gender: 'male' | 'female' | null;
+  declare gender: 'male' | 'female' | null
 
   /** Wallet balance in rubles — used for AI features, donations to trainers, etc. */
   @column()
-  declare balance: number;
+  declare balance: number
 
   /** Бесплатный AI-парсинг заметок — выставляется вручную администратором для бета-тестеров */
   @column()
-  declare aiNotesFree: boolean;
+  declare aiNotesFree: boolean
 
   /** Theme hue (0–359) — persisted per account so theme follows the user across devices. */
   @column()
-  declare themeHue: number | null;
+  declare themeHue: number | null
 
   @column()
-  declare xp: number;
+  declare xp: number
 
   @column()
-  declare referredById: number | null;
+  declare referredById: number | null
 
   @column()
-  declare donatePhone: string | null;
+  declare donatePhone: string | null
 
   @column()
-  declare donateCard: string | null;
+  declare donateCard: string | null
 
   @column()
-  declare donateYookassaLink: string | null;
+  declare donateYookassaLink: string | null
 
   @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime;
+  declare createdAt: DateTime
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime | null;
+  declare updatedAt: DateTime | null
 
   @hasMany(() => TrainerAthlete, { foreignKey: 'trainerId' })
-  declare trainerAthletes: HasMany<typeof TrainerAthlete>;
+  declare trainerAthletes: HasMany<typeof TrainerAthlete>
 
   @hasMany(() => TrainerGroup, { foreignKey: 'trainerId' })
-  declare trainerGroups: HasMany<typeof TrainerGroup>;
+  declare trainerGroups: HasMany<typeof TrainerGroup>
 
   @hasOne(() => UserStreak)
-  declare streak: HasOne<typeof UserStreak>;
+  declare streak: HasOne<typeof UserStreak>
 
   @hasMany(() => UserAchievement)
-  declare achievements: HasMany<typeof UserAchievement>;
+  declare achievements: HasMany<typeof UserAchievement>
 
   @hasMany(() => OAuthProvider)
-  declare oauthProviders: HasMany<typeof OAuthProvider>;
+  declare oauthProviders: HasMany<typeof OAuthProvider>
 
   @hasMany(() => Chat, { foreignKey: 'trainerId' })
-  declare chats: HasMany<typeof Chat>;
+  declare chats: HasMany<typeof Chat>
 
   @hasMany(() => Message, { foreignKey: 'senderId' })
-  declare sentMessages: HasMany<typeof Message>;
+  declare sentMessages: HasMany<typeof Message>
 
   @hasMany(() => ScheduledWorkout, { foreignKey: 'trainerId' })
-  declare scheduledWorkouts: HasMany<typeof ScheduledWorkout>;
+  declare scheduledWorkouts: HasMany<typeof ScheduledWorkout>
 
   @hasMany(() => WorkoutTemplate, { foreignKey: 'trainerId' })
   declare workoutTemplates: HasMany<typeof WorkoutTemplate>
@@ -116,12 +116,12 @@ export default class User extends compose(BaseModel, AuthFinder) {
   declare measurements: HasMany<typeof UserMeasurement>
 
   get isTrainer(): boolean {
-    return this.role === 'trainer' || this.role === 'both';
+    return this.role === 'trainer' || this.role === 'both'
   }
 
   get isAthlete(): boolean {
-    return this.role === 'athlete' || this.role === 'both';
+    return this.role === 'athlete' || this.role === 'both'
   }
 
-  static accessTokens = DbAccessTokensProvider.forModel(User);
+  static accessTokens = DbAccessTokensProvider.forModel(User)
 }

@@ -7,29 +7,31 @@ import UserMeasurement from '#models/user_measurement'
 import hash from '@adonisjs/core/services/hash'
 import { HttpContext } from '@adonisjs/core/http'
 import { StreakService } from '#services/StreakService'
-import { computeLevel } from '#services/xpLogic'
+import { computeLevel } from '#services/xp_logic'
 import User from '#models/user'
 
 export default class ProfileController {
   async getProfile({ auth, response }: HttpContext) {
     try {
-      const user = auth.user!;
+      const user = auth.user!
 
-      const workouts = await Workout.query()
-        .where('userId', user.id)
-        .orderBy('date', 'desc');
+      const workouts = await Workout.query().where('userId', user.id).orderBy('date', 'desc')
 
-      const userStreak = await StreakService.getUserStreak(user.id);
-      const streak = userStreak?.currentStreak || 0;
-      const longestStreak = userStreak?.longestStreak || 0;
-      const topZones = this.calculateTopZones(workouts);
-      const levelInfo = computeLevel(user.xp ?? 0);
+      const userStreak = await StreakService.getUserStreak(user.id)
+      const streak = userStreak?.currentStreak || 0
+      const longestStreak = userStreak?.longestStreak || 0
+      const topZones = this.calculateTopZones(workouts)
+      const levelInfo = computeLevel(user.xp ?? 0)
 
-      const totalVolume = workouts.reduce((sum, w) => sum + (Number(w.totalVolume) || 0), 0);
-      const workoutsWithIntensity = workouts.filter((w) => (w.totalIntensity ?? 0) > 0);
-      const avgIntensity = workoutsWithIntensity.length > 0
-        ? Math.round(workoutsWithIntensity.reduce((sum, w) => sum + (w.totalIntensity ?? 0), 0) / workoutsWithIntensity.length)
-        : null;
+      const totalVolume = workouts.reduce((sum, w) => sum + (Number(w.totalVolume) || 0), 0)
+      const workoutsWithIntensity = workouts.filter((w) => (w.totalIntensity ?? 0) > 0)
+      const avgIntensity =
+        workoutsWithIntensity.length > 0
+          ? Math.round(
+              workoutsWithIntensity.reduce((sum, w) => sum + (w.totalIntensity ?? 0), 0) /
+                workoutsWithIntensity.length
+            )
+          : null
 
       return response.json({
         success: true,
@@ -68,41 +70,62 @@ export default class ProfileController {
             avgIntensity,
           },
         },
-      });
+      })
     } catch (error) {
-      console.error('Profile error:', error);
+      console.error('Profile error:', error)
       return response.internalServerError({
         success: false,
         message: 'Ошибка при получении профиля',
-      });
+      })
     }
   }
 
   async updateProfile({ auth, request, response }: HttpContext) {
     try {
-      const user = auth.user!;
-      const { fullName, email, bio, specializations, education, gender, themeHue, donatePhone, donateCard, donateYookassaLink } = request.only([
-        'fullName', 'email', 'bio', 'specializations', 'education', 'gender', 'themeHue',
-        'donatePhone', 'donateCard', 'donateYookassaLink',
-      ]);
+      const user = auth.user!
+      const {
+        fullName,
+        email,
+        bio,
+        specializations,
+        education,
+        gender,
+        themeHue,
+        donatePhone,
+        donateCard,
+        donateYookassaLink,
+      } = request.only([
+        'fullName',
+        'email',
+        'bio',
+        'specializations',
+        'education',
+        'gender',
+        'themeHue',
+        'donatePhone',
+        'donateCard',
+        'donateYookassaLink',
+      ])
 
-      if (fullName !== undefined) user.fullName = fullName;
-      if (email !== undefined) user.email = email;
-      if (bio !== undefined) user.bio = bio || null;
-      if (specializations !== undefined) user.specializations = Array.isArray(specializations) ? specializations : null;
-      if (education !== undefined) user.education = education || null;
-      if (gender !== undefined) user.gender = gender === 'male' || gender === 'female' ? gender : null;
+      if (fullName !== undefined) user.fullName = fullName
+      if (email !== undefined) user.email = email
+      if (bio !== undefined) user.bio = bio || null
+      if (specializations !== undefined)
+        user.specializations = Array.isArray(specializations) ? specializations : null
+      if (education !== undefined) user.education = education || null
+      if (gender !== undefined)
+        user.gender = gender === 'male' || gender === 'female' ? gender : null
       if (themeHue !== undefined) {
-        const n = Number(themeHue);
-        const isValidHue = Number.isInteger(n) && n >= 0 && n <= 359;
-        const isSpecial = n === -1 || n === -2 || n === -3; // dark / light / auto
-        user.themeHue = isValidHue || isSpecial ? n : null;
+        const n = Number(themeHue)
+        const isValidHue = Number.isInteger(n) && n >= 0 && n <= 359
+        const isSpecial = n === -1 || n === -2 || n === -3 // dark / light / auto
+        user.themeHue = isValidHue || isSpecial ? n : null
       }
-      if (donatePhone !== undefined) user.donatePhone = donatePhone || null;
-      if (donateCard !== undefined) user.donateCard = donateCard || null;
-      if (donateYookassaLink !== undefined) user.donateYookassaLink = donateYookassaLink || null;
+      if (donatePhone !== undefined) user.donatePhone = donatePhone || null
+      if (donateCard !== undefined) user.donateCard = donateCard || null
+      if (donateYookassaLink !== undefined) user.donateYookassaLink = donateYookassaLink || null
 
-      await user.save();
+      await user.save()
 
       return response.json({
         success: true,
@@ -121,13 +144,13 @@ export default class ProfileController {
             themeHue: user.themeHue,
           },
         },
-      });
+      })
     } catch (error) {
-      console.error('Update profile error:', error);
+      console.error('Update profile error:', error)
       return response.internalServerError({
         success: false,
         message: 'Ошибка при обновлении профиля',
-      });
+      })
     }
   }
 
@@ -333,54 +356,54 @@ export default class ProfileController {
 
   async changePassword({ auth, request, response }: HttpContext) {
     try {
-      const user = auth.user!;
-      const { currentPassword, newPassword } = request.only(['currentPassword', 'newPassword']);
+      const user = auth.user!
+      const { currentPassword, newPassword } = request.only(['currentPassword', 'newPassword'])
 
       // OAuth users don't have password
       if (!user.password) {
         return response.badRequest({
           success: false,
           message: 'Этот аккаунт использует социальный вход. Пароль не установлен.',
-        });
+        })
       }
 
-      const isValid = await hash.verify(user.password, currentPassword);
+      const isValid = await hash.verify(user.password, currentPassword)
       if (!isValid) {
         return response.badRequest({
           success: false,
           message: 'Неверный текущий пароль',
-        });
+        })
       }
 
-      user.password = newPassword;
-      await user.save();
+      user.password = newPassword
+      await user.save()
 
       return response.json({
         success: true,
         message: 'Пароль успешно изменён',
-      });
+      })
     } catch (error) {
-      console.error('Change password error:', error);
+      console.error('Change password error:', error)
       return response.internalServerError({
         success: false,
         message: 'Ошибка при смене пароля',
-      });
+      })
     }
   }
 
   private calculateTopZones(workouts: Workout[]): Array<{ zone: string; total: number }> {
-    const zoneAccum: Record<string, number> = {};
+    const zoneAccum: Record<string, number> = {}
 
     for (const workout of workouts) {
-      const zonesLoad = workout.zonesLoad || {};
+      const zonesLoad = workout.zonesLoad || {}
       for (const [zone, load] of Object.entries(zonesLoad)) {
-        zoneAccum[zone] = (zoneAccum[zone] || 0) + load;
+        zoneAccum[zone] = (zoneAccum[zone] || 0) + load
       }
     }
 
     return Object.entries(zoneAccum)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
-      .map(([zone, total]) => ({ zone, total: Math.round(total * 100) / 100 }));
+      .map(([zone, total]) => ({ zone, total: Math.round(total * 100) / 100 }))
   }
 }

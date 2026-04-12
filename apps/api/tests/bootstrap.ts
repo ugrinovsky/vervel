@@ -1,36 +1,38 @@
-import app from '@adonisjs/core/services/app';
-import { assert } from '@japa/assert';
-import { apiClient } from '@japa/api-client';
-import { pluginAdonisJS } from '@japa/plugin-adonisjs';
-import type { Config } from '@japa/runner/types';
-import TestUtils from '@adonisjs/core/services/test_utils';
-import { authApiClient } from '@adonisjs/auth/plugins/api_client';
+import app from '@adonisjs/core/services/app'
+import { assert } from '@japa/assert'
+import { apiClient } from '@japa/api-client'
+import { pluginAdonisJS } from '@japa/plugin-adonisjs'
+import type { Config } from '@japa/runner/types'
+import TestUtils from '@adonisjs/core/services/test_utils'
+import { authApiClient } from '@adonisjs/auth/plugins/api_client'
 
 export const runnerHooks: Required<Pick<Config, 'setup' | 'teardown'>> = {
   setup: [() => {}],
   teardown: [],
-};
+}
 
 export const plugins: Config['plugins'] = [
   assert(),
   apiClient(),
   pluginAdonisJS(app),
   authApiClient(app),
-];
+]
 
 export const configureSuite: Config['configureSuite'] = (suite) => {
   if (suite.name === 'functional') {
-    suite.setup(() => TestUtils.httpServer().start());
+    suite.setup(() => TestUtils.httpServer().start())
   }
   if (suite.name === 'unit') {
     suite.setup(async () => {
-      await TestUtils.boot();
+      await TestUtils.boot()
       // macro из @adonisjs/lucid: перед тестами с БД подтягиваем pending-миграции (в т.ч. новые таблицы)
       await (
-        TestUtils as typeof TestUtils & { db: () => { migrate: () => Promise<() => Promise<void>> } }
+        TestUtils as typeof TestUtils & {
+          db: () => { migrate: () => Promise<() => Promise<void>> }
+        }
       )
         .db()
-        .migrate();
-    });
+        .migrate()
+    })
   }
-};
+}

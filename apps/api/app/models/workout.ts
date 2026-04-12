@@ -1,136 +1,148 @@
-import { DateTime } from 'luxon';
-import { compose } from '@adonisjs/core/helpers';
-import { BaseModel, column, belongsTo } from '@adonisjs/lucid/orm';
-import { SoftDeletes } from 'adonis-lucid-soft-deletes';
-import type { BelongsTo } from '@adonisjs/lucid/types/relations';
-import User from './user.js';
+import { DateTime } from 'luxon'
+import { compose } from '@adonisjs/core/helpers'
+import { BaseModel, column, belongsTo } from '@adonisjs/lucid/orm'
+import { SoftDeletes } from 'adonis-lucid-soft-deletes'
+import type { BelongsTo } from '@adonisjs/lucid/types/relations'
+import User from './user.js'
 
 /**
  * Атомарная единица нагрузки
  */
 export type WorkoutSet = {
-  id: string;
+  id: string
 
   // силовые
-  reps?: number;
-  weight?: number;
+  reps?: number
+  weight?: number
 
   // кардио
-  time?: number; // в секундах
-  distance?: number; // в метрах
-  calories?: number;
+  time?: number // в секундах
+  distance?: number // в метрах
+  calories?: number
 
   // доп
-  rpe?: number;
-};
+  rpe?: number
+}
 
 /**
  * Упражнение внутри тренировки
  */
 export type WorkoutExercise = {
-  exerciseId: string;
+  exerciseId: string
 
   /** Отображаемое название — от AI или пользователя; приоритет над каталогом при показе */
-  name?: string;
+  name?: string
 
   /** Зоны мышц, предоставленные AI (используются если упражнение не в каталоге) */
-  zones?: string[];
+  zones?: string[]
 
   /**
    * Доли нагрузки по зонам (ключи = элементы zones), сумма 1.
    * От AI / уточняется после refine; без поля — поровну между zones.
    */
-  zoneWeights?: Record<string, number>;
+  zoneWeights?: Record<string, number>
 
   /**
    * Тип упражнения
    */
-  type: 'strength' | 'cardio' | 'wod';
+  type: 'strength' | 'cardio' | 'wod'
 
   /**
    * Сеты (для силовых и кардио)
    */
-  sets?: WorkoutSet[];
+  sets?: WorkoutSet[]
 
   /**
    * Формат WOD
    */
-  wodType?: 'amrap' | 'fortime' | 'emom' | 'tabata';
+  wodType?: 'amrap' | 'fortime' | 'emom' | 'tabata'
 
   /**
    * Для AMRAP / EMOM
    */
-  duration?: number; // в секундах
+  duration?: number // в секундах
 
   /**
    * Для For Time
    */
-  rounds?: number;
+  rounds?: number
 
   /**
    * Если упражнение часть суперсета — одинаковая метка у группы (напр. "A", "B")
    */
-  supersetGroup?: string;
+  supersetGroup?: string
 
   /** Упражнение с собственным весом — не требует указания кг */
-  bodyweight?: boolean;
-};
+  bodyweight?: boolean
+}
 
 export default class Workout extends compose(BaseModel, SoftDeletes) {
   @column({ isPrimary: true })
-  declare id: number;
+  declare id: number
 
   @column()
-  declare userId: number;
+  declare userId: number
 
   @column.dateTime({ autoCreate: true })
-  declare date: DateTime;
+  declare date: DateTime
 
   @column()
-  declare workoutType: 'crossfit' | 'bodybuilding' | 'cardio';
+  declare workoutType: 'crossfit' | 'bodybuilding' | 'cardio'
 
   @column({
     prepare: (value) => JSON.stringify(value),
     consume: (value) => {
       if (typeof value !== 'string') return value
-      try { return JSON.parse(value) } catch { return [] }
+      try {
+        return JSON.parse(value)
+      } catch {
+        return []
+      }
     },
   })
-  declare exercises: WorkoutExercise[];
+  declare exercises: WorkoutExercise[]
 
   @column({
     prepare: (value) => JSON.stringify(value),
     consume: (value) => {
       if (typeof value !== 'string') return value
-      try { return JSON.parse(value) } catch { return {} }
+      try {
+        return JSON.parse(value)
+      } catch {
+        return {}
+      }
     },
   })
-  declare zonesLoad: Record<string, number>;
+  declare zonesLoad: Record<string, number>
 
   @column({
     prepare: (value) => JSON.stringify(value),
     consume: (value) => {
       if (typeof value !== 'string') return value
-      try { return JSON.parse(value) } catch { return {} }
+      try {
+        return JSON.parse(value)
+      } catch {
+        return {}
+      }
     },
   })
-  declare zonesLoadAbs: Record<string, number>;
+  declare zonesLoadAbs: Record<string, number>
 
   @column()
-  declare totalIntensity: number;
+  declare totalIntensity: number
 
   @column()
-  declare totalVolume: number;
+  declare totalVolume: number
 
   @column()
-  declare notes: string;
+  declare notes: string
 
   @column()
-  declare rpe: number | null;
+  declare rpe: number | null
 
   @column()
-  declare scheduledWorkoutId: number | null;
+  declare scheduledWorkoutId: number | null
 
   @belongsTo(() => User)
-  declare user: BelongsTo<typeof User>;
+  declare user: BelongsTo<typeof User>
 }

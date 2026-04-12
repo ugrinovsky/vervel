@@ -1,19 +1,19 @@
 // database/seeders/workout_seeder.ts
-import Workout from '#models/workout';
-import User from '#models/user';
-import { BaseSeeder } from '@adonisjs/lucid/seeders';
-import { DateTime } from 'luxon';
-import { randomUUID } from 'node:crypto';
+import Workout from '#models/workout'
+import User from '#models/user'
+import { BaseSeeder } from '@adonisjs/lucid/seeders'
+import { DateTime } from 'luxon'
+import { randomUUID } from 'node:crypto'
 
 export default class extends BaseSeeder {
   async run() {
     const user = await User.firstOrCreate(
       { email: 'test@example.com' },
       { fullName: 'Test User', password: '123456' }
-    );
+    )
 
     // Idempotency: remove previous workouts for this user
-    await Workout.query().where('userId', user.id).delete();
+    await Workout.query().where('userId', user.id).delete()
 
     const exercisesData = [
       {
@@ -50,11 +50,11 @@ export default class extends BaseSeeder {
       { name: 'Сгибания рук со штангой', zones: ['biceps'], intensity: 0.6, volume: 70 },
       { name: 'Разгибания рук на блоке', zones: ['triceps'], intensity: 0.55, volume: 65 },
       { name: 'Сгибания запястий', zones: ['forearms'], intensity: 0.4, volume: 45 },
-    ];
+    ]
 
-    const wodTypes = ['amrap', 'emom', 'fortime'] as const;
-    const workouts = [];
-    const today = DateTime.now();
+    const wodTypes = ['amrap', 'emom', 'fortime'] as const
+    const workouts = []
+    const today = DateTime.now()
 
     const typePattern = [
       'bodybuilding',
@@ -67,46 +67,46 @@ export default class extends BaseSeeder {
       'bodybuilding',
       'crossfit',
       'bodybuilding',
-    ] as const;
+    ] as const
 
     for (let i = 0; i < 60; i++) {
-      const date = today.minus({ days: i });
-      const workoutType = typePattern[i % typePattern.length];
-      const numExercises = 3 + (i % 4);
+      const date = today.minus({ days: i })
+      const workoutType = typePattern[i % typePattern.length]
+      const numExercises = 3 + (i % 4)
 
       const selectedExercises = exercisesData.slice(
         (i * 3) % exercisesData.length,
         ((i * 3) % exercisesData.length) + numExercises
-      );
+      )
 
-      const zonesLoad: Record<string, number> = {};
-      let totalIntensity = 0;
-      let totalVolume = 0;
+      const zonesLoad: Record<string, number> = {}
+      let totalIntensity = 0
+      let totalVolume = 0
 
       const exercises = selectedExercises.map((exercise, exIdx) => {
-        const numSets = 3 + (exIdx % 3);
+        const numSets = 3 + (exIdx % 3)
 
         const sets = Array.from({ length: numSets }).map((_, setIdx) => {
-          const reps = 8 + ((i + exIdx + setIdx) % 8);
-          const weight = 20 + ((i * 7 + exIdx * 5 + setIdx * 3) % 60);
+          const reps = 8 + ((i + exIdx + setIdx) % 8)
+          const weight = 20 + ((i * 7 + exIdx * 5 + setIdx * 3) % 60)
 
           exercise.zones.forEach((zone) => {
-            if (!zonesLoad[zone]) zonesLoad[zone] = 0;
-            zonesLoad[zone] += exercise.intensity * reps * (weight / 100);
-          });
+            if (!zonesLoad[zone]) zonesLoad[zone] = 0
+            zonesLoad[zone] += exercise.intensity * reps * (weight / 100)
+          })
 
           if (workoutType === 'bodybuilding') {
-            totalVolume += reps * weight;
+            totalVolume += reps * weight
           }
 
           return {
             id: randomUUID(),
             reps,
             weight,
-          };
-        });
+          }
+        })
 
-        totalIntensity += exercise.intensity;
+        totalIntensity += exercise.intensity
 
         return {
           exerciseId: exercise.name.toLowerCase().replace(/ /g, '_'),
@@ -115,13 +115,13 @@ export default class extends BaseSeeder {
           rounds: workoutType === 'crossfit' ? 3 + (i % 3) : undefined,
           duration: workoutType === 'crossfit' ? 600 + ((i * 100) % 1200) : undefined,
           wodType: workoutType === 'crossfit' ? wodTypes[i % wodTypes.length] : undefined,
-        };
-      });
+        }
+      })
 
-      const maxZoneLoad = Math.max(...Object.values(zonesLoad), 1);
+      const maxZoneLoad = Math.max(...Object.values(zonesLoad), 1)
       Object.keys(zonesLoad).forEach((zone) => {
-        zonesLoad[zone] = zonesLoad[zone] / maxZoneLoad;
-      });
+        zonesLoad[zone] = zonesLoad[zone] / maxZoneLoad
+      })
 
       workouts.push({
         userId: user!.id,
@@ -132,17 +132,13 @@ export default class extends BaseSeeder {
         totalIntensity: totalIntensity / numExercises,
         totalVolume,
         notes: `${
-          workoutType === 'crossfit'
-            ? 'Кроссфит'
-            : workoutType === 'cardio'
-            ? 'Кардио'
-            : 'Силовая'
+          workoutType === 'crossfit' ? 'Кроссфит' : workoutType === 'cardio' ? 'Кардио' : 'Силовая'
         } тренировка ${i + 1}`,
-      });
+      })
     }
 
-    await Workout.createMany(workouts);
+    await Workout.createMany(workouts)
 
-    console.log(`Created ${workouts.length} workouts for user ${user!.email}`);
+    console.log(`Created ${workouts.length} workouts for user ${user!.email}`)
   }
 }

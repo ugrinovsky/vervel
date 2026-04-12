@@ -6,7 +6,13 @@ export default class extends BaseSchema {
   async up() {
     this.schema.createTable(this.tableName, (table) => {
       table.increments('id')
-      table.integer('user_id').unsigned().references('id').inTable('users').onDelete('SET NULL').nullable()
+      table
+        .integer('user_id')
+        .unsigned()
+        .references('id')
+        .inTable('users')
+        .onDelete('SET NULL')
+        .nullable()
       table.string('type', 20).notNullable().defaultTo('general') // general, bug, feature, other
       table.text('message').notNullable()
       table.string('contact', 255).nullable() // email or phone for reply

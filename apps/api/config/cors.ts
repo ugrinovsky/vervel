@@ -1,14 +1,34 @@
 import { defineConfig } from '@adonisjs/cors'
+import env from '#start/env'
+
+function parseAllowedOrigins(): string[] {
+  const raw = env.get('CORS_ALLOWED_ORIGINS')
+  if (!raw?.trim()) {
+    return []
+  }
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+const allowedList = parseAllowedOrigins()
 
 /**
- * Configuration options to tweak the CORS policy. The following
- * options are documented on the official documentation website.
- *
- * https://docs.adonisjs.com/guides/security/cors
+ * With `CORS_ALLOWED_ORIGINS` set, only those Origins get credentialed CORS.
+ * Requests without an `Origin` header (non-browser clients, tests) stay allowed.
  */
 const corsConfig = defineConfig({
   enabled: true,
-  origin: true,
+  origin:
+    allowedList.length > 0
+      ? (origin) => {
+          if (!origin) {
+            return true
+          }
+          return allowedList.includes(origin)
+        }
+      : true,
   methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
   headers: true,
   exposeHeaders: [],

@@ -1,8 +1,8 @@
-import { BaseSeeder } from '@adonisjs/lucid/seeders';
-import Exercise from '#models/exercise';
+import { BaseSeeder } from '@adonisjs/lucid/seeders'
+import Exercise from '#models/exercise'
 
 export default class ExerciseSeeder extends BaseSeeder {
-  static environment: string[] = ['development', 'production'];
+  static environment: string[] = ['development', 'production']
   public async run() {
     await Exercise.updateOrCreateMany('id', [
       // ========================================
@@ -20,7 +20,15 @@ export default class ExerciseSeeder extends BaseSeeder {
         id: 'incline_bench_press',
         title: 'Жим на наклонной',
         category: 'strength',
-        keywords: ['жим наклонной', 'наклонный жим', 'жим на наклонной', 'наклонная скамья', 'incline', 'incline bench', 'incline press'],
+        keywords: [
+          'жим наклонной',
+          'наклонный жим',
+          'жим на наклонной',
+          'наклонная скамья',
+          'incline',
+          'incline bench',
+          'incline press',
+        ],
         zones: ['chests', 'shoulders', 'triceps'],
         intensity: 0.75,
       },
@@ -648,6 +656,6 @@ export default class ExerciseSeeder extends BaseSeeder {
         zones: ['back', 'shoulders', 'core', 'legs'],
         intensity: 0.75,
       },
-    ]);
+    ])
   }
 }

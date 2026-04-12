@@ -360,6 +360,7 @@ export default function TrainerAthleteDetailScreen() {
                 totalWorkouts={avatarData?.totalWorkouts ?? 0}
                 lastWorkoutDaysAgo={avatarData?.lastWorkoutDaysAgo ?? null}
                 loading={avatarLoading}
+                avatarContext="trainer_view"
               />
             )}
           </motion.div>

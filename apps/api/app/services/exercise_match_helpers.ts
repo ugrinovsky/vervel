@@ -62,9 +62,7 @@ export function displayNameMatchesCatalogTitle(displayName: string, catalogTitle
   const a = tokenizeForMatch(displayName)
   const b = tokenizeForMatch(catalogTitle)
   if (a.length === 0 || b.length === 0) return false
-  return (
-    tokenSubsetOverlap(a, b) >= TITLE_MATCH_MIN || tokenSubsetOverlap(b, a) >= TITLE_MATCH_MIN
-  )
+  return tokenSubsetOverlap(a, b) >= TITLE_MATCH_MIN || tokenSubsetOverlap(b, a) >= TITLE_MATCH_MIN
 }
 
 /**

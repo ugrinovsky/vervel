@@ -9,7 +9,7 @@
 |
 */
 
-import { Env } from '@adonisjs/core/env';
+import { Env } from '@adonisjs/core/env'
 
 export default await Env.create(new URL('../', import.meta.url), {
   NODE_ENV: Env.schema.enum(['development', 'production', 'test'] as const),
@@ -60,14 +60,14 @@ export default await Env.create(new URL('../', import.meta.url), {
   | AI pricing (rubles per operation)
   |----------------------------------------------------------
   */
-  AI_COST_GENERATE: Env.schema.string.optional(),      // default 10
-  AI_COST_RECOGNIZE: Env.schema.string.optional(),     // default 9
-  AI_WELCOME_BONUS: Env.schema.string.optional(),      // default 50
+  AI_COST_GENERATE: Env.schema.string.optional(), // default 10
+  AI_COST_RECOGNIZE: Env.schema.string.optional(), // default 9
+  AI_WELCOME_BONUS: Env.schema.string.optional(), // default 50
   // Token-based chat billing
-  AI_CHAT_INPUT_RATE: Env.schema.string.optional(),    // ₽ per 1000 input tokens, default 0.20
-  AI_CHAT_OUTPUT_RATE: Env.schema.string.optional(),   // ₽ per 1000 output tokens, default 0.40
-  AI_CHAT_MARKUP: Env.schema.string.optional(),        // markup multiplier, default 5
-  AI_CHAT_MIN_CHARGE: Env.schema.string.optional(),    // minimum charge per message, default 0.50
+  AI_CHAT_INPUT_RATE: Env.schema.string.optional(), // ₽ per 1000 input tokens, default 0.20
+  AI_CHAT_OUTPUT_RATE: Env.schema.string.optional(), // ₽ per 1000 output tokens, default 0.40
+  AI_CHAT_MARKUP: Env.schema.string.optional(), // markup multiplier, default 5
+  AI_CHAT_MIN_CHARGE: Env.schema.string.optional(), // minimum charge per message, default 0.50
 
   /*
   |----------------------------------------------------------
@@ -99,4 +99,12 @@ export default await Env.create(new URL('../', import.meta.url), {
   VAPID_PUBLIC_KEY: Env.schema.string.optional(),
   VAPID_PRIVATE_KEY: Env.schema.string.optional(),
   VAPID_SUBJECT: Env.schema.string.optional(),
-});
+
+  /*
+  |----------------------------------------------------------
+  | CORS — comma-separated list of allowed browser Origins (e.g. https://vervel.ru)
+  | Empty / unset → reflect any origin (dev-friendly; set in production).
+  |----------------------------------------------------------
+  */
+  CORS_ALLOWED_ORIGINS: Env.schema.string.optional(),
+})

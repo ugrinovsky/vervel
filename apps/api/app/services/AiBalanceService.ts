@@ -73,10 +73,7 @@ export class AiBalanceService {
    */
   static async charge(userId: number, amount: number, description: string): Promise<number> {
     return await db.transaction(async (trx) => {
-      const user = await User.query({ client: trx })
-        .where('id', userId)
-        .forUpdate()
-        .firstOrFail()
+      const user = await User.query({ client: trx }).where('id', userId).forUpdate().firstOrFail()
 
       if (user.balance < amount) {
         throw new InsufficientBalanceError(user.balance, amount)
@@ -110,12 +107,14 @@ export class AiBalanceService {
    * Начисляет средства на баланс пользователя (бонус/пополнение).
    * @returns новый баланс
    */
-  static async topup(userId: number, amount: number, type: 'topup' | 'bonus', description: string): Promise<number> {
+  static async topup(
+    userId: number,
+    amount: number,
+    type: 'topup' | 'bonus',
+    description: string
+  ): Promise<number> {
     return await db.transaction(async (trx) => {
-      const user = await User.query({ client: trx })
-        .where('id', userId)
-        .forUpdate()
-        .firstOrFail()
+      const user = await User.query({ client: trx }).where('id', userId).forUpdate().firstOrFail()
 
       user.balance = Math.round((Number(user.balance) + amount) * 100) / 100
       user.useTransaction(trx)

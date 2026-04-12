@@ -1,30 +1,30 @@
-import { DateTime } from 'luxon';
-import { BaseModel, column } from '@adonisjs/lucid/orm';
+import { DateTime } from 'luxon'
+import { BaseModel, column } from '@adonisjs/lucid/orm'
 
 export default class Exercise extends BaseModel {
-  public static selfAssignPrimaryKey = true;
+  public static selfAssignPrimaryKey = true
 
   @column({ isPrimary: true })
-  declare id: string;
+  declare id: string
 
   @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime;
+  declare createdAt: DateTime
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime;
+  declare updatedAt: DateTime
 
   @column()
-  declare title: string;
+  declare title: string
 
   @column()
-  declare category: 'strength' | 'olympic' | 'gymnastics' | 'functional' | 'cardio';
+  declare category: 'strength' | 'olympic' | 'gymnastics' | 'functional' | 'cardio'
 
   @column({ serializeAs: 'keywords', prepare: (value: string[]) => JSON.stringify(value) })
-  declare keywords: string[];
+  declare keywords: string[]
 
   @column({ serializeAs: 'zones', prepare: (value: string[]) => JSON.stringify(value) })
-  declare zones: string[];
+  declare zones: string[]
 
   @column()
-  declare intensity: number;
+  declare intensity: number
 }

@@ -25,10 +25,7 @@ export default class AthleteController {
 
     const result = await Promise.all(
       groups.map(async (group) => {
-        const chat = await Chat.query()
-          .where('type', 'group')
-          .where('groupId', group.id)
-          .first()
+        const chat = await Chat.query().where('type', 'group').where('groupId', group.id).first()
 
         return {
           id: group.id,
@@ -97,9 +94,10 @@ export default class AthleteController {
     // Group chats (groups the athlete is a member of)
     const groupRows = await db.from('group_athletes').where('athlete_id', athlete.id)
     const groupIds = groupRows.map((r: any) => r.group_id)
-    const groupChats = groupIds.length > 0
-      ? await Chat.query().where('type', 'group').whereIn('groupId', groupIds)
-      : []
+    const groupChats =
+      groupIds.length > 0
+        ? await Chat.query().where('type', 'group').whereIn('groupId', groupIds)
+        : []
 
     const allChats = [...personalChats, ...groupChats]
     if (allChats.length === 0) {
@@ -114,9 +112,7 @@ export default class AthleteController {
     const chats: { chatId: number; unread: number }[] = []
     for (const chat of allChats) {
       const lastRead = readMap.get(chat.id)
-      let query = Message.query()
-        .where('chatId', chat.id)
-        .whereNot('senderId', athlete.id)
+      let query = Message.query().where('chatId', chat.id).whereNot('senderId', athlete.id)
       if (lastRead) {
         query = query.where('createdAt', '>', lastRead.toISO()!)
       }

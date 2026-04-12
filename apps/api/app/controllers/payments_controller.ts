@@ -11,9 +11,9 @@ const YOOKASSA_API = 'https://api.yookassa.ru/v3/payments'
  * https://yookassa.ru/developers/using-api/webhooks
  */
 const YOOKASSA_IP_RANGES = [
-  '185.71.76.',   // 185.71.76.0/27
-  '185.71.77.',   // 185.71.77.0/27
-  '77.75.153.',   // 77.75.153.0/25
+  '185.71.76.', // 185.71.76.0/27
+  '185.71.77.', // 185.71.77.0/27
+  '77.75.153.', // 77.75.153.0/25
   '77.75.156.11',
   '77.75.156.35',
 ]
@@ -71,7 +71,7 @@ export default class PaymentsController {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Basic ${btoa(`${shopId}:${secretKey}`)}`,
+          'Authorization': `Basic ${btoa(`${shopId}:${secretKey}`)}`,
           'Idempotence-Key': idempotencyKey,
         },
         body: JSON.stringify(yookassaBody),

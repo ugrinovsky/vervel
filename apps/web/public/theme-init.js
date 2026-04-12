@@ -48,10 +48,18 @@
     r.style.setProperty('--color_text_muted', 'rgba(0,0,0,0.48)');
   } else {
     var hue = 175;
-    try { var u = JSON.parse(localStorage.getItem('user') || '{}'); if (typeof u.themeHue === 'number') hue = u.themeHue; } catch (e) {}
+    try {
+      var u = JSON.parse(localStorage.getItem('user') || '{}');
+      if (typeof u.themeHue === 'number') hue = u.themeHue;
+    } catch {
+      /* ignore invalid user JSON in localStorage */
+    }
     if (hue !== 175) {
-      var h = hue, hLight = ((h - 8) + 360) % 360, hDark = (h + 26) % 360;
-      var primary = hslToRgb(h, 74, 21), primaryDark = hslToRgb(hDark, 67, 17);
+      var baseH = hue;
+      var hLight = ((baseH - 8) + 360) % 360;
+      var hDark = (baseH + 26) % 360;
+      var primary = hslToRgb(baseH, 74, 21);
+      var primaryDark = hslToRgb(hDark, 67, 17);
       var hN = ((hLight % 360) + 360) % 360;
       var lightL = hN >= 30 && hN <= 100 ? 38 : hN >= 100 && hN <= 170 ? 38 : hN >= 200 && hN <= 290 ? 50 : 44;
       var primaryLight = hslToRgb(hLight, 75, lightL);

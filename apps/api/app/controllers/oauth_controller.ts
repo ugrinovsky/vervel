@@ -56,14 +56,14 @@ export default class OAuthController {
     const config = this.getProviderConfig(provider)
 
     // Build authorization URL
-    const params_obj = new URLSearchParams({
+    const paramsObj = new URLSearchParams({
       client_id: config.clientId ?? '',
       redirect_uri: config.redirectUri ?? '',
       response_type: 'code',
       scope: config.scope,
     })
 
-    return response.redirect(`${config.authorizeUrl}?${params_obj.toString()}`)
+    return response.redirect(`${config.authorizeUrl}?${paramsObj.toString()}`)
   }
 
   /**
@@ -81,13 +81,19 @@ export default class OAuthController {
 
     // Check for OAuth errors
     if (request.input('error')) {
-      return response.redirect().status(302).toPath(`${appUrl}/login?error=oauth_denied&provider=${provider}`)
+      return response
+        .redirect()
+        .status(302)
+        .toPath(`${appUrl}/login?error=oauth_denied&provider=${provider}`)
     }
 
     const code = request.input('code')
 
     if (!code) {
-      return response.redirect().status(302).toPath(`${appUrl}/login?error=oauth_failed&provider=${provider}`)
+      return response
+        .redirect()
+        .status(302)
+        .toPath(`${appUrl}/login?error=oauth_failed&provider=${provider}`)
     }
 
     try {
@@ -147,10 +153,7 @@ export default class OAuthController {
 
       // Check if email is provided
       if (!email) {
-        return response
-          .redirect()
-          .status(302)
-          .toPath(`/login?error=no_email&provider=${provider}`)
+        return response.redirect().status(302).toPath(`/login?error=no_email&provider=${provider}`)
       }
 
       // Step 1: Find existing OAuth connection
@@ -218,17 +221,11 @@ export default class OAuthController {
 
       // If user doesn't have role, redirect to role selection
       if (!user.role) {
-        return response
-          .redirect()
-          .status(302)
-          .toPath(`/select-role?userId=${user.id}`)
+        return response.redirect().status(302).toPath(`/select-role?userId=${user.id}`)
       }
 
       // User has role - redirect to app
-      return response
-        .redirect()
-        .status(302)
-        .toPath(`/auth/callback`)
+      return response.redirect().status(302).toPath(`/auth/callback`)
     } catch (error) {
       console.error('OAuth callback error:', error)
       return response

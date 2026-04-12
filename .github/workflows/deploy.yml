@@ -1,12 +1,79 @@
-name: Deploy
+name: CI and deploy
 
 on:
   push:
     branches:
       - master
+  pull_request:
 
 jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: vervel
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d vervel"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Prepare API .env for tests
+        working-directory: apps/api
+        run: |
+          {
+            echo "NODE_ENV=test"
+            echo "PORT=3333"
+            echo "HOST=127.0.0.1"
+            echo "LOG_LEVEL=silent"
+            echo "APP_KEY=$(openssl rand -hex 32)"
+            echo "DB_HOST=127.0.0.1"
+            echo "DB_PORT=5432"
+            echo "DB_USER=postgres"
+            echo "DB_PASSWORD=postgres"
+            echo "DB_DATABASE=vervel"
+          } > .env
+
+      - name: Lint API
+        run: npm run lint --workspace=apps/api
+
+      - name: Typecheck API
+        run: npm run typecheck --workspace=apps/api
+
+      - name: Test API
+        run: npm run test --workspace=apps/api
+
+      - name: Lint web
+        run: npm run lint --workspace=apps/web
+
+      - name: Typecheck web
+        run: npm run typecheck --workspace=apps/web
+
+      - name: Test web
+        run: npm run test --workspace=apps/web
+
   deploy:
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
 
     steps:
@@ -19,9 +86,20 @@ jobs:
           ssh-private-key: ${{ secrets.VDS_SSH_KEY }}
 
       - name: Deploy
+        env:
+          VDS_HOST: ${{ secrets.VDS_HOST }}
+          VDS_USER: ${{ secrets.VDS_USER }}
+          VDS_KNOWN_HOSTS: ${{ secrets.VDS_SSH_KNOWN_HOSTS }}
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.VDS_USER }}@${{ secrets.VDS_HOST }} "
-            cd /app &&
-            git pull &&
-            docker compose up -d --build
-          "
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          if [ -n "${VDS_KNOWN_HOSTS:-}" ]; then
+            printf '%s\n' "$VDS_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+            SSH_OPTS='-o StrictHostKeyChecking=yes'
+          else
+            ssh-keyscan -H "$VDS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+            SSH_OPTS='-o StrictHostKeyChecking=accept-new'
+          fi
+          chmod 644 ~/.ssh/known_hosts
+          ssh $SSH_OPTS "${VDS_USER}@${VDS_HOST}" "cd /app && git pull && docker compose up -d --build"

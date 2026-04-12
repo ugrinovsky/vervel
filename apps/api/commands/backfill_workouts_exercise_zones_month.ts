@@ -9,7 +9,10 @@ import { WorkoutCalculator } from '#services/WorkoutCalculator'
 
 function humanizeExerciseLabel(ex: WorkoutExercise): string {
   if (ex.name?.trim()) return ex.name.trim()
-  return String(ex.exerciseId ?? '').replace(/^custom:/i, '').replace(/_/g, ' ').trim()
+  return String(ex.exerciseId ?? '')
+    .replace(/^custom:/i, '')
+    .replace(/_/g, ' ')
+    .trim()
 }
 
 /**
@@ -98,8 +101,8 @@ export default class BackfillWorkoutsExerciseZones extends BaseCommand {
               reps: null as any,
               weight: null as any,
               duration: null as any,
-              notes: null,
-              supersetGroup: ex.supersetGroup ?? null,
+              notes: undefined,
+              supersetGroup: ex.supersetGroup ?? undefined,
               setData: undefined,
               exerciseId: undefined,
               zones: Array.isArray(ex.zones) ? ex.zones : undefined,
@@ -153,4 +156,3 @@ export default class BackfillWorkoutsExerciseZones extends BaseCommand {
     await this.terminate()
   }
 }
-

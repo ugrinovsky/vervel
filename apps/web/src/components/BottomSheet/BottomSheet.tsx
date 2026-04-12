@@ -1,9 +1,19 @@
-import { type PropsWithChildren, type ReactNode, useEffect, useRef, useState } from 'react';
+import {
+  type PropsWithChildren,
+  type ReactNode,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import CloseButton from '@/components/ui/CloseButton';
+import { useSheetStack, sheetZIndexForId } from '@/contexts/SheetStackContext';
 
 interface Props extends PropsWithChildren {
   id?: string;
@@ -14,6 +24,26 @@ interface Props extends PropsWithChildren {
   emoji?: string;
   /** Custom header content rendered to the left of the ✕ button. */
   header?: ReactNode;
+  /**
+   * Только если нет SheetStackProvider: фиксированный слой.
+   * С провайдером z-index берётся из стека автоматически.
+   */
+  layer?: 'base' | 'overlay';
+  /**
+   * Только без провайдера: локальная блокировка скролла.
+   * С SheetStackProvider блокировка одна на всё дерево.
+   */
+  scrollLock?: boolean;
+  /**
+   * Только без провайдера: Escape закрывает этот шит.
+   * С провайдером Escape обрабатывает только верхний слой стека.
+   */
+  escapeCloses?: boolean;
+  /**
+   * Не участвовать в глобальном стеке (тесты / особые случаи).
+   * Тогда работают layer / scrollLock / escapeCloses как раньше.
+   */
+  isolateFromStack?: boolean;
 }
 
 function AnimatedHeight({ children }: { children: ReactNode }) {
@@ -44,11 +74,45 @@ function AnimatedHeight({ children }: { children: ReactNode }) {
   );
 }
 
-export default function BottomSheet({ id, open, onClose, title, emoji, header, children }: Props) {
+export default function BottomSheet({
+  id,
+  open,
+  onClose,
+  title,
+  emoji,
+  header,
+  children,
+  layer = 'base',
+  scrollLock = true,
+  escapeCloses = true,
+  isolateFromStack = false,
+}: Props) {
   const dragControls = useDragControls();
+  const sheetStack = useSheetStack();
+  const reactId = useId();
+  const stackId = `${id ?? 'bottom-sheet'}-${reactId}`;
+  const closeRef = useRef<(() => void) | null>(null);
+  closeRef.current = onClose;
 
-  useBodyScrollLock(open);
-  useEscapeKey(onClose, open);
+  const useGlobalStack = Boolean(sheetStack) && !isolateFromStack;
+  // Только стабильная subscribe — не весь context value (он меняется при каждом setStack и рвёт эффект → цикл).
+  const stackSubscribe = sheetStack?.subscribe;
+  const stackList = sheetStack?.stack;
+
+  useLayoutEffect(() => {
+    if (!open || !useGlobalStack || !stackSubscribe) return;
+    return stackSubscribe(stackId, closeRef);
+  }, [open, useGlobalStack, stackSubscribe, stackId]);
+
+  const zIndex = useMemo(() => {
+    if (!useGlobalStack || !stackList) {
+      return layer === 'overlay' ? 70 : 60;
+    }
+    return sheetZIndexForId(stackList, stackId);
+  }, [useGlobalStack, stackList, stackId, layer]);
+
+  useBodyScrollLock(open && scrollLock && !useGlobalStack);
+  useEscapeKey(onClose, open && escapeCloses && !useGlobalStack);
 
   const headerContent = header ?? (
     <div className="flex items-center gap-2">
@@ -65,7 +129,8 @@ export default function BottomSheet({ id, open, onClose, title, emoji, header, c
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           id={id}
-          className="bottom-sheet fixed inset-0 z-60 flex items-end"
+          className="bottom-sheet fixed inset-0 flex items-end"
+          style={{ zIndex }}
           onClick={onClose}
         >
           <div className="absolute inset-0 bg-black/60" onTouchMove={(e) => e.preventDefault()} />

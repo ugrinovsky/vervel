@@ -1,5 +1,5 @@
 import { test } from '@japa/runner'
-import { resolveAfterId, formatSseEvent } from '#services/chatStreamLogic'
+import { resolveAfterId, formatSseEvent } from '#services/chat_stream_logic'
 
 test.group('resolveAfterId: Last-Event-ID header takes precedence', () => {
   test('возвращает число из заголовка, игнорирует query-param', ({ assert }) => {

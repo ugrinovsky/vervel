@@ -18,12 +18,12 @@ export interface AiSetData {
 }
 
 export interface AiExercise {
-  name: string        // русское имя для матчинга с каталогом (как в промптах ИИ)
+  name: string // русское имя для матчинга с каталогом (как в промптах ИИ)
   displayName: string // русское имя для UI
   sets: number
-  reps?: number       // fallback если setData отсутствует
-  weight?: number     // fallback если setData отсутствует
-  duration?: number   // минуты (кардио)
+  reps?: number // fallback если setData отсутствует
+  weight?: number // fallback если setData отсутствует
+  duration?: number // минуты (кардио)
   /** Данные по каждому подходу отдельно (приоритет над reps/weight) */
   setData?: AiSetData[]
   notes?: string
@@ -64,10 +64,10 @@ const LLM_LOG_PREVIEW = {
   errBody: 800,
 } as const
 
-function chainLogFields(chain?: AiParseChainCtx): Partial<AiParseChainCtx> & Record<string, unknown> {
-  return chain
-    ? { traceId: chain.traceId, userId: chain.userId, route: chain.route }
-    : {}
+function chainLogFields(
+  chain?: AiParseChainCtx
+): Partial<AiParseChainCtx> & Record<string, unknown> {
+  return chain ? { traceId: chain.traceId, userId: chain.userId, route: chain.route } : {}
 }
 
 export type YandexLlmLogMeta = { chain?: AiParseChainCtx; step: string }
@@ -244,7 +244,12 @@ export class YandexAiService {
     logger.info(
       {
         ...(chain
-          ? { traceId: chain.traceId, userId: chain.userId, route: chain.route, step: 'llm.parse_json_done' }
+          ? {
+              traceId: chain.traceId,
+              userId: chain.userId,
+              route: chain.route,
+              step: 'llm.parse_json_done',
+            }
           : {}),
         source,
         normalizedInputChars: normalizedInput.length,
@@ -329,7 +334,13 @@ export class YandexAiService {
     }
 
     // Шаг 1: OCR — извлечь текст с изображения
-    const extractedText = await this.extractTextWithOcr(imageBase64, mimeType, apiKey, folderId, chain)
+    const extractedText = await this.extractTextWithOcr(
+      imageBase64,
+      mimeType,
+      apiKey,
+      folderId,
+      chain
+    )
     logger.info(
       {
         ...(chain ? { traceId: chain.traceId, userId: chain.userId, route: chain.route } : {}),
@@ -342,7 +353,9 @@ export class YandexAiService {
     )
 
     if (!extractedText.trim()) {
-      throw new Error('Не удалось распознать текст на изображении. Убедитесь, что текст виден чётко.')
+      throw new Error(
+        'Не удалось распознать текст на изображении. Убедитесь, что текст виден чётко.'
+      )
     }
 
     // Шаг 2a: LLM cleanup — для одной строки часто вреден; пропускаем
@@ -377,7 +390,9 @@ export class YandexAiService {
       logger.warn({ mimeType }, 'ai:cleanup produced empty text — fallback to raw OCR')
       normalizedText = normalizeWorkoutTextForParsing(extractedText)
       if (!normalizedText.trim()) {
-        throw new Error('Не удалось распознать текст на изображении. Убедитесь, что текст виден чётко.')
+        throw new Error(
+          'Не удалось распознать текст на изображении. Убедитесь, что текст виден чётко.'
+        )
       }
     }
 
@@ -455,7 +470,10 @@ export class YandexAiService {
    * Парсит произвольный текст так же, как после OCR (без этапа OCR).
    * Нужен, чтобы "распознать по тексту" работало максимально идентично распознаванию по фото.
    */
-  static async parseWorkoutTextLikeOcr(text: string, chain?: AiParseChainCtx): Promise<AiWorkoutResult> {
+  static async parseWorkoutTextLikeOcr(
+    text: string,
+    chain?: AiParseChainCtx
+  ): Promise<AiWorkoutResult> {
     const apiKey = env.get('YANDEX_CLOUD_API_KEY')!
     const folderId = env.get('YANDEX_FOLDER_ID')!
 
@@ -609,7 +627,10 @@ export class YandexAiService {
       { step: 'catalog.match_exercises_llm' }
     )
 
-    const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    const cleaned = raw
+      .replace(/```json\n?/g, '')
+      .replace(/```\n?/g, '')
+      .trim()
     const parsed: Record<string, string | null> = JSON.parse(cleaned)
     return new Map(Object.entries(parsed))
   }
@@ -626,7 +647,10 @@ export class YandexAiService {
 
     const payload = {
       standards: standards.map((s) => ({ id: s.id, displayLabel: s.displayLabel })),
-      candidates: candidates.map((c) => ({ exerciseId: c.exerciseId, exerciseName: c.exerciseName })),
+      candidates: candidates.map((c) => ({
+        exerciseId: c.exerciseId,
+        exerciseName: c.exerciseName,
+      })),
     }
 
     logger.info(
@@ -650,7 +674,10 @@ export class YandexAiService {
       { step: 'strength.suggest_links_llm' }
     )
 
-    const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    const cleaned = raw
+      .replace(/```json\n?/g, '')
+      .replace(/```\n?/g, '')
+      .trim()
     let parsed: unknown
     try {
       parsed = JSON.parse(cleaned)
@@ -668,13 +695,14 @@ export class YandexAiService {
     }
 
     const linksRaw = Array.isArray((parsed as { links?: unknown }).links)
-      ? ((parsed as { links: unknown[] }).links)
+      ? (parsed as { links: unknown[] }).links
       : []
     const out: Array<{ sourceExerciseId: string; standardId: number }> = []
     for (const item of linksRaw) {
-      if (item == null || typeof item !== 'object') continue
+      if (item === null || item === undefined || typeof item !== 'object') continue
       const rec = item as Record<string, unknown>
-      const sid = rec.sourceExerciseId != null ? String(rec.sourceExerciseId).trim() : ''
+      const sidRaw = rec.sourceExerciseId
+      const sid = sidRaw !== undefined && sidRaw !== null ? String(sidRaw).trim() : ''
       const std = rec.standardId
       const stdNum = typeof std === 'number' ? std : Number(std)
       if (!sid || !Number.isFinite(stdNum)) continue
@@ -686,7 +714,10 @@ export class YandexAiService {
       {
         event: 'ai:suggest-standard-links:response',
         cleanedLength: cleaned.length,
-        rawResponse: cleaned.length <= maxLoggedRaw ? cleaned : `${cleaned.slice(0, maxLoggedRaw)}…(truncated)`,
+        rawResponse:
+          cleaned.length <= maxLoggedRaw
+            ? cleaned
+            : `${cleaned.slice(0, maxLoggedRaw)}…(truncated)`,
         parsedLinksCount: linksRaw.length,
         normalizedLinksCount: out.length,
         links: out,
@@ -730,15 +761,12 @@ export class YandexAiService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Api-Key ${apiKey}`,
+        'Authorization': `Api-Key ${apiKey}`,
         'x-folder-id': folderId,
       },
       body: JSON.stringify({
         model: yandexFoundationModelUri(folderId, chatModel),
-        messages: [
-          { role: 'system', content: CHAT_SYSTEM_PROMPT },
-          ...messages,
-        ],
+        messages: [{ role: 'system', content: CHAT_SYSTEM_PROMPT }, ...messages],
         temperature: 0.7,
         max_tokens: 1000,
       }),
@@ -851,7 +879,7 @@ export class YandexAiService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Api-Key ${apiKey}`,
+        'Authorization': `Api-Key ${apiKey}`,
         'x-folder-id': folderId,
         'x-data-logging-enabled': 'false',
       },
@@ -967,7 +995,7 @@ export class YandexAiService {
       headers: {
         'Content-Type': 'application/json',
         // API-ключи Yandex Cloud используют "Api-Key", не "Bearer" (Bearer только для IAM-токенов)
-        Authorization: `Api-Key ${apiKey}`,
+        'Authorization': `Api-Key ${apiKey}`,
         'x-folder-id': folderId,
       },
       body: JSON.stringify({
@@ -1118,7 +1146,11 @@ export class YandexAiService {
     logger.warn(
       {
         ...(params.chain
-          ? { traceId: params.chain.traceId, userId: params.chain.userId, route: params.chain.route }
+          ? {
+              traceId: params.chain.traceId,
+              userId: params.chain.userId,
+              route: params.chain.route,
+            }
           : {}),
         step: `${params.logStep}.placeholder_retry`,
       },
@@ -1163,7 +1195,7 @@ export class YandexAiService {
     const parsedType = validTypes.includes(parsed.workoutType) ? parsed.workoutType : 'bodybuilding'
 
     const toNumberLoose = (v: any): number | undefined => {
-      if (v == null) return undefined
+      if (v === null || v === undefined) return undefined
       const s = String(v).trim().replace(',', '.')
       const n = Number(s)
       return Number.isFinite(n) ? n : undefined
@@ -1188,7 +1220,8 @@ export class YandexAiService {
         let zoneWeights: Record<string, number> | undefined
         const rawZw = ex.zoneWeights
         if (
-          rawZw != null &&
+          rawZw !== null &&
+          rawZw !== undefined &&
           typeof rawZw === 'object' &&
           !Array.isArray(rawZw) &&
           zones.length > 0
@@ -1196,7 +1229,7 @@ export class YandexAiService {
           const rec: Record<string, number> = {}
           for (const z of zones) {
             const num = toNumberLoose((rawZw as Record<string, unknown>)[z])
-            if (num != null && num > 0) rec[z] = num
+            if (num !== undefined && num > 0) rec[z] = num
           }
           if (Object.keys(rec).length > 0) {
             zoneWeights = rec
@@ -1217,14 +1250,21 @@ export class YandexAiService {
           weight: toNumberLoose(ex.weight),
           duration: toNumberLoose(ex.duration),
           setData,
-          notes: ex.notes != null ? String(ex.notes) : undefined,
-          supersetGroup: ex.supersetGroup != null ? String(ex.supersetGroup) : undefined,
+          notes: ex.notes !== undefined && ex.notes !== null ? String(ex.notes) : undefined,
+          supersetGroup:
+            ex.supersetGroup !== undefined && ex.supersetGroup !== null
+              ? String(ex.supersetGroup)
+              : undefined,
           zones: zones.length > 0 ? zones : undefined,
           zoneWeights,
         }
       }
     )
 
-    return { workoutType: parsedType, exercises, notes: parsed.notes ? String(parsed.notes) : undefined }
+    return {
+      workoutType: parsedType,
+      exercises,
+      notes: parsed.notes ? String(parsed.notes) : undefined,
+    }
   }
 }

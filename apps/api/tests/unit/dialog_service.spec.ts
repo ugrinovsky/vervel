@@ -24,7 +24,11 @@ async function createPersonalChat(trainerId: number, athleteId: number): Promise
   return Chat.create({ type: 'personal', trainerId, athleteId, groupId: null })
 }
 
-async function createMessage(chatId: number, senderId: number, content = 'hello'): Promise<Message> {
+async function createMessage(
+  chatId: number,
+  senderId: number,
+  content = 'hello'
+): Promise<Message> {
   return Message.create({ chatId, senderId, content })
 }
 
@@ -41,9 +45,13 @@ async function markRead(chatId: number, userId: number, at: Date = new Date()): 
 async function cleanupUsers(ids: number[]) {
   for (const id of ids) {
     await db.from('chat_reads').where('user_id', id).delete()
-    await db.from('messages').whereIn('chat_id',
-      db.from('chats').where('trainer_id', id).orWhere('athlete_id', id).select('id')
-    ).delete()
+    await db
+      .from('messages')
+      .whereIn(
+        'chat_id',
+        db.from('chats').where('trainer_id', id).orWhere('athlete_id', id).select('id')
+      )
+      .delete()
     await db.from('chats').where('trainer_id', id).orWhere('athlete_id', id).delete()
     await db.from('balance_transactions').where('user_id', id).delete()
     await db.from('users').where('id', id).delete()

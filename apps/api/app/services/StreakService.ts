@@ -4,7 +4,7 @@ import StreakHistory from '#models/streak_history'
 import type Achievement from '#models/achievement'
 import AchievementService from './AchievementService.js'
 import { XpService } from './XpService.js'
-import { computeWeeklyStreakUpdate, type StreakMode } from './streakLogic.js'
+import { computeWeeklyStreakUpdate, type StreakMode } from './streak_logic.js'
 
 export interface StreakUpdateResult {
   streak: UserStreak
@@ -135,10 +135,7 @@ export class StreakService {
    * Получить историю streak
    */
   static async getStreakHistory(userId: number, limit = 30): Promise<StreakHistory[]> {
-    return await StreakHistory.query()
-      .where('userId', userId)
-      .orderBy('date', 'desc')
-      .limit(limit)
+    return await StreakHistory.query().where('userId', userId).orderBy('date', 'desc').limit(limit)
   }
 
   static async setMode(userId: number, mode: StreakMode): Promise<UserStreak | null> {

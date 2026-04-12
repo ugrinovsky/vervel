@@ -18,10 +18,7 @@ export default class PushController {
     }
 
     // Upsert by endpoint (same browser tab may re-subscribe)
-    await PushSubscription.updateOrCreate(
-      { endpoint },
-      { userId: user.id, p256dh, auth: authKey }
-    )
+    await PushSubscription.updateOrCreate({ endpoint }, { userId: user.id, p256dh, auth: authKey })
 
     return response.ok({ success: true })
   }
@@ -35,10 +32,7 @@ export default class PushController {
       return response.badRequest({ message: 'endpoint обязателен' })
     }
 
-    await PushSubscription.query()
-      .where('userId', user.id)
-      .where('endpoint', endpoint)
-      .delete()
+    await PushSubscription.query().where('userId', user.id).where('endpoint', endpoint).delete()
 
     return response.ok({ success: true })
   }

@@ -33,7 +33,11 @@ async function resolveAthleteIds(
 async function createAthleteWorkouts(
   scheduledWorkoutId: number,
   scheduledDate: DateTime,
-  workoutData: { type: 'crossfit' | 'bodybuilding' | 'cardio'; exercises: ExerciseData[]; notes?: string },
+  workoutData: {
+    type: 'crossfit' | 'bodybuilding' | 'cardio'
+    exercises: ExerciseData[]
+    notes?: string
+  },
   assignedTo: { type: 'group' | 'athlete'; id: number }[]
 ): Promise<void> {
   const athleteIds = await resolveAthleteIds(assignedTo)
@@ -41,7 +45,12 @@ async function createAthleteWorkouts(
 
   const workoutExercises = toWorkoutExercises(workoutData.exercises, workoutData.type)
 
-  let calculated = { zonesLoad: {} as Record<string, number>, zonesLoadAbs: {} as Record<string, number>, totalIntensity: 0, totalVolume: 0 }
+  let calculated = {
+    zonesLoad: {} as Record<string, number>,
+    zonesLoadAbs: {} as Record<string, number>,
+    totalIntensity: 0,
+    totalVolume: 0,
+  }
   if (workoutExercises.length > 0) {
     try {
       calculated = await WorkoutCalculator.calculateZoneLoads(workoutExercises, workoutData.type)
@@ -164,15 +173,17 @@ export default class ScheduledWorkoutController {
     // Create Workout entries for each assigned athlete + send push notifications
     if (Array.isArray(assignedTo) && assignedTo.length > 0) {
       await createAthleteWorkouts(workout.id, parsedDate, workoutData, assignedTo).catch(() => {})
-      resolveAthleteIds(assignedTo).then((athleteIds) => {
-        if (athleteIds.length > 0) {
-          emitter.emit('push:workout_scheduled', {
-            athleteIds,
-            scheduledDate: parsedDate.toFormat('d MMM', { locale: 'ru' }),
-            trainerName: trainer.fullName ?? trainer.email,
-          })
-        }
-      }).catch(() => {})
+      resolveAthleteIds(assignedTo)
+        .then((athleteIds) => {
+          if (athleteIds.length > 0) {
+            emitter.emit('push:workout_scheduled', {
+              athleteIds,
+              scheduledDate: parsedDate.toFormat('d MMM', { locale: 'ru' }),
+              trainerName: trainer.fullName ?? trainer.email,
+            })
+          }
+        })
+        .catch(() => {})
     }
 
     return response.created({
@@ -228,12 +239,9 @@ export default class ScheduledWorkoutController {
     const newAssignedTo = assignedTo ?? workout.assignedTo
     if (newAssignedTo.length > 0) {
       await Workout.query().where('scheduledWorkoutId', workout.id).delete()
-      await createAthleteWorkouts(
-        workout.id,
-        workout.scheduledDate,
-        newData,
-        newAssignedTo
-      ).catch(() => {})
+      await createAthleteWorkouts(workout.id, workout.scheduledDate, newData, newAssignedTo).catch(
+        () => {}
+      )
     }
 
     return response.ok({

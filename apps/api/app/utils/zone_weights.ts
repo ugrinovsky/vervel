@@ -20,7 +20,7 @@ export function distributeZoneWeights(
   let sumKnown = 0
   let knownCount = 0
   for (const h of has) {
-    if (h != null) {
+    if (h !== null) {
       sumKnown += h
       knownCount++
     }
@@ -38,9 +38,9 @@ export function distributeZoneWeights(
   const missing = n - knownCount
   const remainder = 1 - sumKnown
   if (remainder < 0 || sumKnown > 1 + 1e-6) {
-    return has.map((h) => (h != null ? h / sumKnown : 0))
+    return has.map((h) => (h !== null ? h / sumKnown : 0))
   }
 
   const perMissing = remainder / missing
-  return has.map((h) => (h != null ? h : perMissing))
+  return has.map((h) => (h !== null ? h : perMissing))
 }
