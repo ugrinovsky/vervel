@@ -301,7 +301,8 @@ export default class ChatController {
       }
       if (/Giphy \w+ HTTP 429/.test(msg)) {
         return response.serviceUnavailable({
-          message: 'Подборка GIF сейчас недоступна. Через минуту откройте окно снова или откройте «Недавние».',
+          message:
+            'Подборка GIF сейчас недоступна. Через минуту откройте окно снова или откройте «Недавние».',
         })
       }
       return response.badGateway({

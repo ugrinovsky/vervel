@@ -44,8 +44,8 @@ type GiphyImageSet = {
 
 function renditionSize(r: GiphyRendition | undefined): { w?: number; h?: number } {
   if (!r) return {}
-  const nw = r.width !== undefined ? Number(r.width) : NaN
-  const nh = r.height !== undefined ? Number(r.height) : NaN
+  const nw = r.width !== undefined ? Number(r.width) : Number.NaN
+  const nh = r.height !== undefined ? Number(r.height) : Number.NaN
   return {
     w: Number.isFinite(nw) && nw > 0 ? nw : undefined,
     h: Number.isFinite(nh) && nh > 0 ? nh : undefined,
@@ -129,8 +129,7 @@ function mapCategory(raw: GiphyApiCategory): GiphyCategoryDto {
 function mapGif(g: GiphyApiGif): GiphySearchItem | null {
   const picked = pickPreview(g.images)
   if (!picked) return null
-  const send =
-    g.images.downsized?.url ?? g.images.fixed_height?.url ?? picked.url
+  const send = g.images.downsized?.url ?? g.images.fixed_height?.url ?? picked.url
   if (!send) return null
   const intr = firstIntrinsicSize(g.images)
   return {
@@ -144,8 +143,8 @@ function mapGif(g: GiphyApiGif): GiphySearchItem | null {
 
 function nextOffset(pag: GiphySearchResponse['pagination']): number | null {
   if (!pag) return null
-  const { count, offset, total_count } = pag
-  if (offset + count >= total_count) return null
+  const { count, offset, total_count: totalCount } = pag
+  if (offset + count >= totalCount) return null
   return offset + count
 }
 
@@ -163,7 +162,11 @@ const CAT_LIST_TTL_MS = 600_000
 const gridCache = new Map<string, { at: number; data: GridResult }>()
 const categoryListCache = new Map<string, { at: number; data: GiphyCategoryDto[] }>()
 
-async function cachedGrid(key: string, ttlMs: number, fetcher: () => Promise<GridResult>): Promise<GridResult> {
+async function cachedGrid(
+  key: string,
+  ttlMs: number,
+  fetcher: () => Promise<GridResult>
+): Promise<GridResult> {
   const now = Date.now()
   const hit = gridCache.get(key)
   if (hit && now - hit.at < ttlMs) return hit.data

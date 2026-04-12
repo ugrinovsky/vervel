@@ -429,7 +429,10 @@ test.group('Shared chats: защита', () => {
 
   test('GET /chats/giphy/search: только category без tag → 400', async ({ client }) => {
     const user = await athleteUser()
-    const response = await client.get('/chats/giphy/search').qs({ category: 'animals' }).loginAs(user)
+    const response = await client
+      .get('/chats/giphy/search')
+      .qs({ category: 'animals' })
+      .loginAs(user)
     response.assertStatus(400)
   })
 

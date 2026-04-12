@@ -21,9 +21,7 @@ test.group('parseGiphyMessageContent', () => {
   })
 
   test('null для чужого хоста', ({ assert }) => {
-    assert.isNull(
-      parseGiphyMessageContent(`${GIPHY_MESSAGE_PREFIX}https://evil.com/x.gif`)
-    )
+    assert.isNull(parseGiphyMessageContent(`${GIPHY_MESSAGE_PREFIX}https://evil.com/x.gif`))
   })
 
   test('принимает поддомен *.giphy.com', ({ assert }) => {
@@ -51,9 +49,7 @@ test.group('parseGiphyMessage (WxH + url)', () => {
   })
 
   test('null если url после WxH не giphy', ({ assert }) => {
-    assert.isNull(
-      parseGiphyMessage(`${GIPHY_MESSAGE_PREFIX}100x100:https://evil.com/x.gif`)
-    )
+    assert.isNull(parseGiphyMessage(`${GIPHY_MESSAGE_PREFIX}100x100:https://evil.com/x.gif`))
   })
 })
 
