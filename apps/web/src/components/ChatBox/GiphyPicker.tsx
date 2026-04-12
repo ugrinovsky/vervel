@@ -476,7 +476,6 @@ export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Pro
               setSearchTerm('');
             }}
             placeholder="Поиск в GIPHY…"
-            autoFocus
           />
           <CloseButton onClick={onClose} className="!w-9 !h-9" iconClassName="w-[18px] h-[18px]" />
         </div>
