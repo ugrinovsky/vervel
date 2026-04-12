@@ -205,27 +205,27 @@ export default function DayDetails({ date, workouts, onDeleted, onRefresh, readO
     <>
       <div className="animate-fade-in">
         <div className="bg-white/5 p-5 rounded-xl border border-white/20">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-xl font-bold text-white">
+          <div className="mb-4">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-xl font-bold text-white min-w-0 truncate">
                 {format(date, 'd MMMM yyyy', { locale: ru })}
               </h2>
-              {hasWorkouts && (
-                <p className="text-sm text-(--color_text_muted) mt-0.5">
-                  {pluralWorkouts(workouts.length)}
-                </p>
-              )}
-              {hasWorkouts && hasAnyDataIssues && (
-                <p className="text-xs text-(--color_text_muted) mt-1.5 leading-snug">
-                  Есть записи без весов или без оценки нагрузки — смотрите подсказки на карточках ниже.
-                </p>
+              {!readOnly && (
+                <AccentButton size="sm" onClick={handleAddWorkout} className="shrink-0">
+                  <PlusIcon className="w-4 h-4" />
+                  Добавить
+                </AccentButton>
               )}
             </div>
-            {!readOnly && (
-              <AccentButton size="sm" onClick={handleAddWorkout} className="shrink-0">
-                <PlusIcon className="w-4 h-4" />
-                Добавить
-              </AccentButton>
+            {hasWorkouts && (
+              <p className="text-sm text-(--color_text_muted) mt-0.5">
+                {pluralWorkouts(workouts.length)}
+              </p>
+            )}
+            {hasWorkouts && hasAnyDataIssues && (
+              <p className="text-xs text-(--color_text_muted) mt-1.5 leading-snug">
+                Есть записи без весов или без оценки нагрузки — смотрите подсказки на карточках ниже.
+              </p>
             )}
           </div>
 

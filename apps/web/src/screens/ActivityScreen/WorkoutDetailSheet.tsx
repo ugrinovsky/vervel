@@ -656,45 +656,43 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
       open={workout !== null}
       onClose={onClose}
       header={
-        <div className="flex flex-col gap-2 min-w-0 w-full pr-1">
-          <span className="text-lg font-bold text-white leading-tight truncate">
-            {getWorkoutTypeLabel(workout?.type ?? 'unknown')}
-          </span>
-          {!isEditing && (
-            <button
-              type="button"
-              onClick={startEditWorkout}
-              className="group flex items-center gap-2.5 w-full max-w-full rounded-xl px-3 py-2.5 text-left border border-(--color_border) bg-(--color_bg_card_hover)/60 hover:bg-(--color_bg_card_hover) hover:border-white/20 transition-colors"
-            >
-              <span className="min-w-0 flex-1 text-sm leading-snug">
-                {effectiveDateIso ? (
-                  <>
-                    <span className="text-(--color_text_secondary) group-hover:text-(--color_text_primary)">
-                      {dateLabel}
-                    </span>
-                    {timeLabel ? (
-                      <>
-                        <span className="mx-1.5 text-(--color_text_muted)">·</span>
-                        <span className="text-(--color_text_muted) tabular-nums">{timeLabel}</span>
-                      </>
-                    ) : null}
-                  </>
-                ) : (
-                  <span className="text-(--color_text_muted)">Указать дату и время</span>
-                )}
-              </span>
-              <span className="flex items-center gap-1 shrink-0 text-xs font-medium text-(--color_primary_icon)">
-                <PencilIcon className="w-4 h-4 opacity-90" />
-                {effectiveDateIso ? 'Изменить' : 'Выбрать'}
-              </span>
-            </button>
-          )}
-          {isEditing && (
-            <span className="text-xs text-(--color_text_muted)">Редактирование даты, времени и упражнений</span>
-          )}
-        </div>
+        <span className="text-lg font-bold text-white leading-tight truncate min-w-0 pr-1">
+          {getWorkoutTypeLabel(workout?.type ?? 'unknown')}
+        </span>
       }
     >
+      {workout && !isEditing && (
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={startEditWorkout}
+            className="group flex items-center gap-2.5 w-full max-w-full rounded-xl px-3 py-2.5 text-left border border-(--color_border) bg-(--color_bg_card_hover)/60 hover:bg-(--color_bg_card_hover) hover:border-white/20 transition-colors"
+          >
+            <span className="min-w-0 flex-1 text-sm leading-snug">
+              {effectiveDateIso ? (
+                <>
+                  <span className="text-(--color_text_secondary) group-hover:text-(--color_text_primary)">
+                    {dateLabel}
+                  </span>
+                  {timeLabel ? (
+                    <>
+                      <span className="mx-1.5 text-(--color_text_muted)">·</span>
+                      <span className="text-(--color_text_muted) tabular-nums">{timeLabel}</span>
+                    </>
+                  ) : null}
+                </>
+              ) : (
+                <span className="text-(--color_text_muted)">Указать дату и время</span>
+              )}
+            </span>
+            <span className="flex items-center gap-1 shrink-0 text-xs font-medium text-(--color_primary_icon)">
+              <PencilIcon className="w-4 h-4 opacity-90" />
+              {effectiveDateIso ? 'Изменить' : 'Выбрать'}
+            </span>
+          </button>
+        </div>
+      )}
+
       {loading && (
         <div className="flex justify-center py-10">
           <LoadingSpinner size="md" variant="emeraldArc" />
@@ -731,6 +729,9 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
           {/* ── Режим редактирования ──────────────────────────────── */}
           {isEditing && (
             <div className="space-y-3">
+              <span className="text-xs text-(--color_text_muted) block">
+                Редактирование даты, времени и упражнений
+              </span>
               <div className="flex gap-2">
                 <GhostButton variant="solid" onClick={handleCancelEdit} className="flex-1">
                   <XMarkIcon className="w-4 h-4" />
