@@ -36,7 +36,7 @@ test.group('GiphyService (fetch замокан, getApiKey — заглушка)'
   })
 
   test('search: парсит data, url из downsized', async ({ assert }) => {
-    global.fetch = async (input: RequestInfo | URL) => {
+    global.fetch = async (input: unknown) => {
       const u = String(input)
       assert.include(u, 'api.giphy.com/v1/gifs/search')
       assert.include(u, 'q=')
@@ -90,7 +90,7 @@ test.group('GiphyService (fetch замокан, getApiKey — заглушка)'
   })
 
   test('search kind=sticker → /v1/stickers/search', async ({ assert }) => {
-    global.fetch = async (input: RequestInfo | URL) => {
+    global.fetch = async (input: unknown) => {
       assert.include(String(input), '/v1/stickers/search')
       return new Response(
         JSON.stringify({
@@ -106,7 +106,7 @@ test.group('GiphyService (fetch замокан, getApiKey — заглушка)'
   })
 
   test('trending kind=sticker → /v1/stickers/trending', async ({ assert }) => {
-    global.fetch = async (input: RequestInfo | URL) => {
+    global.fetch = async (input: unknown) => {
       assert.include(String(input), '/v1/stickers/trending')
       return new Response(
         JSON.stringify({
@@ -122,7 +122,7 @@ test.group('GiphyService (fetch замокан, getApiKey — заглушка)'
   })
 
   test('categoryGifs кодирует сегменты пути', async ({ assert }) => {
-    global.fetch = async (input: RequestInfo | URL) => {
+    global.fetch = async (input: unknown) => {
       const s = String(input)
       assert.include(s, '/v1/gifs/categories/')
       assert.include(s, encodeURIComponent('cat a'))
@@ -141,7 +141,7 @@ test.group('GiphyService (fetch замокан, getApiKey — заглушка)'
 
   test('listCategories gif: один запрос к /v1/gifs/categories', async ({ assert }) => {
     let calls = 0
-    global.fetch = async (input: RequestInfo | URL) => {
+    global.fetch = async (input: unknown) => {
       calls++
       assert.include(String(input), '/v1/gifs/categories')
       assert.notInclude(String(input), '/stickers/')
@@ -179,7 +179,7 @@ test.group('GiphyService (fetch замокан, getApiKey — заглушка)'
     assert,
   }) => {
     let calls = 0
-    global.fetch = async (input: RequestInfo | URL) => {
+    global.fetch = async (input: unknown) => {
       calls++
       assert.include(String(input), '/v1/stickers/categories')
       return new Response('not found', { status: 404 })
@@ -193,7 +193,7 @@ test.group('GiphyService (fetch замокан, getApiKey — заглушка)'
     assert,
   }) => {
     let calls = 0
-    global.fetch = async (input: RequestInfo | URL) => {
+    global.fetch = async (input: unknown) => {
       calls++
       const s = String(input)
       if (calls === 1) {
