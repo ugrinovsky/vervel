@@ -14,7 +14,6 @@ interface StreakCardProps {
   mode: 'simple' | 'intensive';
   currentWeekWorkouts: number;
   weeklyRequired: number;
-  onClick?: () => void;
 }
 
 export default function StreakCard({
@@ -23,7 +22,6 @@ export default function StreakCard({
   mode,
   currentWeekWorkouts,
   weeklyRequired,
-  onClick,
 }: StreakCardProps) {
   const isRecord = currentStreak === longestStreak && currentStreak > 0;
   const isIntensive = mode === 'intensive';
@@ -47,10 +45,7 @@ export default function StreakCard({
   const progressPct = weeklyRequired > 0 ? (weekProgress / weeklyRequired) * 100 : 0;
 
   return (
-    <motion.button
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onClick}
+    <motion.div
       className="w-full bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border) text-left relative overflow-hidden"
     >
       {/* Subtle background tint */}
@@ -151,6 +146,6 @@ export default function StreakCard({
         </div>
 
       </div>
-    </motion.button>
+    </motion.div>
   );
 }

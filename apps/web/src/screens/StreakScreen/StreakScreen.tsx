@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import StreakCard from '@/components/StreakCard/StreakCard';
@@ -15,7 +14,6 @@ import ShareResultCard from '@/components/ShareResultCard/ShareResultCard';
 import { cardClass } from '@/components/ui/Card';
 
 export default function StreakScreen() {
-  const navigate = useNavigate();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [modeLoading, setModeLoading] = useState(false);
@@ -96,7 +94,6 @@ export default function StreakScreen() {
             mode={mode}
             currentWeekWorkouts={stats.currentWeekWorkouts ?? 0}
             weeklyRequired={stats.weeklyRequired ?? 3}
-            onClick={() => navigate('/profile')}
           />
         </AnimatedBlock>
 
