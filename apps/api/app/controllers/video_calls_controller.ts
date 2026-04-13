@@ -1,4 +1,5 @@
 import type { HttpContext } from '@adonisjs/core/http'
+import logger from '@adonisjs/core/services/logger'
 import { DateTime } from 'luxon'
 import emitter from '@adonisjs/core/services/emitter'
 import VideoCall from '#models/video_call'
@@ -54,7 +55,15 @@ export default class VideoCallsController {
     const action = computeCallAction(call, roomAlive)
 
     if (action.shouldCreateRoom) {
-      await LiveKitService.createRoom(roomName)
+      try {
+        await LiveKitService.createRoom(roomName)
+      } catch (err) {
+        logger.warn({ err }, 'video_calls:create livekit createRoom')
+        return response.serviceUnavailable({
+          message:
+            'Видеозвонок недоступен: LiveKit отклонил ключ API. Сверьте LIVEKIT_API_KEY / LIVEKIT_API_SECRET в приложении с блоком keys в конфиге сервера LiveKit.',
+        })
+      }
     }
 
     if (!call) {
@@ -91,12 +100,21 @@ export default class VideoCallsController {
       }
     }
 
-    const token = await LiveKitService.createToken({
-      roomName,
-      userId: trainer.id,
-      userName: trainer.fullName ?? trainer.id.toString(),
-      role: 'trainer',
-    })
+    let token: string
+    try {
+      token = await LiveKitService.createToken({
+        roomName,
+        userId: trainer.id,
+        userName: trainer.fullName ?? trainer.id.toString(),
+        role: 'trainer',
+      })
+    } catch (err) {
+      logger.warn({ err }, 'video_calls:create livekit createToken')
+      return response.serviceUnavailable({
+        message:
+          'Видеозвонок недоступен: LiveKit отклонил ключ API. Сверьте LIVEKIT_API_KEY / LIVEKIT_API_SECRET в приложении с блоком keys в конфиге сервера LiveKit.',
+      })
+    }
 
     return response.ok({
       callId: call.id,
