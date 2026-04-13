@@ -441,7 +441,7 @@ export default class AiController {
         previewItems,
         exercises: workoutExercises,
         warning: tooFew
-          ? 'AI не нашёл ни одного упражнения в заметках'
+          ? 'AI не нашёл ни одного упражнения в тексте'
           : hasDuplicates
             ? 'Некоторые упражнения определились как одинаковые — проверьте список перед сохранением'
             : null,

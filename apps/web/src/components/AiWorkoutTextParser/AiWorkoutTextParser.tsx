@@ -49,10 +49,18 @@ export default function AiWorkoutTextParser({ onResult, triggerClassName, trigge
     setError(null);
     try {
       const res = await aiApi.parseNotesText(notes);
+      const parsed = res.data.exercises ?? [];
+      if (parsed.length === 0) {
+        setError(
+          res.data.warning?.trim() ||
+            'Не удалось распознать ни одного упражнения — проверьте формат текста'
+        );
+        return;
+      }
       onResult({
         sourceText: notes,
         previewItems: res.data.previewItems,
-        exercises: res.data.exercises,
+        exercises: parsed,
         warning: res.data.warning,
       });
       close();

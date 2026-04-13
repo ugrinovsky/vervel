@@ -128,9 +128,18 @@ export default function WeekdayChart({ data }: Props) {
 
       {/* Per-day breakdown */}
       <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border)">
-        <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wide mb-3">
+        <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wide mb-1">
           Детали по дням
         </p>
+        <p className="text-[11px] text-(--color_text_muted) leading-snug mb-3">
+          Сортировка по числу тренировок. Полоска — насколько этот день недели близок к самому частому (не процент от всех тренировок). Колонка «Ср. инт.» — средняя интенсивность тренировок в этот день недели; «—» если интенсивность в данных не заполнена.
+        </p>
+        <div className="flex items-center gap-2 mb-1.5 text-[10px] font-medium uppercase tracking-wide text-(--color_text_muted)">
+          <span className="w-5 shrink-0" aria-hidden />
+          <span className="flex-1 min-w-0 pl-0.5">Частота</span>
+          <span className="w-7 shrink-0 text-right tabular-nums">Трен.</span>
+          <span className="w-[3.25rem] shrink-0 text-right">Ср. инт.</span>
+        </div>
         <div className="space-y-2">
           {weekdayData
             .map((d, i) => ({ ...d, i }))
@@ -142,7 +151,7 @@ export default function WeekdayChart({ data }: Props) {
               return (
                 <div key={d.label} className="flex items-center gap-2">
                   <span className="text-xs text-(--color_text_muted) w-5 shrink-0">{d.label}</span>
-                  <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                  <div className="flex-1 min-w-0 h-1.5 bg-white/5 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{
@@ -152,12 +161,10 @@ export default function WeekdayChart({ data }: Props) {
                       }}
                     />
                   </div>
-                  <span className="text-xs text-white/60 w-4 text-right">{d.workouts}</span>
-                  {d.avgIntensity > 0 && (
-                    <span className="text-[11px] text-(--color_text_muted) w-10 text-right">
-                      {d.avgIntensity}%
-                    </span>
-                  )}
+                  <span className="text-xs text-white/60 w-7 shrink-0 text-right tabular-nums">{d.workouts}</span>
+                  <span className="text-[11px] text-(--color_text_muted) w-[3.25rem] shrink-0 text-right tabular-nums">
+                    {d.avgIntensity > 0 ? `${d.avgIntensity}%` : '—'}
+                  </span>
                 </div>
               );
             })}

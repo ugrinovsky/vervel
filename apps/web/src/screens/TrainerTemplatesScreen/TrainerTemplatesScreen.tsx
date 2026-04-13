@@ -18,6 +18,20 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AppInput from '@/components/ui/AppInput';
 import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
 import { WORKOUT_TYPE_CONFIG, exerciseBrief } from '@/constants/workoutTypes';
+import AiWorkoutGenerator from '@/components/AiWorkoutGenerator/AiWorkoutGenerator';
+import AiWorkoutRecognizer from '@/components/AiWorkoutRecognizer/AiWorkoutRecognizer';
+import AiWorkoutTextParser from '@/components/AiWorkoutTextParser/AiWorkoutTextParser';
+import {
+  convertAiExercises,
+  convertAiResult,
+  convertExercisesForType,
+} from '@/components/WorkoutFormBase/workoutTypeConversion';
+import type {
+  AiRecognizedWorkoutResult,
+  AiTextParseUiPayload,
+  AiWorkoutResult,
+} from '@/api/ai';
+import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
 
 export default function TrainerTemplatesScreen() {
   const navigate = useNavigate();
@@ -30,6 +44,7 @@ export default function TrainerTemplatesScreen() {
   const [templateDescription, setTemplateDescription] = useState('');
   const [templateExercises, setTemplateExercises] = useState<ExerciseData[]>([]);
   const [saving, setSaving] = useState(false);
+  const [aiGenerated, setAiGenerated] = useState(false);
 
   useEffect(() => {
     loadTemplates();
@@ -53,6 +68,7 @@ export default function TrainerTemplatesScreen() {
     setTemplateType('crossfit');
     setTemplateDescription('');
     setTemplateExercises([]);
+    setAiGenerated(false);
     setShowForm(true);
   };
 
@@ -62,6 +78,7 @@ export default function TrainerTemplatesScreen() {
     setTemplateType(template.workoutType);
     setTemplateDescription(template.description || '');
     setTemplateExercises(normalizeExercisesForType(template.workoutType, template.exercises ?? []));
+    setAiGenerated(false);
     setShowForm(true);
   };
 
@@ -75,6 +92,52 @@ export default function TrainerTemplatesScreen() {
     if (templateExercises.length > 0) {
       setTemplateExercises(normalizeExercisesForType(newType, templateExercises));
     }
+  };
+
+  const handleAiGeneratedResult = (result: AiWorkoutResult) => {
+    setTemplateType(result.workoutType);
+    const converted = normalizeExercisesForType(result.workoutType, convertAiResult(result));
+    setTemplateExercises(converted);
+    setAiGenerated(true);
+    toast.success(`ИИ сгенерировал ${converted.length} упражнений`);
+  };
+
+  const handleAiRecognizedResult = (result: AiRecognizedWorkoutResult) => {
+    const converted = normalizeExercisesForType(
+      templateType,
+      convertAiExercises(result.exercises, templateType),
+    );
+    setTemplateExercises(converted);
+    setAiGenerated(true);
+    toast.success(`ИИ распознал ${converted.length} упражнений`);
+  };
+
+  const handleAiTextParsed = (payload: AiTextParseUiPayload) => {
+    const nameMap = new Map(payload.previewItems.map((item) => [item.exerciseId, item.name]));
+    const baseConverted: ExerciseData[] = payload.exercises.map((ex: any) => ({
+      exerciseId: ex.exerciseId,
+      name:
+        nameMap.get(ex.exerciseId) ?? exerciseIdForDisplay(String(ex.exerciseId)),
+      zones: Array.isArray(ex.zones) ? ex.zones : undefined,
+      zoneWeights:
+        ex.zoneWeights && typeof ex.zoneWeights === 'object' ? ex.zoneWeights : undefined,
+      bodyweight: ex.bodyweight,
+      setsDetail: ex.sets?.map((s: any) => ({ reps: s.reps ?? 10, weight: s.weight })) ?? [],
+      sets: ex.sets?.length ?? 3,
+      blockId: ex.blockId,
+      duration: ex.sets?.[0]?.time ? Math.round(Number(ex.sets?.[0]?.time ?? 0) / 60) : undefined,
+    }));
+
+    const converted = normalizeExercisesForType(
+      templateType,
+      convertExercisesForType(baseConverted, 'bodybuilding', templateType),
+    );
+
+    setTemplateDescription(payload.sourceText);
+    setTemplateExercises(converted);
+    setAiGenerated(true);
+    if (payload.warning) toast(payload.warning, { icon: '⚠️' });
+    else toast.success(`ИИ разобрал ${baseConverted.length} упражнений`);
   };
 
   const handleSave = async () => {
@@ -128,7 +191,8 @@ export default function TrainerTemplatesScreen() {
 
         {/* Hint */}
         <ScreenHint className="mb-4">
-          Шаблон — готовая тренировка. Создайте один раз и назначайте атлетам и группам через{' '}
+          Шаблон — готовая тренировка. Создайте вручную или с помощью ИИ (фото, текст, запрос), затем
+          назначайте атлетам и группам через{' '}
           <button onClick={() => navigate('/trainer/calendar')} className="text-white font-medium underline underline-offset-2 hover:no-underline">
             Календарь
           </button>
@@ -267,6 +331,52 @@ export default function TrainerTemplatesScreen() {
             <WorkoutTypeTabs value={templateType} onChange={handleTypeChange} />
           </FormField>
 
+          {templateExercises.length === 0 && (
+            <div className="rounded-2xl bg-(--color_bg_card) border border-(--color_border) p-4 space-y-2">
+              <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-1">
+                Как добавить упражнения?
+              </p>
+              <AiWorkoutRecognizer
+                onResult={handleAiRecognizedResult}
+                triggerClassName="w-full flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-left hover:bg-emerald-500/15 transition-colors"
+                triggerContent={
+                  <>
+                    <span className="text-xl shrink-0">📸</span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-sm font-medium text-white">Распознать изображение</span>
+                      <span className="block text-xs text-(--color_text_muted)">ИИ распознаёт по фото</span>
+                    </span>
+                    <span className="text-emerald-400/60 text-base shrink-0">→</span>
+                  </>
+                }
+              />
+              <AiWorkoutTextParser onResult={handleAiTextParsed} />
+              <AiWorkoutGenerator
+                onResult={handleAiGeneratedResult}
+                triggerClassName="w-full flex items-center gap-3 p-3 rounded-xl bg-violet-500/10 border border-violet-500/20 text-left hover:bg-violet-500/15 transition-colors"
+                triggerContent={
+                  <>
+                    <span className="text-xl shrink-0">✨</span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-sm font-medium text-white">Сгенерировать по описанию</span>
+                      <span className="block text-xs text-(--color_text_muted)">
+                        ИИ подберёт упражнения, подходы и веса
+                      </span>
+                    </span>
+                    <span className="text-violet-400/60 text-base shrink-0">→</span>
+                  </>
+                }
+              />
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border)">
+                <span className="text-xl shrink-0">✏️</span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-medium text-white/70">Вручную из каталога</span>
+                  <span className="block text-xs text-(--color_text_muted)">Добавьте упражнения в списке ниже</span>
+                </span>
+              </div>
+            </div>
+          )}
+
           <FormField
             label={
               <>
@@ -280,8 +390,40 @@ export default function TrainerTemplatesScreen() {
             <WorkoutExercisesEditor
               workoutType={templateType}
               exercises={templateExercises}
-              onChange={setTemplateExercises}
+              onChange={(exs) => {
+                setTemplateExercises(exs);
+                setAiGenerated(false);
+              }}
               superset={templateType !== 'crossfit'}
+              toolbar={
+                templateExercises.length > 0 && !aiGenerated ? (
+                  <div className="flex flex-wrap gap-3 mb-1">
+                    <AiWorkoutRecognizer
+                      onResult={handleAiRecognizedResult}
+                      triggerContent={
+                        <>
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className="text-[13px] leading-none">📸</span>
+                            <span>Распознать по фото</span>
+                          </span>
+                        </>
+                      }
+                    />
+                    <AiWorkoutTextParser
+                      onResult={handleAiTextParsed}
+                      triggerClassName="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                      triggerContent={
+                        <>
+                          <span>📝</span>
+                          Распознать по тексту
+                        </>
+                      }
+                    />
+                    <AiWorkoutGenerator onResult={handleAiGeneratedResult} />
+                    <span className="text-xs text-white/40 self-center">· 10₽</span>
+                  </div>
+                ) : undefined
+              }
             />
           </FormField>
 

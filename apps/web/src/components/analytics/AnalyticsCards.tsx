@@ -26,6 +26,10 @@ interface CardDef {
   id: string;
   icon: string;
   title: string;
+  /** Строка под заголовком на плитке; по умолчанию «Открыть →» */
+  tileSubtitle?: string;
+  /** Заголовок в BottomSheet; по умолчанию совпадает с title */
+  sheetTitle?: string;
   content: React.ReactNode;
 }
 
@@ -44,7 +48,9 @@ export default function AnalyticsCards({ stats, monthStats, periodization, timeR
     {
       id: 'weekly',
       icon: '📅',
-      title: timeRange === 'week' ? 'Календарь' : periodLabel,
+      title: 'Календарь',
+      tileSubtitle: `${periodLabel} · открыть →`,
+      sheetTitle: `Календарь · ${periodLabel}`,
       content: <WeeklyOverview period={timeRange} data={stats} />,
     },
     { id: 'streak',          icon: '🔥', title: 'Регулярность',   content: <StreakBlock      data={monthStats ?? stats} period={timeRange} /> },
@@ -95,7 +101,7 @@ export default function AnalyticsCards({ stats, monthStats, periodization, timeR
               <div className="relative">
                 <div className="text-sm font-semibold text-white leading-tight">{card.title}</div>
                 <div className="text-[11px] mt-0.5" style={{ color: 'var(--color_text_muted)' }}>
-                  Открыть →
+                  {card.tileSubtitle ?? 'Открыть →'}
                 </div>
               </div>
             </button>
@@ -107,7 +113,7 @@ export default function AnalyticsCards({ stats, monthStats, periodization, timeR
         id="analytics-card"
         open={activeCard !== null}
         onClose={() => setActiveCard(null)}
-        title={openCard?.title}
+        title={openCard?.sheetTitle ?? openCard?.title}
         emoji={openCard?.icon}
       >
         {openCard?.content}

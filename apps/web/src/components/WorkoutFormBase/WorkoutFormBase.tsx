@@ -368,7 +368,6 @@ export default function WorkoutFormBase({
     // а тип тренировки пользователь выбирает сам вкладками — поэтому конвертируем под текущий.
     const converted = convertExercisesForType(baseConverted, 'bodybuilding', workoutType);
 
-    setNotes(payload.sourceText);
     setExercises(converted);
     setAiGenerated(true);
     setSelectedTemplateId(null);
@@ -664,7 +663,7 @@ export default function WorkoutFormBase({
 
       {/* Actions */}
       <div className="flex flex-col gap-2 pt-1">
-        {/* Заметки / программа — перед сохранением */}
+        {/* Комментарий — только текст; разбор программы — через «Распознать по тексту» */}
         <div>
           <SectionLabel>{notesLabel}</SectionLabel>
           <textarea

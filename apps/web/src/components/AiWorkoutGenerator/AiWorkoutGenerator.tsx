@@ -142,15 +142,10 @@ export default function AiWorkoutGenerator({ onResult, triggerClassName, trigger
                 </div>
               </div>
 
-              {!hasEnoughBalance && (
+              {(error || (balance !== null && balance < COST_GENERATE)) && (
                 <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
-                  Недостаточно средств. Нужно {COST_GENERATE}₽, баланс {balance}₽ — пополните в Профиле.
-                </p>
-              )}
-
-              {error && (
-                <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
-                  {error}
+                  {error ??
+                    `Недостаточно средств. Нужно ${COST_GENERATE}₽, баланс ${balance}₽ — пополните в Профиле.`}
                 </p>
               )}
 

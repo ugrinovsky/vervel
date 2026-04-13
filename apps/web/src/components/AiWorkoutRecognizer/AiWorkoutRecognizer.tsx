@@ -213,16 +213,10 @@ export default function AiWorkoutRecognizer({ onResult, triggerClassName, trigge
                 после отправки
               </p>
 
-              {!hasEnoughBalance && (
+              {(error || (balance !== null && balance < COST_RECOGNIZE)) && (
                 <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
-                  Недостаточно средств. Нужно {COST_RECOGNIZE}₽, баланс {balance}₽ — пополните в
-                  Профиле.
-                </p>
-              )}
-
-              {error && (
-                <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
-                  {error}
+                  {error ??
+                    `Недостаточно средств. Нужно ${COST_RECOGNIZE}₽, баланс ${balance}₽ — пополните в Профиле.`}
                 </p>
               )}
 
