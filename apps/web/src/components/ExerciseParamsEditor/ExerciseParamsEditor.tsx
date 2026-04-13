@@ -37,6 +37,9 @@ interface Props {
   bodyweight?: boolean;
   profileWeight?: number;
 
+  /** Назначение тренером: только объём (повторы/подходы), веса задаёт атлет */
+  hideWeights?: boolean;
+
   // Callbacks — simple field changes (cardio duration, crossfit fields)
   onPatch: (patch: Record<string, number | string | boolean | undefined>) => void;
 
@@ -104,6 +107,7 @@ export default function ExerciseParamsEditor({
   setsDetail,
   bodyweight,
   profileWeight,
+  hideWeights = false,
   onPatch,
   onAddSet,
   onRemoveSet,
@@ -189,10 +193,10 @@ export default function ExerciseParamsEditor({
         {/* Reps / Weight / Distance */}
         <div className="flex items-center gap-2 text-[10px] text-white/40 font-medium">
           <span className="flex-1 text-center">повт/раунд</span>
-          <span className="flex-1 text-center">кг</span>
+          {!hideWeights && <span className="flex-1 text-center">кг</span>}
           <span className="flex-1 text-center">м</span>
         </div>
-        <div className="grid grid-cols-3 gap-1">
+        <div className={`grid gap-1 ${hideWeights ? 'grid-cols-2' : 'grid-cols-3'}`}>
           <NumberInput
             min={1}
             value={reps ?? ''}
@@ -200,14 +204,16 @@ export default function ExerciseParamsEditor({
             placeholder="10"
             className="flex-1"
           />
-          <NumberInput
-            min={0}
-            step={2.5}
-            value={weight ?? ''}
-            onChange={(e) => onPatch({ weight: e.target.value ? +e.target.value : undefined })}
-            placeholder={bodyweight ? String(profileWeight ?? '—') : '—'}
-            className={`flex-1 ${bodyweight ? 'text-emerald-300' : 'text-white/80'}`}
-          />
+          {!hideWeights && (
+            <NumberInput
+              min={0}
+              step={2.5}
+              value={weight ?? ''}
+              onChange={(e) => onPatch({ weight: e.target.value ? +e.target.value : undefined })}
+              placeholder={bodyweight ? String(profileWeight ?? '—') : '—'}
+              className={`flex-1 ${bodyweight ? 'text-emerald-300' : 'text-white/80'}`}
+            />
+          )}
           <NumberInput
             min={0}
             value={distance ?? ''}
@@ -217,13 +223,16 @@ export default function ExerciseParamsEditor({
           />
         </div>
 
-        {/* Bodyweight toggle */}
-        <BodyweightToggle
-          bodyweight={bodyweight}
-          profileWeight={profileWeight}
-          onToggle={() => onPatch({ bodyweight: !bodyweight })}
-        />
-        {bodyweight && !profileWeight && <BodyweightWarning />}
+        {!hideWeights && (
+          <>
+            <BodyweightToggle
+              bodyweight={bodyweight}
+              profileWeight={profileWeight}
+              onToggle={() => onPatch({ bodyweight: !bodyweight })}
+            />
+            {bodyweight && !profileWeight && <BodyweightWarning />}
+          </>
+        )}
       </div>
     );
   }
@@ -234,15 +243,22 @@ export default function ExerciseParamsEditor({
       <div className="flex items-center gap-2 text-[10px] text-white/40 font-medium">
         <span className="w-5" />
         <span className="flex-1 text-center">повт</span>
-        <span className="text-white/20">×</span>
-        <span className={`flex-1 text-center ${bodyweight ? 'text-emerald-400/60' : ''}`}>кг</span>
-        <div className="w-14 shrink-0 flex justify-end">
-          <BodyweightToggle
-            bodyweight={bodyweight}
-            profileWeight={profileWeight}
-            onToggle={() => onPatch({ bodyweight: !bodyweight })}
-          />
-        </div>
+        {!hideWeights && (
+          <>
+            <span className="text-white/20">×</span>
+            <span className={`flex-1 text-center ${bodyweight ? 'text-emerald-400/60' : ''}`}>кг</span>
+          </>
+        )}
+        {!hideWeights && (
+          <div className="w-14 shrink-0 flex justify-end">
+            <BodyweightToggle
+              bodyweight={bodyweight}
+              profileWeight={profileWeight}
+              onToggle={() => onPatch({ bodyweight: !bodyweight })}
+            />
+          </div>
+        )}
+        {hideWeights && <div className="w-14 shrink-0" aria-hidden />}
       </div>
       {(setsDetail ?? []).map((set, si) => (
         <div key={si} className="flex items-center gap-2">
@@ -256,15 +272,19 @@ export default function ExerciseParamsEditor({
             placeholder="10"
             className="flex-1"
           />
-          <span className="text-[10px] text-white/20 shrink-0">×</span>
-          <NumberInput
-            min={0}
-            step={2.5}
-            value={set.weight ?? ''}
-            onChange={(e) => onUpdateSet?.(si, 'weight', e.target.value)}
-            placeholder={bodyweight ? String(profileWeight ?? 'вес тела') : '— кг'}
-            className={`flex-1 ${bodyweight ? 'text-emerald-300' : 'text-white/80'}`}
-          />
+          {!hideWeights && (
+            <>
+              <span className="text-[10px] text-white/20 shrink-0">×</span>
+              <NumberInput
+                min={0}
+                step={2.5}
+                value={set.weight ?? ''}
+                onChange={(e) => onUpdateSet?.(si, 'weight', e.target.value)}
+                placeholder={bodyweight ? String(profileWeight ?? 'вес тела') : '— кг'}
+                className={`flex-1 ${bodyweight ? 'text-emerald-300' : 'text-white/80'}`}
+              />
+            </>
+          )}
           <div className="flex gap-1 shrink-0 w-14 justify-end">
             <button
               type="button"
@@ -293,7 +313,7 @@ export default function ExerciseParamsEditor({
       >
         <span className="text-sm leading-none">+</span> подход
       </button>
-      {bodyweight && !profileWeight && <BodyweightWarning />}
+      {!hideWeights && bodyweight && !profileWeight && <BodyweightWarning />}
     </div>
   );
 }

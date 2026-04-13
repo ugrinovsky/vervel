@@ -308,6 +308,7 @@ export default function WorkoutInlineForm({
       submitLabel={editWorkout ? 'Сохранить' : 'Создать тренировку'}
       notesLabel="Комментарий"
       notesPlaceholder="По желанию: указания атлету, самочувствие, напоминания — не для разбора в упражнения"
+      hideExerciseWeights
       onSubmit={handleSubmit}
       onCancel={onCancel}
     />

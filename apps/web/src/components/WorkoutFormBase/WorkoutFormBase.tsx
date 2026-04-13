@@ -103,6 +103,9 @@ interface Props {
   notesLabel?: string;
   notesPlaceholder?: string;
 
+  /** Назначение тренером: в редакторе упражнений не показываем веса (их вводит атлет) */
+  hideExerciseWeights?: boolean;
+
   /** Called with form data on save. Should handle toasts and throw on hard error. */
   onSubmit: (data: WorkoutFormData) => Promise<void>;
   onCancel?: () => void;
@@ -120,6 +123,7 @@ export default function WorkoutFormBase({
   submitLabel = 'Сохранить',
   notesLabel = 'Заметки',
   notesPlaceholder = 'Общие заметки...',
+  hideExerciseWeights = false,
   onSubmit,
   onCancel,
 }: Props) {
@@ -271,8 +275,9 @@ export default function WorkoutFormBase({
     toast.success('Форма очищена');
   };
 
-  // ── Fetch athlete body weight once on mount ───────────────────────
+  // ── Fetch body weight (для веса в подходах и «вес тела») ───────────
   useEffect(() => {
+    if (hideExerciseWeights) return;
     profileApi
       .getMeasurements('body_weight', 1)
       .then((res) => {
@@ -280,7 +285,7 @@ export default function WorkoutFormBase({
         if (latest) setProfileWeight(latest.value);
       })
       .catch(() => {});
-  }, []);
+  }, [hideExerciseWeights]);
 
   // ── Type change with exercise normalization ───────────────────────
 
@@ -625,6 +630,7 @@ export default function WorkoutFormBase({
           workoutType={workoutType}
           exercises={exercises}
           profileWeight={profileWeight}
+          hideWeights={hideExerciseWeights}
           onChange={(exs) => {
             setExercises(exs);
             setAiGenerated(false);

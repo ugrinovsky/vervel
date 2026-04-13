@@ -44,6 +44,8 @@ interface Props {
   superset?: boolean;
   toolbar?: React.ReactNode;
   profileWeight?: number;
+  /** Назначение тренировки атлету — без полей веса */
+  hideWeights?: boolean;
 }
 
 export function normalizeExerciseForType(type: WorkoutType, ex: ExerciseData): ExerciseData {
@@ -85,6 +87,7 @@ function SortableExerciseCard({
   onUpdateSet,
   onReplace,
   onRemove,
+  hideWeights,
 }: {
   id: string;
   index: number;
@@ -92,6 +95,7 @@ function SortableExerciseCard({
   isInBlock: boolean;
   workoutType: WorkoutType;
   profileWeight?: number;
+  hideWeights?: boolean;
   isLast: boolean;
   showBetweenRow: boolean;
   showSupersetInBetween: boolean;
@@ -180,6 +184,7 @@ function SortableExerciseCard({
               setsDetail={ex.setsDetail}
               bodyweight={ex.bodyweight}
               profileWeight={profileWeight}
+              hideWeights={hideWeights}
               onPatch={(patch) => onUpdate(patch as Partial<ExerciseData>)}
               onAddSet={onAddSet}
               onRemoveSet={onRemoveSet}
@@ -218,6 +223,7 @@ export default function WorkoutExercisesEditor({
   superset = true,
   toolbar,
   profileWeight,
+  hideWeights = false,
 }: Props) {
   const [replacingIdx, setReplacingIdx] = useState<number | null>(null);
   const [insertAt, setInsertAt] = useState<number | null>(null);
@@ -285,7 +291,12 @@ export default function WorkoutExercisesEditor({
   };
 
   const update = (index: number, patch: Partial<ExerciseData>) => {
-    if ('bodyweight' in patch && patch.bodyweight && profileWeight) {
+    if (
+      !hideWeights &&
+      'bodyweight' in patch &&
+      patch.bodyweight &&
+      profileWeight
+    ) {
       onChange(
         exercises.map((ex, i) => {
           if (i !== index) return ex;
@@ -414,6 +425,7 @@ export default function WorkoutExercisesEditor({
                         isInBlock={isInBlock}
                         workoutType={workoutType}
                         profileWeight={profileWeight}
+                        hideWeights={hideWeights}
                         isLast={isLast}
                         showBetweenRow
                         showSupersetInBetween={showSupersetBetween}

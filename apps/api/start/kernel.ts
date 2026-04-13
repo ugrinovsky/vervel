@@ -37,6 +37,7 @@ router.use([
   () => import('@adonisjs/core/bodyparser_middleware'),
   () => import('@adonisjs/auth/initialize_auth_middleware'),
   () => import('#middleware/cookie_auth_middleware'),
+  () => import('#middleware/request_logger_middleware'),
 ])
 
 /**
