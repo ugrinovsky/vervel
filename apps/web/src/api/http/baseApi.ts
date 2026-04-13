@@ -2,6 +2,9 @@ import axios, { AxiosInstance, isAxiosError } from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
+/** В консоли: localStorage.setItem('VERVEL_DEBUG_401','1') — перед редиректом на /login печатается тело 401 (для withUnauthorizedRedirect). */
+const DEBUG_401_KEY = 'VERVEL_DEBUG_401';
+
 /** Clears client auth hints and forces login — same outcome as the private API 401 interceptor. */
 export function clearAuthAndRedirectToLogin() {
   try {
@@ -22,6 +25,13 @@ export async function withUnauthorizedRedirect<T>(fn: () => Promise<T>): Promise
     return await fn();
   } catch (e) {
     if (isAxiosError(e) && e.response?.status === 401) {
+      try {
+        if (typeof localStorage !== 'undefined' && localStorage.getItem(DEBUG_401_KEY) === '1') {
+          console.warn('[VERVEL_DEBUG_401]', e.config?.method?.toUpperCase(), e.config?.url, e.response?.data);
+        }
+      } catch {
+        /* ignore */
+      }
       clearAuthAndRedirectToLogin();
       return undefined;
     }
