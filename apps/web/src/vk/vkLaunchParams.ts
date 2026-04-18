@@ -1,23 +1,55 @@
 /** Параметры первого захода из VK Mini App (сохраняем при SPA-навигации). */
 export const VK_LAUNCH_PARAMS_SESSION_KEY = 'vervel_vk_mini_launch_params';
 
-export function peekVkMiniAppFromUrl(): boolean {
+/** Сегменты query: ?… из location.search и из hash (#…?… или #vk_app_id=…). */
+function collectQuerySegmentsFromLocation(): string[] {
   if (typeof window === 'undefined') {
-    return false;
+    return [];
   }
-  const q = new URLSearchParams(window.location.search);
-  return !!(q.get('sign') && q.get('vk_app_id'));
+  const { search, hash } = window.location;
+  const out: string[] = [];
+  if (search.length > 1) {
+    out.push(search.slice(1));
+  }
+  if (hash) {
+    const h = hash.startsWith('#') ? hash.slice(1) : hash;
+    const q = h.indexOf('?');
+    if (q >= 0) {
+      out.push(h.slice(q + 1));
+    } else if (h.includes('=') && !h.includes('/')) {
+      out.push(h);
+    }
+  }
+  return out;
+}
+
+/** Все пары ключ=значение из query и hash (строки, как в URL). */
+export function mergeLocationVkParams(): Record<string, string> {
+  const merged: Record<string, string> = {};
+  for (const seg of collectQuerySegmentsFromLocation()) {
+    new URLSearchParams(seg).forEach((v, k) => {
+      merged[k] = v;
+    });
+  }
+  return merged;
+}
+
+export function peekVkMiniAppFromUrl(): boolean {
+  const m = mergeLocationVkParams();
+  return !!(m.sign && m.vk_app_id);
+}
+
+/** В URL/hash есть хотя бы один типичный параметр VK (ещё без полной пары sign+app). */
+export function hasVkMiniAppQueryMarkers(): boolean {
+  const m = mergeLocationVkParams();
+  return Object.keys(m).some((k) => k.startsWith('vk_') || k === 'sign');
 }
 
 export function takeVkLaunchParams(): Record<string, string> | null {
   if (typeof window === 'undefined') {
     return null;
   }
-  const url = new URLSearchParams(window.location.search);
-  const fromUrl: Record<string, string> = {};
-  url.forEach((v, k) => {
-    fromUrl[k] = v;
-  });
+  const fromUrl = mergeLocationVkParams();
   if (fromUrl.sign && fromUrl.vk_app_id) {
     sessionStorage.setItem(VK_LAUNCH_PARAMS_SESSION_KEY, JSON.stringify(fromUrl));
     return fromUrl;
@@ -51,7 +83,43 @@ function hasStoredVkLaunch(): boolean {
   }
 }
 
-/** Есть ли параметры запуска мини-приложения (без записи в sessionStorage). */
+/** Ответ VKWebAppGetLaunchParams → плоский Record<string, string> для API. */
+export function bridgeLaunchParamsToRecord(data: Record<string, unknown>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (v === undefined || v === null) continue;
+    if (typeof v === 'object') continue;
+    out[k] = String(v);
+  }
+  return out;
+}
+
+function isLikelyVkParentReferrer(): boolean {
+  try {
+    const ref = document.referrer || '';
+    return /\.vk\.(com|ru)\b/i.test(ref) || /^(https?:)?\/\/(m\.|web\.)?vk\./i.test(ref);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Нужно ли пытаться автологин мини-приложения: полные launch params, маркеры в URL,
+ * сохранённые params или iframe с родителем VK.
+ */
 export function hasVkMiniAppLaunchContext(): boolean {
-  return peekVkMiniAppFromUrl() || hasStoredVkLaunch();
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  if (peekVkMiniAppFromUrl() || hasStoredVkLaunch() || hasVkMiniAppQueryMarkers()) {
+    return true;
+  }
+  try {
+    if (window.parent !== window && isLikelyVkParentReferrer()) {
+      return true;
+    }
+  } catch {
+    /* ignore */
+  }
+  return false;
 }
