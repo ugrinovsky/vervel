@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
 import type { UserRole } from '@/api/auth';
 import { ThemeController } from '@/util/ThemeController';
+import { clearVkLaunchParamsStorage } from '@/vk/vkLaunchParams';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -95,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     localStorage.removeItem('user');
     localStorage.removeItem('activeMode');
+    clearVkLaunchParamsStorage();
     setUser(null);
     setBalance(null);
     setActiveMode('trainer');

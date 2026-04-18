@@ -37,6 +37,16 @@ export default await Env.create(new URL('../', import.meta.url), {
   VK_CLIENT_ID: Env.schema.string.optional(),
   VK_CLIENT_SECRET: Env.schema.string.optional(),
   VK_REDIRECT_URI: Env.schema.string.optional(),
+  /** Защищённый ключ мини-приложения VK (проверка подписи launch params). */
+  VK_MINI_APP_SECRET: Env.schema.string.optional(),
+  /** Ожидаемый vk_app_id из параметров запуска (если задан — сверяем). */
+  VK_MINI_APP_ID: Env.schema.string.optional(),
+
+  /**
+   * Для VK Mini App в iframe (Origin vk.com): `none` + Secure cookie, иначе API-cookie
+   * не прикрепляется к запросам с фронта. Обычный сайт на своём домене: `lax` или не задавать.
+   */
+  AUTH_COOKIE_SAME_SITE: Env.schema.string.optional(),
 
   YANDEX_CLIENT_ID: Env.schema.string.optional(),
   YANDEX_CLIENT_SECRET: Env.schema.string.optional(),

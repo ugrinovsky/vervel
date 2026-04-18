@@ -9,21 +9,11 @@ import disposableDomains from 'disposable-email-domains' assert { type: 'json' }
 import User from '#models/user'
 import { registerValidator } from '#validators/auth_validator'
 import { AiBalanceService } from '#services/AiBalanceService'
+import { clearAuthTokenCookie, setAuthTokenCookie } from '#utils/auth_cookie'
 
 const disposableSet: Set<string> = new Set(disposableDomains)
 
-const COOKIE_TTL = 60 * 60 * 24 * 30 // 30 days in seconds
-
 export default class AuthController {
-  private setAuthCookie(response: HttpContext['response'], tokenValue: string) {
-    response.cookie('auth_token', tokenValue, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: COOKIE_TTL,
-      path: '/',
-    })
-  }
 
   public async login({ request, response }: HttpContext) {
     const ip = request.ip()
@@ -68,7 +58,7 @@ export default class AuthController {
       }
 
       const token = await User.accessTokens.create(user)
-      this.setAuthCookie(response, token.value!.release())
+      setAuthTokenCookie(response, token.value!.release())
 
       return response.ok({
         user: {
@@ -136,7 +126,7 @@ export default class AuthController {
         existing.role = 'both'
         await existing.save()
         const token = await User.accessTokens.create(existing)
-        this.setAuthCookie(response, token.value!.release())
+        setAuthTokenCookie(response, token.value!.release())
         return response.ok({
           user: {
             id: existing.id,
@@ -195,7 +185,7 @@ export default class AuthController {
     }
 
     const token = await User.accessTokens.create(user)
-    this.setAuthCookie(response, token.value!.release())
+    setAuthTokenCookie(response, token.value!.release())
 
     return response.created({
       user: {
@@ -222,7 +212,7 @@ export default class AuthController {
       await User.accessTokens.delete(user, token.identifier)
     }
 
-    response.clearCookie('auth_token', { path: '/' })
+    clearAuthTokenCookie(response)
     return response.ok({ message: 'Logged out' })
   }
 }

@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, isAxiosError, type AxiosError } from 'axios';
+import { clearVkLaunchParamsStorage } from '@/vk/vkLaunchParams';
 
 /** Как в auth.ts: без VITE_API_URL Vite не подставит localhost, и axios уйдёт на origin SPA (5173) вместо API. */
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3333';
@@ -39,6 +40,7 @@ export function clearAuthAndRedirectToLogin() {
   try {
     localStorage.removeItem('user');
     localStorage.removeItem('activeMode');
+    clearVkLaunchParamsStorage();
   } catch {
     /* ignore */
   }

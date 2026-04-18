@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { publicApi } from '@/api/http/publicApi';
 import toast from 'react-hot-toast';
 
-const VK_APP_ID = 54455065;
+const VK_APP_ID = Number(import.meta.env.VITE_VK_APP_ID) || 54455065;
 
 // Module-level flag prevents double-init in React StrictMode
 let isInitialized = false;

@@ -4,18 +4,58 @@ import OAuthProvider from '#models/oauth_provider'
 import type { ProviderName } from '#models/oauth_provider'
 import { DateTime } from 'luxon'
 import env from '#start/env'
-
-const COOKIE_TTL = 60 * 60 * 24 * 30 // 30 days in seconds
+import { setAuthTokenCookie } from '#utils/auth_cookie'
+import {
+  normalizeVkLaunchParams,
+  verifyVkMiniAppLaunchSignature,
+} from '#utils/vk_mini_app_launch'
 
 export default class OAuthController {
-  private setAuthCookie(response: HttpContext['response'], tokenValue: string) {
-    response.cookie('auth_token', tokenValue, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: COOKIE_TTL,
-      path: '/',
+  /**
+   * Найти или создать пользователя по VK ID (OAuth / VK ID SDK / Mini App).
+   */
+  private async linkOrCreateVkUser(
+    providerUserId: string,
+    name: string | null,
+    accessToken: string | null
+  ): Promise<User> {
+    let oauthProvider = await OAuthProvider.query()
+      .where('provider', 'vk')
+      .where('provider_user_id', providerUserId)
+      .first()
+
+    if (oauthProvider) {
+      await oauthProvider.load('user')
+      const user = oauthProvider.user
+      if (accessToken) {
+        oauthProvider.accessToken = accessToken
+        await oauthProvider.save()
+      }
+      return user
+    }
+
+    const syntheticEmail = `vk_${providerUserId}@vkid.user`
+    const existing = await User.findBy('email', syntheticEmail)
+
+    const user =
+      existing ??
+      (await User.create({
+        email: syntheticEmail,
+        fullName: name || `VK User ${providerUserId}`,
+        password: null,
+        role: null as any,
+      }))
+
+    await OAuthProvider.create({
+      userId: user.id,
+      provider: 'vk',
+      providerUserId,
+      accessToken,
+      refreshToken: null,
+      expiresAt: null,
     })
+
+    return user
   }
 
   private getProviderConfig(provider: ProviderName) {
@@ -217,7 +257,7 @@ export default class OAuthController {
 
       // Generate our access token
       const token = await User.accessTokens.create(user)
-      this.setAuthCookie(response, token.value!.release())
+      setAuthTokenCookie(response, token.value!.release())
 
       // If user doesn't have role, redirect to role selection
       if (!user.role) {
@@ -259,48 +299,10 @@ export default class OAuthController {
       }
 
       const providerUserId = String(userId)
-
-      // Check existing OAuth connection
-      let oauthProvider = await OAuthProvider.query()
-        .where('provider', 'vk')
-        .where('provider_user_id', providerUserId)
-        .first()
-
-      let user: User
-
-      if (oauthProvider) {
-        await oauthProvider.load('user')
-        user = oauthProvider.user
-        oauthProvider.accessToken = accessToken
-        await oauthProvider.save()
-      } else {
-        // No existing connection — create new user with synthetic email
-        const syntheticEmail = `vk_${providerUserId}@vkid.user`
-        const existing = await User.findBy('email', syntheticEmail)
-
-        if (existing) {
-          user = existing
-        } else {
-          user = await User.create({
-            email: syntheticEmail,
-            fullName: name || `VK User ${providerUserId}`,
-            password: null,
-            role: null as any,
-          })
-        }
-
-        oauthProvider = await OAuthProvider.create({
-          userId: user.id,
-          provider: 'vk',
-          providerUserId,
-          accessToken,
-          refreshToken: null,
-          expiresAt: null,
-        })
-      }
+      const user = await this.linkOrCreateVkUser(providerUserId, name, accessToken)
 
       const token = await User.accessTokens.create(user)
-      this.setAuthCookie(response, token.value!.release())
+      setAuthTokenCookie(response, token.value!.release())
 
       if (!user.role) {
         return response.ok({
@@ -321,6 +323,75 @@ export default class OAuthController {
     } catch (error) {
       console.error('VK SDK login error:', error)
       return response.internalServerError({ message: 'Ошибка авторизации через VK' })
+    }
+  }
+
+  /**
+   * Вход из VK Mini App по подписанным параметрам запуска (без access token VK API).
+   * POST /oauth/vk/mini-app-login
+   */
+  public async vkMiniAppLogin({ request, response }: HttpContext) {
+    const launchParams = normalizeVkLaunchParams(request.input('launchParams'))
+    if (!launchParams?.sign) {
+      return response.badRequest({ message: 'launchParams object with sign is required' })
+    }
+
+    const secret = env.get('VK_MINI_APP_SECRET')
+    if (!secret) {
+      return response.serviceUnavailable({
+        message: 'VK Mini App login is not configured (set VK_MINI_APP_SECRET)',
+      })
+    }
+
+    const expectedAppId = env.get('VK_MINI_APP_ID')
+    if (expectedAppId && launchParams.vk_app_id !== expectedAppId) {
+      return response.forbidden({ message: 'Invalid vk_app_id' })
+    }
+
+    if (!verifyVkMiniAppLaunchSignature(launchParams, secret)) {
+      return response.forbidden({ message: 'Invalid launch signature' })
+    }
+
+    const vkTs = launchParams.vk_ts
+    if (vkTs) {
+      const ts = Number(vkTs)
+      if (Number.isFinite(ts)) {
+        const ageSec = Math.abs(Date.now() / 1000 - ts)
+        if (ageSec > 86400) {
+          return response.forbidden({ message: 'Stale launch parameters' })
+        }
+      }
+    }
+
+    const providerUserId = launchParams.vk_user_id
+    if (!providerUserId) {
+      return response.badRequest({ message: 'vk_user_id is required in launch params' })
+    }
+
+    try {
+      const user = await this.linkOrCreateVkUser(providerUserId, null, null)
+      const token = await User.accessTokens.create(user)
+      setAuthTokenCookie(response, token.value!.release())
+
+      if (!user.role) {
+        return response.ok({
+          needsRole: true,
+          userId: user.id,
+        })
+      }
+
+      return response.ok({
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          themeHue: user.themeHue,
+        },
+      })
+    } catch (error) {
+      console.error('VK Mini App login error:', error)
+      return response.internalServerError({ message: 'Ошибка входа через VK Mini App' })
     }
   }
 
@@ -393,7 +464,7 @@ export default class OAuthController {
       }
 
       const token = await User.accessTokens.create(user)
-      this.setAuthCookie(response, token.value!.release())
+      setAuthTokenCookie(response, token.value!.release())
 
       if (!user.role) {
         return response.ok({

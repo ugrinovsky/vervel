@@ -18,6 +18,7 @@ import DocsScreen from '@/screens/DocsScreen/DocsScreen';
 import AvatarScreen from '@/screens/AvatarScreen/AvatarScreen';
 import LandingScreen from '@/screens/LandingScreen/LandingScreen';
 import { AuthProvider, useAuth, useActiveMode } from '@/contexts/AuthContext';
+import { useVkMiniAppAuth } from '@/hooks/useVkMiniAppAuth';
 import { SheetStackProvider } from '@/contexts/SheetStackContext';
 import { useAchievementToast } from '@/hooks/useAchievementToast';
 import IncomingCallWatcher from '@/components/VideoCall/IncomingCallWatcher';
@@ -48,6 +49,7 @@ function HomeScreen(): JSX.Element {
 
 function AppContent(): JSX.Element {
   const location = useLocation();
+  const { vkBootStatus } = useVkMiniAppAuth();
   useAchievementToast();
   const { user } = useAuth();
   const { isAthlete, activeMode } = useActiveMode();
@@ -66,6 +68,14 @@ function AppContent(): JSX.Element {
     (route, index, arr) =>
       route.element && arr.findIndex((r) => r.path === route.path) === index
   );
+
+  if (vkBootStatus === 'pending') {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-zinc-950 text-zinc-200">
+        <p className="text-sm">Вход через VK…</p>
+      </div>
+    );
+  }
 
   return (
     <>
