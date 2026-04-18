@@ -187,7 +187,9 @@ test.group('KlipyService (fetch замокан, getApiKey — заглушка)'
     assert.lengthOf(rows, 0)
   })
 
-  test('categoryGifs sticker: при ошибке пути — fallback на stickers/search', async ({ assert }) => {
+  test('categoryGifs sticker: при ошибке пути — fallback на stickers/search', async ({
+    assert,
+  }) => {
     let calls = 0
     global.fetch = async (input: unknown) => {
       calls++

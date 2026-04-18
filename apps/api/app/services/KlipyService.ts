@@ -57,7 +57,7 @@ const categoryListCache = new Map<string, { at: number; data: KlipyCategoryDto[]
 
 /** Klipy в примерах рекомендует browser-like UA; пустой Node-fetch иногда даёт пустые выдачи. */
 const KLIPY_FETCH_HEADERS = {
-  Accept: 'application/json',
+  'Accept': 'application/json',
   'User-Agent': 'Mozilla/5.0 (compatible; VervelBot/1.0; +https://vervel.ru)',
 } as const
 
@@ -195,10 +195,9 @@ function fallbackPickFromFileTree(fileRoot: unknown): {
   const gif =
     urls.find((u) => /\.gif(\?|$)/i.test(u)) ??
     urls.find((u) => /\/gif\//i.test(u) || /gif\//i.test(u))
-  const still =
-    urls.find((u) => /\.(jpe?g|webp|png)(\?|$)/i.test(u)) ?? urls[0]
+  const still = urls.find((u) => /\.(jpe?g|webp|png)(\?|$)/i.test(u)) ?? urls[0]
   const sendUrl = gif ?? still
-  const previewUrl = still !== sendUrl ? still : urls.find((u) => u !== sendUrl) ?? sendUrl
+  const previewUrl = still !== sendUrl ? still : (urls.find((u) => u !== sendUrl) ?? sendUrl)
   if (!sendUrl || !previewUrl) return null
   return { previewUrl, url: sendUrl }
 }
