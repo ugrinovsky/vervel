@@ -1,21 +1,17 @@
 import crypto from 'node:crypto'
 
 /**
- * VK Mini Apps: проверка подписи параметров запуска (HMAC-SHA256, только `vk_*`).
- * @see https://github.com/VKCOM/vk-apps-launch-params/blob/master/examples/node.js
- * @see https://dev.vk.com/mini-apps/development/launch-params-sign
+ * VK Mini Apps: проверка подписи параметров запуска.
+ * 1) HMAC-SHA256, только `vk_*`, строка как в
+ *    https://github.com/VKCOM/vk-apps-launch-params/blob/master/examples/node.js
+ * 2) Старый MD5 по всем ключам кроме `sign` (если подпись — 32 hex).
  */
-export function verifyVkMiniAppLaunchSignature(
-  params: Record<string, string>,
-  secretKey: string
-): boolean {
-  if (!secretKey) {
-    return false
-  }
-
+function collectVkPairs(params: Record<string, string>): {
+  sign?: string
+  pairs: { key: string; value: string }[]
+} {
   let sign: string | undefined
-  const queryParams: { key: string; value: string }[] = []
-
+  const pairs: { key: string; value: string }[] = []
   for (const [key, value] of Object.entries(params)) {
     if (typeof value !== 'string') {
       continue
@@ -23,34 +19,83 @@ export function verifyVkMiniAppLaunchSignature(
     if (key === 'sign') {
       sign = value
     } else if (key.startsWith('vk_')) {
-      queryParams.push({ key, value })
+      pairs.push({ key, value })
     }
   }
+  return { sign, pairs }
+}
 
-  if (!sign || queryParams.length === 0) {
+/** Снять base64-padding справа (как PHP rtrim(sign, '=')). */
+function stripTrailingBase64Equals(s: string): string {
+  return s.replace(/=+$/, '')
+}
+
+function verifyLaunchParamsSha256(params: Record<string, string>, secretKey: string): boolean {
+  const { sign, pairs } = collectVkPairs(params)
+  if (!sign || pairs.length === 0 || !secretKey) {
     return false
   }
 
-  const queryString = queryParams
+  const queryString = pairs
     .sort((a, b) => a.key.localeCompare(b.key))
     .reduce((acc, { key, value }, idx) => {
       return acc + (idx === 0 ? '' : '&') + `${key}=${encodeURIComponent(value)}`
     }, '')
 
-  const paramsHash = crypto
+  let paramsHash = crypto
     .createHmac('sha256', secretKey)
     .update(queryString)
     .digest('base64')
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
-    .replace(/=$/, '')
 
-  const a = Buffer.from(sign, 'utf8')
+  paramsHash = stripTrailingBase64Equals(paramsHash)
+  const signNorm = stripTrailingBase64Equals(sign)
+
+  const a = Buffer.from(signNorm, 'utf8')
   const b = Buffer.from(paramsHash, 'utf8')
   if (a.length !== b.length) {
     return false
   }
   return crypto.timingSafeEqual(a, b)
+}
+
+function verifyLaunchParamsLegacyMd5(params: Record<string, string>, secretKey: string): boolean {
+  const sign = params.sign
+  if (!sign || !secretKey) {
+    return false
+  }
+  const sortedKeys = Object.keys(params)
+    .filter((k) => k !== 'sign')
+    .sort()
+  const checkString = sortedKeys.map((k) => `${k}=${params[k]}`).join('&')
+  const expected = crypto
+    .createHash('md5')
+    .update(checkString + secretKey)
+    .digest('hex')
+  const a = Buffer.from(sign, 'utf8')
+  const b = Buffer.from(expected, 'utf8')
+  if (a.length !== b.length) {
+    return false
+  }
+  return crypto.timingSafeEqual(a, b)
+}
+
+export function verifyVkMiniAppLaunchSignature(
+  params: Record<string, string>,
+  secretKey: string
+): boolean {
+  if (!secretKey) {
+    return false
+  }
+  const sig = params.sign ?? ''
+  const looksLikeMd5Hex = /^[a-f0-9]{32}$/i.test(sig)
+  if (looksLikeMd5Hex) {
+    return verifyLaunchParamsLegacyMd5(params, secretKey)
+  }
+  return (
+    verifyLaunchParamsSha256(params, secretKey) || verifyLaunchParamsLegacyMd5(params, secretKey)
+  )
 }
 
 /** Приводит тело запроса к плоскому Record<string, string> для проверки подписи. */
