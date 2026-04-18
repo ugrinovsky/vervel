@@ -14,7 +14,6 @@ import { clearAuthTokenCookie, setAuthTokenCookie } from '#utils/auth_cookie'
 const disposableSet: Set<string> = new Set(disposableDomains)
 
 export default class AuthController {
-
   public async login({ request, response }: HttpContext) {
     const ip = request.ip()
 

@@ -1,14 +1,16 @@
 import { test } from '@japa/runner'
 import crypto from 'node:crypto'
-import {
-  normalizeVkLaunchParams,
-  verifyVkMiniAppLaunchSignature,
-} from '#utils/vk_mini_app_launch'
+import { normalizeVkLaunchParams, verifyVkMiniAppLaunchSignature } from '#utils/vk_mini_app_launch'
 
 function signParams(params: Record<string, string>, secret: string): Record<string, string> {
-  const sortedKeys = Object.keys(params).filter((k) => k !== 'sign').sort()
+  const sortedKeys = Object.keys(params)
+    .filter((k) => k !== 'sign')
+    .sort()
   const checkString = sortedKeys.map((k) => `${k}=${params[k]}`).join('&')
-  const sign = crypto.createHash('md5').update(checkString + secret).digest('hex')
+  const sign = crypto
+    .createHash('md5')
+    .update(checkString + secret)
+    .digest('hex')
   return { ...params, sign }
 }
 

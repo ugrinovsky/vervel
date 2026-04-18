@@ -12,10 +12,14 @@
     "db:down": "docker-compose -f docker/docker-compose.yml down",
     "db:reset": "npm run db:reset --workspace=apps/api",
     "db:migrate": "npm run migrate --workspace=apps/api",
-    "db:seed": "npm run db:seed --workspace=apps/api"
+    "db:seed": "npm run db:seed --workspace=apps/api",
+    "lint": "npm run lint --workspace=apps/api && npm run lint --workspace=apps/web",
+    "test": "npm run test --workspace=apps/api -- --reporter=spec && npm run test --workspace=apps/web -- --run",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@types/heic-convert": "^2.1.0",
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "husky": "^9.1.7"
   }
 }

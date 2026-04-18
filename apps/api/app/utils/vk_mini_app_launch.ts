@@ -13,9 +13,14 @@ export function verifyVkMiniAppLaunchSignature(
     return false
   }
 
-  const sortedKeys = Object.keys(params).filter((k) => k !== 'sign').sort()
+  const sortedKeys = Object.keys(params)
+    .filter((k) => k !== 'sign')
+    .sort()
   const checkString = sortedKeys.map((k) => `${k}=${params[k]}`).join('&')
-  const expected = crypto.createHash('md5').update(checkString + clientSecret).digest('hex')
+  const expected = crypto
+    .createHash('md5')
+    .update(checkString + clientSecret)
+    .digest('hex')
   const a = Buffer.from(sign, 'utf8')
   const b = Buffer.from(expected, 'utf8')
   if (a.length !== b.length) {

@@ -5,10 +5,7 @@ import type { ProviderName } from '#models/oauth_provider'
 import { DateTime } from 'luxon'
 import env from '#start/env'
 import { setAuthTokenCookie } from '#utils/auth_cookie'
-import {
-  normalizeVkLaunchParams,
-  verifyVkMiniAppLaunchSignature,
-} from '#utils/vk_mini_app_launch'
+import { normalizeVkLaunchParams, verifyVkMiniAppLaunchSignature } from '#utils/vk_mini_app_launch'
 
 export default class OAuthController {
   /**
