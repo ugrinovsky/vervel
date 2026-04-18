@@ -1,28 +1,52 @@
 import crypto from 'node:crypto'
 
 /**
- * VK Mini Apps: проверка подписи параметров запуска (MD5).
- * @see https://dev.vk.com/mini-apps/development/launch-params
+ * VK Mini Apps: проверка подписи параметров запуска (HMAC-SHA256, только `vk_*`).
+ * @see https://github.com/VKCOM/vk-apps-launch-params/blob/master/examples/node.js
+ * @see https://dev.vk.com/mini-apps/development/launch-params-sign
  */
 export function verifyVkMiniAppLaunchSignature(
   params: Record<string, string>,
-  clientSecret: string
+  secretKey: string
 ): boolean {
-  const sign = params.sign
-  if (!sign || !clientSecret) {
+  if (!secretKey) {
     return false
   }
 
-  const sortedKeys = Object.keys(params)
-    .filter((k) => k !== 'sign')
-    .sort()
-  const checkString = sortedKeys.map((k) => `${k}=${params[k]}`).join('&')
-  const expected = crypto
-    .createHash('md5')
-    .update(checkString + clientSecret)
-    .digest('hex')
+  let sign: string | undefined
+  const queryParams: { key: string; value: string }[] = []
+
+  for (const [key, value] of Object.entries(params)) {
+    if (typeof value !== 'string') {
+      continue
+    }
+    if (key === 'sign') {
+      sign = value
+    } else if (key.startsWith('vk_')) {
+      queryParams.push({ key, value })
+    }
+  }
+
+  if (!sign || queryParams.length === 0) {
+    return false
+  }
+
+  const queryString = queryParams
+    .sort((a, b) => a.key.localeCompare(b.key))
+    .reduce((acc, { key, value }, idx) => {
+      return acc + (idx === 0 ? '' : '&') + `${key}=${encodeURIComponent(value)}`
+    }, '')
+
+  const paramsHash = crypto
+    .createHmac('sha256', secretKey)
+    .update(queryString)
+    .digest('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=$/, '')
+
   const a = Buffer.from(sign, 'utf8')
-  const b = Buffer.from(expected, 'utf8')
+  const b = Buffer.from(paramsHash, 'utf8')
   if (a.length !== b.length) {
     return false
   }
