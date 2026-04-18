@@ -1,5 +1,9 @@
 import { test } from '@japa/runner'
-import { normalizeVkLaunchParams, verifyVkMiniAppLaunchSignature } from '#utils/vk_mini_app_launch'
+import {
+  normalizeVkLaunchParams,
+  verifyVkMiniAppLaunchFromRawSearch,
+  verifyVkMiniAppLaunchSignature,
+} from '#utils/vk_mini_app_launch'
 
 /** Пример из https://github.com/VKCOM/vk-apps-launch-params/blob/master/examples/node.js */
 const OFFICIAL_QUERY =
@@ -33,5 +37,16 @@ test.group('VK Mini App launch signature (HMAC-SHA256)', () => {
   test('normalizeVkLaunchParams', async ({ assert }) => {
     assert.deepEqual(normalizeVkLaunchParams(null), null)
     assert.deepEqual(normalizeVkLaunchParams({ a: 1, b: 'x' }), { a: '1', b: 'x' })
+  })
+
+  test('сырой search как в examples/node.js (string branch)', async ({ assert }) => {
+    assert.isTrue(verifyVkMiniAppLaunchFromRawSearch(`?${OFFICIAL_QUERY}`, OFFICIAL_SECRET))
+    assert.isTrue(verifyVkMiniAppLaunchFromRawSearch(OFFICIAL_QUERY, OFFICIAL_SECRET))
+  })
+
+  test('boolean vk_* в JSON → 0/1 для подписи', async ({ assert }) => {
+    const params = parseQuery(OFFICIAL_QUERY)
+    const withBool = { ...params, vk_is_app_user: true }
+    assert.equal(normalizeVkLaunchParams(withBool)?.vk_is_app_user, '1')
   })
 })

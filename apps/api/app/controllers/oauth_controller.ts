@@ -5,7 +5,11 @@ import type { ProviderName } from '#models/oauth_provider'
 import { DateTime } from 'luxon'
 import env from '#start/env'
 import { setAuthTokenCookie } from '#utils/auth_cookie'
-import { normalizeVkLaunchParams, verifyVkMiniAppLaunchSignature } from '#utils/vk_mini_app_launch'
+import {
+  normalizeVkLaunchParams,
+  verifyVkMiniAppLaunchFromRawSearch,
+  verifyVkMiniAppLaunchSignature,
+} from '#utils/vk_mini_app_launch'
 
 export default class OAuthController {
   /**
@@ -345,7 +349,14 @@ export default class OAuthController {
       return response.forbidden({ message: 'Invalid vk_app_id' })
     }
 
-    if (!verifyVkMiniAppLaunchSignature(launchParams, secret)) {
+    const launchQueryInput = request.input('launchQuery')
+    const rawLaunchQuery = typeof launchQueryInput === 'string' ? launchQueryInput.trim() : ''
+
+    const signatureOk =
+      verifyVkMiniAppLaunchSignature(launchParams, secret) ||
+      (rawLaunchQuery.length > 0 && verifyVkMiniAppLaunchFromRawSearch(rawLaunchQuery, secret))
+
+    if (!signatureOk) {
       return response.forbidden({ message: 'Invalid launch signature' })
     }
 

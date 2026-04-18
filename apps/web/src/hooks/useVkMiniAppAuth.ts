@@ -8,6 +8,7 @@ import { publicApi } from '@/api/http/publicApi';
 import {
   bridgeLaunchParamsToRecord,
   clearVkLaunchParamsStorage,
+  getVkLaunchRawQueryForVerify,
   hasVkMiniAppLaunchContext,
   takeVkLaunchParams,
   VK_LAUNCH_PARAMS_SESSION_KEY,
@@ -97,8 +98,12 @@ export function useVkMiniAppAuth(): { vkBootStatus: VkBootStatus } {
           return;
         }
 
+        const launchQuery = getVkLaunchRawQueryForVerify();
+        vkMiniDbg('launchQuery for verify', launchQuery ? '(present)' : '(absent)');
+
         const res = await publicApi.post<MiniAppLoginResponse>('/oauth/vk/mini-app-login', {
           launchParams,
+          ...(launchQuery ? { launchQuery } : {}),
         });
         const data = res.data;
         clearVkLaunchParamsStorage();

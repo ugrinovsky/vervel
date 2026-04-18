@@ -30,18 +30,72 @@ function stripTrailingBase64Equals(s: string): string {
   return s.replace(/=+$/, '')
 }
 
+function buildSortedVkQueryStringForHmac(pairs: { key: string; value: string }[]): string {
+  return pairs
+    .sort((a, b) => a.key.localeCompare(b.key))
+    .reduce((acc, { key, value }, idx) => {
+      return acc + (idx === 0 ? '' : '&') + `${key}=${encodeURIComponent(value)}`
+    }, '')
+}
+
 function verifyLaunchParamsSha256(params: Record<string, string>, secretKey: string): boolean {
   const { sign, pairs } = collectVkPairs(params)
   if (!sign || pairs.length === 0 || !secretKey) {
     return false
   }
 
-  const queryString = pairs
-    .sort((a, b) => a.key.localeCompare(b.key))
-    .reduce((acc, { key, value }, idx) => {
-      return acc + (idx === 0 ? '' : '&') + `${key}=${encodeURIComponent(value)}`
-    }, '')
+  const queryString = buildSortedVkQueryStringForHmac(pairs)
 
+  let paramsHash = crypto
+    .createHmac('sha256', secretKey)
+    .update(queryString)
+    .digest('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+
+  paramsHash = stripTrailingBase64Equals(paramsHash)
+  const signNorm = stripTrailingBase64Equals(sign)
+
+  const a = Buffer.from(signNorm, 'utf8')
+  const b = Buffer.from(paramsHash, 'utf8')
+  if (a.length !== b.length) {
+    return false
+  }
+  return crypto.timingSafeEqual(a, b)
+}
+
+/**
+ * Как ветка `string` в официальном verifyLaunchParams (VKCOM/vk-apps-launch-params examples/node.js):
+ * значения между `=` и `&` без предварительного decode — затем encodeURIComponent при сборке строки для HMAC.
+ */
+export function verifyVkMiniAppLaunchFromRawSearch(search: string, secretKey: string): boolean {
+  if (!secretKey || typeof search !== 'string' || !search.trim()) {
+    return false
+  }
+
+  const formattedSearch = search.startsWith('?') ? search.slice(1) : search
+  let sign: string | undefined
+  const pairs: { key: string; value: string }[] = []
+
+  for (const param of formattedSearch.split('&')) {
+    const eq = param.indexOf('=')
+    if (eq < 0) {
+      continue
+    }
+    const key = param.slice(0, eq)
+    const value = param.slice(eq + 1)
+    if (key === 'sign') {
+      sign = value
+    } else if (key.startsWith('vk_')) {
+      pairs.push({ key, value })
+    }
+  }
+
+  if (!sign || pairs.length === 0) {
+    return false
+  }
+
+  const queryString = buildSortedVkQueryStringForHmac(pairs)
   let paramsHash = crypto
     .createHmac('sha256', secretKey)
     .update(queryString)
@@ -106,6 +160,10 @@ export function normalizeVkLaunchParams(raw: unknown): Record<string, string> | 
   const out: Record<string, string> = {}
   for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
     if (v === null || v === undefined) {
+      continue
+    }
+    if (typeof v === 'boolean' && k.startsWith('vk_')) {
+      out[k] = v ? '1' : '0'
       continue
     }
     out[k] = typeof v === 'string' ? v : String(v)

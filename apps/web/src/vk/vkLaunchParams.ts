@@ -1,6 +1,16 @@
 /** Параметры первого захода из VK Mini App (сохраняем при SPA-навигации). */
 export const VK_LAUNCH_PARAMS_SESSION_KEY = 'vervel_vk_mini_launch_params';
 
+/**
+ * Сырой query для проверки подписи на API (как в examples/node.js для строки search):
+ * без decode/rebuild — избегает расхождений с JSON из bridge.
+ */
+export function getVkLaunchRawQueryForVerify(): string | undefined {
+  const segments = collectQuerySegmentsFromLocation();
+  const first = segments[0];
+  return first && first.length > 0 ? first : undefined;
+}
+
 /** Сегменты query: ?… из location.search и из hash (#…?… или #vk_app_id=…). */
 function collectQuerySegmentsFromLocation(): string[] {
   if (typeof window === 'undefined') {
@@ -89,6 +99,10 @@ export function bridgeLaunchParamsToRecord(data: Record<string, unknown>): Recor
   for (const [k, v] of Object.entries(data)) {
     if (v === undefined || v === null) continue;
     if (typeof v === 'object') continue;
+    if (typeof v === 'boolean' && k.startsWith('vk_')) {
+      out[k] = v ? '1' : '0';
+      continue;
+    }
     out[k] = String(v);
   }
   return out;
