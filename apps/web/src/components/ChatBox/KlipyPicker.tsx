@@ -2,31 +2,77 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
-import { chatApi, type GiphyCategory, type GiphyKind, type GiphySearchItem } from '@/api/chat';
+import { chatApi, type KlipyCategory, type KlipyKind, type KlipySearchItem } from '@/api/chat';
 import CloseButton from '@/components/ui/CloseButton';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import SearchInput from '@/components/ui/SearchInput';
 import ChipScrollRow, { type ChipScrollItem } from '@/components/ui/ChipScrollRow';
-import { giphyCategoryLabelRu } from '@/util/giphyCategoryRu';
-import { loadGiphyRecent, pushGiphyRecent, removeGiphyRecentById } from '@/util/giphyRecent';
+import { klipyCategoryLabelRu } from '@/util/klipyCategoryRu';
+import { loadKlipyRecent, pushKlipyRecent, removeKlipyRecentById } from '@/util/klipyRecent';
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  onPick: (item: GiphySearchItem) => void | Promise<void>;
+  onPick: (item: KlipySearchItem) => void | Promise<void>;
   pickDisabled?: boolean;
 };
 
-/** Размер страницы поиска GIPHY (первая и «Ещё»). */
-const GIPHY_GRID_PAGE_SIZE = 24;
+/** Размер страницы поиска (первая загрузка и «Ещё»). */
+const KLIPY_GRID_PAGE_SIZE = 24;
 
-/** Раскладка «masonry» без CSS column-count (внутри scroll ломается в 1 колонку). */
-function packGiphyItemsIntoColumns(
-  items: GiphySearchItem[],
+/** Тематические подборки под Vervel (поиск GIF тем же `/search?q=…`). */
+type VervelKlipyThemeChip = { key: string; label: string; q: string };
+
+type VervelKlipyThemeGroup = { title: string; chips: readonly VervelKlipyThemeChip[] };
+
+const VERVEL_KLIPY_THEME_GROUPS: readonly VervelKlipyThemeGroup[] = [
+  {
+    title: 'Тренировка',
+    chips: [
+      { key: '__v:gym', label: 'В зале', q: 'gym workout' },
+      { key: '__v:home', label: 'Дома', q: 'home workout' },
+      { key: '__v:cardio', label: 'Кардио', q: 'cardio running' },
+      { key: '__v:stretch', label: 'Растяжка', q: 'stretching yoga' },
+      { key: '__v:weights', label: 'С железом', q: 'weightlifting barbell' },
+    ],
+  },
+  {
+    title: 'Цели и результат',
+    chips: [
+      { key: '__v:win', label: 'Победа', q: 'victory celebration sports' },
+      { key: '__v:pr', label: 'Рекорд', q: 'personal best achievement' },
+      { key: '__v:team', label: 'Команда', q: 'team sports high five' },
+      { key: '__v:medal', label: 'Награда', q: 'medal trophy winner' },
+    ],
+  },
+  {
+    title: 'Настроение',
+    chips: [
+      { key: '__v:motivate', label: 'Вперёд', q: 'motivation fitness' },
+      { key: '__v:fire', label: 'Рвём', q: 'beast mode gym intense' },
+      { key: '__v:tired', label: 'Устал', q: 'exhausted tired workout' },
+      { key: '__v:sleep', label: 'Восстановление', q: 'sleep rest recovery' },
+    ],
+  },
+  {
+    title: 'Питание и быт',
+    chips: [
+      { key: '__v:food', label: 'Еда', q: 'healthy meal protein' },
+      { key: '__v:water', label: 'Вода', q: 'drinking water hydration' },
+      { key: '__v:coffee', label: 'Кофе', q: 'coffee morning energy' },
+    ],
+  },
+] as const;
+
+const VERVEL_KLIPY_THEME_CHIPS_FLAT: VervelKlipyThemeChip[] =
+  VERVEL_KLIPY_THEME_GROUPS.flatMap((g) => g.chips.map((c) => ({ ...c })));
+
+function packKlipyItemsIntoColumns(
+  items: KlipySearchItem[],
   columnCount: number
-): GiphySearchItem[][] {
+): KlipySearchItem[][] {
   if (columnCount < 1) return [items];
-  const cols: GiphySearchItem[][] = Array.from({ length: columnCount }, () => []);
+  const cols: KlipySearchItem[][] = Array.from({ length: columnCount }, () => []);
   const load = new Array(columnCount).fill(0);
   for (const item of items) {
     const w = item.previewWidth;
@@ -43,7 +89,7 @@ function packGiphyItemsIntoColumns(
   return cols;
 }
 
-function giphyTileAspectStyle(item: GiphySearchItem): { aspectRatio: string } {
+function klipyTileAspectStyle(item: KlipySearchItem): { aspectRatio: string } {
   const { previewWidth: w, previewHeight: h } = item;
   if (w && h && w > 0 && h > 0) {
     return { aspectRatio: `${Math.round(w)} / ${Math.round(h)}` };
@@ -51,7 +97,7 @@ function giphyTileAspectStyle(item: GiphySearchItem): { aspectRatio: string } {
   return { aspectRatio: '1 / 1' };
 }
 
-function GiphyPickerTile({
+function KlipyPickerTile({
   item,
   disabled,
   picking,
@@ -59,12 +105,12 @@ function GiphyPickerTile({
   showRemoveFromRecent,
   onRemoveFromRecent,
 }: {
-  item: GiphySearchItem;
+  item: KlipySearchItem;
   disabled: boolean;
   picking: boolean;
-  onPick: (item: GiphySearchItem) => void | Promise<void>;
+  onPick: (item: KlipySearchItem) => void | Promise<void>;
   showRemoveFromRecent?: boolean;
-  onRemoveFromRecent?: (item: GiphySearchItem) => void;
+  onRemoveFromRecent?: (item: KlipySearchItem) => void;
 }) {
   const [loaded, setLoaded] = useState(false);
 
@@ -85,7 +131,7 @@ function GiphyPickerTile({
         disabled={disabled}
         onClick={() => void onPick(item)}
         className="relative w-full rounded-lg overflow-hidden bg-white/5 border border-white/10 active:scale-[0.98] transition-transform disabled:opacity-50"
-        style={giphyTileAspectStyle(item)}
+        style={klipyTileAspectStyle(item)}
       >
         <img
           src={item.previewUrl}
@@ -124,28 +170,24 @@ function GiphyPickerTile({
   );
 }
 
-export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Props) {
-  const [kind, setKind] = useState<GiphyKind>('gif');
+export default function KlipyPicker({ open, onClose, onPick, pickDisabled }: Props) {
+  const [kind, setKind] = useState<KlipyKind>('gif');
   const [query, setQuery] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  /** Отдельно по kind — иначе при переключении GIF→стикеры кратко видны чужие чипы. */
-  const [categoriesByKind, setCategoriesByKind] = useState<Record<GiphyKind, GiphyCategory[]>>({
+  const [categoriesByKind, setCategoriesByKind] = useState<Record<KlipyKind, KlipyCategory[]>>({
     gif: [],
     sticker: [],
   });
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
   const categories = categoriesByKind[kind];
-  const [selectedCat, setSelectedCat] = useState<GiphyCategory | null>(null);
-  /** Локальная сетка «недавние» без запроса к API */
+  const [selectedCat, setSelectedCat] = useState<KlipyCategory | null>(null);
   const [showRecentGrid, setShowRecentGrid] = useState(false);
-  const [recentItems, setRecentItems] = useState<GiphySearchItem[]>([]);
-  const [items, setItems] = useState<GiphySearchItem[]>([]);
+  const [recentItems, setRecentItems] = useState<KlipySearchItem[]>([]);
+  const [items, setItems] = useState<KlipySearchItem[]>([]);
   const [nextOffset, setNextOffset] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [pickingId, setPickingId] = useState<string | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  /** После «Ещё» вернуть scrollTop (колонки / фокус кнопки). */
   const pendingScrollRestoreRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -159,7 +201,7 @@ export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Pro
 
   useEffect(() => {
     if (!open) return;
-    setRecentItems(loadGiphyRecent(kind));
+    setRecentItems(loadKlipyRecent(kind));
   }, [open, kind]);
 
   useEffect(() => {
@@ -171,9 +213,8 @@ export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Pro
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    setCategoriesLoading(true);
     chatApi
-      .listGiphyCategories({ kind })
+      .listKlipyCategories({ kind })
       .then((res) => {
         if (!cancelled) {
           const next = res.data.data.categories ?? [];
@@ -185,9 +226,6 @@ export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Pro
           toast.error('Не удалось загрузить категории');
           setCategoriesByKind((prev) => ({ ...prev, [kind]: [] }));
         }
-      })
-      .finally(() => {
-        if (!cancelled) setCategoriesLoading(false);
       });
     return () => {
       cancelled = true;
@@ -196,7 +234,6 @@ export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Pro
 
   useEffect(() => {
     if (!open) return;
-
     if (showRecentGrid) {
       if (recentItems.length === 0) {
         setShowRecentGrid(false);
@@ -207,53 +244,39 @@ export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Pro
       setNextOffset(null);
       return;
     }
-
     let cancelled = false;
-
     setLoading(true);
     setItems([]);
     setNextOffset(null);
-
     (async () => {
       try {
         const params: {
           offset: number;
           limit: number;
-          kind: GiphyKind;
+          kind: KlipyKind;
           q?: string;
           category?: string;
           tag?: string;
-        } = { offset: 0, limit: GIPHY_GRID_PAGE_SIZE, kind };
-
-        if (searchTerm.length > 0) {
-          params.q = searchTerm;
-        } else if (selectedCat?.defaultTagEncoded) {
+        } = { offset: 0, limit: KLIPY_GRID_PAGE_SIZE, kind };
+        if (searchTerm.length > 0) params.q = searchTerm;
+        else if (selectedCat?.defaultTagEncoded) {
           params.category = selectedCat.name_encoded;
           params.tag = selectedCat.defaultTagEncoded;
-        } else if (selectedCat) {
-          params.q = selectedCat.name;
-        }
-        // иначе — тренды (без q / category)
-
-        const res = await chatApi.searchGiphy(params);
+        } else if (selectedCat) params.q = selectedCat.name;
+        const res = await chatApi.searchKlipy(params);
         if (cancelled) return;
         setItems(res.data.data.items);
         setNextOffset(res.data.data.nextOffset);
       } catch (err: unknown) {
         if (cancelled) return;
         const status = (err as { response?: { status?: number } })?.response?.status;
-        if (status === 503) {
-          toast.error('GIF сейчас недоступны');
-        } else {
-          toast.error('Не удалось загрузить GIF');
-        }
+        toast.error(status === 503 ? 'GIF сейчас недоступны' : 'Не удалось загрузить GIF');
         setItems([]);
         setNextOffset(null);
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
-
     return () => {
       cancelled = true;
     };
@@ -275,23 +298,17 @@ export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Pro
       const params: {
         offset: number;
         limit: number;
-        kind: GiphyKind;
+        kind: KlipyKind;
         q?: string;
         category?: string;
         tag?: string;
-      } = { offset: nextOffset, limit: GIPHY_GRID_PAGE_SIZE, kind };
-
-      if (searchTerm.length > 0) {
-        params.q = searchTerm;
-      } else if (selectedCat?.defaultTagEncoded) {
+      } = { offset: nextOffset, limit: KLIPY_GRID_PAGE_SIZE, kind };
+      if (searchTerm.length > 0) params.q = searchTerm;
+      else if (selectedCat?.defaultTagEncoded) {
         params.category = selectedCat.name_encoded;
         params.tag = selectedCat.defaultTagEncoded;
-      } else if (selectedCat) {
-        params.q = selectedCat.name;
-      }
-      // иначе — тренды
-
-      const res = await chatApi.searchGiphy(params);
+      } else if (selectedCat) params.q = selectedCat.name;
+      const res = await chatApi.searchKlipy(params);
       const batch = res.data.data.items;
       if (batch.length > 0) {
         const scrollEl = scrollAreaRef.current;
@@ -304,15 +321,7 @@ export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Pro
     } finally {
       setLoadingMore(false);
     }
-  }, [
-    nextOffset,
-    loadingMore,
-    loading,
-    searchTerm,
-    kind,
-    selectedCat,
-    showRecentGrid,
-  ]);
+  }, [nextOffset, loadingMore, loading, searchTerm, kind, selectedCat, showRecentGrid]);
 
   useLayoutEffect(() => {
     const top = pendingScrollRestoreRef.current;
@@ -322,12 +331,12 @@ export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Pro
     if (el) el.scrollTop = top;
   }, [items.length]);
 
-  const handlePick = async (item: GiphySearchItem) => {
+  const handlePick = async (item: KlipySearchItem) => {
     if (pickDisabled || pickingId) return;
     setPickingId(item.id);
     try {
       await onPick(item);
-      setRecentItems(pushGiphyRecent(kind, item));
+      setRecentItems(pushKlipyRecent(kind, item));
       onClose();
     } catch {
       toast.error('Не удалось отправить GIF');
@@ -341,6 +350,11 @@ export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Pro
     setShowRecentGrid(false);
   };
 
+  const clearSearch = useCallback(() => {
+    setQuery('');
+    setSearchTerm('');
+  }, []);
+
   const onQueryChange = (v: string) => {
     setQuery(v);
     if (v.trim().length > 0) {
@@ -349,13 +363,14 @@ export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Pro
     }
   };
 
-  const handleRemoveFromRecent = useCallback((item: GiphySearchItem) => {
-    const next = removeGiphyRecentById(kind, item.id);
-    setRecentItems(next);
-    if (next.length === 0) setShowRecentGrid(false);
-  }, [kind]);
-
-  const categoriesChipsDisabled = categoriesLoading && categories.length === 0;
+  const handleRemoveFromRecent = useCallback(
+    (item: KlipySearchItem) => {
+      const next = removeKlipyRecentById(kind, item.id);
+      setRecentItems(next);
+      if (next.length === 0) setShowRecentGrid(false);
+    },
+    [kind]
+  );
 
   const categoryChips: ChipScrollItem[] = useMemo(() => {
     const rows: ChipScrollItem[] = [];
@@ -365,12 +380,23 @@ export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Pro
         label: <span className="max-w-[120px] truncate">Недавние</span>,
       });
     }
-    if (kind === 'gif') rows.push({ key: '__trends__', label: 'Тренды' });
+    /** Тренды KLIPY для GIF и стикеров (на бэке — отдельный эндпоинт trending). */
+    rows.push({ key: '__trends__', label: 'Популярное' });
+    for (const group of VERVEL_KLIPY_THEME_GROUPS) {
+      for (const tc of group.chips) {
+        rows.push({
+          key: tc.key,
+          label: <span className="max-w-[120px] truncate">{tc.label}</span>,
+        });
+      }
+    }
     for (const c of categories) {
       rows.push({
         key: c.name_encoded,
         label: (
-          <span className="max-w-[140px] truncate">{giphyCategoryLabelRu(c.name_encoded, c.name)}</span>
+          <span className="max-w-[140px] truncate">
+            {klipyCategoryLabelRu(c.name_encoded, c.name)}
+          </span>
         ),
       });
     }
@@ -378,31 +404,46 @@ export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Pro
   }, [kind, categories, recentItems]);
 
   const categoryActiveKey = useMemo(() => {
-    if (searchTerm) return null;
     if (showRecentGrid) return '__recent__';
-    if (kind === 'gif' && !selectedCat) return '__trends__';
-    if (selectedCat) return selectedCat.name_encoded;
-    return null;
-  }, [searchTerm, kind, selectedCat, showRecentGrid]);
+    const quickHit = VERVEL_KLIPY_THEME_CHIPS_FLAT.find((c) => c.q === searchTerm);
+    if (quickHit) return quickHit.key;
+    if (searchTerm.length > 0) return null;
+    if (!selectedCat) return '__trends__';
+    return selectedCat.name_encoded;
+  }, [searchTerm, selectedCat, showRecentGrid]);
 
-  const onCategoryChipClick = useCallback((key: string) => {
-    if (key === '__recent__') {
-      setShowRecentGrid(true);
-      setSelectedCat(null);
-      return;
-    }
-    if (key === '__trends__') {
+  const onCategoryChipClick = useCallback(
+    (key: string) => {
+      if (key === '__recent__') {
+        clearSearch();
+        setShowRecentGrid(true);
+        setSelectedCat(null);
+        return;
+      }
+      if (key === '__trends__') {
+        clearSearch();
+        setShowRecentGrid(false);
+        setSelectedCat(null);
+        return;
+      }
+      const quick = VERVEL_KLIPY_THEME_CHIPS_FLAT.find((c) => c.key === key);
+      if (quick) {
+        setShowRecentGrid(false);
+        setSelectedCat(null);
+        setQuery(quick.q);
+        setSearchTerm(quick.q);
+        return;
+      }
       setShowRecentGrid(false);
-      setSelectedCat(null);
-      return;
-    }
-    setShowRecentGrid(false);
-    const c = categories.find((x) => x.name_encoded === key);
-    if (c) setSelectedCat(c);
-  }, [categories]);
+      clearSearch();
+      const c = categories.find((x) => x.name_encoded === key);
+      if (c) setSelectedCat(c);
+    },
+    [categories, clearSearch]
+  );
 
-  const [gridCols, setGridCols] = useState(() =>
-    typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches ? 4 : 3
+  const [gridCols, setGridCols] = useState(
+    () => (typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches ? 4 : 3)
   );
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -413,14 +454,9 @@ export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Pro
     return () => mq.removeEventListener('change', sync);
   }, []);
 
-  const itemColumns = useMemo(
-    () => packGiphyItemsIntoColumns(items, gridCols),
-    [items, gridCols]
-  );
-
+  const itemColumns = useMemo(() => packKlipyItemsIntoColumns(items, gridCols), [items, gridCols]);
   if (!open) return null;
 
-  /** Портал + fixed: иначе оверлей остаётся в слое ChatBox (z-10) и рисуется под шапкой шита (z-20). */
   const overlay = (
     <div
       className="fixed inset-0 z-[270] flex flex-col bg-black/75 backdrop-blur-md"
@@ -435,6 +471,7 @@ export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Pro
               type="button"
               onClick={() => {
                 setKind('gif');
+                clearSearch();
                 clearFilters();
               }}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
@@ -447,6 +484,7 @@ export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Pro
               type="button"
               onClick={() => {
                 setKind('sticker');
+                clearSearch();
                 clearFilters();
               }}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
@@ -475,26 +513,18 @@ export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Pro
               setQuery('');
               setSearchTerm('');
             }}
-            placeholder="Поиск в GIPHY…"
+            placeholder="Поиск в KLIPY…"
           />
           <CloseButton onClick={onClose} className="!w-9 !h-9" iconClassName="w-[18px] h-[18px]" />
         </div>
-
-        {(kind === 'gif' || categories.length > 0 || recentItems.length > 0) && (
-          <ChipScrollRow
-            className="pr-2.5 sm:pr-3"
-            chips={categoryChips}
-            activeKey={categoryActiveKey}
-            onChipClick={onCategoryChipClick}
-            disabled={categoriesChipsDisabled}
-          />
-        )}
+        <ChipScrollRow
+          className="pr-2.5 sm:pr-3"
+          chips={categoryChips}
+          activeKey={categoryActiveKey}
+          onChipClick={onCategoryChipClick}
+        />
       </div>
-
-      <div
-        ref={scrollAreaRef}
-        className="min-w-0 flex-1 min-h-0 overflow-y-auto px-3 py-3"
-      >
+      <div ref={scrollAreaRef} className="min-w-0 flex-1 min-h-0 overflow-y-auto px-3 py-3">
         {loading && items.length === 0 ? (
           <div
             className="flex items-center justify-center py-16 min-h-[40vh]"
@@ -510,7 +540,7 @@ export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Pro
             {itemColumns.map((colItems, colIdx) => (
               <div key={colIdx} className="flex min-w-0 flex-1 flex-col gap-1.5">
                 {colItems.map((item) => (
-                  <GiphyPickerTile
+                  <KlipyPickerTile
                     key={item.id}
                     item={item}
                     disabled={pickDisabled || !!pickingId}
@@ -524,7 +554,6 @@ export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Pro
             ))}
           </div>
         )}
-
         {nextOffset !== null && !loading && items.length > 0 && (
           <div className="flex justify-center pt-4 pb-2">
             <button
@@ -539,15 +568,14 @@ export default function GiphyPicker({ open, onClose, onPick, pickDisabled }: Pro
           </div>
         )}
       </div>
-
       <div className="shrink-0 px-3 pb-[max(6px,env(safe-area-inset-bottom))] pt-1 border-t border-white/10 text-center leading-none">
         <a
-          href="https://giphy.com"
+          href="https://klipy.com"
           target="_blank"
           rel="noopener noreferrer"
           className="text-[10px] tracking-wide text-(--color_text_muted)/70 hover:text-white/50 inline-block py-0.5"
         >
-          Powered by GIPHY
+          Powered by KLIPY
         </a>
       </div>
     </div>

@@ -110,8 +110,9 @@ export default await Env.create(new URL('../', import.meta.url), {
 
   /*
   |----------------------------------------------------------
-  | Giphy — GIF search in chats (https://developers.giphy.com/)
+  | KLIPY — GIF search in chats
   |----------------------------------------------------------
   */
-  GIPHY_API_KEY: Env.schema.string.optional(),
+  KLIPY_API_KEY: Env.schema.string.optional(),
+  KLIPY_API_BASE: Env.schema.string.optional(),
 })

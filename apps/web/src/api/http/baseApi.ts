@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, isAxiosError, type AxiosError } from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || '';
+/** Как в auth.ts: без VITE_API_URL Vite не подставит localhost, и axios уйдёт на origin SPA (5173) вместо API. */
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3333';
 
 /**
  * Отладка 401: localStorage.setItem('VERVEL_DEBUG_401','1'), воспроизвести запрос.

@@ -1,9 +1,3 @@
-/**
- * GIPHY отдаёт названия категорий на английском (`name` / `name_encoded`).
- * Полный автоперевод без сервиса локализации GIPHY недоступен — известные slug’и
- * маппим вручную; остальное остаётся как в API. Подборки (внутренние теги) в UI не показываем.
- */
-
 function normKey(s: string): string {
   return s
     .trim()
@@ -49,7 +43,7 @@ const CAT: Record<string, string> = {
   'weird-and-wonderful': 'Странное и удивительное',
 }
 
-export function giphyCategoryLabelRu(nameEncoded: string, displayName: string): string {
+export function klipyCategoryLabelRu(nameEncoded: string, displayName: string): string {
   const byEnc = CAT[normKey(nameEncoded)]
   if (byEnc) return byEnc
   const byName = CAT[normKey(displayName)]

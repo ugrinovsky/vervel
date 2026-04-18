@@ -26,23 +26,23 @@ export interface DialogItem {
   unreadCount: number
 }
 
-export type GiphyKind = 'gif' | 'sticker'
+export type KlipyKind = 'gif' | 'sticker'
 
-export interface GiphySearchItem {
+export interface KlipySearchItem {
   id: string
   previewUrl: string
   url: string
-  /** Из ответа GIPHY для превью-рендира */
+  /** Размеры превью из ответа провайдера */
   previewWidth?: number
   previewHeight?: number
 }
 
-export interface GiphySearchResponse {
-  items: GiphySearchItem[]
+export interface KlipySearchResponse {
+  items: KlipySearchItem[]
   nextOffset: number | null
 }
 
-export interface GiphyCategory {
+export interface KlipyCategory {
   name: string
   name_encoded: string
   defaultTagEncoded: string | null
@@ -54,24 +54,24 @@ export const chatApi = {
   listDialogs: () =>
     privateApi.get<{ success: boolean; data: DialogItem[] }>('/chats'),
 
-  giphyStatus: () =>
-    privateApi.get<{ success: boolean; data: { enabled: boolean } }>('/chats/giphy/status'),
+  klipyStatus: () =>
+    privateApi.get<{ success: boolean; data: { enabled: boolean } }>('/chats/klipy/status'),
 
-  listGiphyCategories: (params?: { kind?: GiphyKind }) =>
-    privateApi.get<{ success: boolean; data: { categories: GiphyCategory[] } }>(
-      '/chats/giphy/categories',
+  listKlipyCategories: (params?: { kind?: KlipyKind }) =>
+    privateApi.get<{ success: boolean; data: { categories: KlipyCategory[] } }>(
+      '/chats/klipy/categories',
       { params }
     ),
 
-  searchGiphy: (params: {
+  searchKlipy: (params: {
     q?: string
     offset?: number
     limit?: number
-    kind?: GiphyKind
+    kind?: KlipyKind
     category?: string
     tag?: string
   }) =>
-    privateApi.get<{ success: boolean; data: GiphySearchResponse }>('/chats/giphy/search', {
+    privateApi.get<{ success: boolean; data: KlipySearchResponse }>('/chats/klipy/search', {
       params,
     }),
 

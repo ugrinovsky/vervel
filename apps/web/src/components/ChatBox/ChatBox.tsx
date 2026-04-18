@@ -20,20 +20,20 @@ import { refreshDialogs } from '@/hooks/useDialogs';
 import { useVisualViewportBottomInset } from '@/hooks/useVisualViewportBottomInset';
 import { WorkoutPreviewCard, parseWorkoutPreview } from './WorkoutPreviewCard';
 import type { WorkoutPreviewData } from './WorkoutPreviewCard';
-import GiphyPicker from './GiphyPicker';
+import KlipyPicker from './KlipyPicker';
 import WorkoutDetailSheet from '@/screens/ActivityScreen/WorkoutDetailSheet';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
 import { workoutsApi } from '@/api/workouts';
-import { formatGiphyMessageContent, parseGiphyMessage } from '@/util/giphyMessage';
+import { formatKlipyMessageContent, parseKlipyMessage } from '@/util/klipyMessage';
 
 const PAGE_SIZE = 20;
 
 /**
- * Сообщение: `giphy:url` или `giphy:WxH:url`.
+ * Сообщение: `klipy:url` или `klipy:WxH:url`.
  * Слот по WxH до загрузки; после onLoad — если подсказка квадратная или сильно не совпадает с файлом,
- * берём natural* (у GIPHY в метаданных часто 450×450 при другом кадре).
+ * берём natural* (у провайдера в метаданных часто 450×450 при другом кадре).
  */
-function ChatGiphyAttachment({
+function ChatKlipyAttachment({
   src,
   previewWidth,
   previewHeight,
@@ -119,8 +119,8 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [hasOlder, setHasOlder] = useState(false);
   const [sending, setSending] = useState(false);
-  const [giphyOpen, setGiphyOpen] = useState(false);
-  const [giphyEnabled, setGiphyEnabled] = useState(false);
+  const [klipyOpen, setKlipyOpen] = useState(false);
+  const [klipyEnabled, setKlipyEnabled] = useState(false);
   const [openWorkout, setOpenWorkout] = useState<WorkoutTimelineEntry | null>(null);
 
   const handlePreviewClick = async (preview: WorkoutPreviewData) => {
@@ -197,12 +197,12 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
   useEffect(() => {
     let cancelled = false;
     chatApi
-      .giphyStatus()
+      .klipyStatus()
       .then((r) => {
-        if (!cancelled) setGiphyEnabled(r.data.data.enabled);
+        if (!cancelled) setKlipyEnabled(r.data.data.enabled);
       })
       .catch(() => {
-        if (!cancelled) setGiphyEnabled(false);
+        if (!cancelled) setKlipyEnabled(false);
       });
     return () => {
       cancelled = true;
@@ -431,7 +431,7 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
               const isCurrentUser = message.senderId === user?.id;
               const showSender = index === 0 || messages[index - 1].senderId !== message.senderId;
               const preview = parseWorkoutPreview(message.content);
-              const giphy = parseGiphyMessage(message.content);
+              const klipy = parseKlipyMessage(message.content);
 
               if (preview) {
                 return (
@@ -458,7 +458,7 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
                 );
               }
 
-              if (giphy) {
+              if (klipy) {
                 return (
                   <motion.div
                     key={message.id}
@@ -489,15 +489,15 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
                         </div>
                       )}
                       <a
-                        href={giphy.url}
+                        href={klipy.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="block w-full min-w-0 p-1"
                       >
-                        <ChatGiphyAttachment
-                          src={giphy.url}
-                          previewWidth={giphy.previewWidth}
-                          previewHeight={giphy.previewHeight}
+                        <ChatKlipyAttachment
+                          src={klipy.url}
+                          previewWidth={klipy.previewWidth}
+                          previewHeight={klipy.previewHeight}
                         />
                       </a>
                       <div
@@ -594,10 +594,10 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
           >
             <PaperAirplaneIcon className="w-4 h-4 text-white" />
           </button>
-          {giphyEnabled && (
+          {klipyEnabled && (
             <button
               type="button"
-              onClick={() => setGiphyOpen(true)}
+              onClick={() => setKlipyOpen(true)}
               disabled={sending}
               className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-white/10 border border-white/15 text-[10px] font-bold tracking-wide text-white/90 disabled:opacity-40"
               title="GIF"
@@ -626,10 +626,10 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
             >
               <PaperAirplaneIcon className="w-5 h-5" />
             </AccentButton>
-            {giphyEnabled && (
+            {klipyEnabled && (
               <button
                 type="button"
-                onClick={() => setGiphyOpen(true)}
+                onClick={() => setKlipyOpen(true)}
                 disabled={sending}
                 className="h-10 px-2.5 rounded-xl shrink-0 text-[10px] font-bold tracking-wide border border-(--color_border) bg-(--color_bg_card_hover) text-(--color_text_secondary) hover:bg-(--color_bg_card) disabled:opacity-40"
                 title="GIF"
@@ -646,17 +646,17 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
         onClose={() => setOpenWorkout(null)}
       />
 
-      {giphyEnabled && (
-        <GiphyPicker
-          open={giphyOpen}
-          onClose={() => setGiphyOpen(false)}
+      {klipyEnabled && (
+        <KlipyPicker
+          open={klipyOpen}
+          onClose={() => setKlipyOpen(false)}
           pickDisabled={sending}
           onPick={async (item) => {
             setSending(true);
             try {
               await chatApi.sendMessage(
                 chatId,
-                formatGiphyMessageContent(item.url, item.previewWidth, item.previewHeight)
+                formatKlipyMessageContent(item.url, item.previewWidth, item.previewHeight)
               );
               refreshDialogs();
               checkForNewAchievements();

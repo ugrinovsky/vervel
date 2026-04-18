@@ -1,29 +1,28 @@
-/** Must match server `GIPHY_MESSAGE_PREFIX` in apps/api/app/utils/giphy_message.ts */
-export const GIPHY_MESSAGE_PREFIX = 'giphy:' as const
+export const KLIPY_MESSAGE_PREFIX = 'klipy:' as const
 
 const ASPECT_DIM_MAX = 4096
 
-export type ParsedGiphyMessage = {
+export type ParsedKlipyMessage = {
   url: string
   previewWidth?: number
   previewHeight?: number
 }
 
-function isTrustedGiphyMediaUrl(urlStr: string): boolean {
+function isTrustedKlipyMediaUrl(urlStr: string): boolean {
   try {
     const u = new URL(urlStr)
     if (u.protocol !== 'https:') return false
     const h = u.hostname.toLowerCase()
-    return h === 'media.giphy.com' || h.endsWith('.giphy.com')
+    return h === 'media.klipy.com' || h.endsWith('.klipy.com')
   } catch {
     return false
   }
 }
 
-export function parseGiphyMessage(content: string): ParsedGiphyMessage | null {
+export function parseKlipyMessage(content: string): ParsedKlipyMessage | null {
   const t = content.trim()
-  if (!t.startsWith(GIPHY_MESSAGE_PREFIX)) return null
-  const rest = t.slice(GIPHY_MESSAGE_PREFIX.length).trim()
+  if (!t.startsWith(KLIPY_MESSAGE_PREFIX)) return null
+  const rest = t.slice(KLIPY_MESSAGE_PREFIX.length).trim()
 
   const withDims = /^(\d{1,4})x(\d{1,4}):(https:\/\/.+)$/i.exec(rest)
   if (withDims) {
@@ -37,22 +36,22 @@ export function parseGiphyMessage(content: string): ParsedGiphyMessage | null {
       h < 1 ||
       w > ASPECT_DIM_MAX ||
       h > ASPECT_DIM_MAX ||
-      !isTrustedGiphyMediaUrl(url)
+      !isTrustedKlipyMediaUrl(url)
     ) {
       return null
     }
     return { url, previewWidth: w, previewHeight: h }
   }
 
-  if (!isTrustedGiphyMediaUrl(rest)) return null
+  if (!isTrustedKlipyMediaUrl(rest)) return null
   return { url: rest }
 }
 
-export function parseGiphyMessageUrl(content: string): string | null {
-  return parseGiphyMessage(content)?.url ?? null
+export function parseKlipyMessageUrl(content: string): string | null {
+  return parseKlipyMessage(content)?.url ?? null
 }
 
-export function formatGiphyMessageContent(
+export function formatKlipyMessageContent(
   mediaUrl: string,
   previewWidth?: number,
   previewHeight?: number
@@ -69,11 +68,11 @@ export function formatGiphyMessageContent(
   ) {
     const w = Math.round(previewWidth)
     const h = Math.round(previewHeight)
-    return `${GIPHY_MESSAGE_PREFIX}${w}x${h}:${mediaUrl}`
+    return `${KLIPY_MESSAGE_PREFIX}${w}x${h}:${mediaUrl}`
   }
-  return `${GIPHY_MESSAGE_PREFIX}${mediaUrl}`
+  return `${KLIPY_MESSAGE_PREFIX}${mediaUrl}`
 }
 
-export function isGiphyMessageContent(content: string): boolean {
-  return parseGiphyMessage(content) !== null
+export function isKlipyMessageContent(content: string): boolean {
+  return parseKlipyMessage(content) !== null
 }

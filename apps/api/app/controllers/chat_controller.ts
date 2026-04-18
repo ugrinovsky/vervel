@@ -7,13 +7,13 @@ import TrainerGroup from '#models/trainer_group'
 import TrainerAthlete from '#models/trainer_athlete'
 import AchievementService from '#services/AchievementService'
 import DialogService from '#services/DialogService'
-import GiphyService from '#services/GiphyService'
+import KlipyService from '#services/KlipyService'
 import { resolveAfterId, formatSseEvent } from '#services/chat_stream_logic'
 import {
-  GIPHY_MESSAGE_PREFIX,
-  parseGiphyMessageContent,
+  KLIPY_MESSAGE_PREFIX,
+  parseKlipyMessageContent,
   pushBodyForChatMessage,
-} from '#utils/giphy_message'
+} from '#utils/klipy_message'
 import emitter from '@adonisjs/core/services/emitter'
 
 export default class ChatController {
@@ -126,7 +126,7 @@ export default class ChatController {
     }
 
     const trimmed = content.trim()
-    if (trimmed.startsWith(GIPHY_MESSAGE_PREFIX) && !parseGiphyMessageContent(trimmed)) {
+    if (trimmed.startsWith(KLIPY_MESSAGE_PREFIX) && !parseKlipyMessageContent(trimmed)) {
       return response.badRequest({ message: 'Некорректная GIF-ссылка' })
     }
 
@@ -221,22 +221,22 @@ export default class ChatController {
   // ─── Shared (trainer OR athlete member) ──────────────────────────────────
 
   /**
-   * GET /chats/giphy/status — whether GIF picker should be shown (key configured)
+   * GET /chats/klipy/status — whether GIF picker should be shown (key configured)
    */
-  async giphyStatus({ response }: HttpContext) {
-    const enabled = Boolean(GiphyService.getApiKey())
+  async klipyStatus({ response }: HttpContext) {
+    const enabled = Boolean(KlipyService.getApiKey())
     return response.ok({ success: true, data: { enabled } })
   }
 
   /**
-   * GET /chats/giphy/categories?kind=gif|sticker
+   * GET /chats/klipy/categories?kind=gif|sticker
    */
-  async listGiphyCategories({ request, response }: HttpContext) {
+  async listKlipyCategories({ request, response }: HttpContext) {
     const kindRaw = String(request.input('kind', 'gif'))
     const kind = kindRaw === 'sticker' ? 'sticker' : 'gif'
 
     try {
-      const categories = await GiphyService.listCategories(kind)
+      const categories = await KlipyService.listCategories(kind)
       return response.ok({ success: true, data: { categories } })
     } catch (e) {
       const msg = e instanceof Error ? e.message : ''
@@ -247,7 +247,7 @@ export default class ChatController {
     }
   }
 
-  private giphyPathSegment(raw: string): string | null {
+  private klipyPathSegment(raw: string): string | null {
     const t = raw.trim()
     if (t.length === 0 || t.length > 120) return null
     if (t.includes('/') || t.includes('..') || t.includes('\\')) return null
@@ -255,18 +255,18 @@ export default class ChatController {
   }
 
   /**
-   * GET /chats/giphy/search?q=&offset=&kind=gif|sticker&category=&tag=
-   * category+tag = первая подборка GIPHY для категории (сервер отдаёт `defaultTagEncoded` в списке категорий)
+   * GET /chats/klipy/search?q=&offset=&kind=gif|sticker&category=&tag=
+   * category+tag = первая подборка KLIPY для категории (сервер отдаёт `defaultTagEncoded` в списке категорий)
    */
-  async searchGiphy({ request, response }: HttpContext) {
+  async searchKlipy({ request, response }: HttpContext) {
     const q = String(request.input('q', '')).trim()
     if (q.length > 200) {
       return response.badRequest({ message: 'Слишком длинный запрос' })
     }
     const kindRaw = String(request.input('kind', 'gif'))
     const kind = kindRaw === 'sticker' ? 'sticker' : 'gif'
-    const category = this.giphyPathSegment(String(request.input('category', '')))
-    const tag = this.giphyPathSegment(String(request.input('tag', '')))
+    const category = this.klipyPathSegment(String(request.input('category', '')))
+    const tag = this.klipyPathSegment(String(request.input('tag', '')))
     const offset = Math.max(0, Math.min(Number(request.input('offset', 0)) || 0, 4999))
     const limit = Math.min(50, Math.max(1, Number(request.input('limit', 24)) || 24))
 
@@ -282,11 +282,11 @@ export default class ChatController {
     try {
       let data
       if (!hasQ && category && tag) {
-        data = await GiphyService.categoryGifs(kind, category, tag, offset, limit)
+        data = await KlipyService.categoryGifs(kind, category, tag, offset, limit)
       } else if (hasQ) {
-        data = await GiphyService.search(q, offset, limit, kind)
+        data = await KlipyService.search(q, offset, limit, kind)
       } else {
-        data = await GiphyService.trending(offset, limit, kind)
+        data = await KlipyService.trending(offset, limit, kind)
       }
       return response.ok({ success: true, data })
     } catch (e) {
@@ -294,19 +294,19 @@ export default class ChatController {
       if (msg.includes('not configured')) {
         return response.serviceUnavailable({ message: 'GIF временно недоступны' })
       }
-      if (/Giphy \w+ HTTP (401|403)/.test(msg)) {
+      if (/Klipy \w+ HTTP (401|403)/.test(msg)) {
         return response.serviceUnavailable({
-          message: 'GIF: проверьте GIPHY_API_KEY в окружении API',
+          message: 'GIF: проверьте KLIPY_API_KEY в окружении API',
         })
       }
-      if (/Giphy \w+ HTTP 429/.test(msg)) {
+      if (/Klipy \w+ HTTP 429/.test(msg)) {
         return response.serviceUnavailable({
           message:
             'Подборка GIF сейчас недоступна. Через минуту откройте окно снова или откройте «Недавние».',
         })
       }
       return response.badGateway({
-        message: 'Не удалось загрузить GIF (сеть или GIPHY). Проверьте ключ и логи API',
+        message: 'Не удалось загрузить GIF (сеть или KLIPY). Проверьте ключ и логи API',
       })
     }
   }
@@ -556,7 +556,7 @@ export default class ChatController {
     }
 
     const trimmed = content.trim()
-    if (trimmed.startsWith(GIPHY_MESSAGE_PREFIX) && !parseGiphyMessageContent(trimmed)) {
+    if (trimmed.startsWith(KLIPY_MESSAGE_PREFIX) && !parseKlipyMessageContent(trimmed)) {
       return response.badRequest({ message: 'Некорректная GIF-ссылка' })
     }
 

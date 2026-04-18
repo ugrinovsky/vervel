@@ -164,9 +164,9 @@ router
 
     // Dialogs list + shared chat actions (trainer or athlete participant)
     router.get('chats', '#controllers/chat_controller.listChats')
-    router.get('chats/giphy/status', '#controllers/chat_controller.giphyStatus')
-    router.get('chats/giphy/categories', '#controllers/chat_controller.listGiphyCategories')
-    router.get('chats/giphy/search', '#controllers/chat_controller.searchGiphy')
+    router.get('chats/klipy/status', '#controllers/chat_controller.klipyStatus')
+    router.get('chats/klipy/categories', '#controllers/chat_controller.listKlipyCategories')
+    router.get('chats/klipy/search', '#controllers/chat_controller.searchKlipy')
     router.get('chats/:chatId/stream', '#controllers/chat_controller.streamMessages')
     router.get('chats/:chatId/messages', '#controllers/chat_controller.getMessagesShared')
     router.post('chats/:chatId/messages', '#controllers/chat_controller.sendMessageShared')

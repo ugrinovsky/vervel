@@ -11,7 +11,7 @@ import { useActiveMode } from '@/contexts/AuthContext'
 import { useDialogs } from '@/hooks/useDialogs'
 import { SparklesIcon, UserGroupIcon } from '@heroicons/react/24/outline'
 import { parseWorkoutPreview } from '@/components/ChatBox/WorkoutPreviewCard'
-import { isGiphyMessageContent } from '@/util/giphyMessage'
+import { isKlipyMessageContent } from '@/util/klipyMessage'
 import { formatDialogTime } from '@/utils/date'
 import SearchInput from '@/components/ui/SearchInput'
 
@@ -20,7 +20,7 @@ type DialogTab = 'all' | 'personal' | 'group'
 function DialogRow({ dialog, onOpen }: { dialog: DialogItem; onOpen: () => void }) {
   const rawContent = dialog.lastMessage?.content ?? ''
   const isWorkout = !!parseWorkoutPreview(rawContent)
-  const isGif = isGiphyMessageContent(rawContent)
+  const isGif = isKlipyMessageContent(rawContent)
   const preview = dialog.lastMessage
     ? (dialog.lastMessage.isOwnMessage ? 'Вы: ' : '') +
       (isWorkout ? '🏋️ Тренировка' : isGif ? '🎬 GIF' : rawContent)
