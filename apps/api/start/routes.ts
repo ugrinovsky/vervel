@@ -16,6 +16,7 @@ const OAuthController = () => import('#controllers/oauth_controller')
 
 router.post('/login', [AuthController, 'login'])
 router.post('/register', [AuthController, 'register'])
+router.post('/logout', [AuthController, 'logout']).use(middleware.auth())
 
 // Public invite info (no auth)
 router.get('/invite/info/:token', '#controllers/invite_controller.getInviteInfo')

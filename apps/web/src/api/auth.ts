@@ -41,6 +41,8 @@ export interface SetRoleDTO {
 export const authApi = {
   login: (data: LoginDTO) => publicApi.post<AuthResponse>('/login', data),
   register: (data: RegisterDTO) => publicApi.post<AuthResponse>('/register', data),
+  /** Отзыв access token и очистка httpOnly `auth_token` на сервере (куки шлётся автоматически). */
+  logout: () => publicApi.post<{ message: string }>('/logout'),
 
   // OAuth
   setRole: (data: SetRoleDTO) =>

@@ -3,6 +3,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useNavigate } from 'react-router';
 import AnimatedBlock from '@/components/ui/AnimatedBlock';
 import toast from 'react-hot-toast';
+import { authApi } from '@/api/auth';
 import { profileApi, type ProfileData } from '@/api/profile';
 import type { UserRole } from '@/api/auth';
 import { useAuth, useActiveMode } from '@/contexts/AuthContext';
@@ -103,6 +104,27 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [feedbackContact, setFeedbackContact] = useState('');
   const [sendingFeedback, setSendingFeedback] = useState(false);
+  /** VK Mini App (и др. встроенные клиенты): выход почти сразу перезапишется авто-логином — кнопку не показываем. */
+  const [hideLogoutInEmbeddedShell, setHideLogoutInEmbeddedShell] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void import('@vkontakte/vk-bridge')
+      .then((m) => {
+        if (cancelled) return;
+        try {
+          if (m.default.isEmbedded()) {
+            setHideLogoutInEmbeddedShell(true);
+          }
+        } catch {
+          /* ignore */
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     setNameField(data.user.fullName || '');
@@ -196,7 +218,12 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      /* сеть или уже нет сессии — всё равно чистим клиент */
+    }
     logout();
     navigate('/login');
   };
@@ -506,17 +533,18 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
         </p>
       </div>
 
-      {/* Выход без пароля — формулировка без «аккаунта с почтой» */}
-      <div className="w-full space-y-2">
-        <GhostButton variant="solid" onClick={handleLogout} className="w-full">
-          {isPasswordlessOAuth ? 'Выйти из Vervel' : 'Выйти из аккаунта'}
-        </GhostButton>
-        {isPasswordlessOAuth && (
-          <p className="text-center text-[11px] text-(--color_text_muted) leading-snug px-1">
-            Сброс сессии на этом устройстве. Войти снова — тем же способом, что и раньше.
-          </p>
-        )}
-      </div>
+      {!hideLogoutInEmbeddedShell && (
+        <div className="w-full space-y-2">
+          <GhostButton variant="solid" onClick={handleLogout} className="w-full">
+            {isPasswordlessOAuth ? 'Выйти из Vervel' : 'Выйти из аккаунта'}
+          </GhostButton>
+          {isPasswordlessOAuth && (
+            <p className="text-center text-[11px] text-(--color_text_muted) leading-snug px-1">
+              На сервере отзывается токен и снимается cookie входа; здесь сбрасывается локальный профиль.
+            </p>
+          )}
+        </div>
+      )}
     </AnimatedBlock>
   );
 }
