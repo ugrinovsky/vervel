@@ -8,7 +8,7 @@ import type { UserRole } from '@/api/auth';
 import { useAuth, useActiveMode } from '@/contexts/AuthContext';
 
 import { ThemeController, THEME_PRESETS, DEFAULT_HUE, type SpecialTheme } from '@/util/ThemeController';
-import { isSyntheticVkPlaceholderEmail } from '@/util/syntheticEmail';
+import { isOAuthPlaceholderEmail } from '@/util/oauthPlaceholderEmail';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import AccentButton from '@/components/ui/AccentButton';
 import GhostButton from '@/components/ui/GhostButton';
@@ -80,7 +80,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
 
   const [nameField, setNameField] = useState(data.user.fullName || '');
   const [emailField, setEmailField] = useState(() =>
-    isSyntheticVkPlaceholderEmail(data.user.email) ? '' : data.user.email,
+    isOAuthPlaceholderEmail(data.user.email) ? '' : data.user.email,
   );
   const [genderField, setGenderField] = useState<'male' | 'female' | null>(data.user.gender ?? null);
   const [bodyWeightField, setBodyWeightField] = useState('');
@@ -106,7 +106,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
 
   useEffect(() => {
     setNameField(data.user.fullName || '');
-    setEmailField(isSyntheticVkPlaceholderEmail(data.user.email) ? '' : data.user.email);
+    setEmailField(isOAuthPlaceholderEmail(data.user.email) ? '' : data.user.email);
     setGenderField(data.user.gender ?? null);
   }, [data.user]);
 
@@ -160,7 +160,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
         fullName: nameField,
         gender: genderField,
       };
-      if (!isSyntheticVkPlaceholderEmail(data.user.email)) {
+      if (!isOAuthPlaceholderEmail(data.user.email)) {
         payload.email = emailField;
       } else if (emailField.trim().length > 0) {
         payload.email = emailField.trim();
@@ -200,6 +200,8 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
     logout();
     navigate('/login');
   };
+
+  const isPasswordlessOAuth = isOAuthPlaceholderEmail(data.user.email);
 
   const handleSendFeedback = async () => {
     if (!feedbackMessage.trim()) return;
@@ -346,14 +348,14 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
             value={emailField}
             onChange={(e) => setEmailField(e.target.value)}
             placeholder={
-              isSyntheticVkPlaceholderEmail(data.user.email)
+              isOAuthPlaceholderEmail(data.user.email)
                 ? 'Укажите email, если нужны уведомления на почту'
                 : 'email@example.com'
             }
           />
-          {isSyntheticVkPlaceholderEmail(data.user.email) && (
+          {isOAuthPlaceholderEmail(data.user.email) && (
             <p className="text-xs text-(--color_text_muted) -mt-2">
-              Сейчас аккаунт привязан только к VK — это не рабочая почта. Можешь добавить свой email.
+              Вход без пароля: в поле выше не настоящая почта. Укажи свой email, если нужны письма с сервиса.
             </p>
           )}
           <div>
@@ -408,38 +410,40 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
           </div>
         )}
 
-        {/* Password change */}
-        <div className="mt-6 pt-6 border-t border-(--color_border)">
-          <h3 className="text-sm font-semibold text-white mb-3">Сменить пароль</h3>
-          <div className="space-y-3">
-            <AppInput
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="Текущий пароль"
-            />
-            <AppInput
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Новый пароль"
-            />
-            <AppInput
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Подтвердите пароль"
-            />
-            <AccentButton
-              onClick={handleChangePassword}
-              disabled={savingPassword || !currentPassword || !newPassword || !confirmPassword}
-              loading={savingPassword}
-              loadingText="Сохранение..."
-            >
-              Сменить пароль
-            </AccentButton>
+        {/* Пароль только для аккаунта с почтой/паролем; OAuth-плейсхолдер — без пароля в БД */}
+        {!isPasswordlessOAuth && (
+          <div className="mt-6 pt-6 border-t border-(--color_border)">
+            <h3 className="text-sm font-semibold text-white mb-3">Сменить пароль</h3>
+            <div className="space-y-3">
+              <AppInput
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Текущий пароль"
+              />
+              <AppInput
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Новый пароль"
+              />
+              <AppInput
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Подтвердите пароль"
+              />
+              <AccentButton
+                onClick={handleChangePassword}
+                disabled={savingPassword || !currentPassword || !newPassword || !confirmPassword}
+                loading={savingPassword}
+                loadingText="Сохранение..."
+              >
+                Сменить пароль
+              </AccentButton>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Push notifications */}
@@ -502,10 +506,17 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
         </p>
       </div>
 
-      {/* Logout */}
-      <GhostButton variant="solid" onClick={handleLogout} className="w-full">
-        Выйти из аккаунта
-      </GhostButton>
+      {/* Выход без пароля — формулировка без «аккаунта с почтой» */}
+      <div className="w-full space-y-2">
+        <GhostButton variant="solid" onClick={handleLogout} className="w-full">
+          {isPasswordlessOAuth ? 'Выйти из Vervel' : 'Выйти из аккаунта'}
+        </GhostButton>
+        {isPasswordlessOAuth && (
+          <p className="text-center text-[11px] text-(--color_text_muted) leading-snug px-1">
+            Сброс сессии на этом устройстве. Войти снова — тем же способом, что и раньше.
+          </p>
+        )}
+      </div>
     </AnimatedBlock>
   );
 }

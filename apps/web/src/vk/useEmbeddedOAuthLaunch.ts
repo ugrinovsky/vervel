@@ -7,15 +7,15 @@ import type { AuthUser } from '@/contexts/AuthContext';
 import { publicApi } from '@/api/http/publicApi';
 import {
   bridgeLaunchParamsToRecord,
-  clearVkLaunchParamsStorage,
+  clearEmbedOAuthLaunchBundle,
   getVkLaunchRawQueryForVerify,
-  hasVkMiniAppLaunchContext,
+  hasEmbeddedOAuthLaunchContext,
   takeVkLaunchParams,
-  VK_LAUNCH_PARAMS_SESSION_KEY,
+  EMBED_OAUTH_LAUNCH_SESSION_KEY,
 } from '@/vk/vkLaunchParams';
 import { syncVkMiniAppProfileFromBridge } from '@/vk/syncVkMiniAppProfile';
 
-type VkBootStatus = 'pending' | 'ready';
+type EmbedLaunchBootStatus = 'pending' | 'ready';
 
 interface MiniAppLoginResponse {
   user?: { id: number; email: string; fullName: string; role: string; themeHue?: number | null };
@@ -23,9 +23,9 @@ interface MiniAppLoginResponse {
   userId?: number;
 }
 
-function vkMiniDbg(...args: unknown[]) {
+function embedOAuthDbg(...args: unknown[]) {
   if (import.meta.env.DEV) {
-    console.info('[vk-mini-app]', ...args);
+    console.info('[embed-oauth]', ...args);
   }
 }
 
@@ -34,22 +34,22 @@ function miniLoginErrorMessage(err: unknown): string {
     const d = err.response?.data as { message?: string } | undefined;
     if (d?.message && typeof d.message === 'string') return d.message;
     if (err.response?.status === 503) {
-      return 'Сервер: не задан VK_MINI_APP_SECRET (мини-приложение не настроено).';
+      return 'Сервер: не настроен защищённый ключ для встроенного входа (см. env API).';
     }
     if (err.response?.status === 403) {
-      return 'Неверная подпись запуска или vk_app_id. Проверь секрет и VK_MINI_APP_ID в API.';
+      return 'Неверная подпись или идентификатор приложения. Проверь настройки API.';
     }
     return err.message || `HTTP ${err.response?.status ?? '?'}`;
   }
   if (err instanceof Error) return err.message;
-  return 'Не удалось войти через VK Mini App';
+  return 'Не удалось войти из встроенного приложения';
 }
 
 /**
- * VK Mini App: VKWebAppInit, launch params → POST /oauth/vk/mini-app-login.
- * Роль — только через `/select-role` (как у веб OAuth / VK SDK).
+ * Встроенный клиент: мост, launch params → POST /oauth/vk/mini-app-login.
+ * Роль — только через `/select-role` (как у остального OAuth).
  */
-export function useVkMiniAppAuth(): { vkBootStatus: VkBootStatus } {
+export function useEmbeddedOAuthLaunch(): { launchBootStatus: EmbedLaunchBootStatus } {
   const { login } = useAuth();
   const navigate = useNavigate();
   const loginRef = useRef(login);
@@ -57,12 +57,12 @@ export function useVkMiniAppAuth(): { vkBootStatus: VkBootStatus } {
   loginRef.current = login;
   navigateRef.current = navigate;
 
-  const [vkBootStatus, setVkBootStatus] = useState<VkBootStatus>(() =>
-    typeof window !== 'undefined' && hasVkMiniAppLaunchContext() ? 'pending' : 'ready',
+  const [launchBootStatus, setLaunchBootStatus] = useState<EmbedLaunchBootStatus>(() =>
+    typeof window !== 'undefined' && hasEmbeddedOAuthLaunchContext() ? 'pending' : 'ready',
   );
 
   useEffect(() => {
-    if (!hasVkMiniAppLaunchContext()) {
+    if (!hasEmbeddedOAuthLaunchContext()) {
       return;
     }
 
@@ -74,42 +74,42 @@ export function useVkMiniAppAuth(): { vkBootStatus: VkBootStatus } {
 
         try {
           await bridge.send('VKWebAppInit');
-          vkMiniDbg('VKWebAppInit ok');
+          embedOAuthDbg('bridge init ok');
         } catch (e) {
-          vkMiniDbg('VKWebAppInit failed (вне клиента VK — ок)', e);
+          embedOAuthDbg('bridge init skipped', e);
         }
 
         let launchParams = takeVkLaunchParams();
-        vkMiniDbg('params from URL/session', launchParams ? Object.keys(launchParams) : null);
+        embedOAuthDbg('params from URL/session', launchParams ? Object.keys(launchParams) : null);
 
         if (!launchParams?.sign) {
           try {
             const raw = await bridge.send('VKWebAppGetLaunchParams');
-            vkMiniDbg('VKWebAppGetLaunchParams raw keys', raw && typeof raw === 'object' ? Object.keys(raw) : raw);
+            embedOAuthDbg('launch params from bridge', raw && typeof raw === 'object' ? Object.keys(raw) : raw);
             if (raw && typeof raw === 'object') {
               const fromBridge = bridgeLaunchParamsToRecord(raw as Record<string, unknown>);
               if (fromBridge.sign && fromBridge.vk_app_id) {
                 launchParams = fromBridge;
-                sessionStorage.setItem(VK_LAUNCH_PARAMS_SESSION_KEY, JSON.stringify(fromBridge));
+                sessionStorage.setItem(EMBED_OAUTH_LAUNCH_SESSION_KEY, JSON.stringify(fromBridge));
               }
             }
           } catch (e) {
-            vkMiniDbg('VKWebAppGetLaunchParams failed', e);
+            embedOAuthDbg('launch params from bridge failed', e);
           }
         }
 
         if (!launchParams?.sign) {
-          vkMiniDbg('no sign — skip mini-app login (не iframe VK или нет launch params)');
+          embedOAuthDbg('no sign — skip embed login');
           return;
         }
 
         const launchQuery = getVkLaunchRawQueryForVerify();
-        vkMiniDbg('launchQuery for verify', launchQuery ? '(present)' : '(absent)');
+        embedOAuthDbg('launchQuery for verify', launchQuery ? '(present)' : '(absent)');
 
         if (cancelled) {
           return;
         }
-        setVkBootStatus('pending');
+        setLaunchBootStatus('pending');
 
         const res = await publicApi.post<MiniAppLoginResponse>('/oauth/vk/mini-app-login', {
           launchParams,
@@ -119,8 +119,8 @@ export function useVkMiniAppAuth(): { vkBootStatus: VkBootStatus } {
           return;
         }
         const data = res.data;
-        clearVkLaunchParamsStorage();
-        vkMiniDbg('mini-app-login OK', data.needsRole ? 'needsRole' : 'user');
+        clearEmbedOAuthLaunchBundle();
+        embedOAuthDbg('mini-app-login OK', data.needsRole ? 'needsRole' : 'user');
 
         if (data.needsRole && data.userId != null) {
           navigateRef.current(`/select-role?userId=${data.userId}`, { replace: true });
@@ -135,7 +135,7 @@ export function useVkMiniAppAuth(): { vkBootStatus: VkBootStatus } {
                 authed = { ...authed, ...patched };
               }
             } catch (e) {
-              vkMiniDbg('VKWebAppGetUserInfo / profile sync failed', e);
+              embedOAuthDbg('profile sync from bridge failed', e);
             }
           }
           if (cancelled) {
@@ -145,12 +145,12 @@ export function useVkMiniAppAuth(): { vkBootStatus: VkBootStatus } {
           navigateRef.current('/home', { replace: true });
         }
       } catch (err) {
-        vkMiniDbg('mini-app login error', err);
+        embedOAuthDbg('embed login error', err);
         const msg = miniLoginErrorMessage(err);
         toast.error(msg);
       } finally {
         if (!cancelled) {
-          setVkBootStatus('ready');
+          setLaunchBootStatus('ready');
         }
       }
     })();
@@ -160,5 +160,5 @@ export function useVkMiniAppAuth(): { vkBootStatus: VkBootStatus } {
     };
   }, []);
 
-  return { vkBootStatus };
+  return { launchBootStatus };
 }

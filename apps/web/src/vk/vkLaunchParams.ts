@@ -1,13 +1,12 @@
 import { AUX_OAUTH_LAUNCH_BUNDLE_KEY } from '@/auth/auxiliarySessionStorage';
 
-/** Реэкспорт для кода внутри `@/vk/*`; строка объявлена в `auth/auxiliarySessionStorage` (ядро без импорта vk). */
-export const VK_LAUNCH_PARAMS_SESSION_KEY = AUX_OAUTH_LAUNCH_BUNDLE_KEY;
+/** Ключ sessionStorage для сохранения launch-параметров встроенного OAuth (значение — в `auth/auxiliarySessionStorage`). */
+export const EMBED_OAUTH_LAUNCH_SESSION_KEY = AUX_OAUTH_LAUNCH_BUNDLE_KEY;
 
 /**
- * `VITE_ENABLE_VK_MINI_APP=false` — отключает детект контекста мини-приложения и весь bootstrap (см. `VkMiniAppGate`).
- * Удаление папки `vk/`: выставь этот флаг и убери обёртку в `App.tsx`.
+ * Авто-логин из встроенного клиента (VK Mini App и т.п.). Выключить: `VITE_ENABLE_VK_MINI_APP=false`.
  */
-export function isVkMiniAppIntegrationEnabled(): boolean {
+export function isEmbeddedOAuthLaunchEnabled(): boolean {
   return import.meta.env.VITE_ENABLE_VK_MINI_APP !== 'false';
 }
 
@@ -54,13 +53,13 @@ export function mergeLocationVkParams(): Record<string, string> {
   return merged;
 }
 
-export function peekVkMiniAppFromUrl(): boolean {
+export function peekEmbedOAuthLaunchInUrl(): boolean {
   const m = mergeLocationVkParams();
   return !!(m.sign && m.vk_app_id);
 }
 
 /** В URL/hash есть хотя бы один типичный параметр VK (ещё без полной пары sign+app). */
-export function hasVkMiniAppQueryMarkers(): boolean {
+export function hasEmbedOAuthQueryMarkers(): boolean {
   const m = mergeLocationVkParams();
   return Object.keys(m).some((k) => k.startsWith('vk_') || k === 'sign');
 }
@@ -71,11 +70,11 @@ export function takeVkLaunchParams(): Record<string, string> | null {
   }
   const fromUrl = mergeLocationVkParams();
   if (fromUrl.sign && fromUrl.vk_app_id) {
-    sessionStorage.setItem(VK_LAUNCH_PARAMS_SESSION_KEY, JSON.stringify(fromUrl));
+    sessionStorage.setItem(EMBED_OAUTH_LAUNCH_SESSION_KEY, JSON.stringify(fromUrl));
     return fromUrl;
   }
   try {
-    const raw = sessionStorage.getItem(VK_LAUNCH_PARAMS_SESSION_KEY);
+    const raw = sessionStorage.getItem(EMBED_OAUTH_LAUNCH_SESSION_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Record<string, string>;
     return parsed?.sign && parsed?.vk_app_id ? parsed : null;
@@ -85,9 +84,9 @@ export function takeVkLaunchParams(): Record<string, string> | null {
 }
 
 /** После успешного mini-app-login: убираем launch params из sessionStorage (SPA-навигация). */
-export function clearVkLaunchParamsStorage(): void {
+export function clearEmbedOAuthLaunchBundle(): void {
   try {
-    sessionStorage.removeItem(VK_LAUNCH_PARAMS_SESSION_KEY);
+    sessionStorage.removeItem(EMBED_OAUTH_LAUNCH_SESSION_KEY);
   } catch {
     /* ignore */
   }
@@ -95,7 +94,7 @@ export function clearVkLaunchParamsStorage(): void {
 
 function hasStoredVkLaunch(): boolean {
   try {
-    const raw = sessionStorage.getItem(VK_LAUNCH_PARAMS_SESSION_KEY);
+    const raw = sessionStorage.getItem(EMBED_OAUTH_LAUNCH_SESSION_KEY);
     if (!raw) return false;
     const o = JSON.parse(raw) as Record<string, string>;
     return !!(o?.sign && o?.vk_app_id);
@@ -134,14 +133,14 @@ function isLikelyVkParentReferrer(): boolean {
  * или переход с vk.com / m.vk.ru / vk.ru в топ-окне (моб. веб открывает приложение без query в URL).
  * Частичные `vk_*` в URL без пары sign+vk_app_id не считаем — иначе ложный «вход через VK» на обычном сайте.
  */
-export function hasVkMiniAppLaunchContext(): boolean {
+export function hasEmbeddedOAuthLaunchContext(): boolean {
   if (typeof window === 'undefined') {
     return false;
   }
-  if (!isVkMiniAppIntegrationEnabled()) {
+  if (!isEmbeddedOAuthLaunchEnabled()) {
     return false;
   }
-  if (peekVkMiniAppFromUrl() || hasStoredVkLaunch()) {
+  if (peekEmbedOAuthLaunchInUrl() || hasStoredVkLaunch()) {
     return true;
   }
   try {

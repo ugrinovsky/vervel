@@ -14,7 +14,7 @@ import ListButton from '@/components/ui/ListButton';
 import { CameraIcon } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { isSyntheticVkPlaceholderEmail, profileEmailSubtitle } from '@/util/syntheticEmail';
+import { isOAuthPlaceholderEmail, profileEmailSubtitle } from '@/util/oauthPlaceholderEmail';
 
 interface Props {
   data: ProfileData;
@@ -121,7 +121,7 @@ export default function ProfileTab({ data, trainerStats }: Props) {
           <AthleteQrCode
             athleteId={data.user.id}
             name={data.user.fullName}
-            email={isSyntheticVkPlaceholderEmail(data.user.email) ? undefined : data.user.email}
+            email={isOAuthPlaceholderEmail(data.user.email) ? undefined : data.user.email}
           />
         </div>
       </BottomSheet>
