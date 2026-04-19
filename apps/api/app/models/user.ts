@@ -34,8 +34,9 @@ export default class User extends compose(BaseModel, AuthFinder) {
   @column({ serializeAs: null })
   declare password: string | null
 
+  /** null — только что через OAuth / мини-приложение, роль задаётся на /select-role */
   @column()
-  declare role: 'athlete' | 'trainer' | 'both'
+  declare role: 'athlete' | 'trainer' | 'both' | null
 
   @column()
   declare bio: string | null

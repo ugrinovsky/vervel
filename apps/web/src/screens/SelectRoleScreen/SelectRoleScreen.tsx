@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { authApi, type UserRole } from '@/api/auth';
 import { useAuth } from '@/contexts/AuthContext';
 
+/** Выбор роли после OAuth / VK SDK / Яндекса. VK Mini App может задать роль через `initialRole` и не попадать сюда. */
 export default function SelectRoleScreen() {
   const [selectedRoles, setSelectedRoles] = useState<Set<'athlete' | 'trainer'>>(
     new Set(['athlete'])

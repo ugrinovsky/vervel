@@ -11,14 +11,24 @@ import {
   verifyVkMiniAppLaunchSignature,
 } from '#utils/vk_mini_app_launch'
 
+function parseVkMiniAppInitialRole(raw: unknown): 'athlete' | 'trainer' | undefined {
+  if (raw !== 'athlete' && raw !== 'trainer') {
+    return undefined
+  }
+  return raw
+}
+
 export default class OAuthController {
   /**
    * Найти или создать пользователя по VK ID (OAuth / VK ID SDK / Mini App).
+   * @param vkMiniAppInitialRole — только для `vkMiniAppLogin`: роль при первом создании пользователя.
+   *   Для VK SDK и веб OAuth не передавать — остаётся `role: null` и экран /select-role.
    */
   private async linkOrCreateVkUser(
     providerUserId: string,
     name: string | null,
-    accessToken: string | null
+    accessToken: string | null,
+    vkMiniAppInitialRole?: 'athlete' | 'trainer'
   ): Promise<User> {
     let oauthProvider = await OAuthProvider.query()
       .where('provider', 'vk')
@@ -44,7 +54,7 @@ export default class OAuthController {
         email: syntheticEmail,
         fullName: name || `VK User ${providerUserId}`,
         password: null,
-        role: null as any,
+        role: (vkMiniAppInitialRole ?? null) as any,
       }))
 
     await OAuthProvider.create({
@@ -110,6 +120,8 @@ export default class OAuthController {
   /**
    * Handle OAuth callback
    * GET /oauth/:provider/callback
+   *
+   * Новые пользователи с `role: null` проходят выбор роли на фронте (/select-role), не через VK Mini App.
    */
   public async callback({ params, response, request }: HttpContext) {
     const provider = params.provider as ProviderName
@@ -279,6 +291,8 @@ export default class OAuthController {
   /**
    * Authenticate with VK ID SDK (frontend OneTap flow)
    * POST /oauth/vk/sdk-login
+   *
+   * Новый пользователь без роли → `needsRole` и экран /select-role (как у веб OAuth и Яндекса), не как у Mini App.
    */
   public async vkSdkLogin({ request, response }: HttpContext) {
     const { accessToken, userId } = request.only(['accessToken', 'userId'])
@@ -330,6 +344,9 @@ export default class OAuthController {
   /**
    * Вход из VK Mini App по подписанным параметрам запуска (без access token VK API).
    * POST /oauth/vk/mini-app-login
+   *
+   * Опционально: `initialRole` — `athlete` | `trainer`, только при **создании** нового пользователя.
+   * VK SDK, веб OAuth и Яндекс по-прежнему ведут на /select-role при `role === null`.
    */
   public async vkMiniAppLogin({ request, response }: HttpContext) {
     const launchParams = normalizeVkLaunchParams(request.input('launchParams'))
@@ -376,8 +393,10 @@ export default class OAuthController {
       return response.badRequest({ message: 'vk_user_id is required in launch params' })
     }
 
+    const miniInitialRole = parseVkMiniAppInitialRole(request.input('initialRole'))
+
     try {
-      const user = await this.linkOrCreateVkUser(providerUserId, null, null)
+      const user = await this.linkOrCreateVkUser(providerUserId, null, null, miniInitialRole)
       const token = await User.accessTokens.create(user)
       setAuthTokenCookie(response, token.value!.release())
 
@@ -406,6 +425,8 @@ export default class OAuthController {
   /**
    * Authenticate with Yandex SDK (frontend YaAuthSuggest flow)
    * POST /oauth/yandex/sdk-login
+   *
+   * Новый пользователь без роли → `needsRole` и экран /select-role (не VK Mini App).
    */
   public async yandexSdkLogin({ request, response }: HttpContext) {
     const { accessToken } = request.only(['accessToken'])

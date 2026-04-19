@@ -9,7 +9,8 @@ export interface AuthUser {
   id: number;
   email: string;
   fullName: string;
-  role: UserRole;
+  /** null — после OAuth / мини-приложения, пока не выбрана роль на /select-role */
+  role: UserRole | null;
   gender?: 'male' | 'female' | null;
   balance?: number;
   themeHue?: number | null;
@@ -81,7 +82,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(u);
     if (u.balance !== undefined) setBalance(u.balance);
     ThemeController.apply(u.themeHue ?? ThemeController.getStored());
-    const mode = u.role === 'athlete' ? 'athlete' : 'trainer';
+    const mode =
+      u.role === 'athlete'
+        ? 'athlete'
+        : u.role === 'trainer' || u.role === 'both'
+          ? 'trainer'
+          : 'athlete';
     localStorage.setItem('activeMode', mode);
     setActiveMode(mode);
   }, []);

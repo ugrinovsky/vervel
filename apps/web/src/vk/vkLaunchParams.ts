@@ -2,6 +2,12 @@
 export const VK_LAUNCH_PARAMS_SESSION_KEY = 'vervel_vk_mini_launch_params';
 
 /**
+ * Опционально: `athlete` | `trainer` — уходит только в POST /oauth/vk/mini-app-login как `initialRole`.
+ * Входы вне VK Mini App по-прежнему используют экран /select-role при отсутствии роли.
+ */
+export const VK_MINI_APP_INITIAL_ROLE_KEY = 'vervel_vk_mini_initial_role';
+
+/**
  * Сырой query для проверки подписи на API (как в examples/node.js для строки search):
  * без decode/rebuild — избегает расхождений с JSON из bridge.
  */
@@ -77,6 +83,7 @@ export function takeVkLaunchParams(): Record<string, string> | null {
 export function clearVkLaunchParamsStorage(): void {
   try {
     sessionStorage.removeItem(VK_LAUNCH_PARAMS_SESSION_KEY);
+    sessionStorage.removeItem(VK_MINI_APP_INITIAL_ROLE_KEY);
   } catch {
     /* ignore */
   }

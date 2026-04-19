@@ -14,8 +14,14 @@ export default function OAuthCallbackScreen() {
     const fetchUser = async () => {
       try {
         const response = await privateApi.get('/profile');
+        const u = response.data.data.user;
 
-        login(response.data.data.user);
+        if (!u.role) {
+          navigate(`/select-role?userId=${u.id}`, { replace: true });
+          return;
+        }
+
+        login(u);
         toast.success('Успешный вход!');
         navigate('/home');
       } catch (error) {
