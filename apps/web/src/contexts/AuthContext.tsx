@@ -1,7 +1,15 @@
-import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+  type ReactNode,
+} from 'react';
 import type { UserRole } from '@/api/auth';
 import { ThemeController } from '@/util/ThemeController';
-import { clearVkLaunchParamsStorage } from '@/vk/vkLaunchParams';
+import { clearAuxiliaryOAuthSessionStorage } from '@/auth/auxiliarySessionStorage';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -71,12 +79,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [activeMode, setActiveMode] = useState<'trainer' | 'athlete'>(() => getStoredMode(storedUser));
   const [balance, setBalance] = useState<number | null>(storedUser?.balance ?? null);
 
-  // Apply stored user's theme on mount (session restore).
-  // ThemeController.init() already runs in main.tsx before React renders,
-  // so this is a no-op in most cases — kept as a safety net.
-  useState(() => {
-    if (storedUser?.themeHue != null) ThemeController.apply(storedUser.themeHue);
-  });
+  // ThemeController.init() already runs in main.tsx — safety net if storage changed before React.
+  useEffect(() => {
+    const u = getStoredUser();
+    if (u?.themeHue != null) {
+      ThemeController.apply(u.themeHue);
+    }
+  }, []);
 
   const login = useCallback((u: AuthUser) => {
     localStorage.setItem('user', JSON.stringify(u));
@@ -103,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     localStorage.removeItem('user');
     localStorage.removeItem('activeMode');
-    clearVkLaunchParamsStorage();
+    clearAuxiliaryOAuthSessionStorage();
     setUser(null);
     setBalance(null);
     setActiveMode('trainer');

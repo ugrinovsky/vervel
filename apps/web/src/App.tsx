@@ -18,7 +18,7 @@ import DocsScreen from '@/screens/DocsScreen/DocsScreen';
 import AvatarScreen from '@/screens/AvatarScreen/AvatarScreen';
 import LandingScreen from '@/screens/LandingScreen/LandingScreen';
 import { AuthProvider, useAuth, useActiveMode } from '@/contexts/AuthContext';
-import { useVkMiniAppAuth } from '@/hooks/useVkMiniAppAuth';
+import VkMiniAppGate from '@/vk/VkMiniAppGate';
 import { SheetStackProvider } from '@/contexts/SheetStackContext';
 import { useAchievementToast } from '@/hooks/useAchievementToast';
 import IncomingCallWatcher from '@/components/VideoCall/IncomingCallWatcher';
@@ -53,7 +53,6 @@ function HomeScreen(): JSX.Element {
 
 function AppContent(): JSX.Element {
   const location = useLocation();
-  const { vkBootStatus, chooseVkMiniRole } = useVkMiniAppAuth();
   useAchievementToast();
   const { user } = useAuth();
   const { isAthlete, activeMode } = useActiveMode();
@@ -72,39 +71,6 @@ function AppContent(): JSX.Element {
     (route, index, arr) =>
       route.element && arr.findIndex((r) => r.path === route.path) === index
   );
-
-  if (vkBootStatus === 'pick_role') {
-    return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-zinc-950 px-6 text-zinc-200">
-        <p className="text-center text-base font-medium text-zinc-100">Как ты заходишь в Vervel?</p>
-        <p className="text-center text-sm text-zinc-400">Только для VK Mini App. На сайте роль по-прежнему на отдельном экране.</p>
-        <div className="flex w-full max-w-sm flex-col gap-3 sm:flex-row sm:justify-center">
-          <button
-            type="button"
-            className="rounded-xl bg-zinc-100 px-5 py-3 text-sm font-semibold text-zinc-900 transition hover:bg-white"
-            onClick={() => chooseVkMiniRole('athlete')}
-          >
-            Я атлет
-          </button>
-          <button
-            type="button"
-            className="rounded-xl border border-zinc-600 bg-zinc-900 px-5 py-3 text-sm font-semibold text-zinc-100 transition hover:border-zinc-500 hover:bg-zinc-800"
-            onClick={() => chooseVkMiniRole('trainer')}
-          >
-            Я тренер
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (vkBootStatus === 'pending') {
-    return (
-      <div className="flex min-h-dvh items-center justify-center bg-zinc-950 text-zinc-200">
-        <p className="text-sm">Вход через VK…</p>
-      </div>
-    );
-  }
 
   return (
     <>
@@ -203,7 +169,9 @@ function App(): JSX.Element {
   return (
     <AuthProvider>
       <SheetStackProvider>
-        <AppContent />
+        <VkMiniAppGate>
+          <AppContent />
+        </VkMiniAppGate>
       </SheetStackProvider>
     </AuthProvider>
   );

@@ -14,6 +14,7 @@ import ListButton from '@/components/ui/ListButton';
 import { CameraIcon } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { isSyntheticVkPlaceholderEmail, profileEmailSubtitle } from '@/util/syntheticEmail';
 
 interface Props {
   data: ProfileData;
@@ -89,6 +90,8 @@ export default function ProfileTab({ data, trainerStats }: Props) {
     }
   };
 
+  const emailSubtitle = profileEmailSubtitle(data.user.email);
+
   const handleBecomeTrainer = async () => {
     try {
       setBecomingTrainer(true);
@@ -115,7 +118,11 @@ export default function ProfileTab({ data, trainerStats }: Props) {
           Покажите этот код тренеру, чтобы он мог добавить вас в команду
         </p>
         <div className="flex items-center justify-center">
-          <AthleteQrCode athleteId={data.user.id} name={data.user.fullName} email={data.user.email} />
+          <AthleteQrCode
+            athleteId={data.user.id}
+            name={data.user.fullName}
+            email={isSyntheticVkPlaceholderEmail(data.user.email) ? undefined : data.user.email}
+          />
         </div>
       </BottomSheet>
 
@@ -163,7 +170,9 @@ export default function ProfileTab({ data, trainerStats }: Props) {
           </button>
           <div className="min-w-0">
             <div className="text-xl font-bold text-white truncate">{data.user.fullName || 'Без имени'}</div>
-            <div className="text-sm text-(--color_text_muted) truncate">{data.user.email}</div>
+            {emailSubtitle && (
+              <div className="text-sm text-(--color_text_muted) truncate">{emailSubtitle}</div>
+            )}
             <div className="text-xs text-(--color_text_muted) mt-1">Участник с {formatDate(data.user.createdAt)}</div>
           </div>
         </div>

@@ -7,8 +7,8 @@ import toast from 'react-hot-toast';
 
 const VK_APP_ID = Number(import.meta.env.VITE_VK_APP_ID) || 54455065;
 
-// Module-level flag prevents double-init in React StrictMode
-let isInitialized = false;
+/** VKID.Config.init must run once per page; OneTap is created per mount (Strict Mode–safe). */
+let vkSdkConfigInitialized = false;
 
 export default function VkIdButton() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -16,26 +16,29 @@ export default function VkIdButton() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!containerRef.current || isInitialized) return;
-    isInitialized = true;
+    const el = containerRef.current;
+    if (!el) return;
 
     // redirectUrl must match one of the authorized URLs in VK app settings
     // For dev: add http://localhost:5173 in https://vk.com/editapp?id=54455065
     const redirectUrl =
       import.meta.env.VITE_APP_URL || `${window.location.origin}${window.location.pathname}`;
 
-    VKID.Config.init({
-      app: VK_APP_ID,
-      redirectUrl,
-      responseMode: VKID.ConfigResponseMode.Callback,
-      source: VKID.ConfigSource.LOWCODE,
-      scope: '',
-    });
+    if (!vkSdkConfigInitialized) {
+      VKID.Config.init({
+        app: VK_APP_ID,
+        redirectUrl,
+        responseMode: VKID.ConfigResponseMode.Callback,
+        source: VKID.ConfigSource.LOWCODE,
+        scope: '',
+      });
+      vkSdkConfigInitialized = true;
+    }
 
     const oneTap = new VKID.OneTap();
     oneTap
       .render({
-        container: containerRef.current,
+        container: el,
         fastAuthEnabled: false,
         showAlternativeLogin: false,
       })
@@ -73,14 +76,13 @@ export default function VkIdButton() {
 
     return () => {
       try {
-        (oneTap as any).destroy?.();
-      } catch {}
-
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
+        (oneTap as { destroy?: () => void }).destroy?.();
+      } catch {
+        /* ignore */
       }
+      el.innerHTML = '';
     };
-  }, []);
+  }, [login, navigate]);
 
   return <div ref={containerRef} className="w-full" />;
 }

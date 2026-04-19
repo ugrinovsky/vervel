@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { isAxiosError } from 'axios';
 import { useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
@@ -12,12 +12,10 @@ import {
   hasVkMiniAppLaunchContext,
   takeVkLaunchParams,
   VK_LAUNCH_PARAMS_SESSION_KEY,
-  VK_MINI_APP_INITIAL_ROLE_KEY,
 } from '@/vk/vkLaunchParams';
 import { syncVkMiniAppProfileFromBridge } from '@/vk/syncVkMiniAppProfile';
 
-/** `pick_role` — только в VK Mini App (iframe): ждём выбор атлет/тренер перед POST login. */
-type VkBootStatus = 'pending' | 'pick_role' | 'ready';
+type VkBootStatus = 'pending' | 'ready';
 
 interface MiniAppLoginResponse {
   user?: { id: number; email: string; fullName: string; role: string; themeHue?: number | null };
@@ -48,48 +46,16 @@ function miniLoginErrorMessage(err: unknown): string {
 }
 
 /**
- * В VK Mini App: VKWebAppInit, параметры из URL/hash/sessionStorage или VKWebAppGetLaunchParams,
- * затем POST /oauth/vk/mini-app-login.
- *
- * Опционально `sessionStorage[VK_MINI_APP_INITIAL_ROLE_KEY]` = `athlete` | `trainer` → тело `initialRole`
- * (только mini-app). Входы вне VK Mini App по-прежнему используют /select-role при отсутствии роли.
+ * VK Mini App: VKWebAppInit, launch params → POST /oauth/vk/mini-app-login.
+ * Роль — только через `/select-role` (как у веб OAuth / VK SDK).
  */
-function readStoredInitialRole(): 'athlete' | 'trainer' | undefined {
-  try {
-    const raw = sessionStorage.getItem(VK_MINI_APP_INITIAL_ROLE_KEY);
-    if (raw === 'athlete' || raw === 'trainer') {
-      return raw;
-    }
-  } catch {
-    /* ignore */
-  }
-  return undefined;
-}
-
-export function useVkMiniAppAuth(): {
-  vkBootStatus: VkBootStatus;
-  /** Вызов из UI при `vkBootStatus === 'pick_role'` (и только тогда смысл). */
-  chooseVkMiniRole: (role: 'athlete' | 'trainer') => void;
-} {
+export function useVkMiniAppAuth(): { vkBootStatus: VkBootStatus } {
   const { login } = useAuth();
   const navigate = useNavigate();
   const loginRef = useRef(login);
   const navigateRef = useRef(navigate);
   loginRef.current = login;
   navigateRef.current = navigate;
-
-  const pickRoleResolverRef = useRef<((role: 'athlete' | 'trainer') => void) | null>(null);
-
-  const chooseVkMiniRole = useCallback((role: 'athlete' | 'trainer') => {
-    try {
-      sessionStorage.setItem(VK_MINI_APP_INITIAL_ROLE_KEY, role);
-    } catch {
-      /* ignore */
-    }
-    const resolve = pickRoleResolverRef.current;
-    pickRoleResolverRef.current = null;
-    resolve?.(role);
-  }, []);
 
   const [vkBootStatus, setVkBootStatus] = useState<VkBootStatus>(() =>
     typeof window !== 'undefined' && hasVkMiniAppLaunchContext() ? 'pending' : 'ready',
@@ -106,13 +72,17 @@ export function useVkMiniAppAuth(): {
         const bridgeMod = await import('@vkontakte/vk-bridge');
         const bridge = bridgeMod.default;
 
-        await bridge.send('VKWebAppInit');
-        vkMiniDbg('VKWebAppInit ok');
+        try {
+          await bridge.send('VKWebAppInit');
+          vkMiniDbg('VKWebAppInit ok');
+        } catch (e) {
+          vkMiniDbg('VKWebAppInit failed (вне клиента VK — ок)', e);
+        }
 
         let launchParams = takeVkLaunchParams();
         vkMiniDbg('params from URL/session', launchParams ? Object.keys(launchParams) : null);
 
-        if (!launchParams?.sign && bridge.isEmbedded()) {
+        if (!launchParams?.sign) {
           try {
             const raw = await bridge.send('VKWebAppGetLaunchParams');
             vkMiniDbg('VKWebAppGetLaunchParams raw keys', raw && typeof raw === 'object' ? Object.keys(raw) : raw);
@@ -136,19 +106,6 @@ export function useVkMiniAppAuth(): {
         const launchQuery = getVkLaunchRawQueryForVerify();
         vkMiniDbg('launchQuery for verify', launchQuery ? '(present)' : '(absent)');
 
-        let initialRole = readStoredInitialRole();
-        const embedded = bridge.isEmbedded();
-
-        if (!initialRole && embedded) {
-          if (cancelled) {
-            return;
-          }
-          initialRole = await new Promise<'athlete' | 'trainer'>((resolve) => {
-            pickRoleResolverRef.current = resolve;
-            setVkBootStatus('pick_role');
-          });
-        }
-
         if (cancelled) {
           return;
         }
@@ -157,8 +114,10 @@ export function useVkMiniAppAuth(): {
         const res = await publicApi.post<MiniAppLoginResponse>('/oauth/vk/mini-app-login', {
           launchParams,
           ...(launchQuery ? { launchQuery } : {}),
-          ...(initialRole ? { initialRole } : {}),
         });
+        if (cancelled) {
+          return;
+        }
         const data = res.data;
         clearVkLaunchParamsStorage();
         vkMiniDbg('mini-app-login OK', data.needsRole ? 'needsRole' : 'user');
@@ -179,6 +138,9 @@ export function useVkMiniAppAuth(): {
               vkMiniDbg('VKWebAppGetUserInfo / profile sync failed', e);
             }
           }
+          if (cancelled) {
+            return;
+          }
           loginRef.current(authed);
           navigateRef.current('/home', { replace: true });
         }
@@ -187,7 +149,6 @@ export function useVkMiniAppAuth(): {
         const msg = miniLoginErrorMessage(err);
         toast.error(msg);
       } finally {
-        pickRoleResolverRef.current = null;
         if (!cancelled) {
           setVkBootStatus('ready');
         }
@@ -196,9 +157,8 @@ export function useVkMiniAppAuth(): {
 
     return () => {
       cancelled = true;
-      pickRoleResolverRef.current = null;
     };
-  }, [chooseVkMiniRole]);
+  }, []);
 
-  return { vkBootStatus, chooseVkMiniRole };
+  return { vkBootStatus };
 }

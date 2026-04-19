@@ -8,6 +8,7 @@ import type { UserRole } from '@/api/auth';
 import { useAuth, useActiveMode } from '@/contexts/AuthContext';
 
 import { ThemeController, THEME_PRESETS, DEFAULT_HUE, type SpecialTheme } from '@/util/ThemeController';
+import { isSyntheticVkPlaceholderEmail } from '@/util/syntheticEmail';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import AccentButton from '@/components/ui/AccentButton';
 import GhostButton from '@/components/ui/GhostButton';
@@ -78,7 +79,9 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
     (('standalone' in navigator) && (navigator as Navigator & { standalone: boolean }).standalone)
 
   const [nameField, setNameField] = useState(data.user.fullName || '');
-  const [emailField, setEmailField] = useState(data.user.email);
+  const [emailField, setEmailField] = useState(() =>
+    isSyntheticVkPlaceholderEmail(data.user.email) ? '' : data.user.email,
+  );
   const [genderField, setGenderField] = useState<'male' | 'female' | null>(data.user.gender ?? null);
   const [bodyWeightField, setBodyWeightField] = useState('');
   const [currentBodyWeight, setCurrentBodyWeight] = useState<number | null>(null);
@@ -103,7 +106,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
 
   useEffect(() => {
     setNameField(data.user.fullName || '');
-    setEmailField(data.user.email);
+    setEmailField(isSyntheticVkPlaceholderEmail(data.user.email) ? '' : data.user.email);
     setGenderField(data.user.gender ?? null);
   }, [data.user]);
 
@@ -153,7 +156,16 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
   const handleSaveProfile = async () => {
     try {
       setSaving(true);
-      const response = await profileApi.updateProfile({ fullName: nameField, email: emailField, gender: genderField });
+      const payload: Parameters<typeof profileApi.updateProfile>[0] = {
+        fullName: nameField,
+        gender: genderField,
+      };
+      if (!isSyntheticVkPlaceholderEmail(data.user.email)) {
+        payload.email = emailField;
+      } else if (emailField.trim().length > 0) {
+        payload.email = emailField.trim();
+      }
+      const response = await profileApi.updateProfile(payload);
       if (response.data.success) {
         const updatedUser = response.data.data.user;
         if (user) updateUser({ ...user, ...updatedUser, fullName: updatedUser.fullName ?? '', role: updatedUser.role as UserRole, themeHue: activeHue });
@@ -333,8 +345,17 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
             label="Email"
             value={emailField}
             onChange={(e) => setEmailField(e.target.value)}
-            placeholder="email@example.com"
+            placeholder={
+              isSyntheticVkPlaceholderEmail(data.user.email)
+                ? 'Укажите email, если нужны уведомления на почту'
+                : 'email@example.com'
+            }
           />
+          {isSyntheticVkPlaceholderEmail(data.user.email) && (
+            <p className="text-xs text-(--color_text_muted) -mt-2">
+              Сейчас аккаунт привязан только к VK — это не рабочая почта. Можешь добавить свой email.
+            </p>
+          )}
           <div>
             <label className="text-xs text-(--color_text_muted) mb-2 block">Пол</label>
             <ToggleGroup

@@ -13,7 +13,8 @@ const TOAST_ID = 'incoming-call'
  * Polls for active incoming calls and shows the IncomingCall banner via toast.custom().
  */
 export default function IncomingCallWatcher() {
-  const [activeCall, setActiveCall] = useState<VideoCall | null>(null)
+  /** Входящий звонок с сервера (показ тоста — в useEffect, не внутри setState). */
+  const [pendingRing, setPendingRing] = useState<VideoCall | null>(null)
   const acceptedCallRef = useRef<VideoCall | null>(null)
   const { session, joinCall, leaveCall } = useVideoCall()
 
@@ -47,7 +48,7 @@ export default function IncomingCallWatcher() {
           onAccept={() => {
             toast.dismiss(TOAST_ID)
             acceptedCallRef.current = call
-            setActiveCall(call)
+            setPendingRing(null)
             joinCall(call.roomName)
           }}
           onDecline={() => {
@@ -61,24 +62,35 @@ export default function IncomingCallWatcher() {
     )
   }, [joinCall])
 
+  useEffect(() => {
+    if (!pendingRing || isDismissed(pendingRing)) {
+      return
+    }
+    showIncomingToast(pendingRing)
+    return () => {
+      toast.dismiss(TOAST_ID)
+    }
+  }, [pendingRing, showIncomingToast])
+
   const poll = useCallback(async () => {
     try {
       const res = await callsApi.getActiveCall()
       const call = res.data ?? null
       if (!call || isDismissed(call)) {
         toast.dismiss(TOAST_ID)
-        setActiveCall(null)
+        setPendingRing(null)
         return
       }
-      setActiveCall((prev) => {
-        if (prev?.id === call.id && prev?.updatedAt === call.updatedAt) return prev
-        showIncomingToast(call)
+      setPendingRing((prev) => {
+        if (prev?.id === call.id && prev?.updatedAt === call.updatedAt) {
+          return prev
+        }
         return call
       })
     } catch {
       // ignore network errors silently
     }
-  }, [showIncomingToast])
+  }, [])
 
   useEffect(() => {
     if (session) return
@@ -101,7 +113,7 @@ export default function IncomingCallWatcher() {
       }
     }
     acceptedCallRef.current = null
-    setActiveCall(null)
+    setPendingRing(null)
     leaveCall()
   }
 
