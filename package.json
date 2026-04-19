@@ -14,6 +14,7 @@
     "db:migrate": "npm run migrate --workspace=apps/api",
     "db:seed": "npm run db:seed --workspace=apps/api",
     "lint": "npm run lint --workspace=apps/api && npm run lint --workspace=apps/web",
+    "typecheck": "npm run typecheck --workspace=apps/api && npm run typecheck --workspace=apps/web",
     "test": "npm run test --workspace=apps/api -- --reporter=spec && npm run test --workspace=apps/web -- --run",
     "prepare": "husky"
   },

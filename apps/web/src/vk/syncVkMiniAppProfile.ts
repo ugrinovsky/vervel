@@ -1,6 +1,9 @@
 import { privateApi } from '@/api/http/privateApi';
 import type { AuthUser } from '@/contexts/AuthContext';
 
+/** default export пакета — инстанс моста (значение); тип берём через typeof. */
+type VkBridgeInstance = typeof import('@vkontakte/vk-bridge').default;
+
 type VkUserInfo = {
   first_name?: string;
   last_name?: string;
@@ -13,9 +16,7 @@ type VkUserInfo = {
 /**
  * После mini-app-login: имя, фото и пол из `VKWebAppGetUserInfo` → PUT /profile (сервер фильтрует photoUrl по CDN VK).
  */
-export async function syncVkMiniAppProfileFromBridge(bridge: {
-  send: (event: string, params?: unknown) => Promise<unknown>;
-}): Promise<Partial<AuthUser> | null> {
+export async function syncVkMiniAppProfileFromBridge(bridge: VkBridgeInstance): Promise<Partial<AuthUser> | null> {
   const raw = (await bridge.send('VKWebAppGetUserInfo')) as VkUserInfo;
   const first = raw?.first_name?.trim() ?? '';
   const last = raw?.last_name?.trim() ?? '';
