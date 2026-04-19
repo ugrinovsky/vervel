@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import AccentButton from '@/components/ui/AccentButton';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { toDateKey, getCurrentHour } from '@/utils/date';
 
 
@@ -279,8 +280,14 @@ export default function AvatarScreen() {
           </motion.div>
         )}
 
-        {/* Онбординг для новых пользователей */}
-        {isNewUser ? (
+        {/* Пока грузим статистику — не показываем карту: иначе новый пользователь сначала видит аватар, потом онбординг */}
+        {loading ? (
+          <AnimatedBlock delay={0.12}>
+            <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-(--color_border) bg-(--color_bg_card)/40">
+              <LoadingSpinner size="md" variant="light" />
+            </div>
+          </AnimatedBlock>
+        ) : isNewUser ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -325,7 +332,7 @@ export default function AvatarScreen() {
                 zones={zones}
                 totalWorkouts={totalWorkouts}
                 lastWorkoutDaysAgo={lastWorkoutDaysAgo}
-                loading={loading}
+                loading={false}
                 gender={user?.gender ?? 'male'}
                 onWorkoutsMutated={reloadAvatarStats}
               />
