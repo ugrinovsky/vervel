@@ -12,6 +12,7 @@ export interface AuthUser {
   /** null — после OAuth / мини-приложения, пока не выбрана роль на /select-role */
   role: UserRole | null;
   gender?: 'male' | 'female' | null;
+  photoUrl?: string | null;
   balance?: number;
   themeHue?: number | null;
 }

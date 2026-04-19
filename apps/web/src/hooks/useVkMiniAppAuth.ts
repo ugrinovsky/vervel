@@ -14,6 +14,7 @@ import {
   VK_LAUNCH_PARAMS_SESSION_KEY,
   VK_MINI_APP_INITIAL_ROLE_KEY,
 } from '@/vk/vkLaunchParams';
+import { syncVkMiniAppProfileFromBridge } from '@/vk/syncVkMiniAppProfile';
 
 /** `pick_role` — только в VK Mini App (iframe): ждём выбор атлет/тренер перед POST login. */
 type VkBootStatus = 'pending' | 'pick_role' | 'ready';
@@ -167,7 +168,18 @@ export function useVkMiniAppAuth(): {
           return;
         }
         if (data.user) {
-          loginRef.current(data.user as AuthUser);
+          let authed = data.user as AuthUser;
+          if (bridge.isEmbedded()) {
+            try {
+              const patched = await syncVkMiniAppProfileFromBridge(bridge);
+              if (patched) {
+                authed = { ...authed, ...patched };
+              }
+            } catch (e) {
+              vkMiniDbg('VKWebAppGetUserInfo / profile sync failed', e);
+            }
+          }
+          loginRef.current(authed);
           navigateRef.current('/home', { replace: true });
         }
       } catch (err) {

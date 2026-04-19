@@ -9,6 +9,7 @@ import { HttpContext } from '@adonisjs/core/http'
 import { StreakService } from '#services/StreakService'
 import { computeLevel } from '#services/xp_logic'
 import User from '#models/user'
+import { isTrustedVkPhotoUrl } from '#utils/trusted_vk_photo_url'
 
 export default class ProfileController {
   async getProfile({ auth, response }: HttpContext) {
@@ -94,6 +95,7 @@ export default class ProfileController {
         donatePhone,
         donateCard,
         donateYookassaLink,
+        photoUrl,
       } = request.only([
         'fullName',
         'email',
@@ -105,9 +107,22 @@ export default class ProfileController {
         'donatePhone',
         'donateCard',
         'donateYookassaLink',
+        'photoUrl',
       ])
 
       if (fullName !== undefined) user.fullName = fullName
+      if (photoUrl !== undefined) {
+        if (photoUrl === null || photoUrl === '') {
+          user.photoUrl = null
+        } else if (typeof photoUrl === 'string') {
+          const trimmed = photoUrl.trim()
+          if (trimmed.length === 0) {
+            user.photoUrl = null
+          } else if (isTrustedVkPhotoUrl(trimmed)) {
+            user.photoUrl = trimmed
+          }
+        }
+      }
       if (email !== undefined) user.email = email
       if (bio !== undefined) user.bio = bio || null
       if (specializations !== undefined)
