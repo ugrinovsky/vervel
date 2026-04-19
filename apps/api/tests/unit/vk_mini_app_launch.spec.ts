@@ -49,4 +49,17 @@ test.group('VK Mini App launch signature (HMAC-SHA256)', () => {
     const withBool = { ...params, vk_is_app_user: true }
     assert.equal(normalizeVkLaunchParams(withBool)?.vk_is_app_user, '1')
   })
+
+  test('принимает набор с одним лишним vk_* (клиент добавил поле, подпись по исходному набору)', async ({
+    assert,
+  }) => {
+    const params = parseQuery(OFFICIAL_QUERY)
+    const withExtra = { ...params, vk_ios_client_extra: '1' }
+    assert.isTrue(verifyVkMiniAppLaunchSignature(withExtra, OFFICIAL_SECRET))
+  })
+
+  test('сырой query с лишним vk_*', async ({ assert }) => {
+    const withExtra = `${OFFICIAL_QUERY}&vk_ios_client_extra=1`
+    assert.isTrue(verifyVkMiniAppLaunchFromRawSearch(withExtra, OFFICIAL_SECRET))
+  })
 })

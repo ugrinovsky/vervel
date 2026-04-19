@@ -31,21 +31,22 @@ function stripTrailingBase64Equals(s: string): string {
 }
 
 function buildSortedVkQueryStringForHmac(pairs: { key: string; value: string }[]): string {
-  return pairs
+  return [...pairs]
     .sort((a, b) => a.key.localeCompare(b.key))
     .reduce((acc, { key, value }, idx) => {
       return acc + (idx === 0 ? '' : '&') + `${key}=${encodeURIComponent(value)}`
     }, '')
 }
 
-function verifyLaunchParamsSha256(params: Record<string, string>, secretKey: string): boolean {
-  const { sign, pairs } = collectVkPairs(params)
+function verifyHmacSha256VkLaunch(
+  pairs: { key: string; value: string }[],
+  sign: string,
+  secretKey: string
+): boolean {
   if (!sign || pairs.length === 0 || !secretKey) {
     return false
   }
-
   const queryString = buildSortedVkQueryStringForHmac(pairs)
-
   let paramsHash = crypto
     .createHmac('sha256', secretKey)
     .update(queryString)
@@ -62,6 +63,50 @@ function verifyLaunchParamsSha256(params: Record<string, string>, secretKey: str
     return false
   }
   return crypto.timingSafeEqual(a, b)
+}
+
+function verifyLaunchParamsSha256(params: Record<string, string>, secretKey: string): boolean {
+  const { sign, pairs } = collectVkPairs(params)
+  return verifyHmacSha256VkLaunch(pairs, sign ?? '', secretKey)
+}
+
+/**
+ * iOS / VKWebAppGetLaunchParams иногда добавляет лишние `vk_*`, не участвовавшие в подписи.
+ * Пробуем опустить 1 или 2 ключа из набора (подпись считалась по подмножеству).
+ */
+function verifyLaunchParamsSha256FlexExtraVkKeys(
+  params: Record<string, string>,
+  secretKey: string
+): boolean {
+  const { sign, pairs } = collectVkPairs(params)
+  if (!sign || pairs.length < 2 || !secretKey) {
+    return false
+  }
+  for (let i = 0; i < pairs.length; i++) {
+    if (
+      verifyHmacSha256VkLaunch(
+        pairs.filter((_, j) => j !== i),
+        sign,
+        secretKey
+      )
+    ) {
+      return true
+    }
+  }
+  for (let i = 0; i < pairs.length; i++) {
+    for (let j = i + 1; j < pairs.length; j++) {
+      if (
+        verifyHmacSha256VkLaunch(
+          pairs.filter((_, idx) => idx !== i && idx !== j),
+          sign,
+          secretKey
+        )
+      ) {
+        return true
+      }
+    }
+  }
+  return false
 }
 
 /**
@@ -95,23 +140,34 @@ export function verifyVkMiniAppLaunchFromRawSearch(search: string, secretKey: st
     return false
   }
 
-  const queryString = buildSortedVkQueryStringForHmac(pairs)
-  let paramsHash = crypto
-    .createHmac('sha256', secretKey)
-    .update(queryString)
-    .digest('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-
-  paramsHash = stripTrailingBase64Equals(paramsHash)
-  const signNorm = stripTrailingBase64Equals(sign)
-
-  const a = Buffer.from(signNorm, 'utf8')
-  const b = Buffer.from(paramsHash, 'utf8')
-  if (a.length !== b.length) {
-    return false
+  if (verifyHmacSha256VkLaunch(pairs, sign, secretKey)) {
+    return true
   }
-  return crypto.timingSafeEqual(a, b)
+  for (let i = 0; i < pairs.length; i++) {
+    if (
+      verifyHmacSha256VkLaunch(
+        pairs.filter((_, j) => j !== i),
+        sign,
+        secretKey
+      )
+    ) {
+      return true
+    }
+  }
+  for (let i = 0; i < pairs.length; i++) {
+    for (let j = i + 1; j < pairs.length; j++) {
+      if (
+        verifyHmacSha256VkLaunch(
+          pairs.filter((_, idx) => idx !== i && idx !== j),
+          sign,
+          secretKey
+        )
+      ) {
+        return true
+      }
+    }
+  }
+  return false
 }
 
 function verifyLaunchParamsLegacyMd5(params: Record<string, string>, secretKey: string): boolean {
@@ -148,7 +204,9 @@ export function verifyVkMiniAppLaunchSignature(
     return verifyLaunchParamsLegacyMd5(params, secretKey)
   }
   return (
-    verifyLaunchParamsSha256(params, secretKey) || verifyLaunchParamsLegacyMd5(params, secretKey)
+    verifyLaunchParamsSha256(params, secretKey) ||
+    verifyLaunchParamsSha256FlexExtraVkKeys(params, secretKey) ||
+    verifyLaunchParamsLegacyMd5(params, secretKey)
   )
 }
 
