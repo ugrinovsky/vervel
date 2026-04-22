@@ -497,6 +497,7 @@ export default function KlipyPicker({ open, onClose, onPick, pickDisabled }: Pro
           <SearchInput
             dense
             className="flex-1 min-w-0"
+            inputClassName="placeholder:text-white/95 placeholder:font-semibold placeholder:tracking-[0.02em]"
             type="search"
             enterKeyHint="search"
             value={query}
@@ -513,7 +514,7 @@ export default function KlipyPicker({ open, onClose, onPick, pickDisabled }: Pro
               setQuery('');
               setSearchTerm('');
             }}
-            placeholder="Поиск в KLIPY…"
+            placeholder="Search GIFs on KLIPY"
           />
           <CloseButton onClick={onClose} className="!w-9 !h-9" iconClassName="w-[18px] h-[18px]" />
         </div>
@@ -573,7 +574,7 @@ export default function KlipyPicker({ open, onClose, onPick, pickDisabled }: Pro
           href="https://klipy.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[10px] tracking-wide text-(--color_text_muted)/70 hover:text-white/50 inline-block py-0.5"
+          className="text-[11px] tracking-[0.08em] font-semibold text-white/85 hover:text-white inline-block py-0.5"
         >
           Powered by KLIPY
         </a>
