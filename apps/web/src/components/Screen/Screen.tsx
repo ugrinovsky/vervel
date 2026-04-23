@@ -13,6 +13,8 @@ interface ScreenProps {
   className?: string;
   /** Колбэк обновления. По умолчанию — window.location.reload() */
   onRefresh?: () => Promise<void>;
+  /** Включить pull-to-refresh жест */
+  enablePullToRefresh?: boolean;
 }
 
 function PageLoader() {
@@ -51,6 +53,7 @@ export default function Screen({
   loading,
   className = '',
   onRefresh = defaultRefresh,
+  enablePullToRefresh = true,
 }: PropsWithChildren<ScreenProps>) {
   const screenRef = useRef<HTMLDivElement>(null);
   const touchStartYRef = useRef(0);
@@ -71,6 +74,15 @@ export default function Screen({
   const indicatorScale = useTransform(springY, [0, PULL_TRIGGER], [0, 1]);
 
   useEffect(() => {
+    if (!enablePullToRefresh) {
+      hasPulledRef.current = false;
+      isRefreshingRef.current = false;
+      setIsRefreshing(false);
+      setPullProgress(0);
+      rawY.set(0);
+      return;
+    }
+
     const el = screenRef.current;
     if (!el || !onRefresh) return;
 
@@ -154,7 +166,7 @@ export default function Screen({
       el.removeEventListener('touchend', onTouchEnd);
       el.removeEventListener('touchcancel', resetRaw);
     };
-  }, [onRefresh, rawY]);
+  }, [enablePullToRefresh, onRefresh, rawY]);
 
   return (
     <>
@@ -165,8 +177,8 @@ export default function Screen({
           left: '50%',
           x: '-50%',
           y: indicatorY,
-          opacity: indicatorOpacity,
-          scale: indicatorScale,
+          opacity: enablePullToRefresh ? indicatorOpacity : 0,
+          scale: enablePullToRefresh ? indicatorScale : 0,
           zIndex: 50,
           pointerEvents: 'none',
           width: INDICATOR_SIZE,
@@ -179,7 +191,7 @@ export default function Screen({
       <motion.div
         ref={screenRef}
         className={`screen flex flex-col items-stretch justify-center h-full w-full max-w-[798px] mx-auto ${className}`.trim()}
-        style={{ y: springY }}
+        style={{ y: enablePullToRefresh ? springY : 0 }}
       >
         {loading ? <PageLoader /> : children}
       </motion.div>

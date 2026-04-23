@@ -115,7 +115,11 @@ export default function DialogsScreen() {
   const SPRING = { type: 'spring', damping: 28, stiffness: 260 } as const
 
   return (
-    <Screen loading={loading} className="dialogs-screen overflow-hidden">
+    <Screen
+      loading={loading}
+      className="dialogs-screen overflow-hidden"
+      enablePullToRefresh={!activeDialog}
+    >
       <ChatScreen
         open={!!activeDialog}
         dialog={activeDialog}
