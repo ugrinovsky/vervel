@@ -11,6 +11,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3333';
  */
 const DEBUG_401_KEY = 'VERVEL_DEBUG_401';
 const LAST_401_SESSION_KEY = 'VERVEL_LAST_401_DEBUG';
+const AUTH_REDIRECT_TS_KEY = 'VERVEL_AUTH_REDIRECT_TS';
 
 function persistLast401ForDebug(e: AxiosError) {
   try {
@@ -44,7 +45,21 @@ export function clearAuthAndRedirectToLogin() {
   } catch {
     /* ignore */
   }
-  window.location.href = '/login';
+  try {
+    const lastTs = Number(sessionStorage.getItem(AUTH_REDIRECT_TS_KEY) || '0');
+    if (Number.isFinite(lastTs) && Date.now() - lastTs < 3000) {
+      return;
+    }
+    sessionStorage.setItem(AUTH_REDIRECT_TS_KEY, String(Date.now()));
+  } catch {
+    /* ignore */
+  }
+
+  const path = window.location.pathname;
+  if (path === '/login' || path === '/') {
+    return;
+  }
+  window.location.replace('/login');
 }
 
 /**
