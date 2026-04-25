@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import type { AuthUser } from '@/contexts/AuthContext';
 import { publicApi } from '@/api/http/publicApi';
+import { setApiAccessToken } from '@/api/http/baseApi';
 import {
   bridgeLaunchParamsToRecord,
   clearEmbedOAuthLaunchBundle,
@@ -18,6 +19,7 @@ import { syncVkMiniAppProfileFromBridge } from '@/vk/syncVkMiniAppProfile';
 type EmbedLaunchBootStatus = 'pending' | 'ready';
 
 interface MiniAppLoginResponse {
+  accessToken?: string;
   user?: { id: number; email: string; fullName: string; role: string; themeHue?: number | null };
   needsRole?: boolean;
   userId?: number;
@@ -139,6 +141,9 @@ export function useEmbeddedOAuthLaunch(): { launchBootStatus: EmbedLaunchBootSta
           return;
         }
         const data = res.data;
+        if (data.accessToken) {
+          setApiAccessToken(data.accessToken);
+        }
         sessionStorage.removeItem(EMBED_OAUTH_FAILED_SIGN_KEY);
         clearEmbedOAuthLaunchBundle();
         embedOAuthDbg('mini-app-login OK', data.needsRole ? 'needsRole' : 'user');

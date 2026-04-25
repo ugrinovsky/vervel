@@ -400,16 +400,19 @@ export default class OAuthController {
     try {
       const user = await this.linkOrCreateVkUser(providerUserId, null, null)
       const token = await User.accessTokens.create(user)
-      setAuthTokenCookie(response, token.value!.release())
+      const accessToken = token.value!.release()
+      setAuthTokenCookie(response, accessToken)
 
       if (!user.role) {
         return response.ok({
+          accessToken,
           needsRole: true,
           userId: user.id,
         })
       }
 
       return response.ok({
+        accessToken,
         user: {
           id: user.id,
           email: user.email,

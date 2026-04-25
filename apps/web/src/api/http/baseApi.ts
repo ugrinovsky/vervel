@@ -12,6 +12,27 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3333';
 const DEBUG_401_KEY = 'VERVEL_DEBUG_401';
 const LAST_401_SESSION_KEY = 'VERVEL_LAST_401_DEBUG';
 const AUTH_REDIRECT_TS_KEY = 'VERVEL_AUTH_REDIRECT_TS';
+const ACCESS_TOKEN_KEY = 'vervel_access_token';
+
+export function setApiAccessToken(token: string | null) {
+  try {
+    if (token) {
+      localStorage.setItem(ACCESS_TOKEN_KEY, token);
+    } else {
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+function getApiAccessToken(): string | null {
+  try {
+    return localStorage.getItem(ACCESS_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
 
 function persistLast401ForDebug(e: AxiosError) {
   try {
@@ -41,6 +62,7 @@ export function clearAuthAndRedirectToLogin() {
   try {
     localStorage.removeItem('user');
     localStorage.removeItem('activeMode');
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
     clearAuxiliaryOAuthSessionStorage();
   } catch {
     /* ignore */
@@ -88,6 +110,15 @@ export function createApi(opts?: { redirectOn401?: boolean }): AxiosInstance {
     headers: {
       'Content-Type': 'application/json',
     },
+  });
+
+  instance.interceptors.request.use((config) => {
+    const token = getApiAccessToken();
+    if (token) {
+      config.headers = config.headers ?? {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
   });
 
   instance.interceptors.response.use(

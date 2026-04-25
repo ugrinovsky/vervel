@@ -10,6 +10,7 @@ import {
 import type { UserRole } from '@/api/auth';
 import { ThemeController } from '@/util/ThemeController';
 import { clearAuxiliaryOAuthSessionStorage } from '@/auth/auxiliarySessionStorage';
+import { setApiAccessToken } from '@/api/http/baseApi';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -112,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     localStorage.removeItem('user');
     localStorage.removeItem('activeMode');
+    setApiAccessToken(null);
     clearAuxiliaryOAuthSessionStorage();
     setUser(null);
     setBalance(null);
