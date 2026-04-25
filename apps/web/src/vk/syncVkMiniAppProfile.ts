@@ -1,4 +1,5 @@
-import { privateApi } from '@/api/http/privateApi';
+import { isAxiosError } from 'axios';
+import { publicApi } from '@/api/http/publicApi';
 import type { AuthUser } from '@/contexts/AuthContext';
 
 /** default export пакета — инстанс моста (значение); тип берём через typeof. */
@@ -46,7 +47,18 @@ export async function syncVkMiniAppProfileFromBridge(bridge: VkBridgeInstance): 
     return null;
   }
 
-  const res = await privateApi.put<{ success: boolean; data: { user: AuthUser } }>('/profile', body);
+  // Этот шаг необязателен для входа: при 401 не запускаем глобальный redirect-цикл.
+  const res = await publicApi
+    .put<{ success: boolean; data: { user: AuthUser } }>('/profile', body)
+    .catch((e: unknown) => {
+      if (isAxiosError(e) && e.response?.status === 401) {
+        return null;
+      }
+      throw e;
+    });
+  if (!res) {
+    return null;
+  }
   const u = res.data.data?.user;
   if (!u) {
     return null;
