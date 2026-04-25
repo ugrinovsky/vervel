@@ -110,6 +110,29 @@ function verifyLaunchParamsSha256FlexExtraVkKeys(
 }
 
 /**
+ * Некоторые клиенты (замечено на iOS) могут не прислать пустой `vk_access_token_settings`,
+ * хотя он мог участвовать в подписанной строке.
+ */
+function verifyLaunchParamsSha256FlexMissingOptionalVkKeys(
+  params: Record<string, string>,
+  secretKey: string
+): boolean {
+  const { sign, pairs } = collectVkPairs(params)
+  if (!sign || pairs.length === 0 || !secretKey) {
+    return false
+  }
+  const hasAccessTokenSettings = pairs.some(({ key }) => key === 'vk_access_token_settings')
+  if (hasAccessTokenSettings) {
+    return false
+  }
+  return verifyHmacSha256VkLaunch(
+    [...pairs, { key: 'vk_access_token_settings', value: '' }],
+    sign,
+    secretKey
+  )
+}
+
+/**
  * Как ветка `string` в официальном verifyLaunchParams (VKCOM/vk-apps-launch-params examples/node.js):
  * значения между `=` и `&` без предварительного decode — затем encodeURIComponent при сборке строки для HMAC.
  */
@@ -206,6 +229,7 @@ export function verifyVkMiniAppLaunchSignature(
   return (
     verifyLaunchParamsSha256(params, secretKey) ||
     verifyLaunchParamsSha256FlexExtraVkKeys(params, secretKey) ||
+    verifyLaunchParamsSha256FlexMissingOptionalVkKeys(params, secretKey) ||
     verifyLaunchParamsLegacyMd5(params, secretKey)
   )
 }
