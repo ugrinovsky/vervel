@@ -24,6 +24,7 @@ interface MiniAppLoginResponse {
 }
 
 const EMBED_OAUTH_FAILED_SIGN_KEY = 'vervel_vk_mini_failed_sign';
+const EMBED_OAUTH_NO_SIGN_ATTEMPTED_KEY = 'vervel_vk_mini_no_sign_attempted';
 
 function embedOAuthDbg(...args: unknown[]) {
   if (import.meta.env.DEV) {
@@ -86,6 +87,11 @@ export function useEmbeddedOAuthLaunch(): { launchBootStatus: EmbedLaunchBootSta
         embedOAuthDbg('params from URL/session', launchParams ? Object.keys(launchParams) : null);
 
         if (!launchParams?.sign) {
+          if (sessionStorage.getItem(EMBED_OAUTH_NO_SIGN_ATTEMPTED_KEY) === '1') {
+            embedOAuthDbg('skip embed login: no-sign already attempted in this session');
+            return;
+          }
+          sessionStorage.setItem(EMBED_OAUTH_NO_SIGN_ATTEMPTED_KEY, '1');
           try {
             const raw = await bridge.send('VKWebAppGetLaunchParams');
             embedOAuthDbg('launch params from bridge', raw && typeof raw === 'object' ? Object.keys(raw) : raw);
@@ -105,6 +111,7 @@ export function useEmbeddedOAuthLaunch(): { launchBootStatus: EmbedLaunchBootSta
           embedOAuthDbg('no sign — skip embed login');
           return;
         }
+        sessionStorage.removeItem(EMBED_OAUTH_NO_SIGN_ATTEMPTED_KEY);
         attemptedSign = launchParams.sign;
         if (sessionStorage.getItem(EMBED_OAUTH_FAILED_SIGN_KEY) === attemptedSign) {
           embedOAuthDbg('skip embed login: sign already failed in this session');
