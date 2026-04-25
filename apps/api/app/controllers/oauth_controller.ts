@@ -364,6 +364,16 @@ export default class OAuthController {
       (rawLaunchQuery.length > 0 && verifyVkMiniAppLaunchFromRawSearch(rawLaunchQuery, secret))
 
     if (!signatureOk) {
+      console.warn(
+        `[vk-mini-app-login] invalid-signature ${JSON.stringify({
+          vkAppId: launchParams.vk_app_id ?? null,
+          vkUserId: launchParams.vk_user_id ?? null,
+          sign: launchParams.sign ?? null,
+          launchParams,
+          launchParamKeys: Object.keys(launchParams).sort(),
+          launchQuery: rawLaunchQuery || null,
+        })}`
+      )
       return response.forbidden({ message: 'Invalid launch signature' })
     }
 

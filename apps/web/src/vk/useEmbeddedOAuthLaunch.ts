@@ -105,6 +105,11 @@ export function useEmbeddedOAuthLaunch(): { launchBootStatus: EmbedLaunchBootSta
 
         const launchQuery = getVkLaunchRawQueryForVerify();
         embedOAuthDbg('launchQuery for verify', launchQuery ? '(present)' : '(absent)');
+        console.info('[vk-mini-app-login payload]', {
+          launchParams,
+          launchQuery: launchQuery || null,
+          locationSearch: window.location.search,
+        });
 
         if (cancelled) {
           return;
@@ -146,6 +151,14 @@ export function useEmbeddedOAuthLaunch(): { launchBootStatus: EmbedLaunchBootSta
         }
       } catch (err) {
         embedOAuthDbg('embed login error', err);
+        if (isAxiosError(err)) {
+          console.error('[vk-mini-app-login error]', {
+            status: err.response?.status ?? null,
+            data: err.response?.data ?? null,
+          });
+        } else {
+          console.error('[vk-mini-app-login error]', err);
+        }
         const msg = miniLoginErrorMessage(err);
         toast.error(msg);
       } finally {
