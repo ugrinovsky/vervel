@@ -23,6 +23,8 @@ interface MiniAppLoginResponse {
   userId?: number;
 }
 
+const EMBED_OAUTH_FAILED_SIGN_KEY = 'vervel_vk_mini_failed_sign';
+
 function embedOAuthDbg(...args: unknown[]) {
   if (import.meta.env.DEV) {
     console.info('[embed-oauth]', ...args);
@@ -68,6 +70,7 @@ export function useEmbeddedOAuthLaunch(): { launchBootStatus: EmbedLaunchBootSta
 
     let cancelled = false;
     (async () => {
+      let attemptedSign: string | null = null;
       try {
         const bridgeMod = await import('@vkontakte/vk-bridge');
         const bridge = bridgeMod.default;
@@ -102,6 +105,11 @@ export function useEmbeddedOAuthLaunch(): { launchBootStatus: EmbedLaunchBootSta
           embedOAuthDbg('no sign — skip embed login');
           return;
         }
+        attemptedSign = launchParams.sign;
+        if (sessionStorage.getItem(EMBED_OAUTH_FAILED_SIGN_KEY) === attemptedSign) {
+          embedOAuthDbg('skip embed login: sign already failed in this session');
+          return;
+        }
 
         const launchQuery = getVkLaunchRawQueryForVerify();
         embedOAuthDbg('launchQuery for verify', launchQuery ? '(present)' : '(absent)');
@@ -124,6 +132,7 @@ export function useEmbeddedOAuthLaunch(): { launchBootStatus: EmbedLaunchBootSta
           return;
         }
         const data = res.data;
+        sessionStorage.removeItem(EMBED_OAUTH_FAILED_SIGN_KEY);
         clearEmbedOAuthLaunchBundle();
         embedOAuthDbg('mini-app-login OK', data.needsRole ? 'needsRole' : 'user');
 
@@ -151,6 +160,10 @@ export function useEmbeddedOAuthLaunch(): { launchBootStatus: EmbedLaunchBootSta
         }
       } catch (err) {
         embedOAuthDbg('embed login error', err);
+        if (attemptedSign) {
+          sessionStorage.setItem(EMBED_OAUTH_FAILED_SIGN_KEY, attemptedSign);
+          clearEmbedOAuthLaunchBundle();
+        }
         if (isAxiosError(err)) {
           console.error('[vk-mini-app-login error]', {
             status: err.response?.status ?? null,
