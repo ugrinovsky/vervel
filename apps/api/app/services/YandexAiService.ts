@@ -1,5 +1,6 @@
 import env from '#start/env'
 import logger from '@adonisjs/core/services/logger'
+import { isRecord } from '#utils/type_guards'
 import type { AiParseChainCtx } from '#services/ai_parse_chain'
 import convert from 'heic-convert'
 import { MUSCLE_ZONES } from '#services/ExerciseCatalog'
@@ -71,6 +72,98 @@ function chainLogFields(
 }
 
 export type YandexLlmLogMeta = { chain?: AiParseChainCtx; step: string }
+
+/** Сырые поля подхода из GPT — числа могут прийти как строки. */
+interface RawSetData {
+  reps?: string | number | null
+  weight?: string | number | null
+  time?: string | number | null
+}
+
+/** Сырое упражнение из GPT до нормализации. */
+interface RawExercise {
+  name?: string | null
+  displayName?: string | null
+  sets?: string | number | null
+  reps?: string | number | null
+  weight?: string | number | null
+  duration?: string | number | null
+  setData?: RawSetData[] | null
+  zones?: string[] | null
+  zoneWeights?: Record<string, number> | null
+  notes?: string | null
+  supersetGroup?: string | null
+}
+
+/** Верхний уровень JSON-ответа GPT о тренировке. */
+interface RawWorkoutJson {
+  workoutType?: string | null
+  exercises?: RawExercise[] | null
+  notes?: string | null
+}
+
+/** Ответ Yandex GPT chat/completions API. */
+interface YandexGptResponse {
+  choices?: Array<{ message?: { content?: string } }>
+  usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number }
+}
+
+/** Ответ Yandex Vision OCR API. */
+interface YandexOcrResponse {
+  result?: {
+    textAnnotation?: {
+      fullText?: string
+      blocks?: Array<{ lines?: Array<{ text?: string }> }>
+    }
+  }
+}
+
+function parseYandexGptResponse(raw: unknown): YandexGptResponse {
+  if (!isRecord(raw)) return {}
+  const choicesRaw = Array.isArray(raw.choices) ? raw.choices : []
+  const choices = choicesRaw.map((c: unknown) => {
+    if (!isRecord(c) || !isRecord(c.message)) return {}
+    return {
+      message: { content: typeof c.message.content === 'string' ? c.message.content : undefined },
+    }
+  })
+  const usageRaw = isRecord(raw.usage) ? raw.usage : {}
+  return {
+    choices,
+    usage: {
+      prompt_tokens:
+        typeof usageRaw.prompt_tokens === 'number' ? usageRaw.prompt_tokens : undefined,
+      completion_tokens:
+        typeof usageRaw.completion_tokens === 'number' ? usageRaw.completion_tokens : undefined,
+      total_tokens: typeof usageRaw.total_tokens === 'number' ? usageRaw.total_tokens : undefined,
+    },
+  }
+}
+
+function parseYandexOcrResponse(raw: unknown): YandexOcrResponse {
+  if (!isRecord(raw) || !isRecord(raw.result)) return {}
+  const res = raw.result
+  if (!isRecord(res.textAnnotation)) return { result: {} }
+  const ta = res.textAnnotation
+  const blocksRaw = Array.isArray(ta.blocks) ? ta.blocks : []
+  const blocks = blocksRaw.map((b: unknown) => {
+    if (!isRecord(b)) return {}
+    const linesRaw = Array.isArray(b.lines) ? b.lines : []
+    const lines = linesRaw.map((l: unknown) => {
+      if (!isRecord(l)) return {}
+      return { text: typeof l.text === 'string' ? l.text : undefined }
+    })
+    return { lines }
+  })
+  return {
+    result: {
+      textAnnotation: {
+        fullText: typeof ta.fullText === 'string' ? ta.fullText : undefined,
+        blocks,
+      },
+    },
+  }
+}
 
 // Только parseWorkoutNotes (текст заметок из формы). OCR/текст программы → workoutProgramParseSystemPrompt().
 const PARSE_NOTES_SYSTEM_PROMPT = `ПРИОРИТЕТ: name = название движения из текста ДО цифр подходов («3 подхода», «3х12»). Не используй «не указано»/«неизвестно», если в тексте явно написано упражнение (напр. «румынская тяга 3 подхода…» → name «Румынская тяга»).
@@ -678,7 +771,15 @@ export class YandexAiService {
       .replace(/```json\n?/g, '')
       .replace(/```\n?/g, '')
       .trim()
-    let parsed: unknown
+    interface RawStandardLink {
+      sourceExerciseId?: string | number | null
+      standardId?: number | null
+    }
+    interface RawStandardLinksJson {
+      links?: RawStandardLink[] | null
+    }
+
+    let parsed: RawStandardLinksJson
     try {
       parsed = JSON.parse(cleaned)
     } catch (e) {
@@ -694,17 +795,14 @@ export class YandexAiService {
       throw new Error('AI вернул некорректный JSON для связей с эталонами')
     }
 
-    const linksRaw = Array.isArray((parsed as { links?: unknown }).links)
-      ? (parsed as { links: unknown[] }).links
-      : []
+    const linksRaw = Array.isArray(parsed.links) ? parsed.links : []
     const out: Array<{ sourceExerciseId: string; standardId: number }> = []
     for (const item of linksRaw) {
-      if (item === null || item === undefined || typeof item !== 'object') continue
-      const rec = item as Record<string, unknown>
-      const sidRaw = rec.sourceExerciseId
-      const sid = sidRaw !== undefined && sidRaw !== null ? String(sidRaw).trim() : ''
-      const std = rec.standardId
-      const stdNum = typeof std === 'number' ? std : Number(std)
+      const sid =
+        item.sourceExerciseId !== null && item.sourceExerciseId !== undefined
+          ? String(item.sourceExerciseId).trim()
+          : ''
+      const stdNum = typeof item.standardId === 'number' ? item.standardId : Number(item.standardId)
       if (!sid || !Number.isFinite(stdNum)) continue
       out.push({ sourceExerciseId: sid, standardId: stdNum })
     }
@@ -789,10 +887,7 @@ export class YandexAiService {
       throw new Error(`YandexGPT error ${response.status}: ${errBody}`)
     }
 
-    const data = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>
-      usage?: { prompt_tokens?: number; completion_tokens?: number }
-    }
+    const data = parseYandexGptResponse(await response.json())
     const text = data?.choices?.[0]?.message?.content
     if (!text) {
       if (aiLlmIoLoggingEnabled()) {
@@ -914,14 +1009,7 @@ export class YandexAiService {
       throw new Error(`Vision OCR error ${response.status}: ${err}`)
     }
 
-    const data = (await response.json()) as {
-      result?: {
-        textAnnotation?: {
-          fullText?: string
-          blocks?: Array<{ lines?: Array<{ text?: string }> }>
-        }
-      }
-    }
+    const data = parseYandexOcrResponse(await response.json())
 
     // fullText содержит весь распознанный текст в одну строку
     const fullText = data?.result?.textAnnotation?.fullText
@@ -1027,10 +1115,7 @@ export class YandexAiService {
       throw new Error(`YandexGPT error ${response.status}: ${errBody}`)
     }
 
-    const data = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>
-      usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number }
-    }
+    const data = parseYandexGptResponse(await response.json())
     const text = data?.choices?.[0]?.message?.content
     if (!text) {
       if (aiLlmIoLoggingEnabled()) {
@@ -1182,84 +1267,75 @@ export class YandexAiService {
       .replace(/```\n?/g, '')
       .trim()
 
-    let parsed: any
+    let parsed: RawWorkoutJson
     try {
-      parsed = JSON.parse(cleaned)
+      const json: RawWorkoutJson | RawWorkoutJson[] = JSON.parse(cleaned)
       // GPT иногда оборачивает результат в массив — берём первый элемент
-      if (Array.isArray(parsed)) parsed = parsed[0]
+      parsed = Array.isArray(json) ? (json[0] ?? {}) : json
     } catch {
       throw new Error('AI вернул некорректный JSON')
     }
 
-    const validTypes = ['crossfit', 'bodybuilding', 'cardio'] as const
-    const parsedType = validTypes.includes(parsed.workoutType) ? parsed.workoutType : 'bodybuilding'
+    const wt = parsed.workoutType
+    const parsedType: 'crossfit' | 'bodybuilding' | 'cardio' =
+      wt === 'crossfit' || wt === 'bodybuilding' || wt === 'cardio' ? wt : 'bodybuilding'
 
-    const toNumberLoose = (v: any): number | undefined => {
+    const toNumberLoose = (v: string | number | null | undefined): number | undefined => {
       if (v === null || v === undefined) return undefined
       const s = String(v).trim().replace(',', '.')
       const n = Number(s)
       return Number.isFinite(n) ? n : undefined
     }
 
-    const exercises: AiExercise[] = (Array.isArray(parsed.exercises) ? parsed.exercises : []).map(
-      (ex: any) => {
-        const rawSetData = Array.isArray(ex.setData) ? ex.setData : null
-        const setData: AiSetData[] | undefined = rawSetData
-          ? rawSetData.map((s: any) => ({
-              reps: toNumberLoose(s.reps),
-              weight: toNumberLoose(s.weight),
-              time: toNumberLoose(s.time),
-            }))
-          : undefined
+    const exercises: AiExercise[] = (parsed.exercises ?? []).map((ex: RawExercise) => {
+      const rawSetData = Array.isArray(ex.setData) ? ex.setData : null
+      const setData: AiSetData[] | undefined = rawSetData
+        ? rawSetData.map((s: RawSetData) => ({
+            reps: toNumberLoose(s.reps),
+            weight: toNumberLoose(s.weight),
+            time: toNumberLoose(s.time),
+          }))
+        : undefined
 
-        const rawZones = Array.isArray(ex.zones) ? ex.zones : []
-        let zones = rawZones
-          .map((z: any) => String(z))
-          .filter((z: string) => (MUSCLE_ZONES as readonly string[]).includes(z))
+      const rawZones = Array.isArray(ex.zones) ? ex.zones : []
+      let zones = rawZones.filter((z) => (MUSCLE_ZONES as readonly string[]).includes(z))
 
-        let zoneWeights: Record<string, number> | undefined
-        const rawZw = ex.zoneWeights
-        if (
-          rawZw !== null &&
-          rawZw !== undefined &&
-          typeof rawZw === 'object' &&
-          !Array.isArray(rawZw) &&
-          zones.length > 0
-        ) {
-          const rec: Record<string, number> = {}
-          for (const z of zones) {
-            const num = toNumberLoose((rawZw as Record<string, unknown>)[z])
-            if (num !== undefined && num > 0) rec[z] = num
-          }
-          if (Object.keys(rec).length > 0) {
-            zoneWeights = rec
-            // Только зоны с положительной долей — без «пустых» имён в массиве
-            zones = zones.filter((z: string) => (rec[z] ?? 0) > 0)
-          }
+      let zoneWeights: Record<string, number> | undefined
+      const rawZw = ex.zoneWeights
+      if (rawZw !== null && rawZw !== undefined && zones.length > 0) {
+        const rec: Record<string, number> = {}
+        for (const z of zones) {
+          const num = toNumberLoose(rawZw[z])
+          if (num !== undefined && num > 0) rec[z] = num
         }
-
-        let name = String(ex.name || 'Exercise')
-        let displayName = String(ex.displayName || ex.name || 'Упражнение')
-        ;({ name, displayName } = YandexAiService.mergeNameAndDisplayIfOneGood(name, displayName))
-
-        return {
-          name,
-          displayName,
-          sets: setData ? setData.length : Math.max(1, Number(ex.sets) || 1),
-          reps: toNumberLoose(ex.reps),
-          weight: toNumberLoose(ex.weight),
-          duration: toNumberLoose(ex.duration),
-          setData,
-          notes: ex.notes !== undefined && ex.notes !== null ? String(ex.notes) : undefined,
-          supersetGroup:
-            ex.supersetGroup !== undefined && ex.supersetGroup !== null
-              ? String(ex.supersetGroup)
-              : undefined,
-          zones: zones.length > 0 ? zones : undefined,
-          zoneWeights,
+        if (Object.keys(rec).length > 0) {
+          zoneWeights = rec
+          // Только зоны с положительной долей — без «пустых» имён в массиве
+          zones = zones.filter((z) => (rec[z] ?? 0) > 0)
         }
       }
-    )
+
+      let name = String(ex.name || 'Exercise')
+      let displayName = String(ex.displayName || ex.name || 'Упражнение')
+      ;({ name, displayName } = YandexAiService.mergeNameAndDisplayIfOneGood(name, displayName))
+
+      return {
+        name,
+        displayName,
+        sets: setData ? setData.length : Math.max(1, Number(ex.sets) || 1),
+        reps: toNumberLoose(ex.reps),
+        weight: toNumberLoose(ex.weight),
+        duration: toNumberLoose(ex.duration),
+        setData,
+        notes: ex.notes !== null && ex.notes !== undefined ? String(ex.notes) : undefined,
+        supersetGroup:
+          ex.supersetGroup !== null && ex.supersetGroup !== undefined
+            ? String(ex.supersetGroup)
+            : undefined,
+        zones: zones.length > 0 ? zones : undefined,
+        zoneWeights,
+      }
+    })
 
     return {
       workoutType: parsedType,

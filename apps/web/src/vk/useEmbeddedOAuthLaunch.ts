@@ -20,7 +20,7 @@ type EmbedLaunchBootStatus = 'pending' | 'ready';
 
 interface MiniAppLoginResponse {
   accessToken?: string;
-  user?: { id: number; email: string; fullName: string; role: string; themeHue?: number | null };
+  user?: AuthUser;
   needsRole?: boolean;
   userId?: number;
 }
@@ -36,8 +36,10 @@ function embedOAuthDbg(...args: unknown[]) {
 
 function miniLoginErrorMessage(err: unknown): string {
   if (isAxiosError(err)) {
-    const d = err.response?.data as { message?: string } | undefined;
-    if (d?.message && typeof d.message === 'string') return d.message;
+    const d = err.response?.data;
+    if (d !== null && typeof d === 'object' && !Array.isArray(d) && 'message' in d && typeof d.message === 'string') {
+      return d.message;
+    }
     if (err.response?.status === 503) {
       return 'Сервер: не настроен защищённый ключ для встроенного входа (см. env API).';
     }
@@ -153,7 +155,7 @@ export function useEmbeddedOAuthLaunch(): { launchBootStatus: EmbedLaunchBootSta
           return;
         }
         if (data.user) {
-          let authed = data.user as AuthUser;
+          let authed = data.user;
           if (bridge.isEmbedded()) {
             try {
               const patched = await syncVkMiniAppProfileFromBridge(bridge);

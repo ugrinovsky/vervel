@@ -1,39 +1,46 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 import { chatApi, type DialogItem } from '@/api/chat'
 
-// Module-level shared state — all hook instances share the same data
 let cachedData: DialogItem[] | null = null
 let lastFetch = 0
-const listeners = new Set<(data: DialogItem[] | null) => void>()
+const listeners = new Set<() => void>()
+
+function emit() {
+  listeners.forEach((l) => l())
+}
 
 export async function refreshDialogs() {
   try {
     const res = await chatApi.listDialogs()
     cachedData = res.data.data
     lastFetch = Date.now()
-    listeners.forEach((l) => l(cachedData))
+    emit()
   } catch {}
 }
 
+function subscribe(onStoreChange: () => void) {
+  listeners.add(onStoreChange)
+  return () => listeners.delete(onStoreChange)
+}
+
+function getSnapshot() {
+  return cachedData
+}
+
+function getServerSnapshot(): DialogItem[] | null {
+  return null
+}
+
 export function useDialogs(pollInterval?: number) {
-  const [data, setData] = useState<DialogItem[] | null>(cachedData)
+  const data = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 
   useEffect(() => {
     if (pollInterval === undefined) return
-
-    listeners.add(setData)
-
     if (Date.now() - lastFetch > 5_000) {
-      refreshDialogs()
-    } else {
-      setData(cachedData)
+      void refreshDialogs()
     }
-
     const interval = setInterval(refreshDialogs, pollInterval)
-    return () => {
-      listeners.delete(setData)
-      clearInterval(interval)
-    }
+    return () => clearInterval(interval)
   }, [pollInterval])
 
   return { data, refresh: refreshDialogs }

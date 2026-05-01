@@ -148,7 +148,7 @@ export default class AiController {
         notes: result.notes,
       }
       return response.ok({ data: out })
-    } catch (err: any) {
+    } catch (err) {
       logger.error(
         { traceId, userId, route: chain.route, step: 'controller.error', err: err?.message },
         'ai:chain'
@@ -199,7 +199,7 @@ export default class AiController {
         'ai:chain'
       )
       return response.ok({ data: matched })
-    } catch (err: any) {
+    } catch (err) {
       logger.error(
         { traceId, userId, route: chain.route, step: 'controller.error', err: err?.message },
         'ai:chain'
@@ -335,7 +335,7 @@ export default class AiController {
             : null,
         balance,
       })
-    } catch (err: any) {
+    } catch (err) {
       logger.error(
         { traceId, userId, route: chain.route, step: 'controller.error', err: err?.message },
         'ai:chain'
@@ -447,7 +447,7 @@ export default class AiController {
             : null,
         balance,
       })
-    } catch (err: any) {
+    } catch (err) {
       logger.error(
         { traceId, userId, route: chain.route, step: 'controller.error', err: err?.message },
         'ai:chain'
@@ -588,7 +588,7 @@ export default class AiController {
       AchievementService.checkAndUnlockAchievements(userId).catch(() => {})
 
       return response.ok({ reply, balance: newBalance, cost })
-    } catch (err: any) {
+    } catch (err) {
       return response.internalServerError({
         message: 'Не удалось получить ответ от AI',
         detail: err?.message,
@@ -668,7 +668,7 @@ function matchExercisesToCatalog(result: AiWorkoutResult): AiWorkoutResult {
     const nameTokens = tokenizeForMatch(aiEx.name)
 
     if (nameTokens.length === 1) {
-      const defId = DEFAULT_CATALOG_ID_FOR_SINGLE_TOKEN[nameTokens[0]!]
+      const defId = DEFAULT_CATALOG_ID_FOR_SINGLE_TOKEN[nameTokens[0] ?? '']
       if (defId) {
         const defEx = catalog.find((e) => e.id === defId)
         if (defEx) {
@@ -757,9 +757,11 @@ function matchExercisesToCatalog(result: AiWorkoutResult): AiWorkoutResult {
       byId.set(id, i)
       continue
     }
-    const firstIdx = byId.get(id)!
-    const first = exercises[firstIdx]!
-    const cur = exercises[i]!
+    const firstIdx = byId.get(id)
+    if (firstIdx === undefined) continue
+    const first = exercises[firstIdx]
+    const cur = exercises[i]
+    if (!first || !cur) continue
     const sim = aiNameSimilarity(first.name, cur.name)
     if (sim < 0.6) {
       logger.warn(
@@ -767,7 +769,7 @@ function matchExercisesToCatalog(result: AiWorkoutResult): AiWorkoutResult {
         'ai:match duplicate id with low similarity — downgrading to custom'
       )
 
-      const { exerciseId: droppedExerciseId, ...rest } = cur as any
+      const { exerciseId: droppedExerciseId, ...rest } = cur
       void droppedExerciseId
       exercises[i] = rest
     }

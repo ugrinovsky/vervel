@@ -28,7 +28,9 @@ const corsConfig = defineConfig({
           }
           return allowedList.includes(origin)
         }
-      : true,
+      : env.get('NODE_ENV') === 'production'
+        ? false
+        : true,
   methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
   headers: true,
   exposeHeaders: [],

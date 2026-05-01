@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 import type { PeriodizationData } from '@/api/trainer';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
+import type { RechartsTooltipContentProps, RechartsTooltipPayloadEntry } from './rechartsTooltip';
 
 interface Props {
   data: PeriodizationData;
@@ -297,12 +298,14 @@ function metricStatus(
   return { hint: 'Готов к нагрузкам', hintColor: 'var(--color_primary_icon)' };
 }
 
-function CustomTooltip({ active, payload, label }: any) {
+function CustomTooltip({ active, payload, label }: RechartsTooltipContentProps) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-gray-900/95 backdrop-blur-md border border-white/10 rounded-xl px-3 py-2 text-xs shadow-xl">
-      <p className="text-white/50 mb-1">{formatTooltipDate(label)}</p>
-      {payload.map((p: any) => (
+      <p className="text-white/50 mb-1">
+        {label != null && label !== '' ? formatTooltipDate(String(label)) : '—'}
+      </p>
+      {payload.map((p: RechartsTooltipPayloadEntry) => (
         <p key={p.name} style={{ color: p.color }} className="font-semibold">
           {p.name}: {Number(p.value).toFixed(1)}
         </p>

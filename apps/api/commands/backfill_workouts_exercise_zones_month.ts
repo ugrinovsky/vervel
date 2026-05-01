@@ -78,7 +78,7 @@ export default class BackfillWorkoutsExerciseZones extends BaseCommand {
         examined++
         lastId = w.id
 
-        const exercises = Array.isArray(w.exercises) ? (w.exercises as WorkoutExercise[]) : []
+        const exercises = Array.isArray(w.exercises) ? w.exercises : []
         if (exercises.length === 0) {
           skipped++
           continue
@@ -98,9 +98,9 @@ export default class BackfillWorkoutsExerciseZones extends BaseCommand {
               name: label || '—',
               displayName: label || '—',
               sets: Array.isArray(ex.sets) ? ex.sets.length : 0,
-              reps: null as any,
-              weight: null as any,
-              duration: null as any,
+              reps: undefined,
+              weight: undefined,
+              duration: undefined,
               notes: undefined,
               supersetGroup: ex.supersetGroup ?? undefined,
               setData: undefined,
@@ -128,13 +128,11 @@ export default class BackfillWorkoutsExerciseZones extends BaseCommand {
             continue
           }
 
-          w.merge({
-            exercises: nextExercises as any,
-            zonesLoad: calc.zonesLoad,
-            zonesLoadAbs: calc.zonesLoadAbs,
-            totalIntensity: calc.totalIntensity,
-            totalVolume: calc.totalVolume,
-          })
+          w.exercises = nextExercises
+          w.zonesLoad = calc.zonesLoad
+          w.zonesLoadAbs = calc.zonesLoadAbs
+          w.totalIntensity = calc.totalIntensity
+          w.totalVolume = calc.totalVolume
           await w.save()
           updated++
         } catch {

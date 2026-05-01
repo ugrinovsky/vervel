@@ -210,7 +210,7 @@ export default function ExerciseDetailSheet({
       .then(setFull)
       .catch(() => setFull(null))
       .finally(() => setLoading(false));
-  }, [open, exercise?.id]);
+  }, [open, exercise]);
 
   const handleAdd = onAdd
     ? (ex: ExerciseWithSets) => {

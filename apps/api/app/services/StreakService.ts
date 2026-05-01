@@ -5,6 +5,7 @@ import type Achievement from '#models/achievement'
 import AchievementService from './AchievementService.js'
 import { XpService } from './XpService.js'
 import { computeWeeklyStreakUpdate, type StreakMode } from './streak_logic.js'
+import type { JsonObject } from '#utils/type_guards'
 
 export interface StreakUpdateResult {
   streak: UserStreak
@@ -51,7 +52,7 @@ export class StreakService {
       workoutDate,
       currentStreak: userStreak.currentStreak,
       longestStreak: userStreak.longestStreak,
-      mode: userStreak.mode as StreakMode,
+      mode: userStreak.mode === 'intensive' ? 'intensive' : ('simple' as StreakMode),
     })
 
     userStreak.currentStreak = computation.newCurrentStreak
@@ -154,7 +155,7 @@ export class StreakService {
     date: DateTime,
     eventType: StreakHistory['eventType'],
     streakValue: number,
-    metadata: Record<string, any> = {}
+    metadata: JsonObject = {}
   ): Promise<void> {
     await StreakHistory.create({ userId, date, eventType, streakValue, metadata })
   }

@@ -15,6 +15,7 @@ import { CameraIcon } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { isOAuthPlaceholderEmail, profileEmailSubtitle } from '@/util/oauthPlaceholderEmail';
+import { userRoleFromApiString } from '@/util/userRole';
 
 interface Props {
   data: ProfileData;
@@ -42,7 +43,10 @@ export default function ProfileTab({ data, trainerStats }: Props) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => setCropSrc(ev.target?.result as string);
+    reader.onload = (ev) => {
+      const r = ev.target?.result;
+      if (typeof r === 'string') setCropSrc(r);
+    };
     reader.readAsDataURL(file);
     e.target.value = '';
   };
@@ -80,7 +84,8 @@ export default function ProfileTab({ data, trainerStats }: Props) {
       const res = await profileApi.becomeAthlete();
       if (res.data.success && user) {
         const updatedUser = res.data.data.user;
-        login({ ...user, role: updatedUser.role as any });
+        const role = userRoleFromApiString(updatedUser.role);
+        if (role) login({ ...user, role });
         toast.success('Режим атлета активирован!');
       }
     } catch {
@@ -98,7 +103,8 @@ export default function ProfileTab({ data, trainerStats }: Props) {
       const res = await profileApi.becomeTrainer();
       if (res.data.success && user) {
         const updatedUser = res.data.data.user;
-        login({ ...user, role: updatedUser.role as any });
+        const role = userRoleFromApiString(updatedUser.role);
+        if (role) login({ ...user, role });
         toast.success('Режим тренера активирован!');
       }
     } catch {

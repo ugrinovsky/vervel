@@ -1,5 +1,19 @@
 import { AUX_OAUTH_LAUNCH_BUNDLE_KEY } from '@/auth/auxiliarySessionStorage';
 
+function parseStoredVkRecord(raw: string): Record<string, string> | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    const result: Record<string, string> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      if (typeof v === 'string') result[k] = v;
+    }
+    return result;
+  } catch {
+    return null;
+  }
+}
+
 /** Ключ sessionStorage для сохранения launch-параметров встроенного OAuth (значение — в `auth/auxiliarySessionStorage`). */
 export const EMBED_OAUTH_LAUNCH_SESSION_KEY = AUX_OAUTH_LAUNCH_BUNDLE_KEY;
 
@@ -73,14 +87,10 @@ export function takeVkLaunchParams(): Record<string, string> | null {
     sessionStorage.setItem(EMBED_OAUTH_LAUNCH_SESSION_KEY, JSON.stringify(fromUrl));
     return fromUrl;
   }
-  try {
-    const raw = sessionStorage.getItem(EMBED_OAUTH_LAUNCH_SESSION_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Record<string, string>;
-    return parsed?.sign && parsed?.vk_app_id ? parsed : null;
-  } catch {
-    return null;
-  }
+  const stored = sessionStorage.getItem(EMBED_OAUTH_LAUNCH_SESSION_KEY);
+  if (!stored) return null;
+  const parsed = parseStoredVkRecord(stored);
+  return parsed?.sign && parsed?.vk_app_id ? parsed : null;
 }
 
 /** После успешного mini-app-login: убираем launch params из sessionStorage (SPA-навигация). */
@@ -93,14 +103,10 @@ export function clearEmbedOAuthLaunchBundle(): void {
 }
 
 function hasStoredVkLaunch(): boolean {
-  try {
-    const raw = sessionStorage.getItem(EMBED_OAUTH_LAUNCH_SESSION_KEY);
-    if (!raw) return false;
-    const o = JSON.parse(raw) as Record<string, string>;
-    return !!(o?.sign && o?.vk_app_id);
-  } catch {
-    return false;
-  }
+  const raw = sessionStorage.getItem(EMBED_OAUTH_LAUNCH_SESSION_KEY);
+  if (!raw) return false;
+  const o = parseStoredVkRecord(raw);
+  return !!(o?.sign && o?.vk_app_id);
 }
 
 /** Ответ VKWebAppGetLaunchParams → плоский Record<string, string> для API. */

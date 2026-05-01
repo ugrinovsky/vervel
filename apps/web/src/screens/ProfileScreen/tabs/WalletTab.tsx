@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { isAxiosError } from 'axios';
 import AnimatedBlock from '@/components/ui/AnimatedBlock';
 import toast from 'react-hot-toast';
 import { SparklesIcon } from '@heroicons/react/24/outline';
@@ -39,7 +40,7 @@ export default function WalletTab({ balance, inTrainerMode }: Props) {
 
   useEffect(() => {
     txInit();
-  }, []);
+  }, [txInit]);
 
   const handleTopup = async () => {
     if (!selectedAmount) return;
@@ -47,9 +48,8 @@ export default function WalletTab({ balance, inTrainerMode }: Props) {
     try {
       const res = await paymentsApi.topup(selectedAmount);
       window.location.href = res.data.confirmationUrl;
-    } catch (err: any) {
-      const status = err?.response?.status;
-      if (status === 503) {
+    } catch (err: unknown) {
+      if (isAxiosError(err) && err.response?.status === 503) {
         toast.error('Пополнение пока недоступно — сайт не подключён к платёжной системе.');
       } else {
         toast.error('Ошибка создания платежа. Попробуйте позже.');

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getApiErrorMessage } from '@/utils/apiError';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
@@ -24,14 +25,16 @@ function QrScanTab({ active, onAdded }: { active: boolean; onAdded: () => void }
   const handleScan = async (raw: string) => {
     setState('loading');
     try {
-      const parsed = JSON.parse(raw) as { athleteId?: number };
-      if (!parsed.athleteId) throw new Error('invalid qr');
+      const parsed: unknown = JSON.parse(raw);
+      if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed) || !('athleteId' in parsed) || typeof parsed.athleteId !== 'number') {
+        throw new Error('invalid qr');
+      }
       await trainerApi.addByQr(parsed.athleteId);
       setState('success');
       toast.success('Атлет добавлен');
       setTimeout(onAdded, 800);
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Не удалось добавить атлета. Попробуйте снова.';
+    } catch (err: unknown) {
+      const msg = getApiErrorMessage(err, 'Не удалось добавить атлета. Попробуйте снова.');
       setErrorMsg(msg);
       setState('error');
     }

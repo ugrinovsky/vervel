@@ -27,11 +27,11 @@ import AccentButton from '@/components/ui/AccentButton';
 import GhostButton from '@/components/ui/GhostButton';
 import type { ExerciseData, WorkoutTemplate } from '@/api/trainer';
 import type {
+  AiParsedWorkoutExercisePayload,
   AiRecognizedWorkoutResult,
   AiTextParseUiPayload,
   AiWorkoutResult,
 } from '@/api/ai';
-import { aiApi } from '@/api/ai';
 import { WORKOUT_TYPE_CONFIG, DEFAULT_WORKOUT_TYPE } from '@/constants/workoutTypes';
 import { nowRoundedToHour, today, parseTimeString, parseLocalDate, toDateKey } from '@/utils/date';
 import {
@@ -42,6 +42,7 @@ import {
 import { workoutsApi } from '@/api/workouts';
 import { profileApi } from '@/api/profile';
 import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
+import { isRecord } from '@/utils/typeGuards';
 
 function parseDraftDate(value: string | null | undefined): Date | null {
   if (!value) return null;
@@ -73,11 +74,25 @@ interface WorkoutFormDraft {
   savedAt: number;
 }
 
+function isWorkoutFormDraft(v: unknown): v is WorkoutFormDraft {
+  if (!isRecord(v)) return false;
+  const o = v;
+  if (typeof o.savedAt !== 'number') return false;
+  if (typeof o.notes !== 'string') return false;
+  if (typeof o.date !== 'string') return false;
+  if (typeof o.time !== 'string') return false;
+  if (!Array.isArray(o.exercises)) return false;
+  const wt = o.workoutType;
+  if (wt !== 'crossfit' && wt !== 'bodybuilding' && wt !== 'cardio') return false;
+  return true;
+}
+
 function loadLocalDraft(key: string): WorkoutFormDraft | null {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
-    return JSON.parse(raw) as WorkoutFormDraft;
+    const parsed: unknown = JSON.parse(raw);
+    return isWorkoutFormDraft(parsed) ? parsed : null;
   } catch {
     return null;
   }
@@ -136,6 +151,12 @@ export default function WorkoutFormBase({
   // When user clears/resets the draft, there may already be an in-flight getDraft() request.
   // This flag prevents that stale response from re-applying old date/time/notes/exercises.
   const ignoreDbDraftRef = useRef(false);
+  /** Latest values for DB-vs-local merge (effect intentionally keyed only by storageKey). */
+  const dbDraftMergeRef = useRef({ localSavedAt: 0, hasInitialDate: false });
+  dbDraftMergeRef.current = {
+    localSavedAt: localDraft?.savedAt ?? 0,
+    hasInitialDate: !!initialDate,
+  };
 
   // ── Form state (initialized from draft or props) ──────────────────
   const [date, setDate] = useState<Date>(() => {
@@ -207,9 +228,10 @@ export default function WorkoutFormBase({
       .getDraft()
       .then((res) => {
         if (ignoreDbDraftRef.current) return;
-        const dbDraft = res.data?.data as WorkoutFormDraft | null;
-        if (!dbDraft) return;
-        const localSavedAt = localDraft?.savedAt ?? 0;
+        const rawDraft = res.data?.data;
+        if (!isWorkoutFormDraft(rawDraft)) return;
+        const dbDraft = rawDraft;
+        const { localSavedAt, hasInitialDate } = dbDraftMergeRef.current;
         if (dbDraft.savedAt > localSavedAt) {
           const dbHasMeaningful =
             (dbDraft.exercises?.length ?? 0) > 0 || !!dbDraft.notes?.trim();
@@ -218,7 +240,7 @@ export default function WorkoutFormBase({
           if (dbDraft.notes != null) setNotes(dbDraft.notes);
           if (dbDraft.exercises?.length) setExercises(dbDraft.exercises);
           // Important: don't override today's date with an "empty" DB draft.
-          if (dbHasMeaningful && dbDraft.date && !initialDate) {
+          if (dbHasMeaningful && dbDraft.date && !hasInitialDate) {
             const d = parseDraftDate(dbDraft.date);
             if (d) setDate(d);
           }
@@ -354,7 +376,7 @@ export default function WorkoutFormBase({
 
   const handleAiTextParsed = (payload: AiTextParseUiPayload) => {
     const nameMap = new Map(payload.previewItems.map((item) => [item.exerciseId, item.name]));
-    const baseConverted: ExerciseData[] = payload.exercises.map((ex: any) => ({
+    const baseConverted: ExerciseData[] = payload.exercises.map((ex: AiParsedWorkoutExercisePayload) => ({
       exerciseId: ex.exerciseId,
       name:
         nameMap.get(ex.exerciseId) ??
@@ -363,7 +385,7 @@ export default function WorkoutFormBase({
       zoneWeights:
         ex.zoneWeights && typeof ex.zoneWeights === 'object' ? ex.zoneWeights : undefined,
       bodyweight: ex.bodyweight,
-      setsDetail: ex.sets?.map((s: any) => ({ reps: s.reps ?? 10, weight: s.weight })) ?? [],
+      setsDetail: ex.sets?.map((s) => ({ reps: s.reps ?? 10, weight: s.weight })) ?? [],
       sets: ex.sets?.length ?? 3,
       blockId: ex.blockId,
       duration: ex.sets?.[0]?.time ? Math.round(Number(ex.sets?.[0]?.time ?? 0) / 60) : undefined,

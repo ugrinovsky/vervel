@@ -38,7 +38,15 @@ const MAX_ZONES_IN_SHARE_HINT = 3;
 const INTENSITY_LOW_PCT = 40;
 const INTENSITY_HIGH_PCT = 78;
 
-export function generateRecommendations(stats: any): Recommendation[] {
+interface StatsInput {
+  zones?: Record<string, number>;
+  timeline?: ReadonlyArray<{ zones?: Record<string, number>; volume?: number }>;
+  totalVolume?: number;
+  avgIntensity?: number;
+  streak?: number;
+}
+
+export function generateRecommendations(stats: StatsInput): Recommendation[] {
   const recs: Recommendation[] = [];
 
   const zones: Record<string, number> = stats.zones || {};
@@ -47,7 +55,7 @@ export function generateRecommendations(stats: any): Recommendation[] {
   const avgIntensityRaw = Number(stats.avgIntensity) || 0;
   const avgIntensityPct = Math.round(normalizeIntensity(avgIntensityRaw));
 
-  const zoneEntries = Object.entries(zones) as [string, number][];
+  const zoneEntries = Object.entries(zones);
   const coveredZones = new Set<string>();
 
   /**

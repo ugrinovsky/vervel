@@ -3,22 +3,21 @@ import AppInput from '@/components/ui/AppInput';
 import ChipScrollRow from '@/components/ui/ChipScrollRow';
 import type { ExerciseCategory, MuscleZone } from '@/types/Exercise';
 import { getZoneLabel } from '@/util/zones';
+import { CATEGORY_LABELS, CATEGORY_LABELS_SHORT } from './exerciseFilterConstants';
 
-export const CATEGORY_LABELS: Record<ExerciseCategory, string> = {
-  strength: 'Силовые',
-  olympic: 'Олимпийские',
-  gymnastics: 'Гимнастика',
-  functional: 'Функциональные',
-  cardio: 'Кардио',
-};
+function categoryFromChipKey(key: string, allowed: ExerciseCategory[]): ExerciseCategory | null {
+  for (const c of allowed) {
+    if (c === key) return c;
+  }
+  return null;
+}
 
-export const CATEGORY_LABELS_SHORT: Record<ExerciseCategory, string> = {
-  strength: 'Силовые',
-  olympic: 'Олимп.',
-  gymnastics: 'Гимнастика',
-  functional: 'Функц.',
-  cardio: 'Кардио',
-};
+function zoneFromChipKey(key: string, allowed: MuscleZone[]): MuscleZone | null {
+  for (const z of allowed) {
+    if (z === key) return z;
+  }
+  return null;
+}
 
 interface Props {
   exerciseCount: number;
@@ -71,14 +70,18 @@ export default function ExerciseFilterBar({
         className="pb-0.5"
         chips={catChips}
         activeKey={categoryFilter ?? '__all__'}
-        onChipClick={(key) => onCategoryChange(key === '__all__' ? null : (key as ExerciseCategory))}
+        onChipClick={(key) =>
+          onCategoryChange(key === '__all__' ? null : categoryFromChipKey(key, availableCategories))
+        }
       />
 
       <ChipScrollRow
         className="pb-0.5"
         chips={zoneChips}
         activeKey={zoneFilter ?? '__all__'}
-        onChipClick={(key) => onZoneChange(key === '__all__' ? null : (key as MuscleZone))}
+        onChipClick={(key) =>
+          onZoneChange(key === '__all__' ? null : zoneFromChipKey(key, availableZones))
+        }
       />
     </div>
   );

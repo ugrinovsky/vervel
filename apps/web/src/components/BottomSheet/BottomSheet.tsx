@@ -92,12 +92,15 @@ export default function BottomSheet({
   const reactId = useId();
   const stackId = `${id ?? 'bottom-sheet'}-${reactId}`;
   const closeRef = useRef<(() => void) | null>(null);
-  closeRef.current = onClose;
 
   const useGlobalStack = Boolean(sheetStack) && !isolateFromStack;
   // Только стабильная subscribe — не весь context value (он меняется при каждом setStack и рвёт эффект → цикл).
   const stackSubscribe = sheetStack?.subscribe;
   const stackList = sheetStack?.stack;
+
+  useLayoutEffect(() => {
+    closeRef.current = onClose;
+  }, [onClose]);
 
   useLayoutEffect(() => {
     if (!open || !useGlobalStack || !stackSubscribe) return;

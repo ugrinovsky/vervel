@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { isAxiosError } from 'axios';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { chatApi, type KlipyCategory, type KlipyKind, type KlipySearchItem } from '@/api/chat';
@@ -269,7 +270,7 @@ export default function KlipyPicker({ open, onClose, onPick, pickDisabled }: Pro
         setNextOffset(res.data.data.nextOffset);
       } catch (err: unknown) {
         if (cancelled) return;
-        const status = (err as { response?: { status?: number } })?.response?.status;
+        const status = isAxiosError(err) ? err.response?.status : undefined;
         toast.error(status === 503 ? 'GIF сейчас недоступны' : 'Не удалось загрузить GIF');
         setItems([]);
         setNextOffset(null);
@@ -401,7 +402,7 @@ export default function KlipyPicker({ open, onClose, onPick, pickDisabled }: Pro
       });
     }
     return rows;
-  }, [kind, categories, recentItems]);
+  }, [categories, recentItems]);
 
   const categoryActiveKey = useMemo(() => {
     if (showRecentGrid) return '__recent__';

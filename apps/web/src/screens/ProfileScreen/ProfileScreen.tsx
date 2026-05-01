@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router';
 import toast from 'react-hot-toast';
@@ -17,6 +17,11 @@ import SettingsTab from './tabs/SettingsTab';
 
 type Tab = 'profile' | 'wallet' | 'settings';
 
+function tabFromSearchParam(raw: string | null): Tab {
+  if (raw === 'wallet' || raw === 'settings') return raw;
+  return 'profile';
+}
+
 const TABS: { id: Tab; label: string }[] = [
   { id: 'profile', label: 'Профиль' },
   { id: 'wallet', label: 'Кошелек' },
@@ -29,46 +34,13 @@ export default function ProfileScreen() {
   const { balance, setBalance } = useBalance();
   const inTrainerMode = isTrainer && (!isAthlete || activeMode === 'trainer');
 
-  const [activeTab, setActiveTab] = useState<Tab>(() => {
-    const t = searchParams.get('tab') as Tab;
-    return t === 'wallet' || t === 'settings' ? t : 'profile';
-  });
+  const [activeTab, setActiveTab] = useState<Tab>(() => tabFromSearchParam(searchParams.get('tab')));
   const [data, setData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [trainerStats, setTrainerStats] = useState<TrainerProfileStats | null>(null);
   const topupHandled = useRef(false);
 
-  useEffect(() => {
-    loadProfile();
-    if (isTrainer) {
-      trainerApi
-        .getProfileStats()
-        .then((res) => {
-          if (res.data.success) setTrainerStats(res.data.data);
-        })
-        .catch(() => {});
-    }
-    aiApi
-      .getBalance()
-      .then((res) => setBalance(res.data.balance))
-      .catch(() => {});
-  }, [isTrainer, inTrainerMode]);
-
-  // Handle redirect back from YooKassa after successful payment
-  useEffect(() => {
-    if (searchParams.get('topup') === 'success' && !topupHandled.current) {
-      topupHandled.current = true;
-      toast.success('Баланс пополнен!');
-      aiApi
-        .getBalance()
-        .then((res) => setBalance(res.data.balance))
-        .catch(() => {});
-      setSearchParams({ tab: 'wallet' }, { replace: true });
-      setActiveTab('wallet');
-    }
-  }, []);
-
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     try {
       setLoading(true);
       const response = await profileApi.getProfile();
@@ -82,7 +54,37 @@ export default function ProfileScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [setBalance]);
+
+  useEffect(() => {
+    void loadProfile();
+    if (isTrainer) {
+      trainerApi
+        .getProfileStats()
+        .then((res) => {
+          if (res.data.success) setTrainerStats(res.data.data);
+        })
+        .catch(() => {});
+    }
+    aiApi
+      .getBalance()
+      .then((res) => setBalance(res.data.balance))
+      .catch(() => {});
+  }, [isTrainer, inTrainerMode, loadProfile, setBalance]);
+
+  // Handle redirect back from YooKassa after successful payment
+  useEffect(() => {
+    if (searchParams.get('topup') === 'success' && !topupHandled.current) {
+      topupHandled.current = true;
+      toast.success('Баланс пополнен!');
+      aiApi
+        .getBalance()
+        .then((res) => setBalance(res.data.balance))
+        .catch(() => {});
+      setSearchParams({ tab: 'wallet' }, { replace: true });
+      setActiveTab('wallet');
+    }
+  }, [searchParams, setSearchParams, setBalance]);
 
   if (!data) return <Screen loading={loading} className="profile-screen" />;
 

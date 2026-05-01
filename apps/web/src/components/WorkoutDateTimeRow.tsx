@@ -18,7 +18,7 @@ interface Props {
 }
 
 export default function WorkoutDateTimeRow({ date, time, onDateChange, onTimeChange }: Props) {
-  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTimeChange = (e: { target: { value: string } }) => {
     const [h, m] = e.target.value.split(':').map(Number);
     if (isNaN(h) || isNaN(m)) return;
     const next = new Date(time);

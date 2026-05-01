@@ -92,8 +92,13 @@ export default class AthleteController {
       .where('athleteId', athlete.id)
 
     // Group chats (groups the athlete is a member of)
-    const groupRows = await db.from('group_athletes').where('athlete_id', athlete.id)
-    const groupIds = groupRows.map((r: any) => r.group_id)
+    interface GroupAthleteRow {
+      group_id: number
+    }
+    const groupRows: GroupAthleteRow[] = await db
+      .from('group_athletes')
+      .where('athlete_id', athlete.id)
+    const groupIds = groupRows.map((r) => r.group_id)
     const groupChats =
       groupIds.length > 0
         ? await Chat.query().where('type', 'group').whereIn('groupId', groupIds)
@@ -191,11 +196,11 @@ export default class AthleteController {
         id: w.id,
         date: w.date,
         workoutType: w.workoutType,
-        exercises: (w.exercises as any[]).slice(0, 3).map((ex) => ({
+        exercises: w.exercises.slice(0, 3).map((ex) => ({
           exerciseId: ex.exerciseId,
           sets: ex.sets?.length ?? 0,
         })),
-        exerciseCount: (w.exercises as any[]).length,
+        exerciseCount: w.exercises.length,
         notes: w.notes,
       })),
     })

@@ -1,4 +1,5 @@
 import crypto from 'node:crypto'
+import { isRecord } from '#utils/type_guards'
 
 /**
  * VK Mini Apps: проверка подписи параметров запуска.
@@ -236,11 +237,11 @@ export function verifyVkMiniAppLaunchSignature(
 
 /** Приводит тело запроса к плоскому Record<string, string> для проверки подписи. */
 export function normalizeVkLaunchParams(raw: unknown): Record<string, string> | null {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+  if (!isRecord(raw)) {
     return null
   }
   const out: Record<string, string> = {}
-  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+  for (const [k, v] of Object.entries(raw)) {
     if (v === null || v === undefined) {
       continue
     }

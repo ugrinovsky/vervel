@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -42,7 +42,7 @@ export default function TrainerAthletesListScreen() {
     localStorage.setItem('athletes_view_mode', v);
   };
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const athletesRes = await trainerApi.listAthletes();
@@ -53,11 +53,11 @@ export default function TrainerAthletesListScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [refreshUnread]);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    void loadData();
+  }, [loadData]);
 
   const filteredAthletes = useMemo(() => {
     if (!search.trim()) return athletes;

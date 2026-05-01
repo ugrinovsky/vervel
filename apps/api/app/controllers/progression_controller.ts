@@ -107,7 +107,7 @@ export default class ProgressionController {
         catRaw && catRaw.length > 0 ? catRaw : null
       )
       return response.ok({ success: true, data })
-    } catch (e: any) {
+    } catch (e) {
       return response.badRequest({ success: false, message: e?.message ?? 'Ошибка' })
     }
   }
@@ -125,7 +125,7 @@ export default class ProgressionController {
     try {
       await ProgressionService.updateExerciseStandard(user.id, id, body.displayLabel)
       return response.ok({ success: true })
-    } catch (e: any) {
+    } catch (e) {
       return response.badRequest({ success: false, message: e?.message ?? 'Ошибка' })
     }
   }
@@ -142,7 +142,7 @@ export default class ProgressionController {
     try {
       await ProgressionService.deleteExerciseStandard(user.id, id)
       return response.ok({ success: true })
-    } catch (e: any) {
+    } catch (e) {
       return response.badRequest({ success: false, message: e?.message ?? 'Ошибка' })
     }
   }
@@ -160,7 +160,7 @@ export default class ProgressionController {
         body.standardId
       )
       return response.ok({ success: true })
-    } catch (e: any) {
+    } catch (e) {
       return response.badRequest({ success: false, message: e?.message ?? 'Ошибка' })
     }
   }
@@ -218,7 +218,7 @@ export default class ProgressionController {
       const suggestions = await ProgressionService.suggestStandardAliasLinksWithAi(userId)
       const balance = await AiBalanceService.getBalance(userId)
       return response.ok({ success: true, data: { suggestions, balance } })
-    } catch (e: any) {
+    } catch (e) {
       return response.internalServerError({
         success: false,
         message: e?.message ?? 'Не удалось получить подсказки',
@@ -239,7 +239,7 @@ export default class ProgressionController {
         body.links
       )
       return response.ok({ success: true, data: { revertId, applied } })
-    } catch (e: any) {
+    } catch (e) {
       return response.badRequest({ success: false, message: e?.message ?? 'Ошибка' })
     }
   }
@@ -257,7 +257,7 @@ export default class ProgressionController {
     try {
       await ProgressionService.revertStandardAliasBatch(user.id, id)
       return response.ok({ success: true })
-    } catch (e: any) {
+    } catch (e) {
       return response.badRequest({ success: false, message: e?.message ?? 'Ошибка отката' })
     }
   }
@@ -265,9 +265,8 @@ export default class ProgressionController {
   async getGroupLeaderboard({ auth, params, request, response }: HttpContext) {
     const user = auth.user!
     const groupId = Number(params.id)
-    const period = [7, 30].includes(Number(request.input('period', 30)))
-      ? (Number(request.input('period', 30)) as 7 | 30)
-      : 30
+    const periodRaw = Number(request.input('period', 30))
+    const period: 7 | 30 = periodRaw === 7 ? 7 : 30
 
     // Проверяем членство в группе
     const membership = await db
@@ -281,16 +280,31 @@ export default class ProgressionController {
     }
 
     // Загружаем группу и атлетов
-    const [groupRow, rows] = await Promise.all([
-      db.from('trainer_groups').where('id', groupId).select('name', 'trainer_id').first(),
-      db.from('group_athletes').where('group_id', groupId).select('athlete_id'),
-    ])
+    interface GroupAthleteRow {
+      athlete_id: number
+    }
+    interface TrainerGroupRow {
+      name: string
+      trainer_id: number
+    }
+    const groupRow: TrainerGroupRow | null = await db
+      .from('trainer_groups')
+      .where('id', groupId)
+      .select('name', 'trainer_id')
+      .first()
+    const rows: GroupAthleteRow[] = await db
+      .from('group_athletes')
+      .where('group_id', groupId)
+      .select('athlete_id')
 
-    const trainerRow = groupRow
+    interface TrainerRow {
+      full_name: string
+    }
+    const trainerRow: TrainerRow | null = groupRow
       ? await db.from('users').where('id', groupRow.trainer_id).select('full_name').first()
       : null
 
-    const athleteIds = rows.map((r: any) => r.athlete_id as number)
+    const athleteIds = rows.map((r) => r.athlete_id)
     const entries = await ProgressionService.getGroupLeaderboard(athleteIds, period)
 
     return response.ok({

@@ -1,8 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { publicApi } from '@/api/http/publicApi';
 import toast from 'react-hot-toast';
+import type { AuthUser } from '@/contexts/auth-types';
+import { userRoleFromApiString } from '@/util/userRole';
 
 const YANDEX_CLIENT_ID = import.meta.env.VITE_YANDEX_CLIENT_ID || '';
 
@@ -43,30 +45,43 @@ export default function YandexIdButton() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  async function handleToken(accessToken: string) {
-    try {
-      const res = await publicApi.post<{
-        user: { id: number; email: string; fullName: string; role: string };
-        token: any;
-        needsRole?: boolean;
-        tempToken?: string;
-        userId?: number;
-      }>('/oauth/yandex/sdk-login', { accessToken });
+  const handleToken = useCallback(
+    async (accessToken: string) => {
+      try {
+        const res = await publicApi.post<{
+          user: { id: number; email: string; fullName: string; role: string };
+          needsRole?: boolean;
+          userId?: number;
+        }>('/oauth/yandex/sdk-login', { accessToken });
 
-      const data = res.data;
+        const data = res.data;
 
-      if (data.needsRole) {
-        navigate(`/select-role?userId=${data.userId}`);
-        return;
+        if (data.needsRole) {
+          navigate(`/select-role?userId=${data.userId}`);
+          return;
+        }
+
+        const role = userRoleFromApiString(data.user.role);
+        if (!role) {
+          toast.error('Ошибка авторизации через Яндекс');
+          return;
+        }
+
+        const authUser: AuthUser = {
+          id: data.user.id,
+          email: data.user.email,
+          fullName: data.user.fullName,
+          role,
+        };
+        login(authUser);
+        toast.success(`Добро пожаловать, ${data.user.fullName}!`);
+        navigate('/');
+      } catch {
+        toast.error('Ошибка авторизации через Яндекс');
       }
-
-      login(data.user as any);
-      toast.success(`Добро пожаловать, ${data.user.fullName}!`);
-      navigate('/');
-    } catch {
-      toast.error('Ошибка авторизации через Яндекс');
-    }
-  }
+    },
+    [login, navigate],
+  );
 
   // Handle full-page redirect fallback (?ya_token=...)
   useEffect(() => {
@@ -74,8 +89,8 @@ export default function YandexIdButton() {
     const yaToken = params.get('ya_token');
     if (!yaToken) return;
     window.history.replaceState({}, '', window.location.pathname);
-    handleToken(yaToken);
-  }, []);
+    void handleToken(yaToken);
+  }, [handleToken]);
 
   useEffect(() => {
     if (!containerRef.current || !YANDEX_CLIENT_ID) return;
@@ -128,7 +143,7 @@ export default function YandexIdButton() {
       container.innerHTML = '';
       container.removeAttribute('id');
     };
-  }, []);
+  }, [handleToken]);
 
   if (!YANDEX_CLIENT_ID) return null;
 

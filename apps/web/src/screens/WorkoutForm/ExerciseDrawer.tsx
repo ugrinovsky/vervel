@@ -2,7 +2,7 @@ import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import ExerciseParamsEditor, { type SetDetail } from '@/components/ExerciseParamsEditor/ExerciseParamsEditor';
 import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
 import type { ExerciseWithSets } from '@/types/Exercise';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, startTransition } from 'react';
 import { ArrowUpIcon, ArrowDownIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
 import GhostButton from '@/components/ui/GhostButton';
@@ -41,32 +41,35 @@ export default function ExerciseDrawer({ open, exercise, workoutType = 'bodybuil
 
   // ── Init on open / exercise change ────────────────────────────────
 
-  const initFromExercise = (ex: ExerciseWithSets) => {
-    setBodyweight(ex.bodyweight ?? false);
-    if (workoutType === 'crossfit') {
-      const first = ex.sets?.[0];
-      setReps(first?.reps ?? 10);
-      setWeight(first?.weight || undefined);
-      setWodType(undefined);
-      setTimeCap(undefined);
-      setRounds(undefined);
-      setDistance(undefined);
-    } else if (workoutType === 'cardio') {
-      setDuration(ex.duration ?? 20);
-    } else {
-      setSetsDetail(
-        ex.sets?.length
-          ? ex.sets.map((s) => ({ reps: s.reps, weight: s.weight || undefined }))
-          : [{ reps: 10 }, { reps: 10 }, { reps: 10 }]
-      );
-    }
-  };
+  const initFromExercise = useCallback(
+    (ex: ExerciseWithSets) => {
+      setCurrentExercise(ex);
+      setBodyweight(ex.bodyweight ?? false);
+      if (workoutType === 'crossfit') {
+        const first = ex.sets?.[0];
+        setReps(first?.reps ?? 10);
+        setWeight(first?.weight || undefined);
+        setWodType(undefined);
+        setTimeCap(undefined);
+        setRounds(undefined);
+        setDistance(undefined);
+      } else if (workoutType === 'cardio') {
+        setDuration(ex.duration ?? 20);
+      } else {
+        setSetsDetail(
+          ex.sets?.length
+            ? ex.sets.map((s) => ({ reps: s.reps, weight: s.weight || undefined }))
+            : [{ reps: 10 }, { reps: 10 }, { reps: 10 }],
+        );
+      }
+    },
+    [workoutType],
+  );
 
   useEffect(() => {
     if (!open) return;
-    setCurrentExercise(exercise);
-    initFromExercise(exercise);
-  }, [open, exercise, workoutType]);
+    startTransition(() => initFromExercise(exercise));
+  }, [open, exercise, initFromExercise]);
 
   // ── Bodybuilding set helpers ───────────────────────────────────────
 
@@ -116,15 +119,15 @@ export default function ExerciseDrawer({ open, exercise, workoutType = 'bodybuil
   // ── Patch handler for ExerciseParamsEditor ─────────────────────────
 
   const handlePatch = (patch: Record<string, number | string | boolean | undefined>) => {
-    if ('duration'   in patch) setDuration((patch.duration as number) ?? 20);
-    if ('wodType'    in patch) setWodType(patch.wodType as string | undefined);
-    if ('timeCap'    in patch) setTimeCap(patch.timeCap as number | undefined);
-    if ('rounds'     in patch) setRounds(patch.rounds as number | undefined);
-    if ('reps'       in patch) setReps((patch.reps as number) ?? 10);
-    if ('weight'     in patch) setWeight(patch.weight as number | undefined);
-    if ('distance'   in patch) setDistance(patch.distance as number | undefined);
+    if ('duration'   in patch) setDuration(typeof patch.duration === 'number' ? patch.duration : 20);
+    if ('wodType'    in patch) setWodType(typeof patch.wodType === 'string' ? patch.wodType : undefined);
+    if ('timeCap'    in patch) setTimeCap(typeof patch.timeCap === 'number' ? patch.timeCap : undefined);
+    if ('rounds'     in patch) setRounds(typeof patch.rounds === 'number' ? patch.rounds : undefined);
+    if ('reps'       in patch) setReps(typeof patch.reps === 'number' ? patch.reps : 10);
+    if ('weight'     in patch) setWeight(typeof patch.weight === 'number' ? patch.weight : undefined);
+    if ('distance'   in patch) setDistance(typeof patch.distance === 'number' ? patch.distance : undefined);
     if ('bodyweight' in patch) {
-      const bw = patch.bodyweight as boolean;
+      const bw = patch.bodyweight === true;
       setBodyweight(bw);
       if (bw && profileWeight) {
         setSetsDetail((prev) => prev.map((s) => ({ ...s, weight: s.weight ?? profileWeight })));
@@ -137,7 +140,6 @@ export default function ExerciseDrawer({ open, exercise, workoutType = 'bodybuil
 
   const handleReplace = (selected: ExerciseWithSets) => {
     const replaced = { ...selected, sets: currentExercise.sets, duration: currentExercise.duration };
-    setCurrentExercise(replaced);
     initFromExercise(replaced);
     setReplacerOpen(false);
   };

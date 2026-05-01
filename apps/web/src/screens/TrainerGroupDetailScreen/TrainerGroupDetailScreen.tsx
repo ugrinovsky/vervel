@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -34,7 +34,7 @@ export default function TrainerGroupDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [showAddPicker, setShowAddPicker] = useState(false);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [groupsRes, groupAthletesRes, allAthletesRes, chatRes] = await Promise.all([
@@ -53,11 +53,11 @@ export default function TrainerGroupDetailScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
-    loadData();
-  }, [id]);
+    void loadData();
+  }, [loadData]);
 
   const handleAddToGroup = async (athleteId: number) => {
     try {

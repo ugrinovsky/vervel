@@ -214,7 +214,7 @@ export function aggregateZonesFromTimeline(
   const maxZ = Math.max(...vals, ZONES_AGG_MIN_DENOM);
   const out: Record<string, number> = {};
   for (const k of Object.keys(acc)) {
-    out[k] = Math.min(acc[k]! / maxZ, 1);
+    out[k] = Math.min(acc[k] / maxZ, 1);
   }
   return out;
 }

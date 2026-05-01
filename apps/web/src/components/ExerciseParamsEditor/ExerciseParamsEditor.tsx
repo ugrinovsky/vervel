@@ -6,7 +6,7 @@
  *   - WorkoutExercisesEditor (inline list in trainer forms)
  *   - ExerciseDrawer (BottomSheet per-exercise in athlete/trainer workout form)
  */
-import { WOD_CONFIG, type WodType } from '@/constants/workoutTypes';
+import { WOD_CONFIG, WOD_TYPES } from '@/constants/workoutTypes';
 import { DocumentDuplicateIcon, TrashIcon, UserIcon } from '@heroicons/react/24/outline';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
 import NumberInput from '@/components/ui/NumberInput';
@@ -135,8 +135,9 @@ export default function ExerciseParamsEditor({
       <div className="space-y-2">
         {/* WOD type selector */}
         <div className="grid grid-cols-4 gap-1">
-          {(Object.entries(WOD_CONFIG) as [WodType, { label: string; hint: string }][]).map(
-            ([value, cfg]) => (
+          {WOD_TYPES.map((value) => {
+            const cfg = WOD_CONFIG[value];
+            return (
               <button
                 key={value}
                 type="button"
@@ -150,8 +151,8 @@ export default function ExerciseParamsEditor({
               >
                 {cfg.label}
               </button>
-            )
-          )}
+            );
+          })}
         </div>
 
         {/* Context fields: timeCap / rounds */}

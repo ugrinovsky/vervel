@@ -67,7 +67,7 @@ export default function StreakScreen() {
           <ToggleGroup
             cols={2}
             value={mode}
-            onChange={(m) => handleSetMode(m as 'simple' | 'intensive')}
+            onChange={(m) => handleSetMode(m)}
             options={[
               { value: 'simple',    label: <span className="flex items-center justify-center gap-1.5">🔥 Обычный <span className="opacity-60 text-xs">3/нед</span></span> },
               { value: 'intensive', label: <span className="flex items-center justify-center gap-1.5">⚡ Усиленный <span className="opacity-60 text-xs">5/нед</span></span> },

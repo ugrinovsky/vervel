@@ -1,10 +1,18 @@
 import {
   forwardRef,
-  type ChangeEvent,
+  useRef,
+  useCallback,
   type InputHTMLAttributes,
   type MouseEvent,
+  type Ref,
 } from 'react';
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+
+function assignRef<T>(r: Ref<T> | undefined, value: T | null) {
+  if (r == null) return;
+  if (typeof r === 'function') r(value);
+  else r.current = value;
+}
 
 export interface SearchInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   type?: InputHTMLAttributes<HTMLInputElement>['type'];
@@ -34,8 +42,17 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(function Sear
     readOnly,
     ...props
   },
-  ref
+  ref,
 ) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const setInputRef = useCallback(
+    (el: HTMLInputElement | null) => {
+      inputRef.current = el;
+      assignRef(ref, el);
+    },
+    [ref],
+  );
+
   const strValue = value === undefined || value === null ? '' : String(value);
   const showClear = Boolean(clearable && strValue.length > 0 && !disabled && !readOnly);
 
@@ -44,11 +61,11 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(function Sear
     e.stopPropagation();
     if (onClear) {
       onClear();
-    } else if (onChange) {
-      onChange({
-        target: { value: '' },
-        currentTarget: { value: '' },
-      } as ChangeEvent<HTMLInputElement>);
+    } else if (onChange && inputRef.current) {
+      const input = inputRef.current;
+      const desc = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value');
+      desc?.set?.call(input, '');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
     }
   };
 
@@ -64,7 +81,7 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(function Sear
         className={`${iconSz} text-(--color_text_muted) shrink-0 pointer-events-none`}
       />
       <input
-        ref={ref}
+        ref={setInputRef}
         type={type}
         value={value}
         onChange={onChange}

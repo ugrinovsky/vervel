@@ -56,7 +56,7 @@ export default class BackfillWorkoutsZonesLoadAbs extends BaseCommand {
         examined++
         lastId = w.id
 
-        if (!force && hasMeaningfulZonesLoad(w.zonesLoadAbs as any)) {
+        if (!force && hasMeaningfulZonesLoad(w.zonesLoadAbs)) {
           skipped++
           continue
         }

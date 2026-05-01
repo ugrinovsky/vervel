@@ -218,7 +218,7 @@ export default function AthleteMyTeamScreen() {
                 <div className="space-y-3">
                   {trainers.map((trainer) => {
                     const trainerUnread = trainer.chatId ? (unreadMap.get(trainer.chatId) ?? 0) : 0;
-                    const initials = (trainer.fullName || trainer.email)[0].toUpperCase();
+                    const _initials = (trainer.fullName || trainer.email)[0].toUpperCase();
                     return (
                       <div
                         key={trainer.id}

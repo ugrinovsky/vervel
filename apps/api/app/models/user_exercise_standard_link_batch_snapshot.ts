@@ -18,12 +18,25 @@ export default class UserExerciseStandardLinkBatchSnapshot extends BaseModel {
     columnName: 'touches_json',
     prepare: (value: StandardLinkTouch[]) => JSON.stringify(value),
     consume: (value: unknown) => {
-      if (typeof value !== 'string') return value as StandardLinkTouch[]
-      try {
-        return JSON.parse(value) as StandardLinkTouch[]
-      } catch {
-        return []
+      if (Array.isArray(value)) {
+        return value.map((t) => ({
+          source: typeof t?.source === 'string' ? t.source : '',
+          beforeStandardId: typeof t?.beforeStandardId === 'number' ? t.beforeStandardId : null,
+        }))
       }
+      if (typeof value === 'string') {
+        try {
+          const parsed: string | number | boolean | null | object = JSON.parse(value)
+          if (!Array.isArray(parsed)) return []
+          return parsed.map((t) => ({
+            source: typeof t?.source === 'string' ? t.source : '',
+            beforeStandardId: typeof t?.beforeStandardId === 'number' ? t.beforeStandardId : null,
+          }))
+        } catch {
+          return []
+        }
+      }
+      return []
     },
   })
   declare touchesJson: StandardLinkTouch[]

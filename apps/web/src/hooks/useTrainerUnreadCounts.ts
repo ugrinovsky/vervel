@@ -1,40 +1,46 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 import { trainerApi, type UnreadCounts } from '@/api/trainer'
 
-// Module-level shared state — all hook instances share the same data
 let cachedData: UnreadCounts | null = null
 let lastFetch = 0
-const listeners = new Set<(data: UnreadCounts | null) => void>()
+const listeners = new Set<() => void>()
+
+function emit() {
+  listeners.forEach((l) => l())
+}
 
 export async function refreshUnreadCounts() {
   try {
     const res = await trainerApi.getUnreadCounts()
     cachedData = res.data.data
     lastFetch = Date.now()
-    listeners.forEach((l) => l(cachedData))
+    emit()
   } catch {}
 }
 
+function subscribe(onStoreChange: () => void) {
+  listeners.add(onStoreChange)
+  return () => listeners.delete(onStoreChange)
+}
+
+function getSnapshot() {
+  return cachedData
+}
+
+function getServerSnapshot(): UnreadCounts | null {
+  return null
+}
+
 export function useTrainerUnreadCounts(pollInterval?: number) {
-  const [data, setData] = useState<UnreadCounts | null>(cachedData)
+  const data = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 
   useEffect(() => {
     if (pollInterval === undefined) return
-
-    listeners.add(setData)
-
-    // Fetch immediately if cache is stale (older than 5s)
     if (Date.now() - lastFetch > 5_000) {
-      refreshUnreadCounts()
-    } else {
-      setData(cachedData)
+      void refreshUnreadCounts()
     }
-
     const interval = setInterval(refreshUnreadCounts, pollInterval)
-    return () => {
-      listeners.delete(setData)
-      clearInterval(interval)
-    }
+    return () => clearInterval(interval)
   }, [pollInterval])
 
   return { data, refresh: refreshUnreadCounts }

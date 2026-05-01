@@ -1,5 +1,8 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import crypto from 'node:crypto'
+import logger from '@adonisjs/core/services/logger'
+import { errorMessage } from '#utils/error'
+import { isRecord } from '#utils/type_guards'
 import User from '#models/user'
 import OAuthProvider from '#models/oauth_provider'
 import type { ProviderName } from '#models/oauth_provider'
@@ -11,6 +14,63 @@ import {
   verifyVkMiniAppLaunchFromRawSearch,
   verifyVkMiniAppLaunchSignature,
 } from '#utils/vk_mini_app_launch'
+
+// ── Helpers: parse & validate external API JSON responses ─────────────────────
+
+type VkTokenResponse = {
+  access_token: string
+  user_id: string
+  email: string | null
+  refresh_token: string | null
+  expires_in: number | null
+}
+
+function parseVkTokenResponse(raw: unknown): VkTokenResponse {
+  if (!isRecord(raw) || typeof raw['access_token'] !== 'string') {
+    throw new Error('Invalid VK token response')
+  }
+  return {
+    access_token: raw['access_token'],
+    user_id: String(raw['user_id'] ?? ''),
+    email: typeof raw['email'] === 'string' ? raw['email'] : null,
+    refresh_token: typeof raw['refresh_token'] === 'string' ? raw['refresh_token'] : null,
+    expires_in: typeof raw['expires_in'] === 'number' ? raw['expires_in'] : null,
+  }
+}
+
+type VkUserInfoResponse = {
+  name: string | null
+}
+
+function parseVkUserInfoResponse(raw: unknown): VkUserInfoResponse {
+  if (!isRecord(raw) || !Array.isArray(raw['response']) || !isRecord(raw['response'][0])) {
+    return { name: null }
+  }
+  const user = raw['response'][0]
+  const first = typeof user['first_name'] === 'string' ? user['first_name'] : ''
+  const last = typeof user['last_name'] === 'string' ? user['last_name'] : ''
+  return { name: `${first} ${last}`.trim() || null }
+}
+
+type YandexUserInfoResponse = {
+  id: string
+  email: string | null
+  name: string | null
+}
+
+function parseYandexUserInfoResponse(raw: unknown): YandexUserInfoResponse {
+  if (!isRecord(raw)) throw new Error('Invalid Yandex user info response')
+  return {
+    id: String(raw['id'] ?? ''),
+    email: typeof raw['default_email'] === 'string' ? raw['default_email'] : null,
+    name:
+      typeof raw['display_name'] === 'string'
+        ? raw['display_name']
+        : typeof raw['real_name'] === 'string'
+          ? raw['real_name']
+          : null,
+  }
+}
 
 export default class OAuthController {
   /**
@@ -90,11 +150,11 @@ export default class OAuthController {
    * GET /oauth/:provider/redirect
    */
   public async redirect({ params, response }: HttpContext) {
-    const provider = params.provider as ProviderName
-
-    if (!['vk', 'yandex'].includes(provider)) {
+    const raw = String(params.provider)
+    if (raw !== 'vk' && raw !== 'yandex') {
       return response.badRequest({ message: 'Invalid OAuth provider' })
     }
+    const provider: ProviderName = raw
 
     const config = this.getProviderConfig(provider)
 
@@ -116,11 +176,11 @@ export default class OAuthController {
    * Новые пользователи с `role: null` проходят выбор роли на фронте (/select-role), не через VK Mini App.
    */
   public async callback({ params, response, request }: HttpContext) {
-    const provider = params.provider as ProviderName
-
-    if (!['vk', 'yandex'].includes(provider)) {
+    const rawProvider = String(params.provider)
+    if (rawProvider !== 'vk' && rawProvider !== 'yandex') {
       return response.badRequest({ message: 'Invalid OAuth provider' })
     }
+    const provider: ProviderName = rawProvider
 
     const appUrl = env.get('APP_URL') || 'http://localhost:5173'
 
@@ -163,7 +223,7 @@ export default class OAuthController {
         throw new Error('Failed to exchange code for token')
       }
 
-      const tokenData: any = await tokenResponse.json()
+      const tokenData = parseVkTokenResponse(await tokenResponse.json())
       const accessToken = tokenData.access_token
 
       // Get user info from provider
@@ -171,29 +231,17 @@ export default class OAuthController {
       let name: string | null = null
 
       if (provider === 'vk') {
-        // VK returns email in token response
-        email = tokenData.email || null
-
-        // Get user info for name
+        email = tokenData.email
         const userInfoUrl = `${config.userInfoUrl}?access_token=${accessToken}&v=5.131&fields=first_name,last_name`
         const userInfoResponse = await fetch(userInfoUrl)
-        const userInfoData: any = await userInfoResponse.json()
-
-        if (userInfoData.response && userInfoData.response[0]) {
-          const user = userInfoData.response[0]
-          name = `${user.first_name} ${user.last_name}`
-        }
+        name = parseVkUserInfoResponse(await userInfoResponse.json()).name
       } else if (provider === 'yandex') {
-        // Yandex user info
         const userInfoResponse = await fetch(config.userInfoUrl, {
-          headers: {
-            Authorization: `OAuth ${accessToken}`,
-          },
+          headers: { Authorization: `OAuth ${accessToken}` },
         })
-        const userInfoData: any = await userInfoResponse.json()
-
-        email = userInfoData.default_email || null
-        name = userInfoData.display_name || userInfoData.real_name || null
+        const yandexInfo = parseYandexUserInfoResponse(await userInfoResponse.json())
+        email = yandexInfo.email
+        name = yandexInfo.name
       }
 
       // Check if email is provided
@@ -216,23 +264,24 @@ export default class OAuthController {
 
         // Update OAuth tokens
         oauthProvider.accessToken = accessToken
-        oauthProvider.refreshToken = tokenData.refresh_token || null
+        oauthProvider.refreshToken = tokenData.refresh_token
         oauthProvider.expiresAt = tokenData.expires_in
           ? DateTime.now().plus({ seconds: tokenData.expires_in })
           : null
         await oauthProvider.save()
       } else {
         // Step 2: Check if user with this email exists
-        user = (await User.findBy('email', email)) as User
+        const existingUser = await User.findBy('email', email)
 
-        if (user) {
+        if (existingUser) {
+          user = existingUser
           // Email exists - link OAuth to existing account
           oauthProvider = await OAuthProvider.create({
             userId: user.id,
             provider,
             providerUserId: tokenData.user_id || email,
             accessToken,
-            refreshToken: tokenData.refresh_token || null,
+            refreshToken: tokenData.refresh_token,
             expiresAt: tokenData.expires_in
               ? DateTime.now().plus({ seconds: tokenData.expires_in })
               : null,
@@ -242,8 +291,8 @@ export default class OAuthController {
           user = await User.create({
             email,
             fullName: name || email,
-            password: null, // OAuth users don't have password
-            role: null as any, // Will be set on role selection screen
+            password: null,
+            role: null,
           })
 
           // Create OAuth link
@@ -272,7 +321,7 @@ export default class OAuthController {
       // User has role - redirect to app
       return response.redirect().status(302).toPath(`/auth/callback`)
     } catch (error) {
-      console.error('OAuth callback error:', error)
+      logger.error({ provider, err: errorMessage(error) }, 'oauth: callback error')
       return response
         .redirect()
         .status(302)
@@ -297,13 +346,7 @@ export default class OAuthController {
       // Get user info from VK API
       const userInfoUrl = `https://api.vk.com/method/users.get?access_token=${accessToken}&v=5.131&fields=first_name,last_name`
       const userInfoResponse = await fetch(userInfoUrl)
-      const userInfoData: any = await userInfoResponse.json()
-
-      let name: string | null = null
-      if (userInfoData.response?.[0]) {
-        const u = userInfoData.response[0]
-        name = `${u.first_name} ${u.last_name}`.trim()
-      }
+      const name = parseVkUserInfoResponse(await userInfoResponse.json()).name
 
       const providerUserId = String(userId)
       const user = await this.linkOrCreateVkUser(providerUserId, name, accessToken)
@@ -328,7 +371,7 @@ export default class OAuthController {
         },
       })
     } catch (error) {
-      console.error('VK SDK login error:', error)
+      logger.error({ err: errorMessage(error) }, 'oauth: vk sdk login error')
       return response.internalServerError({ message: 'Ошибка авторизации через VK' })
     }
   }
@@ -366,17 +409,17 @@ export default class OAuthController {
 
     if (!signatureOk) {
       const secretHash = crypto.createHash('sha256').update(secret).digest('hex').slice(0, 12)
-      console.warn(
-        `[vk-mini-app-login] invalid-signature ${JSON.stringify({
+      logger.warn(
+        {
           vkAppId: launchParams.vk_app_id ?? null,
           vkUserId: launchParams.vk_user_id ?? null,
           secretLen: secret.length,
           secretHash12: secretHash,
           sign: launchParams.sign ?? null,
-          launchParams,
           launchParamKeys: Object.keys(launchParams).sort(),
           launchQuery: rawLaunchQuery || null,
-        })}`
+        },
+        'vk-mini-app-login: invalid signature'
       )
       return response.forbidden({ message: 'Invalid launch signature' })
     }
@@ -422,7 +465,7 @@ export default class OAuthController {
         },
       })
     } catch (error) {
-      console.error('VK Mini App login error:', error)
+      logger.error({ err: errorMessage(error) }, 'oauth: vk mini app login error')
       return response.internalServerError({ message: 'Ошибка входа через VK Mini App' })
     }
   }
@@ -444,11 +487,11 @@ export default class OAuthController {
       const userInfoResponse = await fetch('https://login.yandex.ru/info', {
         headers: { Authorization: `OAuth ${accessToken}` },
       })
-      const userInfo: any = await userInfoResponse.json()
+      const userInfo = parseYandexUserInfoResponse(await userInfoResponse.json())
 
-      const email: string | null = userInfo.default_email || null
-      const name: string | null = userInfo.display_name || userInfo.real_name || null
-      const providerUserId = String(userInfo.id)
+      const email = userInfo.email
+      const name = userInfo.name
+      const providerUserId = userInfo.id
 
       if (!email) {
         return response.badRequest({ message: 'Яндекс не предоставил email' })
@@ -484,7 +527,7 @@ export default class OAuthController {
             email,
             fullName: name || email,
             password: null,
-            role: null as any,
+            role: null,
           })
           oauthProvider = await OAuthProvider.create({
             userId: user.id,
@@ -517,7 +560,7 @@ export default class OAuthController {
         },
       })
     } catch (error) {
-      console.error('Yandex SDK login error:', error)
+      logger.error({ err: errorMessage(error) }, 'oauth: yandex sdk login error')
       return response.internalServerError({ message: 'Ошибка авторизации через Яндекс' })
     }
   }

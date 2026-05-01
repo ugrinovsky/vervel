@@ -7,9 +7,8 @@ import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import FormField from '@/components/FormField';
 import WorkoutTypeTabs, { type WorkoutType } from '@/components/WorkoutTypeTabs';
-import WorkoutExercisesEditor, {
-  normalizeExercisesForType,
-} from '@/components/WorkoutExercisesEditor/WorkoutExercisesEditor';
+import WorkoutExercisesEditor from '@/components/WorkoutExercisesEditor/WorkoutExercisesEditor';
+import { normalizeExercisesForType } from '@/components/WorkoutExercisesEditor/normalizeForWorkoutType';
 import { trainerApi, type WorkoutTemplate, type ExerciseData } from '@/api/trainer';
 import { useNavigate } from 'react-router';
 import { PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
@@ -27,6 +26,7 @@ import {
   convertExercisesForType,
 } from '@/components/WorkoutFormBase/workoutTypeConversion';
 import type {
+  AiParsedWorkoutExercisePayload,
   AiRecognizedWorkoutResult,
   AiTextParseUiPayload,
   AiWorkoutResult,
@@ -114,7 +114,7 @@ export default function TrainerTemplatesScreen() {
 
   const handleAiTextParsed = (payload: AiTextParseUiPayload) => {
     const nameMap = new Map(payload.previewItems.map((item) => [item.exerciseId, item.name]));
-    const baseConverted: ExerciseData[] = payload.exercises.map((ex: any) => ({
+    const baseConverted: ExerciseData[] = payload.exercises.map((ex: AiParsedWorkoutExercisePayload) => ({
       exerciseId: ex.exerciseId,
       name:
         nameMap.get(ex.exerciseId) ?? exerciseIdForDisplay(String(ex.exerciseId)),
@@ -122,7 +122,7 @@ export default function TrainerTemplatesScreen() {
       zoneWeights:
         ex.zoneWeights && typeof ex.zoneWeights === 'object' ? ex.zoneWeights : undefined,
       bodyweight: ex.bodyweight,
-      setsDetail: ex.sets?.map((s: any) => ({ reps: s.reps ?? 10, weight: s.weight })) ?? [],
+      setsDetail: ex.sets?.map((s) => ({ reps: s.reps ?? 10, weight: s.weight })) ?? [],
       sets: ex.sets?.length ?? 3,
       blockId: ex.blockId,
       duration: ex.sets?.[0]?.time ? Math.round(Number(ex.sets?.[0]?.time ?? 0) / 60) : undefined,

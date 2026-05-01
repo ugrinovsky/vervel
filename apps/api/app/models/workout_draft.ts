@@ -2,6 +2,7 @@ import { DateTime } from 'luxon'
 import { BaseModel, column, belongsTo } from '@adonisjs/lucid/orm'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
+import type { JsonObject } from '#utils/type_guards'
 
 export default class WorkoutDraft extends BaseModel {
   @column({ isPrimary: true })
@@ -14,7 +15,7 @@ export default class WorkoutDraft extends BaseModel {
     prepare: (value) => JSON.stringify(value),
     consume: (value) => (typeof value === 'string' ? JSON.parse(value) : value),
   })
-  declare payload: Record<string, any>
+  declare payload: JsonObject
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

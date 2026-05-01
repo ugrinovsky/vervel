@@ -10,6 +10,10 @@ export interface WorkoutTimelineEntry {
   hasMissingWeights?: boolean;
   /** Прошлая тренировка без RPE (для типов, где оценка учитывается; не crossfit). */
   hasMissingRpe?: boolean;
+  /** Длительность в минутах, если бэкенд отдаёт. */
+  duration?: number;
+  /** Список упражнений с бэкенда (для подсчёта «упражнений в день»). */
+  exercises?: readonly unknown[];
 }
 
 export interface WorkoutStats {
@@ -20,4 +24,6 @@ export interface WorkoutStats {
   zones: Record<string, number>; // нагрузка по зонам, ключи как в ZONE_LABELS
   timeline: WorkoutTimelineEntry[]; // история тренировок
   period?: 'week' | 'month' | 'year' | 'custom';
+  /** Серия дней, если бэкенд отдаёт в этом ответе. */
+  streak?: number;
 }

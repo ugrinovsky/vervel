@@ -1,4 +1,5 @@
 import type { KlipyKind, KlipySearchItem } from '@/api/chat';
+import { isRecord } from '@/utils/typeGuards';
 
 const STORAGE_PREFIX = 'vervel:klipy_recent:';
 const MAX_ITEMS = 30;
@@ -15,8 +16,8 @@ function isTrustedKlipyMediaUrl(urlStr: string): boolean {
 }
 
 function parseStored(raw: unknown): KlipySearchItem | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const o = raw as Record<string, unknown>;
+  if (!isRecord(raw)) return null;
+  const o = raw;
   const id = typeof o.id === 'string' ? o.id : '';
   const previewUrl = typeof o.previewUrl === 'string' ? o.previewUrl : '';
   const url = typeof o.url === 'string' ? o.url : '';

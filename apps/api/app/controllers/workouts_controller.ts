@@ -1,6 +1,6 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
-import Workout from '#models/workout'
+import Workout, { type WorkoutExercise } from '#models/workout'
 import WorkoutDraft from '#models/workout_draft'
 import { WorkoutCalculator } from '#services/WorkoutCalculator'
 import { StreakService } from '#services/StreakService'
@@ -166,22 +166,22 @@ export default class WorkoutsController {
       if (rel && typeof rel === 'object') {
         if (aliases.some((a) => (Number(rel[a]) || 0) > 0)) return true
       }
-      const abs = (w as any).zonesLoadAbs as Record<string, number> | null | undefined
+      const abs = w.zonesLoadAbs as Record<string, number> | null | undefined
       if (abs && typeof abs === 'object') {
         if (aliases.some((a) => (Number(abs[a]) || 0) > 0)) return true
       }
       return false
     }
 
-    const exerciseTouchesZone = (ex: Record<string, unknown>): boolean => {
-      const zs = Array.isArray(ex.zones) ? ex.zones : []
+    const exerciseTouchesZone = (ex: WorkoutExercise): boolean => {
+      const zs = ex.zones ?? []
       for (const z of zs) {
-        if (aliases.includes(String(z))) return true
+        if (aliases.includes(z)) return true
       }
       const zw = ex.zoneWeights
       if (zw !== null && zw !== undefined && typeof zw === 'object' && !Array.isArray(zw)) {
         for (const a of aliases) {
-          const v = Number((zw as Record<string, unknown>)[a])
+          const v = Number(zw[a])
           if (Number.isFinite(v) && v > 0) return true
         }
       }
@@ -198,15 +198,13 @@ export default class WorkoutsController {
       .slice(0, limit)
       .map((w) => {
         const load = (w.zonesLoad as Record<string, number> | null) ?? {}
-        const abs = ((w as any).zonesLoadAbs as Record<string, number> | null) ?? {}
+        const abs = (w.zonesLoadAbs as Record<string, number> | null) ?? {}
         const zoneLoad = Math.max(
           aliases.reduce((max, alias) => Math.max(max, Number(load[alias]) || 0), 0),
           aliases.reduce((max, alias) => Math.max(max, Number(abs[alias]) || 0), 0)
         )
-        const rawEx = ((w.exercises as any[]) ?? []).filter((ex) =>
-          exerciseTouchesZone(ex as Record<string, unknown>)
-        )
-        const exercises = rawEx.map((ex: any) => ({
+        const rawEx = w.exercises.filter((ex) => exerciseTouchesZone(ex))
+        const exercises = rawEx.map((ex) => ({
           exerciseId: ex.exerciseId,
           name:
             catalogMap.get(ex.exerciseId) ??

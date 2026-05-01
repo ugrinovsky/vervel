@@ -1,29 +1,15 @@
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import type { ExerciseData } from '@/api/trainer';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
+import type { WorkoutPreviewData } from './workoutPreviewParse';
 
-export interface WorkoutPreviewData {
-  __type: 'workout_preview';
-  date: string;
-  time: string;
-  workoutType: 'crossfit' | 'bodybuilding' | 'cardio';
-  exercises: ExerciseData[];
-  notes?: string;
-  scheduledWorkoutId?: number;
-}
-
-export function parseWorkoutPreview(content: string): WorkoutPreviewData | null {
-  try {
-    const parsed = JSON.parse(content);
-    if (parsed.__type === 'workout_preview') return parsed as WorkoutPreviewData;
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-export function WorkoutPreviewCard({ data, onClick }: { data: WorkoutPreviewData; onClick?: () => void }) {
+export function WorkoutPreviewCard({
+  data,
+  onClick,
+}: {
+  data: WorkoutPreviewData;
+  onClick?: () => void;
+}) {
   const [y, m, d] = data.date.split('-').map(Number);
   const dateStr = format(new Date(y, m - 1, d), 'd MMMM', { locale: ru });
   const typeLabel = WORKOUT_TYPE_CONFIG[data.workoutType] ?? data.workoutType;

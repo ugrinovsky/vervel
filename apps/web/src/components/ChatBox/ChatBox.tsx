@@ -18,15 +18,54 @@ import { useAuth } from '@/contexts/AuthContext';
 import { checkForNewAchievements } from '@/hooks/useAchievementToast';
 import { refreshDialogs } from '@/hooks/useDialogs';
 import { useVisualViewportBottomInset } from '@/hooks/useVisualViewportBottomInset';
-import { WorkoutPreviewCard, parseWorkoutPreview } from './WorkoutPreviewCard';
-import type { WorkoutPreviewData } from './WorkoutPreviewCard';
+import { WorkoutPreviewCard } from './WorkoutPreviewCard';
+import { parseWorkoutPreview, type WorkoutPreviewData } from './workoutPreviewParse';
 import KlipyPicker from './KlipyPicker';
 import WorkoutDetailSheet from '@/screens/ActivityScreen/WorkoutDetailSheet';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
 import { workoutsApi } from '@/api/workouts';
 import { formatKlipyMessageContent, parseKlipyMessage } from '@/util/klipyMessage';
+import { isRecord } from '@/utils/typeGuards';
 
 const PAGE_SIZE = 20;
+
+function parseSseChatMessagePayload(json: string): ChatMessage | null {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(json);
+  } catch {
+    return null;
+  }
+  if (!isRecord(raw) || raw.type !== 'message') return null;
+  const data = raw.data;
+  if (!isRecord(data)) return null;
+  const id = data.id;
+  const content = data.content;
+  const senderId = data.senderId;
+  const createdAt = data.createdAt;
+  if (
+    typeof id !== 'number' ||
+    typeof content !== 'string' ||
+    typeof senderId !== 'number' ||
+    typeof createdAt !== 'string'
+  ) {
+    return null;
+  }
+  const senderRaw = data.sender;
+  if (!isRecord(senderRaw)) return null;
+  const sid = senderRaw.id;
+  if (typeof sid !== 'number') return null;
+  let fullName: string | null = null;
+  if ('fullName' in senderRaw) {
+    const fn = senderRaw.fullName;
+    if (fn === null) fullName = null;
+    else if (typeof fn === 'string') fullName = fn;
+    else return null;
+  }
+  const sender: ChatMessage['sender'] = { id: sid, fullName };
+  if (typeof senderRaw.email === 'string') sender.email = senderRaw.email;
+  return { id, content, senderId, sender, createdAt };
+}
 
 /**
  * Сообщение: `klipy:url` или `klipy:WxH:url`.
@@ -301,12 +340,12 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
 
     source.onmessage = (event) => {
       try {
-        const msg = JSON.parse(event.data) as { type: string; data: ChatMessage };
-        if (msg.type !== 'message') return;
+        const msgData = parseSseChatMessagePayload(event.data);
+        if (!msgData) return;
         setMessages((prev) => {
-          if (prev.some((m) => m.id === msg.data.id)) return prev;
-          newestIdRef.current = msg.data.id;
-          return [...prev, msg.data];
+          if (prev.some((m) => m.id === msgData.id)) return prev;
+          newestIdRef.current = msgData.id;
+          return [...prev, msgData];
         });
         chatApi.markAsRead(chatId).then(() => refreshDialogs()).catch(() => {});
         stickToBottomRef.current = true;

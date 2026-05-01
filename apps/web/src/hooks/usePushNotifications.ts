@@ -3,20 +3,30 @@ import { getVapidPublicKey, savePushSubscription } from '@/api/push'
 
 type PermissionState = 'unsupported' | 'default' | 'granted' | 'denied'
 
+function notificationPermission(): PermissionState {
+  const p = Notification.permission
+  if (p === 'default' || p === 'granted' || p === 'denied') return p
+  return 'default'
+}
+
+function permissionFromValue(p: NotificationPermission): PermissionState {
+  if (p === 'default' || p === 'granted' || p === 'denied') return p
+  return 'default'
+}
+
 function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
   const rawData = atob(base64)
-  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0))).buffer as ArrayBuffer
+  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0))).buffer
 }
 
 export function usePushNotifications() {
   const supported = typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window
 
-  const [permission, setPermission] = useState<PermissionState>(() => {
-    if (!supported) return 'unsupported'
-    return (Notification.permission as PermissionState)
-  })
+  const [permission, setPermission] = useState<PermissionState>(() =>
+    supported ? notificationPermission() : 'unsupported',
+  )
   const [loading, setLoading] = useState(false)
 
   // On mount: register SW and sync existing subscription to backend
@@ -33,7 +43,7 @@ export function usePushNotifications() {
     setLoading(true)
     try {
       const result = await Notification.requestPermission()
-      setPermission(result as PermissionState)
+      setPermission(permissionFromValue(result))
       if (result !== 'granted') return
       await syncSubscription()
     } finally {

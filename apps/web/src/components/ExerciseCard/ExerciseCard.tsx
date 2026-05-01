@@ -1,6 +1,6 @@
 import type { Exercise, ExerciseCategory } from '@/types/Exercise';
 import { getZoneLabel } from '@/util/zones';
-import { CATEGORY_LABELS } from '@/components/ExerciseFilterBar/ExerciseFilterBar';
+import { CATEGORY_LABELS } from '@/components/ExerciseFilterBar/exerciseFilterConstants';
 import { useImageLoad } from '@/hooks/useImageLoad';
 
 /* ------------------------------------------------------------------ */

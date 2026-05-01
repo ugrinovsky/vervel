@@ -112,14 +112,18 @@ export default class FreeExerciseSeeder extends BaseSeeder {
           intensity: INTENSITY_BY_LEVEL[ex.level] ?? 0.6,
         }
       })
-      .filter(Boolean) as {
-      id: string
-      title: string
-      category: Exercise['category']
-      keywords: string[]
-      zones: string[]
-      intensity: number
-    }[]
+      .filter(
+        (
+          ex
+        ): ex is {
+          id: string
+          title: string
+          category: Exercise['category']
+          keywords: string[]
+          zones: string[]
+          intensity: number
+        } => ex !== null
+      )
 
     // Вставляем батчами по 100 чтобы не упереться в лимиты SQL
     const BATCH = 100

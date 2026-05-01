@@ -13,7 +13,7 @@ ThemeController.initAutoListener();
 
 // Disable pinch-to-zoom (iOS Safari ignores viewport user-scalable=no since iOS 10)
 document.addEventListener('touchmove', (e) => {
-  if ((e as TouchEvent).touches.length > 1) e.preventDefault();
+  if (e instanceof TouchEvent && e.touches.length > 1) e.preventDefault();
 }, { passive: false });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

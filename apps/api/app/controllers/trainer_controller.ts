@@ -332,7 +332,7 @@ export default class TrainerController {
       data: groups.map((g) => ({
         id: g.id,
         name: g.name,
-        athleteCount: Number((g.$extras as any).athleteCount || 0),
+        athleteCount: Number(g.$extras.athleteCount || 0),
         createdAt: g.createdAt,
       })),
     })
@@ -516,9 +516,8 @@ export default class TrainerController {
    */
   async getGroupLeaderboard({ auth, params, request, response }: HttpContext) {
     const trainer = auth.user!
-    const period = [7, 30].includes(Number(request.input('period', 30)))
-      ? (Number(request.input('period', 30)) as 7 | 30)
-      : 30
+    const periodRaw = Number(request.input('period', 30))
+    const period: 7 | 30 = periodRaw === 7 ? 7 : 30
 
     const group = await TrainerGroup.query()
       .where('id', params.id)

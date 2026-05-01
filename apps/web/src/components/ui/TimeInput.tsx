@@ -1,8 +1,11 @@
 import { PatternFormat } from 'react-number-format';
 
+/** Минимальная форма события — PatternFormat не отдаёт нативный ChangeEvent. */
+export type TimeInputChange = { target: { value: string } };
+
 interface TimeInputProps {
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (e: TimeInputChange) => void;
   className?: string;
 }
 
@@ -15,9 +18,7 @@ export default function TimeInput({ value, onChange, className = '' }: TimeInput
   const handleValueChange = (v: { formattedValue: string }) => {
     const nextValue = v.formattedValue;
     const output = nextValue.length === 5 && isTime(nextValue) ? nextValue : nextValue;
-    onChange({
-      target: { value: output } as unknown as EventTarget,
-    } as React.ChangeEvent<HTMLInputElement>);
+    onChange({ target: { value: output } });
   };
 
   return (
@@ -30,9 +31,7 @@ export default function TimeInput({ value, onChange, className = '' }: TimeInput
       onValueChange={handleValueChange}
       onBlur={(e) => {
         if (!isTime(e.currentTarget.value)) {
-          onChange({
-            target: { value } as unknown as EventTarget,
-          } as React.ChangeEvent<HTMLInputElement>);
+          onChange({ target: { value } });
         }
       }}
     />

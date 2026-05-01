@@ -136,8 +136,8 @@ export async function shareCanvas(canvas: HTMLCanvasElement): Promise<void> {
     try {
       await navigator.share({ files: [file], title: 'Vervel' });
       return;
-    } catch (err: any) {
-      if (err?.name === 'AbortError') return;
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
     }
   }
   printBlob(blob);

@@ -1,8 +1,28 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import vine from '@vinejs/vine'
 import db from '@adonisjs/lucid/services/db'
+import logger from '@adonisjs/core/services/logger'
 import env from '#start/env'
 import User from '#models/user'
+import { isRecord } from '#utils/type_guards'
+
+interface YookassaPayment {
+  id: string
+  status: string
+  confirmation: { confirmation_url: string }
+}
+
+function parseYookassaPayment(raw: unknown): YookassaPayment {
+  if (!isRecord(raw)) throw new Error('Invalid YooKassa payment response')
+  const conf = isRecord(raw.confirmation) ? raw.confirmation : {}
+  return {
+    id: typeof raw.id === 'string' ? raw.id : '',
+    status: typeof raw.status === 'string' ? raw.status : '',
+    confirmation: {
+      confirmation_url: typeof conf.confirmation_url === 'string' ? conf.confirmation_url : '',
+    },
+  }
+}
 
 const YOOKASSA_API = 'https://api.yookassa.ru/v3/payments'
 
@@ -75,21 +95,17 @@ export default class PaymentsController {
         },
         body: JSON.stringify(yookassaBody),
       })
-    } catch (err: any) {
+    } catch (err) {
       return response.internalServerError({ message: 'Ошибка подключения к платёжному сервису' })
     }
 
     if (!yookassaRes.ok) {
       const errText = await yookassaRes.text()
-      console.error('YooKassa error:', yookassaRes.status, errText)
+      logger.error({ status: yookassaRes.status, body: errText }, 'yookassa: create payment failed')
       return response.internalServerError({ message: 'Ошибка создания платежа' })
     }
 
-    const payment = (await yookassaRes.json()) as {
-      id: string
-      status: string
-      confirmation: { confirmation_url: string }
-    }
+    const payment = parseYookassaPayment(await yookassaRes.json())
 
     // Save payment record to DB
     await db.table('payments').insert({
@@ -116,7 +132,7 @@ export default class PaymentsController {
     if (!skipIpCheck) {
       const ip = request.ip()
       if (!isYookassaIp(ip)) {
-        console.warn(`Webhook from unknown IP: ${ip}`)
+        logger.warn({ ip }, 'yookassa: webhook from unknown ip')
         return response.forbidden({ message: 'Forbidden' })
       }
     }
@@ -148,7 +164,7 @@ export default class PaymentsController {
 
       if (!paymentRow) {
         // Unknown payment — log and ignore
-        console.warn('Webhook for unknown payment:', yookassaPaymentId)
+        logger.warn({ yookassaPaymentId }, 'yookassa: webhook for unknown payment')
         return response.ok({})
       }
 

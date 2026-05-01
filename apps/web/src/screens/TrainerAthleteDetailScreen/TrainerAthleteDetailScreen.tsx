@@ -30,6 +30,15 @@ type Tab = 'analytics' | 'activity' | 'avatar';
 const VOLUME_HIGH = 15000;
 const VOLUME_MEDIUM = 10000;
 
+function timelineTypeToCalendarWorkoutType(type: string | undefined): DayData['workoutType'] | undefined {
+  if (!type) return undefined;
+  const t = type.toLowerCase();
+  if (t === 'cardio') return 'cardio';
+  if (t === 'crossfit' || t === 'wod') return 'crossfit';
+  if (t === 'rest') return 'rest';
+  return 'strength';
+}
+
 function getLoadLevel(volume?: number, intensity?: number): DayData['load'] {
   if (volume && volume > 0) {
     if (volume > VOLUME_HIGH) return 'high';
@@ -129,7 +138,7 @@ export default function TrainerAthleteDetailScreen() {
       return {
         date,
         load: getLoadLevel(w?.volume, w?.intensity),
-        workoutType: w?.type as any,
+        workoutType: timelineTypeToCalendarWorkoutType(w?.type),
         intensity: w?.intensity,
         fromTrainer: true,
       };
@@ -154,7 +163,7 @@ export default function TrainerAthleteDetailScreen() {
       avgVolume: Math.round(totalVolume / count),
       avgDuration: 60,
       totalCalories: tl.reduce((s, w) => s + Math.round((w.volume || 0) * 0.05), 0),
-      streak: (monthStats as any)?.streak || 0,
+      streak: monthStats?.streak ?? 0,
     };
   }, [trainerTimeline, monthStats]);
 

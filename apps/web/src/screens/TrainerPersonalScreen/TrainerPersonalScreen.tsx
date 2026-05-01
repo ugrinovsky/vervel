@@ -60,7 +60,11 @@ export default function TrainerPersonalScreen() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => setCropSrc(ev.target?.result as string);
+    reader.onload = (ev) => {
+      const r = ev.target?.result;
+      if (typeof r !== 'string') return;
+      setCropSrc(r);
+    };
     reader.readAsDataURL(file);
     e.target.value = '';
   };

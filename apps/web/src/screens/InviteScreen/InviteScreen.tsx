@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getApiErrorMessage } from '@/utils/apiError';
 import { useParams, useNavigate, Link } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -44,9 +45,8 @@ export default function InviteScreen() {
       setAccepted(true);
       toast.success('Вы в команде тренера!');
       setTimeout(() => navigate('/my-team'), 1500);
-    } catch (err: any) {
-      const msg = err?.response?.data?.message ?? 'Не удалось принять приглашение';
-      toast.error(msg);
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Не удалось принять приглашение'));
     } finally {
       setAccepting(false);
     }

@@ -34,7 +34,7 @@ export default class AchievementService {
     let workoutCount = 0
     if (unearnedTypes.has('total_workouts')) {
       const result = await Workout.query().where('userId', userId).count('* as total')
-      workoutCount = Number((result[0] as any).$extras.total ?? 0)
+      workoutCount = Number(result[0].$extras.total ?? 0)
     }
 
     let aiChatCount = 0
@@ -44,13 +44,13 @@ export default class AchievementService {
         .where('user_id', userId)
         .where('description', 'like', 'AI-чат%')
         .count('* as total')
-      aiChatCount = Number((result[0] as any).total ?? 0)
+      aiChatCount = Number(String(result[0]?.total ?? 0))
     }
 
     let groupsJoined = 0
     if (unearnedTypes.has('groups_joined')) {
       const result = await db.from('group_athletes').where('athlete_id', userId).count('* as total')
-      groupsJoined = Number((result[0] as any).total ?? 0)
+      groupsJoined = Number(String(result[0]?.total ?? 0))
     }
 
     let trainersConnected = 0
@@ -59,7 +59,7 @@ export default class AchievementService {
         .where('athleteId', userId)
         .where('status', 'active')
         .count('* as total')
-      trainersConnected = Number((result[0] as any).$extras.total ?? 0)
+      trainersConnected = Number(result[0].$extras.total ?? 0)
     }
 
     let trainerMessages = 0
@@ -70,7 +70,7 @@ export default class AchievementService {
         .where('messages.sender_id', userId)
         .where('chats.type', 'personal')
         .count('messages.id as total')
-      trainerMessages = Number((result[0] as any).total ?? 0)
+      trainerMessages = Number(String(result[0]?.total ?? 0))
     }
 
     let personalRecords = 0

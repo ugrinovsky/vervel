@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { SparklesIcon } from '@heroicons/react/24/outline';
+import { getApiErrorData, getApiErrorMessage } from '@/utils/apiError';
 import { motion, AnimatePresence } from 'framer-motion';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import AiLoadingView from '@/components/ui/AiLoadingView';
@@ -49,10 +50,10 @@ export default function AiWorkoutGenerator({ onResult, triggerClassName, trigger
       // Refresh balance after successful charge
       aiApi.getBalance().then((r) => setBalance(r.data.balance)).catch(() => {});
       handleClose();
-    } catch (err: any) {
-      const data = err?.response?.data;
-      if (data?.balance !== undefined) setBalance(data.balance);
-      setError(data?.message ?? 'Не удалось сгенерировать тренировку');
+    } catch (err: unknown) {
+      const data = getApiErrorData(err);
+      if (typeof data?.balance === 'number') setBalance(data.balance);
+      setError(getApiErrorMessage(err, 'Не удалось сгенерировать тренировку'));
     } finally {
       setLoading(false);
     }

@@ -17,6 +17,7 @@ export interface RegisterDTO {
 }
 
 export interface AuthResponse {
+  upgraded?: boolean;
   user: {
     id: number;
     email: string;

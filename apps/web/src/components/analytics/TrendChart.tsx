@@ -13,6 +13,7 @@ import {
 import { WorkoutStats } from '@/types/Analytics';
 import { formatVolume } from '@/constants/AnalyticsConstants';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
+import type { RechartsTooltipContentProps, RechartsTooltipPayloadEntry } from './rechartsTooltip';
 
 interface Props {
   period: 'week' | 'month' | 'year';
@@ -28,23 +29,26 @@ function formatDate(iso: string, period: string) {
 }
 
 
-function CustomTooltip({ active, payload, label }: any) {
+function CustomTooltip({ active, payload, label }: RechartsTooltipContentProps) {
   if (!active || !payload?.length) return null;
-  const vol = payload.find((p: any) => p.dataKey === 'volume');
-  const int = payload.find((p: any) => p.dataKey === 'intensity');
+  const vol = payload.find((p: RechartsTooltipPayloadEntry) => p.dataKey === 'volume');
+  const int = payload.find((p: RechartsTooltipPayloadEntry) => p.dataKey === 'intensity');
   return (
     <div className="bg-gray-900/95 border border-white/10 rounded-xl px-3 py-2.5 text-xs shadow-2xl">
       <p className="text-white/50 mb-1.5">{label}</p>
-      {vol && <p style={{ color: vol.fill ?? 'var(--color_primary_icon)' }}>Объём: {formatVolume(vol.value)}</p>}
+      {vol && (
+        <p style={{ color: vol.fill ?? 'var(--color_primary_icon)' }}>
+          Объём: {formatVolume(Number(vol.value ?? 0))}
+        </p>
+      )}
       {int && <p style={{ color: int.stroke }}>Интенсивность: {int.value}%</p>}
     </div>
   );
 }
 
 export default function TrendChart({ period, data }: Props) {
-  const timeline = data.timeline ?? [];
-
   const chartData = useMemo(() => {
+    const timeline = data.timeline ?? [];
     if (!timeline.length) return [];
 
     if (period === 'year') {
@@ -74,7 +78,7 @@ export default function TrendChart({ period, data }: Props) {
       volume: t.volume ?? 0,
       intensity: Math.round((t.intensity ?? 0) * 100),
     }));
-  }, [timeline, period]);
+  }, [data, period]);
 
   const maxVol = Math.max(...chartData.map((d) => d.volume), 1);
 

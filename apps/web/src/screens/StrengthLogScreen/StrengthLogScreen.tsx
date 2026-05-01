@@ -43,6 +43,8 @@ import { useBalance } from '@/contexts/AuthContext';
 import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
 import type { ExerciseWithSets } from '@/types/Exercise';
 import { buildStrengthLogChartPoints, strengthLogProgressPercent } from './strengthLogChart';
+import { getApiErrorData, getApiErrorMessage } from '@/utils/apiError';
+import { isRecord } from '@/utils/typeGuards';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
 import { normalizeExerciseLabel } from '@/utils/textNormalize';
 import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
@@ -545,12 +547,24 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
       .catch(() => {});
   }, [payload]);
 
-  const entries = payload?.entries ?? [];
-  const pinnedExerciseIds = payload?.pinnedExerciseIds ?? [];
-  const suggestedPins = payload?.suggestedPins ?? [];
-  const weightedExerciseOptions = payload?.weightedExerciseOptions ?? [];
-  const standards = payload?.standards ?? [];
-  const aliases = payload?.aliases ?? [];
+  const {
+    entries,
+    pinnedExerciseIds,
+    suggestedPins,
+    weightedExerciseOptions,
+    standards,
+    aliases,
+  } = useMemo(
+    () => ({
+      entries: payload?.entries ?? [],
+      pinnedExerciseIds: payload?.pinnedExerciseIds ?? [],
+      suggestedPins: payload?.suggestedPins ?? [],
+      weightedExerciseOptions: payload?.weightedExerciseOptions ?? [],
+      standards: payload?.standards ?? [],
+      aliases: payload?.aliases ?? [],
+    }),
+    [payload],
+  );
 
   const aiSuggestCap = payload?.aiStandardLinkSuggestMaxCandidates ?? 60;
 
@@ -577,7 +591,7 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
         const full = exerciseIdForDisplay(entry.exerciseName).trim();
         const parts = full.split(' · ');
         if (parts.length >= 2) {
-          const last = parts[parts.length - 1]!;
+          const last = parts[parts.length - 1];
           if (last === 'Силовая' || last === 'Кроссфит' || last === 'Кардио') {
             return parts.slice(0, -1).join(' · ');
           }
@@ -627,18 +641,18 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
       }
     } catch (e) {
       if (isAxiosError(e) && e.response?.status === 402) {
-        const d = e.response?.data as { balance?: number; message?: string };
+        const d = getApiErrorData(e);
+        const message = d && typeof d.message === 'string' ? d.message : undefined;
+        const balance = d && typeof d.balance === 'number' ? d.balance : undefined;
         setAiSuggestError(
-          d?.message ??
-            (d?.balance != null ? `Недостаточно средств (баланс ${d.balance}₽)` : 'Недостаточно средств'),
+          message ??
+            (balance != null ? `Недостаточно средств (баланс ${balance}₽)` : 'Недостаточно средств'),
         );
       } else if (isAxiosError(e) && e.response?.status === 403) {
         setAiSuggestError('ИИ временно недоступен');
       } else {
-        const msg = isAxiosError(e)
-          ? (e.response?.data as { message?: string } | undefined)?.message
-          : undefined;
-        setAiSuggestError(typeof msg === 'string' && msg.trim() ? msg : 'Ошибка запроса');
+        const msg = getApiErrorMessage(e, '');
+        setAiSuggestError(msg.trim() ? msg : 'Ошибка запроса');
       }
       setAiSuggestPhase('error');
     }
@@ -735,21 +749,17 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
         displayLabel: label,
       });
       if (res.data?.success === false) {
-        const errBody = res.data as unknown as { message?: string };
-        toast.error(
-          typeof errBody.message === 'string' && errBody.message.trim()
-            ? errBody.message
-            : 'Не удалось сохранить',
-        );
+        const payload: unknown = res.data;
+        const message =
+          isRecord(payload) && typeof payload.message === 'string' ? payload.message : undefined;
+        toast.error(message?.trim() ? message : 'Не удалось сохранить');
         return;
       }
       toast.success('Сохранено');
       await load();
     } catch (e) {
-      const msg = isAxiosError(e)
-        ? (e.response?.data as { message?: string } | undefined)?.message
-        : undefined;
-      toast.error(typeof msg === 'string' && msg.trim() ? msg : 'Не удалось сохранить');
+      const msg = getApiErrorMessage(e, '');
+      toast.error(msg.trim() ? msg : 'Не удалось сохранить');
     } finally {
       setStandardsBusy(false);
     }

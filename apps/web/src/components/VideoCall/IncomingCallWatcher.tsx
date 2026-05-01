@@ -21,7 +21,7 @@ export default function IncomingCallWatcher() {
   const dismissedKey = (call: { id: number; updatedAt: string }) =>
     `${call.id}:${call.updatedAt}`
 
-  const isDismissed = (call: { id: number; updatedAt: string }): boolean => {
+  const isDismissed = useCallback((call: { id: number; updatedAt: string }): boolean => {
     try {
       const stored = sessionStorage.getItem('dismissedCalls')
       const keys: string[] = stored ? JSON.parse(stored) : []
@@ -29,16 +29,16 @@ export default function IncomingCallWatcher() {
     } catch {
       return false
     }
-  }
+  }, [])
 
-  const addDismissed = (call: { id: number; updatedAt: string }) => {
+  const addDismissed = useCallback((call: { id: number; updatedAt: string }) => {
     try {
       const stored = sessionStorage.getItem('dismissedCalls')
       const keys: string[] = stored ? JSON.parse(stored) : []
       if (!keys.includes(dismissedKey(call))) keys.push(dismissedKey(call))
       sessionStorage.setItem('dismissedCalls', JSON.stringify(keys))
     } catch {}
-  }
+  }, [])
 
   const showIncomingToast = useCallback((call: VideoCall) => {
     toast.custom(
@@ -60,7 +60,7 @@ export default function IncomingCallWatcher() {
       ),
       { id: TOAST_ID, duration: Infinity }
     )
-  }, [joinCall])
+  }, [joinCall, addDismissed])
 
   useEffect(() => {
     if (!pendingRing || isDismissed(pendingRing)) {
@@ -70,7 +70,7 @@ export default function IncomingCallWatcher() {
     return () => {
       toast.dismiss(TOAST_ID)
     }
-  }, [pendingRing, showIncomingToast])
+  }, [pendingRing, showIncomingToast, isDismissed])
 
   const poll = useCallback(async () => {
     try {
@@ -90,11 +90,11 @@ export default function IncomingCallWatcher() {
     } catch {
       // ignore network errors silently
     }
-  }, [])
+  }, [isDismissed])
 
   useEffect(() => {
     if (session) return
-    poll()
+    void poll()
     const id = setInterval(poll, POLL_INTERVAL)
     return () => {
       clearInterval(id)

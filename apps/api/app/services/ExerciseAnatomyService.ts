@@ -41,12 +41,12 @@ function stripMarkdownFences(raw: string): string {
 }
 
 function normalizeZones(zones: unknown): string[] {
-  const allowed = new Set(MUSCLE_ZONES as unknown as string[])
+  const allowed = new Set<string>(MUSCLE_ZONES)
   const list = Array.isArray(zones) ? zones.map((z) => String(z)) : []
   return [...new Set(list)].filter((z) => allowed.has(z))
 }
 
-function surfaceLabel(ex: AiExercise): string {
+function surfaceLabel(ex: Pick<AiExercise, 'name' | 'displayName'>): string {
   const d = ex.displayName?.trim()
   if (d) return d
   return ex.name?.trim() || ''
@@ -65,7 +65,7 @@ export class ExerciseAnatomyService {
 
     const folderId = env.get('YANDEX_FOLDER_ID')!
     const modelId = env.get('YANDEX_GPT_PARSE_MODEL', 'yandexgpt')
-    const label = surfaceLabel(exercise as AiExercise)
+    const label = surfaceLabel(exercise)
     if (!label) return null
 
     const normalized = normalizeExerciseLabel(label)
@@ -296,7 +296,7 @@ export class ExerciseAnatomyService {
       const next: AiExercise = { ...ex, zones: z }
       if (ex.zoneWeights && Object.keys(ex.zoneWeights).length > 0) {
         const wArr = distributeZoneWeights(z, ex.zoneWeights)
-        next.zoneWeights = Object.fromEntries(z.map((zone, i) => [zone, wArr[i]!]))
+        next.zoneWeights = Object.fromEntries(z.map((zone, i) => [zone, wArr[i] ?? 0]))
       }
       return next
     })

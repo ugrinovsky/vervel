@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { isAxiosError } from 'axios';
 import { useNavigate, Link } from 'react-router';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -70,13 +71,15 @@ export default function RegisterScreen() {
         ...(gender ? { gender } : {}),
         ...(refId ? { refId: Number(refId) } : {}),
       });
-      const { user, upgraded } = response.data as any;
+      const { user, upgraded } = response.data;
       login(user);
       toast.success(upgraded ? `Роль обновлена. Добро пожаловать, ${user.fullName}!` : `Добро пожаловать, ${user.fullName}!`);
       navigate(inviteToken ? `/invite/${inviteToken}` : '/home');
-    } catch (err: any) {
-      const status = err?.response?.status;
-      const message = err?.response?.data?.message;
+    } catch (err: unknown) {
+      const status = isAxiosError(err) ? err.response?.status : undefined;
+      const message = isAxiosError(err) && typeof err.response?.data?.message === 'string'
+        ? err.response.data.message
+        : undefined;
       if (status === 409 || status === 422) {
         setErrors((p) => ({ ...p, email: message || 'Недопустимый email' }));
       } else if (status === 429) {

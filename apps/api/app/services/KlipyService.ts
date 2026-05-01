@@ -1,4 +1,5 @@
 import env from '#start/env'
+import { isRecord } from '#utils/type_guards'
 
 export type KlipyKind = 'gif' | 'sticker'
 
@@ -84,12 +85,12 @@ function normalizeMediaUrl(raw: string): string | null {
 function getNestedUrl(obj: unknown, path: string[]): string | null {
   let cur: unknown = obj
   for (const key of path) {
-    if (!cur || typeof cur !== 'object') return null
-    cur = (cur as Record<string, unknown>)[key]
+    if (!isRecord(cur)) return null
+    cur = cur[key]
   }
   if (typeof cur === 'string') return normalizeMediaUrl(cur)
-  if (cur && typeof cur === 'object' && typeof (cur as KlipyFileNode).url === 'string') {
-    return normalizeMediaUrl((cur as KlipyFileNode).url!)
+  if (isRecord(cur) && typeof cur.url === 'string') {
+    return normalizeMediaUrl(cur.url)
   }
   return null
 }
@@ -97,8 +98,8 @@ function getNestedUrl(obj: unknown, path: string[]): string | null {
 function getNested(obj: unknown, path: string[]): unknown {
   let cur: unknown = obj
   for (const key of path) {
-    if (!cur || typeof cur !== 'object') return undefined
-    cur = (cur as Record<string, unknown>)[key]
+    if (!isRecord(cur)) return undefined
+    cur = cur[key]
   }
   return cur
 }
@@ -166,8 +167,8 @@ function collectMediaUrls(obj: unknown): string[] {
       for (const x of v) visit(x)
       return
     }
-    const rec = v as Record<string, unknown>
-    const u = rec.url
+    if (!isRecord(v)) return
+    const u = v.url
     if (typeof u === 'string') {
       const n = normalizeMediaUrl(u)
       if (n && !seen.has(n)) {
@@ -175,9 +176,9 @@ function collectMediaUrls(obj: unknown): string[] {
         out.push(n)
       }
     }
-    for (const k of Object.keys(rec)) {
+    for (const k of Object.keys(v)) {
       if (k === 'url') continue
-      visit(rec[k])
+      visit(v[k])
     }
   }
   visit(obj)
@@ -234,18 +235,24 @@ function coercePerPage(v: unknown): number | null {
 
 /** HTTP 200 + `result: false` — ошибка ключа/лимита; иначе легко получить «успех» с пустым массивом. */
 function assertKlipyResult(body: unknown, context: string): void {
-  if (!body || typeof body !== 'object') return
-  const b = body as Record<string, unknown>
-  if (b.result !== false) return
-  const err = b.errors
+  if (!isRecord(body)) return
+  if (body.result !== false) return
+  const err = body.errors
   let msg = context
-  if (err && typeof err === 'object' && 'message' in err) {
-    const m = (err as { message: unknown }).message
-    msg = `${context}: ${typeof m === 'string' ? m : JSON.stringify(m)}`
+  if (isRecord(err) && typeof err.message === 'string') {
+    msg = `${context}: ${err.message}`
   } else if (err !== undefined) {
     msg = `${context}: ${JSON.stringify(err)}`
   }
   throw new Error(msg)
+}
+
+function toKlipyApiItem(v: unknown): v is KlipyApiItem {
+  return isRecord(v)
+}
+
+function toKlipyApiCategory(v: unknown): v is KlipyApiCategory {
+  return isRecord(v)
 }
 
 function unwrapDataArray(body: unknown): {
@@ -253,17 +260,15 @@ function unwrapDataArray(body: unknown): {
   hasNext: boolean | null
   perPage: number | null
 } {
-  if (!body || typeof body !== 'object') return { rows: [], hasNext: null, perPage: null }
-  const b = body as Record<string, unknown>
-  let pack: unknown = b.data
+  if (!isRecord(body)) return { rows: [], hasNext: null, perPage: null }
+  const pack = body.data
   if (Array.isArray(pack)) {
-    return { rows: pack as KlipyApiItem[], hasNext: null, perPage: null }
+    return { rows: pack.filter(toKlipyApiItem), hasNext: null, perPage: null }
   }
-  if (pack && typeof pack === 'object' && 'data' in (pack as object)) {
-    const inner = pack as Record<string, unknown>
-    const rows = Array.isArray(inner.data) ? (inner.data as KlipyApiItem[]) : []
-    const hasNext = typeof inner.has_next === 'boolean' ? inner.has_next : null
-    const perPage = coercePerPage(inner.per_page)
+  if (isRecord(pack) && 'data' in pack) {
+    const rows = Array.isArray(pack.data) ? pack.data.filter(toKlipyApiItem) : []
+    const hasNext = typeof pack.has_next === 'boolean' ? pack.has_next : null
+    const perPage = coercePerPage(pack.per_page)
     return { rows, hasNext, perPage }
   }
   return { rows: [], hasNext: null, perPage: null }
@@ -300,13 +305,11 @@ function mapCategory(raw: KlipyApiCategory): KlipyCategoryDto {
 }
 
 function unwrapCategoryArray(body: unknown): KlipyApiCategory[] {
-  if (!body || typeof body !== 'object') return []
-  const b = body as Record<string, unknown>
-  let pack: unknown = b.data
-  if (Array.isArray(pack)) return pack as KlipyApiCategory[]
-  if (pack && typeof pack === 'object' && 'data' in (pack as object)) {
-    const inner = (pack as Record<string, unknown>).data
-    if (Array.isArray(inner)) return inner as KlipyApiCategory[]
+  if (!isRecord(body)) return []
+  const pack = body.data
+  if (Array.isArray(pack)) return pack.filter(toKlipyApiCategory)
+  if (isRecord(pack) && 'data' in pack) {
+    if (Array.isArray(pack.data)) return pack.data.filter(toKlipyApiCategory)
   }
   return []
 }

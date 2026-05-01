@@ -13,13 +13,9 @@ import WorkoutIntensityBar from '@/components/WorkoutIntensityBar/WorkoutIntensi
 import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
 import toast from 'react-hot-toast';
 import AccentButton from '@/components/ui/AccentButton';
+import type { AthleteWorkoutDraft } from '@/util/localStorageWorkoutDraft';
 
-interface DraftData {
-  workoutType: string;
-  exercises: any[];
-  notes: string;
-  date: string;
-}
+type DraftData = AthleteWorkoutDraft;
 
 interface DayDetailsProps {
   date: Date;

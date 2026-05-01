@@ -31,10 +31,10 @@ function formatVol(v: number) {
 }
 
 export function MetricsOverview({ stats, period }: MetricOverviewProps) {
-  const timeline = stats?.timeline ?? [];
-  const zones: Record<string, number> = stats?.zones ?? {};
-
   const computed = useMemo(() => {
+    const timeline = stats?.timeline ?? [];
+    const zones: Record<string, number> = stats?.zones ?? {};
+
     const avgIntensity = Math.round(normalizeIntensity(Number(stats?.avgIntensity) || 0));
     const weeks = ANALYTICS_PERIOD_WEEKS[period];
     const workoutsPerWeek =
@@ -137,7 +137,7 @@ export function MetricsOverview({ stats, period }: MetricOverviewProps) {
       overallScore,
       showWeightVolumeDelta: volChrono.length >= METRICS.MIN_WORKOUTS_FOR_CHANGES,
     };
-  }, [stats, timeline, zones, period]);
+  }, [stats, period]);
 
   const { overallScore } = computed;
   const overall = overallLabel(overallScore);

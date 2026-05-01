@@ -13,6 +13,7 @@ import TrainerExerciseLibraryScreen from '@/screens/TrainerExerciseLibraryScreen
 import AthleteMyTeamScreen from '@/screens/AthleteMyTeamScreen/AthleteMyTeamScreen';
 import DialogsScreen from '@/screens/DialogsScreen/DialogsScreen';
 import TrainerTeamScreen from '@/screens/TrainerTeamScreen/TrainerTeamScreen';
+import type { ComponentType, ReactNode, SVGProps } from 'react';
 import {
   ChartBarIcon,
   PlusIcon,
@@ -28,11 +29,13 @@ import {
   ChatBubbleLeftRightIcon,
 } from '@heroicons/react/24/outline';
 
+export type RouteNavIcon = ComponentType<SVGProps<SVGSVGElement>>;
+
 export interface RouteItem {
   path: string;
   label: string;
-  icon: any;
-  element?: any;
+  icon: RouteNavIcon;
+  element?: ReactNode;
   toolbarPosition?: 'left' | 'center' | 'right';
   center?: boolean;
   isButton?: boolean;

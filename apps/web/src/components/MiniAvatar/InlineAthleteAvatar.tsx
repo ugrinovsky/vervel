@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import MiniAvatar from './MiniAvatar';
 import { trainerApi } from '@/api/trainer';
-import { ZONE_NORMALIZE } from '@/components/AvatarView/AvatarView';
+import { ZONE_NORMALIZE } from '@/components/AvatarView/avatarViewZoneNormalize';
+import { intensityFromZoneState } from '@/util/zoneIntensity';
 
 interface Props {
   athleteId: number;
@@ -19,7 +20,7 @@ export default function InlineAthleteAvatar({ athleteId, size = 'lg' }: Props) {
         const intensities: Record<string, number> = {};
         for (const [name, state] of Object.entries(raw)) {
           const canonical = ZONE_NORMALIZE[name] ?? name;
-          const intensity = (state as { intensity: number }).intensity;
+          const intensity = intensityFromZoneState(state);
           if (intensities[canonical] === undefined || intensity > intensities[canonical]) {
             intensities[canonical] = intensity;
           }

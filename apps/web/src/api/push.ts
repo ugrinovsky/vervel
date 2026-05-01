@@ -6,8 +6,17 @@ export async function getVapidPublicKey(): Promise<string> {
   return res.data.publicKey
 }
 
+function parsePushKeys(raw: PushSubscriptionJSON['keys']): { p256dh: string; auth: string } | null {
+  if (raw == null || typeof raw !== 'object') return null
+  const p256dh = 'p256dh' in raw ? raw.p256dh : undefined
+  const auth = 'auth' in raw ? raw.auth : undefined
+  if (typeof p256dh !== 'string' || typeof auth !== 'string') return null
+  return { p256dh, auth }
+}
+
 export async function savePushSubscription(subscription: PushSubscriptionJSON): Promise<void> {
-  const keys = subscription.keys as { p256dh: string; auth: string }
+  const keys = parsePushKeys(subscription.keys)
+  if (!keys) return
   await privateApi.post('/push/subscribe', {
     endpoint: subscription.endpoint,
     p256dh: keys.p256dh,

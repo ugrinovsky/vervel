@@ -16,7 +16,15 @@ export default function WorkoutForm() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const prefillDate = (location.state as { date?: string } | null)?.date;
+  const locationState = location.state;
+  const prefillDate =
+    locationState !== null &&
+    typeof locationState === 'object' &&
+    !Array.isArray(locationState) &&
+    'date' in locationState &&
+    typeof locationState.date === 'string'
+      ? locationState.date
+      : undefined;
 
   const initialDate = prefillDate ? parseLocalDate(prefillDate) : undefined;
   const storageKey = user ? `workout_draft_${user.id}` : undefined;
@@ -44,8 +52,23 @@ export default function WorkoutForm() {
       toast.success('Тренировка сохранена 💪');
       checkForNewAchievements();
       navigate('/calendar', { state: { date: toDateKey(data.date) } });
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || err?.message || 'Ошибка сохранения');
+    } catch (err: unknown) {
+      const msg =
+        err !== null &&
+        typeof err === 'object' &&
+        'response' in err &&
+        err.response !== null &&
+        typeof err.response === 'object' &&
+        'data' in err.response &&
+        err.response.data !== null &&
+        typeof err.response.data === 'object' &&
+        'message' in err.response.data &&
+        typeof err.response.data.message === 'string'
+          ? err.response.data.message
+          : err instanceof Error
+            ? err.message
+            : 'Ошибка сохранения';
+      toast.error(msg);
       throw err;
     }
   };

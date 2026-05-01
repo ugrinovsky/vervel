@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CameraIcon, SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { getApiErrorData, getApiErrorMessage } from '@/utils/apiError';
 import AiLoadingView from '@/components/ui/AiLoadingView';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { aiApi, type AiRecognizedWorkoutResult } from '@/api/ai';
@@ -18,16 +19,27 @@ const ALLOWED_TYPES = [
 
 type ValidMime = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/heic';
 
+function isValidMime(s: string): s is ValidMime {
+  return (ALLOWED_TYPES as readonly string[]).includes(s);
+}
+
 function getFileMime(file: File): ValidMime {
   if (/\.heic$/i.test(file.name) || /\.heif$/i.test(file.name)) return 'image/heic';
-  const valid: ValidMime[] = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
-  return valid.includes(file.type as ValidMime) ? (file.type as ValidMime) : 'image/jpeg';
+  if (isValidMime(file.type)) return file.type;
+  return 'image/jpeg';
 }
 
 function readBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = (e) => resolve((e.target!.result as string).split(',')[1]);
+    reader.onload = (e) => {
+      const r = e.target?.result;
+      if (typeof r !== 'string') {
+        reject(new Error('FileReader failed'));
+        return;
+      }
+      resolve(r.split(',')[1] ?? r);
+    };
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
@@ -66,8 +78,8 @@ export default function AiWorkoutRecognizer({ onResult, triggerClassName, trigge
     setError(null);
 
     const mimeOk =
-      ALLOWED_TYPES.includes(file.type as (typeof ALLOWED_TYPES)[number]) ||
       file.type === '' ||
+      (ALLOWED_TYPES as readonly string[]).includes(file.type) ||
       /\.(jpe?g|png|heic|heif|webp)$/i.test(file.name);
     if (!mimeOk) {
       setError('Поддерживаются JPG, PNG, HEIC, WebP');
@@ -99,10 +111,10 @@ export default function AiWorkoutRecognizer({ onResult, triggerClassName, trigge
         .then((r) => setBalance(r.data.balance))
         .catch(() => {});
       handleClose();
-    } catch (err: any) {
-      const data = err?.response?.data;
-      if (data?.balance !== undefined) setBalance(data.balance);
-      setError(data?.message ?? 'Не удалось распознать тренировку');
+    } catch (err: unknown) {
+      const data = getApiErrorData(err);
+      if (typeof data?.balance === 'number') setBalance(data.balance);
+      setError(getApiErrorMessage(err, 'Не удалось распознать тренировку'));
     } finally {
       setLoading(false);
     }

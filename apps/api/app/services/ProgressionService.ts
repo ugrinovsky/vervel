@@ -28,6 +28,32 @@ const STRENGTH_LOG_WT_SEP = '|wt:' as const
 
 type StrengthLogWorkoutType = 'bodybuilding' | 'crossfit' | 'cardio'
 
+/** Строка из exercises — только нужные поля для name map. */
+interface ExerciseRow {
+  id: string
+  title: string
+}
+
+/** Строки из user_measurements (последний вес атлета). */
+interface WeightRow {
+  user_id: number
+  weight_kg: number
+}
+
+/** Строки из user_streaks. */
+interface StreakRow {
+  user_id: number
+  current_streak: number
+}
+
+/** Строки из users для лидерборда группы. */
+interface LeaderboardUserRow {
+  id: number
+  full_name: string
+  photo_url: string | null
+  xp: number
+}
+
 function parseStrengthLogCompositeKey(composite: string): {
   baseGroupKey: string
   workoutType: StrengthLogWorkoutType | null
@@ -362,9 +388,12 @@ export class ProgressionService {
 
     // Загружаем названия упражнений
     const exerciseIds = [...currentBestMap.keys()]
-    const exercises = await db.from('exercises').whereIn('id', exerciseIds).select('id', 'title')
+    const exercises: ExerciseRow[] = await db
+      .from('exercises')
+      .whereIn('id', exerciseIds)
+      .select('id', 'title')
 
-    const nameMap = new Map<string, string>(exercises.map((e: any) => [e.id, e.title]))
+    const nameMap = new Map<string, string>(exercises.map((e) => [e.id, e.title]))
 
     const result: ExerciseProgression[] = []
 
@@ -426,37 +455,39 @@ export class ProgressionService {
     const since = DateTime.now().minus({ days: period }).toJSDate()
 
     // Загружаем всё за один батч
-    const [workouts, users, streaks, latestWeights] = await Promise.all([
-      Workout.query()
-        .whereIn('userId', athleteIds)
-        .where('date', '>=', since)
-        .whereNull('deleted_at'),
+    const workouts = await Workout.query()
+      .whereIn('userId', athleteIds)
+      .where('date', '>=', since)
+      .whereNull('deleted_at')
 
-      db.from('users').whereIn('id', athleteIds).select('id', 'full_name', 'photo_url', 'xp'),
+    const users: LeaderboardUserRow[] = await db
+      .from('users')
+      .whereIn('id', athleteIds)
+      .select('id', 'full_name', 'photo_url', 'xp')
 
-      db.from('user_streaks').whereIn('user_id', athleteIds).select('user_id', 'current_streak'),
+    const streaks: StreakRow[] = await db
+      .from('user_streaks')
+      .whereIn('user_id', athleteIds)
+      .select('user_id', 'current_streak')
 
-      // Последний вес каждого атлета
-      db
-        .from('user_measurements as um')
-        .whereIn('um.user_id', athleteIds)
-        .where('um.type', 'body_weight')
-        .whereRaw(
-          `um.logged_at = (
+    // Последний вес каждого атлета
+    const latestWeights: WeightRow[] = await db
+      .from('user_measurements as um')
+      .whereIn('um.user_id', athleteIds)
+      .where('um.type', 'body_weight')
+      .whereRaw(
+        `um.logged_at = (
             SELECT MAX(logged_at) FROM user_measurements
             WHERE user_id = um.user_id AND type = 'body_weight'
           )`
-        )
-        .select('um.user_id', 'um.value as weight_kg'),
-    ])
+      )
+      .select('um.user_id', 'um.value as weight_kg')
 
     const weightMap = new Map<number, number>(
-      latestWeights.map((r: any) => [r.user_id, Number(r.weight_kg)])
+      latestWeights.map((r) => [r.user_id, Number(r.weight_kg)])
     )
-    const streakMap = new Map<number, number>(
-      streaks.map((r: any) => [r.user_id, r.current_streak])
-    )
-    const userMap = new Map<number, any>(users.map((u: any) => [u.id, u]))
+    const streakMap = new Map<number, number>(streaks.map((r) => [r.user_id, r.current_streak]))
+    const userMap = new Map<number, LeaderboardUserRow>(users.map((u) => [u.id, u]))
 
     // Генерируем все бакеты периода (день для 7 дн, неделя для 30 дн)
     const granularity = period === 7 ? 'day' : 'week'
@@ -464,7 +495,7 @@ export class ProgressionService {
     let cursor = DateTime.now().minus({ days: period }).startOf(granularity)
     const endBucket = DateTime.now().startOf(granularity)
     while (cursor <= endBucket) {
-      buckets.push(cursor.toISODate()!)
+      buckets.push(cursor.toISODate() ?? '')
       cursor = cursor.plus(granularity === 'day' ? { days: 1 } : { weeks: 1 })
     }
 
@@ -849,7 +880,8 @@ export class ProgressionService {
     await db.transaction(async (trx) => {
       for (const group of groups) {
         group.sort((a, b) => a.id - b.id)
-        const canon = group[0]!
+        const canon = group[0]
+        if (!canon) continue
         const dups = group.slice(1)
         const catalogs = new Set(
           group.map((g) => g.catalogExerciseId).filter((c): c is string => Boolean(c?.trim()))
@@ -1325,8 +1357,11 @@ export class ProgressionService {
       .filter((id) => !id.startsWith('custom:') && !id.startsWith(STD_PREFIX))
     const titleMap = new Map<string, string>()
     if (ids.length > 0) {
-      const rows = await db.from('exercises').whereIn('id', ids).select('id', 'title')
-      for (const r of rows as { id: string; title: string }[]) {
+      const rows: ExerciseRow[] = await db
+        .from('exercises')
+        .whereIn('id', ids)
+        .select('id', 'title')
+      for (const r of rows) {
         titleMap.set(r.id, r.title)
       }
     }

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import { getApiErrorData, getApiErrorMessage } from '@/utils/apiError';
 import { motion } from 'framer-motion';
 import { SparklesIcon, PaperAirplaneIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import ModalOverlay from '@/components/ModalOverlay/ModalOverlay';
@@ -60,6 +61,7 @@ export default function AiChat({ open, onClose }: Props) {
   const sessionStartIdx = useRef(0);
   const prevScrollHeightRef = useRef(0);
   const restoringScrollRef = useRef(false);
+  const prevLengthRef = useRef(0);
 
   // Displayed slice — last `displayCount` messages
   const displayedMessages = messages.slice(-displayCount);
@@ -74,9 +76,20 @@ export default function AiChat({ open, onClose }: Props) {
     }
   }, [displayedMessages.length]);
 
-  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
     messagesEndRef.current?.scrollIntoView({ behavior });
-  };
+  }, []);
+
+  useEffect(() => {
+    if (open) return;
+    setMessages([]);
+    setDisplayCount(DISPLAY_STEP);
+    setInput('');
+    setError(null);
+    setLoading(false);
+    sessionStartIdx.current = 0;
+    prevLengthRef.current = 0;
+  }, [open]);
 
   // Expand history when scrolled to top
   const loadMoreHistory = useCallback(() => {
@@ -101,10 +114,9 @@ export default function AiChat({ open, onClose }: Props) {
     return () => observer.disconnect();
   }, [loadMoreHistory, messages.length]);
 
-  // Load history from localStorage on first open
+  // Load history from localStorage when sheet opens (messages cleared on close)
   useEffect(() => {
     if (!open || !storageKey) return;
-    if (messages.length > 0) return;
 
     const stored = localStorage.getItem(storageKey);
     const history: Message[] = stored ? JSON.parse(stored) : [];
@@ -127,7 +139,7 @@ export default function AiChat({ open, onClose }: Props) {
 
     // Scroll to bottom after loading history
     setTimeout(() => scrollToBottom('instant'), 50);
-  }, [open, storageKey]);
+  }, [open, storageKey, scrollToBottom]);
 
   // Persist history on messages change
   useEffect(() => {
@@ -136,13 +148,12 @@ export default function AiChat({ open, onClose }: Props) {
   }, [messages, storageKey]);
 
   // Scroll to bottom on new message/loading
-  const prevLengthRef = useRef(0);
   useEffect(() => {
     if (messages.length > prevLengthRef.current || loading) {
       scrollToBottom('smooth');
     }
     prevLengthRef.current = messages.length;
-  }, [messages.length, loading]);
+  }, [messages.length, loading, scrollToBottom]);
 
   const handleSend = async () => {
     const text = input.trim();
@@ -174,10 +185,10 @@ export default function AiChat({ open, onClose }: Props) {
       setMessages((prev) => [...prev, assistantMsg]);
       setBalance(res.data.balance);
       checkForNewAchievements();
-    } catch (err: any) {
-      const data = err?.response?.data;
-      if (data?.balance !== undefined) setBalance(data.balance);
-      setError(data?.message ?? 'Не удалось получить ответ');
+    } catch (err: unknown) {
+      const data = getApiErrorData(err);
+      if (typeof data?.balance === 'number') setBalance(data.balance);
+      setError(getApiErrorMessage(err, 'Не удалось получить ответ'));
       setMessages((prev) => prev.slice(0, -1));
       setInput(text);
     } finally {

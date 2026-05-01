@@ -1,4 +1,4 @@
-import { JSX } from 'react';
+import { JSX, type ReactNode } from 'react';
 import Navigation from '@/components/Navigation/Navigation';
 import { Routes, Route, Navigate, useLocation } from 'react-router';
 import { routes } from '@/constants/routes';
@@ -26,7 +26,7 @@ import IncomingCallWatcher from '@/components/VideoCall/IncomingCallWatcher';
 import 'tailwindcss';
 import './App.css';
 
-function ProtectedRoute({ children }: { children: JSX.Element }) {
+function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const location = useLocation();
 

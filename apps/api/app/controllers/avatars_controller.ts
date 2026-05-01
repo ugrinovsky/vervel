@@ -44,7 +44,7 @@ export default class AvatarsController {
             userId: user.id,
             rangeStart: startDate.toISOString(),
             workoutCount: workouts.length,
-            workoutDates: workouts.map((w) => String((w as any).date)),
+            workoutDates: workouts.map((w) => w.date.toISO() ?? ''),
             zonesKeys: Object.keys(stats.zones ?? {}),
             zones: stats.zones,
           },
@@ -55,8 +55,8 @@ export default class AvatarsController {
           success: true,
           data: {
             ...stats,
-            allTimeWorkouts: Number((allTimeRows[0] as any).$extras.total ?? 0),
-            thisWeekWorkouts: Number((thisWeekRows[0] as any).$extras.total ?? 0),
+            allTimeWorkouts: Number(allTimeRows[0].$extras.total ?? 0),
+            thisWeekWorkouts: Number(thisWeekRows[0].$extras.total ?? 0),
           },
         })
       }

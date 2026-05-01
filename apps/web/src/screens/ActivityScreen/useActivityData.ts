@@ -7,6 +7,17 @@ import type { DayData } from '@/components/ui/Calendar';
 import type { WorkoutTimelineEntry, WorkoutStats } from '@/types/Analytics';
 
 const DEFAULT_DURATION = 60;
+
+function activityNavDate(state: unknown): string | undefined {
+  if (typeof state !== 'object' || state === null || !('date' in state)) return undefined;
+  const raw = Reflect.get(state, 'date');
+  return typeof raw === 'string' ? raw : undefined;
+}
+
+function toCalendarWorkoutType(t: string | undefined): DayData['workoutType'] | undefined {
+  if (t === 'strength' || t === 'cardio' || t === 'crossfit' || t === 'rest') return t;
+  return undefined;
+}
 const CALORIES_PER_KG = 0.05;
 
 function filterWorkoutsByDate(timeline: WorkoutTimelineEntry[], dateStr: string) {
@@ -58,7 +69,7 @@ const EMPTY_DAY_STATS: DayStats = {
 
 export function useActivityData(draftDate?: string | null) {
   const location = useLocation();
-  const initialDate = (location.state as { date?: string } | null)?.date;
+  const initialDate = activityNavDate(location.state);
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(
     initialDate ? parseLocalDate(initialDate) : new Date()
@@ -68,7 +79,6 @@ export function useActivityData(draftDate?: string | null) {
   );
   const [stats, setStats] = useState<WorkoutStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refetchTrigger, setRefetchTrigger] = useState(0);
   const currentMonthRef = useRef(currentMonth);
   useEffect(() => { currentMonthRef.current = currentMonth; }, [currentMonth]);
 
@@ -90,12 +100,24 @@ export function useActivityData(draftDate?: string | null) {
     const month = currentMonth.getMonth();
     const from = toDateKey(new Date(year, month, 1));
     const to = toDateKey(new Date(year, month + 1, 0)) + 'T23:59:59';
-    if (!stats) setLoading(true);
-    workoutsApi.stats(from, to)
-      .then((res) => setStats(res.data))
-      .catch(() => setStats(null))
-      .finally(() => setLoading(false));
-  }, [currentMonth, refetchTrigger]);
+
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await workoutsApi.stats(from, to);
+        if (!cancelled) setStats(res.data);
+      } catch {
+        if (!cancelled) setStats(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentMonth]);
 
   const days: DayData[] = useMemo(() => {
     if (!stats?.timeline) return [];
@@ -113,7 +135,7 @@ export function useActivityData(draftDate?: string | null) {
       return {
         date,
         load: dayWs.length ? maxLoadLevel(dayWs.map((w) => w.loadLevel)) : 'none',
-        workoutType: first?.type as DayData['workoutType'],
+        workoutType: toCalendarWorkoutType(first?.type),
         intensity: dayWs.length ? Math.max(0, ...dayWs.map((w) => w.intensity ?? 0)) : undefined,
         fromTrainer: dayWs.some((w) => w.scheduledWorkoutId != null),
         hasDraft: draftDate === dateKey,
@@ -135,8 +157,8 @@ export function useActivityData(draftDate?: string | null) {
 
     return dayWorkouts.reduce<DayStats>(
       (acc, w) => ({
-        exercises: acc.exercises + ((w as any).exercises?.length || 1),
-        duration: acc.duration + ((w as any).duration || DEFAULT_DURATION),
+        exercises: acc.exercises + (w.exercises?.length ?? 1),
+        duration: acc.duration + (w.duration ?? DEFAULT_DURATION),
         volume: acc.volume + (w.volume || 0),
         calories: acc.calories + Math.round((w.volume || 0) * CALORIES_PER_KG),
         type: w.type || acc.type,
@@ -155,7 +177,7 @@ export function useActivityData(draftDate?: string | null) {
     const count = stats.timeline.length;
 
     const totalDuration = stats.timeline.reduce(
-      (acc, w) => acc + ((w as any).duration || DEFAULT_DURATION),
+      (acc, w) => acc + (w.duration ?? DEFAULT_DURATION),
       0,
     );
     const totalCalories = stats.timeline.reduce(
@@ -170,7 +192,7 @@ export function useActivityData(draftDate?: string | null) {
       avgVolume: Math.round(totalVolume / count),
       avgDuration: Math.round(totalDuration / count),
       totalCalories,
-      streak: (stats as any).streak || 0,
+      streak: stats.streak ?? 0,
     };
   }, [stats]);
 

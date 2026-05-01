@@ -12,6 +12,7 @@ import {
 } from '@/util/analyticsPeriodDays';
 import { parseApiDateTime, toDateKey } from '@/utils/date';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
+import type { RechartsTooltipContentProps } from './rechartsTooltip';
 import {
   BarChart,
   Bar,
@@ -46,23 +47,34 @@ const TYPE_COLORS: Record<string, string> = {
 
 
 
-function CustomTooltip({ active, payload, label }: any) {
+type WeeklyBarPayload = {
+  type?: string;
+  intensity?: number;
+  volume?: number;
+};
+
+function CustomTooltip({ active, payload, label }: RechartsTooltipContentProps) {
   if (!active || !payload?.length) return null;
-  const d = payload[0]?.payload;
+  const d = payload[0]?.payload as WeeklyBarPayload | undefined;
+  if (!d) return null;
+  const typeKey = typeof d.type === 'string' ? d.type : '';
+  const volume = Number(d.volume ?? 0);
+  const intensity = Number(d.intensity ?? 0);
   return (
     <div className="bg-gray-900/95 border border-white/10 rounded-xl px-3 py-2.5 text-xs shadow-2xl">
-      <p className="text-white font-semibold mb-1">{label}</p>
-      {d?.type && <p className="text-white/50 mb-1">{WORKOUT_TYPE_CONFIG[d.type] ?? d.type}</p>}
-      <p style={{ color: payload[0].fill }}>Интенсивность: {d?.intensity ?? 0}%</p>
-      {d?.volume > 0 && <p className="text-white/60">Объём: {formatVolume(d.volume)}</p>}
+      <p className="text-white font-semibold mb-1">{label != null ? String(label) : ''}</p>
+      {typeKey ? (
+        <p className="text-white/50 mb-1">{WORKOUT_TYPE_CONFIG[typeKey] ?? typeKey}</p>
+      ) : null}
+      <p style={{ color: payload[0].fill }}>Интенсивность: {intensity}%</p>
+      {volume > 0 && <p className="text-white/60">Объём: {formatVolume(volume)}</p>}
     </div>
   );
 }
 
 export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
-  const timeline = data?.timeline ?? [];
-
   const chartData = useMemo(() => {
+    const timeline = data?.timeline ?? [];
     if (period === 'week') {
       const start = getAnalyticsPeriodStart('week');
       const end = getAnalyticsPeriodEnd();
@@ -119,7 +131,7 @@ export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
         workouts: intensities.length,
       };
     });
-  }, [timeline, period]);
+  }, [data, period]);
 
   const summaryStats = useMemo(() => {
     const active = chartData.filter((d) => d.intensity > 0);

@@ -39,7 +39,7 @@ export class PushNotificationService {
             { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
             data
           )
-        } catch (err: any) {
+        } catch (err) {
           if (err.statusCode === 410 || err.statusCode === 404) {
             await sub.delete()
           }

@@ -20,6 +20,11 @@ interface Props<T extends string | number> {
 
 const COLS = { 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4' } as const;
 
+function gridColsForCount(n: number): keyof typeof COLS {
+  if (n === 2 || n === 3 || n === 4) return n;
+  return 2;
+}
+
 export default function ToggleGroup<T extends string | number>({
   options,
   value,
@@ -29,7 +34,7 @@ export default function ToggleGroup<T extends string | number>({
   itemPy = 'py-2',
   joined = false,
 }: Props<T>) {
-  const colClass = COLS[cols ?? (options.length as 2 | 3 | 4)] ?? 'grid-cols-2';
+  const colClass = COLS[cols ?? gridColsForCount(options.length)];
 
   if (joined) {
     return (

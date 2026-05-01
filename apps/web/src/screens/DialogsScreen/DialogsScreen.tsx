@@ -10,7 +10,7 @@ import { type DialogItem } from '@/api/chat'
 import { useActiveMode } from '@/contexts/AuthContext'
 import { useDialogs } from '@/hooks/useDialogs'
 import { SparklesIcon, UserGroupIcon } from '@heroicons/react/24/outline'
-import { parseWorkoutPreview } from '@/components/ChatBox/WorkoutPreviewCard'
+import { parseWorkoutPreview } from '@/components/ChatBox/workoutPreviewParse';
 import { isKlipyMessageContent } from '@/util/klipyMessage'
 import { formatDialogTime } from '@/utils/date'
 import SearchInput from '@/components/ui/SearchInput'
@@ -70,7 +70,7 @@ function DialogRow({ dialog, onOpen }: { dialog: DialogItem; onOpen: () => void 
 export default function DialogsScreen() {
   const { isTrainer } = useActiveMode()
   const { data: dialogs, refresh } = useDialogs(30_000)
-  const [loading, setLoading] = useState(!dialogs)
+  const loading = dialogs === null
   const [activeDialog, setActiveDialog] = useState<DialogItem | null>(null)
   const [aiChatOpen, setAiChatOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -86,12 +86,10 @@ export default function DialogsScreen() {
   })
 
   useEffect(() => {
-    if (dialogs !== null) setLoading(false)
-  }, [dialogs])
-
-  useEffect(() => {
-    if (!dialogs) refresh().finally(() => setLoading(false))
-  }, [])
+    if (!dialogs) void refresh();
+    // dialogs intentionally omitted: one-shot cold-cache sync on mount (poll hook may fill later).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only
+  }, []);
 
   // Restore active chat after page refresh
   useEffect(() => {
@@ -100,7 +98,7 @@ export default function DialogsScreen() {
     if (!savedId) return
     const found = dialogs.find((d) => d.chatId === Number(savedId))
     if (found) setActiveDialog(found)
-  }, [dialogs])
+  }, [dialogs, activeDialog])
 
   const openChat = (dialog: DialogItem) => {
     setActiveDialog(dialog)

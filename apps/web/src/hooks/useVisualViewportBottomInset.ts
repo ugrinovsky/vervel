@@ -6,19 +6,17 @@ import { useCallback, useEffect, useState } from 'react';
  * to pin fixed/absolute bottom UI (e.g. chat composer) above the keyboard.
  */
 export function useVisualViewportBottomInset(enabled: boolean) {
-  const [bottomInset, setBottomInset] = useState(0);
+  const [measuredInset, setMeasuredInset] = useState(0);
+  const bottomInset = enabled ? measuredInset : 0;
 
   const updateInset = useCallback(() => {
     if (typeof window === 'undefined' || !window.visualViewport) return;
     const vv = window.visualViewport;
-    setBottomInset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
+    setMeasuredInset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
   }, []);
 
   useEffect(() => {
-    if (!enabled) {
-      setBottomInset(0);
-      return;
-    }
+    if (!enabled) return;
     const vv = window.visualViewport;
     if (!vv) return;
     vv.addEventListener('resize', updateInset);

@@ -4,6 +4,7 @@ import { WorkoutStats } from '@/types/Analytics';
 import { normalizeIntensity } from '@/constants/AnalyticsConstants';
 import { parseApiDateTime } from '@/utils/date';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
+import type { RechartsTooltipContentProps } from './rechartsTooltip';
 
 interface Props {
   data: WorkoutStats;
@@ -20,18 +21,26 @@ const DAYS_FULL = [
   'Воскресенье',
 ];
 
-function CustomTooltip({ active, payload, label }: any) {
+type WeekdayBarPayload = {
+  fullName?: string;
+  workouts?: number;
+  avgIntensity?: number;
+};
+
+function CustomTooltip({ active, payload }: RechartsTooltipContentProps) {
   if (!active || !payload?.length) return null;
-  const d = payload[0]?.payload;
+  const d = payload[0]?.payload as WeekdayBarPayload | undefined;
+  if (!d) return null;
+  const avg = Number(d.avgIntensity ?? 0);
   return (
     <div className="bg-gray-900/95 border border-white/10 rounded-xl px-3 py-2.5 text-xs shadow-2xl">
-      <p className="text-white font-semibold mb-0.5">{d?.fullName}</p>
+      <p className="text-white font-semibold mb-0.5">{d.fullName ?? ''}</p>
       <p className="text-white/50">
-        Тренировок: <span className="text-white/80">{d?.workouts}</span>
+        Тренировок: <span className="text-white/80">{d.workouts ?? 0}</span>
       </p>
-      {d?.avgIntensity > 0 && (
+      {avg > 0 && (
         <p className="text-white/50">
-          Ср. интенсивность: <span className="text-white/80">{d.avgIntensity}%</span>
+          Ср. интенсивность: <span className="text-white/80">{avg}%</span>
         </p>
       )}
     </div>
@@ -39,9 +48,8 @@ function CustomTooltip({ active, payload, label }: any) {
 }
 
 export default function WeekdayChart({ data }: Props) {
-  const timeline = data.timeline ?? [];
-
   const weekdayData = useMemo(() => {
+    const timeline = data.timeline ?? [];
     const counts = Array(7).fill(0);
     const intensities: number[][] = Array.from({ length: 7 }, () => []);
 
@@ -64,7 +72,7 @@ export default function WeekdayChart({ data }: Props) {
         : 0,
       ratio: counts[i] / maxCount,
     }));
-  }, [timeline]);
+  }, [data]);
 
   const totalWorkouts = weekdayData.reduce((s, d) => s + d.workouts, 0);
   const favIdx = weekdayData.indexOf(

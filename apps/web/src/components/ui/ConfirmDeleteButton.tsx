@@ -37,7 +37,8 @@ export default function ConfirmDeleteButton({
   // Reset when another confirm button opens
   useEffect(() => {
     const handler = (e: Event) => {
-      if ((e as CustomEvent).detail !== id) setConfirming(false);
+      if (!(e instanceof CustomEvent)) return;
+      if (e.detail !== id) setConfirming(false);
     };
     window.addEventListener(CONFIRM_EVENT, handler);
     return () => window.removeEventListener(CONFIRM_EVENT, handler);

@@ -2,7 +2,7 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
-import type { WorkoutPreviewData } from './WorkoutPreviewCard';
+import type { WorkoutPreviewData } from './workoutPreviewParse';
 
 interface Props {
   data: WorkoutPreviewData | null;

@@ -1,5 +1,7 @@
 import type { HttpContext } from '@adonisjs/core/http'
+import logger from '@adonisjs/core/services/logger'
 import { StreakService } from '#services/StreakService'
+import { errorMessage } from '#utils/error'
 import AchievementService from '#services/AchievementService'
 
 export default class StreakController {
@@ -40,7 +42,7 @@ export default class StreakController {
         },
       })
     } catch (error) {
-      console.error('Get streak error:', error)
+      logger.error({ err: errorMessage(error) }, 'streak: get error')
       return response.internalServerError({
         success: false,
         message: 'Ошибка при получении streak',
@@ -69,7 +71,7 @@ export default class StreakController {
         })),
       })
     } catch (error) {
-      console.error('Get streak history error:', error)
+      logger.error({ err: errorMessage(error) }, 'streak: history error')
       return response.internalServerError({
         success: false,
         message: 'Ошибка при получении истории',
@@ -87,10 +89,11 @@ export default class StreakController {
       if (!['simple', 'intensive'].includes(mode)) {
         return response.badRequest({ success: false, message: 'Invalid mode' })
       }
-      await StreakService.setMode(user.id, mode as 'simple' | 'intensive')
+      const safeMode: 'simple' | 'intensive' = mode === 'intensive' ? 'intensive' : 'simple'
+      await StreakService.setMode(user.id, safeMode)
       return response.json({ success: true, data: { mode } })
     } catch (error) {
-      console.error('Set streak mode error:', error)
+      logger.error({ err: errorMessage(error) }, 'streak: set mode error')
       return response.internalServerError({ success: false, message: 'Ошибка при смене режима' })
     }
   }
@@ -108,7 +111,7 @@ export default class StreakController {
         data: achievements,
       })
     } catch (error) {
-      console.error('Get achievements error:', error)
+      logger.error({ err: errorMessage(error) }, 'streak: achievements error')
       return response.internalServerError({
         success: false,
         message: 'Ошибка при получении достижений',
@@ -125,7 +128,7 @@ export default class StreakController {
       const newlyUnlocked = await AchievementService.checkAndUnlockAchievements(user.id)
       return response.json({ success: true, data: { newlyUnlocked } })
     } catch (error) {
-      console.error('Check achievements error:', error)
+      logger.error({ err: errorMessage(error) }, 'streak: check achievements error')
       return response.internalServerError({
         success: false,
         message: 'Ошибка при проверке достижений',
@@ -155,7 +158,7 @@ export default class StreakController {
         message: 'Достижения отмечены как просмотренные',
       })
     } catch (error) {
-      console.error('Mark achievements seen error:', error)
+      logger.error({ err: errorMessage(error) }, 'streak: mark seen error')
       return response.internalServerError({
         success: false,
         message: 'Ошибка при обновлении достижений',

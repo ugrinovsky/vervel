@@ -19,7 +19,7 @@ export interface StreakHistoryItem {
     | 'streak_broken'
     | 'new_record';
   streakValue: number;
-  metadata: Record<string, any> | null;
+  metadata: Record<string, unknown> | null;
   createdAt: string;
 }
 

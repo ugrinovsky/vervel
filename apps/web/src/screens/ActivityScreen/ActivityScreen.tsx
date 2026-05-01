@@ -12,19 +12,14 @@ import AccentButton from '@/components/ui/AccentButton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMemo } from 'react';
 import { format } from 'date-fns';
+import { parseAthleteWorkoutDraft } from '@/util/localStorageWorkoutDraft';
 
 function useWorkoutDraft(userId?: number) {
   return useMemo(() => {
     if (!userId) return null;
-    try {
-      const raw = localStorage.getItem(`workout_draft_${userId}`);
-      if (!raw) return null;
-      const draft = JSON.parse(raw);
-      if (!draft.exercises?.length && !draft.notes) return null;
-      return draft as { workoutType: string; exercises: any[]; notes: string; date: string };
-    } catch {
-      return null;
-    }
+    const raw = localStorage.getItem(`workout_draft_${userId}`);
+    if (!raw) return null;
+    return parseAthleteWorkoutDraft(raw);
   }, [userId]);
 }
 

@@ -1,37 +1,19 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useState,
-  type MutableRefObject,
   type ReactNode,
 } from 'react';
-
-export const SHEET_Z_BASE = 60;
-/** Шаг между слоями; 60, 65, 70, … — без пересечения с обычными z-50 UI */
-const SHEET_Z_STEP = 5;
-const MAX_SHEETS = 40;
-
-export type SheetStackEntry = {
-  id: string;
-  closeRef: MutableRefObject<(() => void) | null>;
-};
-
-export type SheetStackContextValue = {
-  stack: readonly SheetStackEntry[];
-  /** Вызвать при open=true; вернуть cleanup при close/unmount */
-  subscribe: (id: string, closeRef: MutableRefObject<(() => void) | null>) => () => void;
-};
-
-const SheetStackContext = createContext<SheetStackContextValue | null>(null);
+import { SheetStackReactContext } from './sheet-stack-react-context';
+import type { SheetStackContextValue, SheetStackEntry } from './sheet-stack-types';
+import { MAX_SHEETS } from './sheet-stack-types';
 
 export function SheetStackProvider({ children }: { children: ReactNode }) {
   const [stack, setStack] = useState<SheetStackEntry[]>([]);
 
   const subscribe = useCallback(
-    (id: string, closeRef: MutableRefObject<(() => void) | null>) => {
+    (id: string, closeRef: SheetStackEntry['closeRef']) => {
       setStack((prev) => {
         const without = prev.filter((e) => e.id !== id);
         if (without.length >= MAX_SHEETS) {
@@ -44,10 +26,9 @@ export function SheetStackProvider({ children }: { children: ReactNode }) {
         setStack((prev) => prev.filter((e) => e.id !== id));
       };
     },
-    []
+    [],
   );
 
-  // Escape закрывает только верхний шит
   useEffect(() => {
     if (stack.length === 0) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -64,7 +45,6 @@ export function SheetStackProvider({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('keydown', onKeyDown, true);
   }, [stack]);
 
-  // Один источник блокировки скролла на всё дерево шитов
   useEffect(() => {
     if (stack.length > 0) {
       document.body.style.overflow = 'hidden';
@@ -79,17 +59,9 @@ export function SheetStackProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const value = useMemo(() => ({ stack, subscribe }), [stack, subscribe]);
+  const value = useMemo<SheetStackContextValue>(() => ({ stack, subscribe }), [stack, subscribe]);
 
-  return <SheetStackContext.Provider value={value}>{children}</SheetStackContext.Provider>;
-}
-
-export function useSheetStack(): SheetStackContextValue | null {
-  return useContext(SheetStackContext);
-}
-
-export function sheetZIndexForId(stack: readonly SheetStackEntry[], id: string): number {
-  const i = stack.findIndex((e) => e.id === id);
-  if (i < 0) return SHEET_Z_BASE;
-  return SHEET_Z_BASE + i * SHEET_Z_STEP;
+  return (
+    <SheetStackReactContext.Provider value={value}>{children}</SheetStackReactContext.Provider>
+  );
 }

@@ -29,6 +29,17 @@ import Tabs from '@/components/ui/Tabs';
 import GhostButton from '@/components/ui/GhostButton';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 import { useAuth } from '@/contexts/AuthContext';
+import { parseTrainerWorkoutDraft } from '@/util/localStorageWorkoutDraft';
+import { isRecord } from '@/utils/typeGuards';
+
+function isScheduledWorkoutDragPayload(v: unknown): v is ScheduledWorkout {
+  if (!isRecord(v)) return false;
+  if (typeof v.id !== 'number') return false;
+  if (typeof v.scheduledDate !== 'string') return false;
+  if (!isRecord(v.workoutData)) return false;
+  if (!Array.isArray(v.workoutData.exercises)) return false;
+  return true;
+}
 
 const WORKOUT_TYPE_COLORS: Record<string, string> = {
   crossfit: 'bg-white/10 ring-1 ring-inset ring-white/20',
@@ -372,13 +383,9 @@ export default function TrainerCalendarScreen() {
 
   const trainerDraft = useMemo(() => {
     if (!user) return null;
-    try {
-      const raw = localStorage.getItem(`trainer_workout_draft_${user.id}`);
-      if (!raw) return null;
-      const d = JSON.parse(raw);
-      if (!d.exercises?.length && !d.notes) return null;
-      return d as { workoutType: string; exercises: any[]; notes: string; date: string; time: string };
-    } catch { return null; }
+    const raw = localStorage.getItem(`trainer_workout_draft_${user.id}`);
+    if (!raw) return null;
+    return parseTrainerWorkoutDraft(raw);
   }, [user]);
 
   const [currentMonth, setCurrentMonth] = useState<Date>(startOfMonth(today));
@@ -507,7 +514,10 @@ export default function TrainerCalendarScreen() {
   };
 
   const handleDragStart = (event: DragStartEvent) => {
-    const { workout } = event.active.data.current as { workout: ScheduledWorkout };
+    const cur = event.active.data.current;
+    if (!isRecord(cur) || !('workout' in cur)) return;
+    const workout = cur.workout;
+    if (!isScheduledWorkoutDragPayload(workout)) return;
     setActiveWorkout(workout);
     const rect = event.active.rect.current.initial;
     if (rect) setDraggedWidth(rect.width);
@@ -518,8 +528,13 @@ export default function TrainerCalendarScreen() {
     const { active, over } = event;
     if (!over) return;
 
-    const workoutId = active.id as number;
-    const targetHour = parseInt((over.id as string).replace('hour-', ''));
+    const rawId = active.id;
+    const workoutId = typeof rawId === 'number' ? rawId : Number(rawId);
+    if (!Number.isFinite(workoutId)) return;
+    const overRaw = over.id;
+    if (typeof overRaw !== 'string' || !overRaw.startsWith('hour-')) return;
+    const targetHour = parseInt(overRaw.replace('hour-', ''), 10);
+    if (!Number.isFinite(targetHour)) return;
     const workout = workouts.find((w) => w.id === workoutId);
     if (!workout) return;
 
@@ -818,7 +833,7 @@ export default function TrainerCalendarScreen() {
             <Tabs
               className="mb-5"
               active={sheetTab}
-              onChange={(v) => setSheetTab(v as 'workout' | 'intro')}
+              onChange={(v) => setSheetTab(v)}
               tabs={[
                 {
                   id: 'workout',

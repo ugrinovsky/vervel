@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
@@ -153,13 +153,16 @@ export default function LeaderboardScreen() {
   const [period, setPeriod] = useState<7 | 30>(30);
   const [metric, setMetric] = useState<Metric>('progressionCoeff');
   const [loading, setLoading] = useState(true);
+  const periodRef = useRef(period);
+  periodRef.current = period;
 
-  const load = async (p: 7 | 30 = period) => {
+  const load = useCallback(async (p?: 7 | 30) => {
+    const pr = p ?? periodRef.current;
     setLoading(true);
     try {
       const res = isTrainer
-        ? await trainerApi.getGroupLeaderboard(id, p)
-        : await athleteApi.getGroupLeaderboard(id, p);
+        ? await trainerApi.getGroupLeaderboard(id, pr)
+        : await athleteApi.getGroupLeaderboard(id, pr);
       setEntries(res.data.data.entries);
       setGroupName(res.data.data.groupName);
       setTrainerName(res.data.data.trainerName);
@@ -168,7 +171,7 @@ export default function LeaderboardScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, isTrainer]);
 
   const handleShare = async () => {
     const currentMetricDef = METRICS.find((m) => m.key === metric)!;
@@ -190,7 +193,9 @@ export default function LeaderboardScreen() {
     }
   };
 
-  useEffect(() => { load(); }, [id, isTrainer]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const currentMetric = METRICS.find((m) => m.key === metric)!;
 
@@ -223,9 +228,10 @@ export default function LeaderboardScreen() {
           cols={2}
           value={String(period)}
           onChange={(v) => {
-            const p = Number(v) as 7 | 30;
-            setPeriod(p);
-            load(p);
+            const n = Number(v);
+            if (n !== 7 && n !== 30) return;
+            setPeriod(n);
+            load(n);
           }}
           options={[
             { value: '7', label: '7 дней' },
@@ -237,7 +243,7 @@ export default function LeaderboardScreen() {
         <ToggleGroup
           joined
           value={metric}
-          onChange={(v) => setMetric(v as Metric)}
+          onChange={(v) => setMetric(v)}
           options={METRICS.map((m) => ({ value: m.key, label: m.label }))}
           itemPy="py-1.5"
         />

@@ -117,7 +117,7 @@ export default function AvatarScreen() {
         if (workoutsRes.data.success) {
           const todayStr = toDateKey(new Date());
           const found = workoutsRes.data.data.find(
-            (w) => (w.date as string).slice(0, 10) === todayStr
+            (w) => (w.date).slice(0, 10) === todayStr
           );
           setTodayWorkout(found ?? null);
         }

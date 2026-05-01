@@ -18,10 +18,11 @@ export default class ExerciseAnatomyCache extends BaseModel {
       value === null || value === undefined ? null : JSON.stringify(value),
     consume: (value: unknown) => {
       if (value === null || value === undefined) return null
-      if (Array.isArray(value)) return value as string[]
+      if (Array.isArray(value)) return value.map((z) => String(z))
       if (typeof value === 'string') {
         try {
-          return JSON.parse(value) as string[]
+          const parsed: string | number | boolean | null | object = JSON.parse(value)
+          return Array.isArray(parsed) ? parsed.map((z) => String(z)) : null
         } catch {
           return null
         }

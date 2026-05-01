@@ -1,21 +1,27 @@
 import { useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
+import { getApiErrorMessage } from '@/utils/apiError';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import WorkoutDateTimeRow from '@/components/WorkoutDateTimeRow';
 import { getLocalDateISOString } from '@/util/exercise';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
-import { workoutsApi, type WorkoutSet } from '@/api/workouts';
+import {
+  workoutsApi,
+  type CreateWorkoutDTO,
+  type WorkoutExercise,
+  type WorkoutSet,
+} from '@/api/workouts';
 import { aiApi, type AiParseWorkoutNotesResponse } from '@/api/ai';
 import { profileApi } from '@/api/profile';
 import { parseApiDateTime, parseLocalDate, nowRoundedToHour, today, now } from '@/utils/date';
 import { exercisesApi } from '@/api/exercises';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
-import type { Exercise } from '@/types/Exercise';
+import { isRecord } from '@/utils/typeGuards';
 import { getWorkoutTypeLabel } from './utils';
 import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
 import { formatVolume } from '@/constants/AnalyticsConstants';
-import { WOD_CONFIG, type WodType } from '@/constants/workoutTypes';
+import { WOD_CONFIG, isWodType } from '@/constants/workoutTypes';
 import { getZoneLabel } from '@/util/zones';
 import toast from 'react-hot-toast';
 import GhostButton from '@/components/ui/GhostButton';
@@ -77,6 +83,29 @@ interface FullWorkout {
   notes?: string;
   rpe?: number;
 }
+
+function isFullWorkoutBody(v: unknown): v is FullWorkout {
+  if (!isRecord(v)) return false;
+  if (typeof v.id !== 'number') return false;
+  if (typeof v.workoutType !== 'string') return false;
+  if (!Array.isArray(v.exercises)) return false;
+  if (!isRecord(v.zonesLoad)) return false;
+  if (typeof v.totalIntensity !== 'number') return false;
+  if (typeof v.totalVolume !== 'number') return false;
+  return true;
+}
+
+function workoutTypeForApiPayload(w: string): CreateWorkoutDTO['workoutType'] {
+  if (w === 'crossfit' || w === 'cardio' || w === 'bodybuilding') return w;
+  return 'bodybuilding';
+}
+
+function drawerWorkoutType(w: string | undefined | null): WorkoutType {
+  if (w === 'crossfit' || w === 'cardio' || w === 'bodybuilding') return w;
+  return 'bodybuilding';
+}
+
+type ExerciseLabel = { id: string; title: string };
 
 interface Props {
   workout: WorkoutTimelineEntry | null;
@@ -208,7 +237,7 @@ function ExerciseCard({
           <div className="flex flex-wrap items-center gap-1.5">
             {ex.wodType && (
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 border border-orange-500/30 text-orange-300 font-semibold">
-                {WOD_CONFIG[ex.wodType as WodType]?.label ?? ex.wodType.toUpperCase()}
+                {isWodType(ex.wodType) ? WOD_CONFIG[ex.wodType].label : ex.wodType.toUpperCase()}
               </span>
             )}
             {ex.timeCap && <span className="text-xs text-(--color_text_muted)">{ex.timeCap} мин</span>}
@@ -358,7 +387,7 @@ function ZonesSection({ zonesLoad }: { zonesLoad: Record<string, number> }) {
 
 export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefresh }: Props) {
   const [fullWorkout, setFullWorkout] = useState<FullWorkout | null>(null);
-  const [exerciseMap, setExerciseMap] = useState<Map<string, Exercise>>(new Map());
+  const [exerciseMap, setExerciseMap] = useState<Map<string, ExerciseLabel>>(new Map());
   const [loading, setLoading] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
@@ -395,11 +424,12 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
 
     Promise.all([workoutsApi.get(workout.id), exercisesApi.list()])
       .then(([res, list]) => {
-        const fw = res.data as FullWorkout;
+        const fw = res.data;
+        if (!isFullWorkoutBody(fw)) return;
         setFullWorkout(fw);
         setEditExercises(fw.exercises.map((ex) => ({ ...ex, sets: (ex.sets ?? []).map((s) => ({ ...s })) })));
         setRpe(fw.rpe ?? null);
-        setExerciseMap(new Map(list.map((e) => [e.id, e])));
+        setExerciseMap(new Map(list.map((e) => [e.id, { id: e.id, title: e.title }])));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -411,7 +441,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
       if (prev.length === editExercises.length) return prev;
       return editExercises.map(() => crypto.randomUUID());
     });
-  }, [isEditing, editExercises.length]);
+  }, [isEditing, editExercises]);
 
   useEffect(() => {
     profileApi.getMeasurements('body_weight', 1)
@@ -431,7 +461,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
       sets: ex.sets,
       rounds: ex.rounds,
       duration: ex.duration,
-      wodType: ex.wodType as 'amrap' | 'fortime' | 'emom' | 'tabata' | undefined,
+      wodType: ex.wodType && isWodType(ex.wodType) ? ex.wodType : undefined,
       blockId: ex.blockId,
       zones: ex.zones,
       bodyweight: ex.bodyweight,
@@ -444,7 +474,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
       : fullWorkout!.date;
     return {
       date: dateStr,
-      workoutType: fullWorkout!.workoutType as 'crossfit' | 'bodybuilding' | 'cardio',
+      workoutType: workoutTypeForApiPayload(fullWorkout!.workoutType),
       exercises,
       notes: fullWorkout!.notes,
       rpe: rpeVal,
@@ -457,7 +487,11 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
     setSavingWeights(true);
     try {
       const res = await workoutsApi.update(fullWorkout.id, buildUpdatePayload({ exercises: editExercises }));
-      const updated = res.data as FullWorkout;
+      const updated = res.data;
+      if (!isFullWorkoutBody(updated)) {
+        toast.error('Ошибка сохранения');
+        return;
+      }
       setFullWorkout(updated);
       setEditSortIds([]);
       setInsertAt(null);
@@ -483,12 +517,10 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
 
   const handleInsertPicked = (picked: ExerciseWithSets) => {
     if (insertAt === null || !fullWorkout) return;
-    const wt = (
-      fullWorkout.workoutType === 'crossfit' || fullWorkout.workoutType === 'cardio'
-        ? fullWorkout.workoutType
-        : 'bodybuilding'
-    ) as WorkoutType;
-    const newEx = exerciseWithSetsToWorkoutExercise(picked, wt) as FullWorkout['exercises'][number];
+    const w = fullWorkout.workoutType;
+    const wt: WorkoutType = w === 'crossfit' || w === 'cardio' ? w : 'bodybuilding';
+    const base = exerciseWithSetsToWorkoutExercise(picked, wt);
+    const newEx: FullWorkout['exercises'][number] = { ...base, name: picked.title };
     setEditExercises((prev) => {
       const next = [...prev];
       next.splice(insertAt, 0, newEx);
@@ -501,7 +533,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
     });
     setExerciseMap((prev) => {
       const next = new Map(prev);
-      next.set(String(picked.exerciseId), { id: String(picked.exerciseId), title: picked.title } as Exercise);
+      next.set(String(picked.exerciseId), { id: String(picked.exerciseId), title: picked.title });
       return next;
     });
     setInsertAt(null);
@@ -535,9 +567,8 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
     try {
       const res = await aiApi.parseWorkoutNotes(fullWorkout.id);
       setParsePreview(res.data);
-    } catch (err: any) {
-      const msg = err?.response?.data?.message;
-      toast.error(msg ?? 'Не удалось разобрать программу');
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, 'Не удалось разобрать программу'));
     } finally {
       setIsParsing(false);
     }
@@ -552,7 +583,11 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
         parsePreview.workoutType,
         parsePreview.exercises
       );
-      const updated = res.data.data as FullWorkout;
+      const updated = res.data.data;
+      if (!isFullWorkoutBody(updated)) {
+        toast.error('Ошибка сохранения');
+        return;
+      }
       setFullWorkout(updated);
       setEditExercises(updated.exercises.map((ex) => ({ ...ex, sets: (ex.sets ?? []).map((s) => ({ ...s })) })));
       setRpe(updated.rpe ?? null);
@@ -594,7 +629,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
     );
     setExerciseMap((prev) => {
       const next = new Map(prev);
-      next.set(String(saved.exerciseId), { id: String(saved.exerciseId), title: saved.title } as any);
+      next.set(String(saved.exerciseId), { id: String(saved.exerciseId), title: saved.title });
       return next;
     });
     setEditingExIdx(null);
@@ -608,7 +643,12 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
     setSavingRpe(true);
     try {
       const res = await workoutsApi.update(fullWorkout.id, buildUpdatePayload({ rpe: newRpe }));
-      const updated = res.data as FullWorkout;
+      const updated = res.data;
+      if (!isFullWorkoutBody(updated)) {
+        setRpe(fullWorkout.rpe ?? null);
+        toast.error('Не удалось сохранить оценку');
+        return;
+      }
       setFullWorkout(updated);
       onUpdate?.(fullWorkout.id, updated.totalIntensity);
       onRefresh?.();
@@ -1018,7 +1058,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
                 editExercises[editingExIdx].exerciseId,
             )
           )}
-          workoutType={(fullWorkout?.workoutType ?? 'bodybuilding') as WorkoutType}
+          workoutType={drawerWorkoutType(fullWorkout?.workoutType)}
           onClose={() => setEditingExIdx(null)}
           onSave={handleExerciseDrawerSave}
           profileWeight={profileWeight}

@@ -31,10 +31,18 @@ export interface ExerciseBriefData {
   setsDetail?: { reps: number }[];
 }
 
+export function isWodType(s: string): s is WodType {
+  return Object.prototype.hasOwnProperty.call(WOD_CONFIG, s);
+}
+
+/** Стабильный порядок для UI (те же ключи, что и в {@link WOD_CONFIG}). */
+const WOD_TYPE_ORDER: string[] = ['amrap', 'fortime', 'emom', 'tabata'];
+export const WOD_TYPES: readonly WodType[] = WOD_TYPE_ORDER.filter(isWodType);
+
 export function exerciseBrief(ex: ExerciseBriefData): string {
   if (ex.duration != null) return `${ex.duration} мин`;
   if (ex.wodType) {
-    const wod = WOD_CONFIG[ex.wodType as WodType]?.label ?? ex.wodType.toUpperCase();
+    const wod = (isWodType(ex.wodType) ? WOD_CONFIG[ex.wodType].label : ex.wodType.toUpperCase());
     const ctx = ex.timeCap ? ` ${ex.timeCap}мин` : ex.rounds ? ` ${ex.rounds}р` : '';
     const reps = ex.reps ? ` · ${ex.reps}×` : '';
     return wod + ctx + reps;

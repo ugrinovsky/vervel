@@ -147,7 +147,7 @@ export interface AthleteWorkoutEntry {
   id: number;
   date: string;
   workoutType: 'crossfit' | 'bodybuilding' | 'cardio';
-  exercises: any[];
+  exercises: unknown[];
   zonesLoad: Record<string, number>;
   totalIntensity: number;
   totalVolume: number;

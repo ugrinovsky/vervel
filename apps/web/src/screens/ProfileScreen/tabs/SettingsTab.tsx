@@ -5,8 +5,8 @@ import AnimatedBlock from '@/components/ui/AnimatedBlock';
 import toast from 'react-hot-toast';
 import { authApi } from '@/api/auth';
 import { profileApi, type ProfileData } from '@/api/profile';
-import type { UserRole } from '@/api/auth';
 import { useAuth, useActiveMode } from '@/contexts/AuthContext';
+import { userRoleFromApiString } from '@/util/userRole';
 
 import { ThemeController, THEME_PRESETS, DEFAULT_HUE, type SpecialTheme } from '@/util/ThemeController';
 import { isOAuthPlaceholderEmail } from '@/util/oauthPlaceholderEmail';
@@ -77,7 +77,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
   const isAndroid = /android/i.test(navigator.userAgent)
   const isStandalone =
     window.matchMedia('(display-mode: standalone)').matches ||
-    (('standalone' in navigator) && (navigator as Navigator & { standalone: boolean }).standalone)
+    ('standalone' in navigator && Reflect.get(navigator, 'standalone') === true)
 
   const [nameField, setNameField] = useState(data.user.fullName || '');
   const [emailField, setEmailField] = useState(() =>
@@ -190,7 +190,16 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
       const response = await profileApi.updateProfile(payload);
       if (response.data.success) {
         const updatedUser = response.data.data.user;
-        if (user) updateUser({ ...user, ...updatedUser, fullName: updatedUser.fullName ?? '', role: updatedUser.role as UserRole, themeHue: activeHue });
+        if (user) {
+          const role = userRoleFromApiString(updatedUser.role) ?? user.role;
+          updateUser({
+            ...user,
+            ...updatedUser,
+            fullName: updatedUser.fullName ?? '',
+            role,
+            themeHue: activeHue,
+          });
+        }
         onProfileUpdate(updatedUser);
         toast.success('Профиль обновлён');
       }

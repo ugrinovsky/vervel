@@ -24,9 +24,8 @@ function toLocalISO(d: Date) {
 }
 
 export default function StreakBlock({ data, period }: Props) {
-  const timeline = data.timeline ?? [];
-
   const { currentStreak, bestStreak, favDayIdx, avgPerWeek, dotGrid, trainedSet } = useMemo(() => {
+    const timeline = data.timeline ?? [];
     if (!timeline.length) {
       return { currentStreak: 0, bestStreak: 0, favDayIdx: -1, avgPerWeek: 0, dotGrid: [], trainedSet: new Set<string>() };
     }
@@ -112,7 +111,7 @@ export default function StreakBlock({ data, period }: Props) {
     }
 
     return { currentStreak: streak, bestStreak: best, favDayIdx, avgPerWeek, dotGrid, trainedSet };
-  }, [timeline]);
+  }, [data]);
 
   const totalDays = trainedSet.size;
 

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import MiniAvatar from '@/components/MiniAvatar/MiniAvatar';
 import { trainerApi, type AthleteListItem } from '@/api/trainer';
+import { intensityFromZoneState } from '@/util/zoneIntensity';
 
 interface AvatarEntry {
   athleteId: number;
@@ -26,23 +27,22 @@ export default function AthleteAvatarsRow({ athletes, navigateTo }: AthleteAvata
     abortRef.current?.abort();
     abortRef.current = new AbortController();
 
-    // Инициализируем пустыми данными сразу, чтобы скелетон показался
     setEntries(
       athletes.map((a) => ({
         athleteId: a.id,
         name: a.fullName || a.email,
         zoneIntensities: {},
-      }))
+      })),
     );
 
     // Параллельно грузим зоны каждого атлета
     athletes.forEach(async (athlete) => {
       try {
         const res = await trainerApi.getAthleteAvatar(athlete.id, { mode: 'recovery' });
-        const zones = res.data.data?.zones || {};
+        const zones = res.data.data?.zones ?? {};
         const intensities: Record<string, number> = {};
         for (const [name, state] of Object.entries(zones)) {
-          intensities[name] = (state as { intensity: number }).intensity;
+          intensities[name] = intensityFromZoneState(state);
         }
         setEntries((prev) =>
           prev.map((e) =>

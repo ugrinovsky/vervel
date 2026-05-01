@@ -60,7 +60,7 @@ export function getWeekStart(date: Date): Date {
 export function parseDateRange(
   from: string | null,
   to: string | null,
-  response: { badRequest: (body: object) => any }
+  response: { badRequest: (body: object) => void }
 ): { from: string; to: string } | null {
   if (!from || !to) {
     response.badRequest({ message: 'Параметры "from" и "to" обязательны' })

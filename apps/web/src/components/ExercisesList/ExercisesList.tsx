@@ -1,5 +1,4 @@
 import { useExercises } from '@/hooks/useExercises';
-import { useEffect, useState } from 'react';
 
 export default function ExercisesList() {
   const { data: exercises, loading, error } = useExercises();

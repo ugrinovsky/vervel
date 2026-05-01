@@ -2,6 +2,7 @@ import { DateTime } from 'luxon'
 import { BaseModel, column, belongsTo } from '@adonisjs/lucid/orm'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
+import type { JsonObject } from '#utils/type_guards'
 
 export type StreakEventType =
   | 'workout_completed'
@@ -28,7 +29,7 @@ export default class StreakHistory extends BaseModel {
   declare streakValue: number
 
   @column()
-  declare metadata: Record<string, any> | null
+  declare metadata: JsonObject | null
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

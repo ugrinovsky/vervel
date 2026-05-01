@@ -106,7 +106,7 @@ export default function WorkoutInlineForm({
       finally { setLoadingAssignees(false); }
     };
     load();
-  }, [showAssigneePicker]);
+  }, [showAssigneePicker, initialGroups, initialAthletes]);
 
   // ── Assignee helpers ──────────────────────────────────────────────
 
@@ -244,7 +244,7 @@ export default function WorkoutInlineForm({
         className="mb-2.5"
         size="sm"
         active={assigneeMode}
-        onChange={(v) => switchMode(v as 'group' | 'athlete')}
+        onChange={(v) => switchMode(v)}
         tabs={[
           { id: 'group', label: '👥 Группа' },
           { id: 'athlete', label: '🏃 Персональная' },

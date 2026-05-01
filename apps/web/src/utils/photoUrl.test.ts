@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 
 // VITE_API_URL is not set in test env — resolvePhotoUrl uses '' as fallback
 // We test with the module as-is, then override via vi.stubEnv for the prefixed case.

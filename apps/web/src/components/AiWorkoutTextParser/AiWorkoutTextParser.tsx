@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
+import { getApiErrorMessage } from '@/utils/apiError';
 import { DocumentTextIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { aiApi, type AiTextParseUiPayload } from '@/api/ai';
 import AccentButton from '@/components/ui/AccentButton';
@@ -65,9 +66,8 @@ export default function AiWorkoutTextParser({ onResult, triggerClassName, trigge
       });
       close();
       setText('');
-    } catch (err: any) {
-      const msg = err?.response?.data?.message;
-      setError(typeof msg === 'string' && msg.trim() ? msg : 'Не удалось распарсить текст');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Не удалось распарсить текст'));
     } finally {
       setBusy(false);
     }

@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon'
 import { ExerciseCatalog, type CatalogExercise } from '#services/ExerciseCatalog'
 import Workout, { WorkoutExercise, WorkoutSet } from '#models/workout'
 import UserMeasurement from '#models/user_measurement'
@@ -81,18 +82,13 @@ export class WorkoutCalculator {
    * If we use Luxon's absolute timestamps here, a workout saved as "19:00+00" would become "22:00"
    * in UTC+3 and could be incorrectly treated as a future workout and skipped.
    */
-  private static toWallClockJsDate(value: any): Date {
+  private static toWallClockJsDate(value: DateTime | Date | string | null | undefined): Date {
     if (value instanceof Date) return value
-    if (value && typeof value.toJSDate === 'function') {
-      // Luxon DateTime (or compatible) – use its JS date.
+    if (value instanceof DateTime) {
+      // Luxon DateTime – use its JS date.
       return value.toJSDate()
     }
-    const iso =
-      typeof value === 'string'
-        ? value
-        : value && typeof value.toISO === 'function'
-          ? value.toISO()
-          : String(value ?? '')
+    const iso = typeof value === 'string' ? value : String(value ?? '')
 
     const local = iso.slice(0, 19) // "YYYY-MM-DDTHH:mm:ss"
     const [datePart, timePart] = local.split('T')
@@ -157,7 +153,7 @@ export class WorkoutCalculator {
       // If exercise targets multiple zones, split load by zoneWeights (AI) or equally.
       const weightShares = distributeZoneWeights(zones, input.zoneWeights)
       for (let i = 0; i < zones.length; i++) {
-        const zone = zones[i]!
+        const zone = zones[i]
         const share = weightShares[i] ?? 1 / Math.max(zones.length, 1)
         zoneLoadsAbs[zone] = (zoneLoadsAbs[zone] ?? 0) + load * share
       }
@@ -428,7 +424,7 @@ export class WorkoutCalculator {
     const debugWorkouts: Array<{
       id: number | string | null
       date: string
-      workoutType: any
+      workoutType: Workout['workoutType']
       daysAgo: number
       skippedFuture: boolean
       exercisesCount: number
@@ -437,7 +433,7 @@ export class WorkoutCalculator {
     }> = []
 
     for (const workout of workouts) {
-      const workoutDate = WorkoutCalculator.toWallClockJsDate((workout as any).date)
+      const workoutDate = WorkoutCalculator.toWallClockJsDate(workout.date)
       const rawDaysAgo = (now.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24)
       const isFuture = rawDaysAgo < 0
       // For the avatar "recovery" view we still want to reflect the most recent workload
@@ -452,9 +448,9 @@ export class WorkoutCalculator {
       // Otherwise recalculate from exercises (older DB rows may have zonesLoad={}).
       // This also avoids "zeroing" zones in tests/rows that intentionally provide zonesLoad.
       let zonesLoad: Record<string, number> = {}
-      const storedAbs = (workout as any).zonesLoadAbs as Record<string, number> | null | undefined
-      if (hasMeaningfulZonesLoad(storedAbs as any)) {
-        zonesLoad = { ...(storedAbs as any) }
+      const storedAbs = workout.zonesLoadAbs as Record<string, number> | null | undefined
+      if (hasMeaningfulZonesLoad(storedAbs)) {
+        zonesLoad = { ...storedAbs }
       } else if (Array.isArray(workout.exercises) && workout.exercises.length > 0) {
         const calc = await WorkoutCalculator.calculateZoneLoads(
           workout.exercises,
@@ -464,22 +460,18 @@ export class WorkoutCalculator {
         )
         zonesLoad = calc.zonesLoadAbs
       } else {
-        zonesLoad = (storedAbs as any) || {}
+        zonesLoad = storedAbs ?? {}
       }
 
       debugWorkouts.push({
-        id: (workout as any).id ?? null,
-        date: String((workout as any).date),
-        workoutType: (workout as any).workoutType,
+        id: workout.id ?? null,
+        date: String(workout.date),
+        workoutType: workout.workoutType,
         daysAgo,
         skippedFuture: isFuture,
-        exercisesCount: Array.isArray((workout as any).exercises)
-          ? (workout as any).exercises.length
-          : 0,
-        exercisesZonesCount: Array.isArray((workout as any).exercises)
-          ? (workout as any).exercises.filter(
-              (e: any) => Array.isArray(e?.zones) && e.zones.length > 0
-            ).length
+        exercisesCount: Array.isArray(workout.exercises) ? workout.exercises.length : 0,
+        exercisesZonesCount: Array.isArray(workout.exercises)
+          ? workout.exercises.filter((e) => Array.isArray(e?.zones) && e.zones.length > 0).length
           : 0,
         zonesLoad,
       })
@@ -487,7 +479,7 @@ export class WorkoutCalculator {
       // Missing weights diagnostics (for UI warning).
       // For strength-like workouts we consider a set "missing weight" when reps>0 and weight is null/undefined/0
       // and it's not explicitly marked as bodyweight.
-      const exs = Array.isArray((workout as any).exercises) ? (workout as any).exercises : []
+      const exs = Array.isArray(workout.exercises) ? workout.exercises : []
       for (const ex of exs) {
         if (ex?.bodyweight) continue
         const sets = Array.isArray(ex?.sets) ? ex.sets : []
@@ -497,48 +489,38 @@ export class WorkoutCalculator {
           const isMissing = reps > 0 && (w === null || w === undefined || Number(w) === 0)
           if (!isMissing) continue
           missingSetsCount += 1
-          const wid = Number((workout as any).id)
-          if (Number.isFinite(wid)) workoutsWithMissingWeights.add(wid)
+          const wid = workout.id
+          workoutsWithMissingWeights.add(wid)
           // Track the most recent workout (smallest daysAgo)
           if (
             lastMissingWorkoutDaysAgo === null ||
             lastMissingWorkoutDaysAgo === undefined ||
             daysAgo < lastMissingWorkoutDaysAgo
           ) {
-            lastMissingWorkoutId = Number.isFinite(wid) ? wid : null
-            lastMissingWorkoutDate = String((workout as any).date ?? null)
+            lastMissingWorkoutId = wid
+            lastMissingWorkoutDate = String(workout.date ?? null)
             lastMissingWorkoutDaysAgo = daysAgo
           }
         }
       }
 
       // Subjective load (RPE): nudge UI when the session clearly happened but no rating was saved.
-      const exListForRpe = Array.isArray((workout as any).exercises)
-        ? (workout as any).exercises
-        : []
-      const storedAbsForRpe = (workout as any).zonesLoadAbs as
-        | Record<string, number>
-        | null
-        | undefined
+      const exListForRpe = Array.isArray(workout.exercises) ? workout.exercises : []
+      const storedAbsForRpe = workout.zonesLoadAbs as Record<string, number> | null | undefined
       const hasWorkoutContent = exListForRpe.length > 0 || hasMeaningfulZonesLoad(storedAbsForRpe)
-      const rawRpe = (workout as any).rpe
+      const rawRpe = workout.rpe
       const nRpe = Number(rawRpe)
-      const hasRpe =
-        rawRpe !== null &&
-        rawRpe !== undefined &&
-        rawRpe !== '' &&
-        Number.isFinite(nRpe) &&
-        nRpe >= 1
+      const hasRpe = rawRpe !== null && rawRpe !== undefined && Number.isFinite(nRpe) && nRpe >= 1
       if (!isFuture && hasWorkoutContent && !hasRpe) {
-        const wid = Number((workout as any).id)
-        if (Number.isFinite(wid)) workoutsMissingRpe.add(wid)
+        const wid = workout.id
+        workoutsMissingRpe.add(wid)
         if (
           lastMissingRpeDaysAgo === null ||
           lastMissingRpeDaysAgo === undefined ||
           daysAgo < lastMissingRpeDaysAgo
         ) {
-          lastMissingRpeWorkoutId = Number.isFinite(wid) ? wid : null
-          lastMissingRpeWorkoutDate = String((workout as any).date ?? null)
+          lastMissingRpeWorkoutId = wid
+          lastMissingRpeWorkoutDate = String(workout.date ?? null)
           lastMissingRpeDaysAgo = daysAgo
         }
       }
@@ -643,9 +625,9 @@ export class WorkoutCalculator {
     /** По каждой тренировке: абсолютные зоны (новые) или пересчёт из exercises. */
     const perWorkoutZonesAbs: Record<string, number>[] = []
     for (const workout of workouts) {
-      const abs = (workout as any).zonesLoadAbs as Record<string, number> | null | undefined
-      if (hasMeaningfulZonesLoad(abs as any)) {
-        perWorkoutZonesAbs.push({ ...(abs as any) })
+      const abs = workout.zonesLoadAbs as Record<string, number> | null | undefined
+      if (hasMeaningfulZonesLoad(abs)) {
+        perWorkoutZonesAbs.push({ ...abs })
         continue
       }
       if (Array.isArray(workout.exercises) && workout.exercises.length > 0) {
@@ -714,19 +696,14 @@ export class WorkoutCalculator {
             })
         )
       const zonesAbs = perWorkoutZonesAbs[i] ?? {}
-      const storedAbsForRpe = (w as any).zonesLoadAbs as Record<string, number> | null | undefined
+      const storedAbsForRpe = w.zonesLoadAbs as Record<string, number> | null | undefined
       const hasWorkoutContent = hasExercises || hasMeaningfulZonesLoad(storedAbsForRpe)
-      const workoutDate = WorkoutCalculator.toWallClockJsDate((w as any).date)
+      const workoutDate = WorkoutCalculator.toWallClockJsDate(w.date)
       const rawDaysAgo = (statsNow.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24)
       const isFuture = rawDaysAgo < 0
-      const rawRpe = (w as any).rpe
-      const nRpe = Number(rawRpe)
+      const rawRpe = w.rpe
       const hasRpe =
-        rawRpe !== null &&
-        rawRpe !== undefined &&
-        rawRpe !== '' &&
-        Number.isFinite(nRpe) &&
-        nRpe >= 1
+        rawRpe !== null && rawRpe !== undefined && Number.isFinite(rawRpe) && rawRpe >= 1
       const rpeTracked = w.workoutType !== 'crossfit'
       const hasMissingRpe = rpeTracked && !isFuture && hasWorkoutContent && !hasRpe
       return {

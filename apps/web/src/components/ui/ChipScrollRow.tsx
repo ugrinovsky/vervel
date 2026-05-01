@@ -26,7 +26,7 @@ function useScrollMask() {
     const atEnd = el.scrollLeft >= el.scrollWidth - el.clientWidth - 2;
     const mask = makeMask(atStart, atEnd);
     el.style.maskImage = mask;
-    ;(el.style as unknown as { webkitMaskImage?: string }).webkitMaskImage = mask;
+    el.style.setProperty('-webkit-mask-image', mask);
   }, []);
 
   useLayoutEffect(() => {

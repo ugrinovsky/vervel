@@ -2,13 +2,35 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import * as VKID from '@vkid/sdk';
 import { useAuth } from '@/contexts/AuthContext';
+import type { AuthUser } from '@/contexts/auth-types';
 import { publicApi } from '@/api/http/publicApi';
 import toast from 'react-hot-toast';
+import { isRecord } from '@/utils/typeGuards';
+import { userRoleFromApiString } from '@/util/userRole';
 
 const VK_APP_ID = Number(import.meta.env.VITE_VK_APP_ID) || 54455065;
 
 /** VKID.Config.init must run once per page; OneTap is created per mount (Strict Mode–safe). */
 let vkSdkConfigInitialized = false;
+
+function isVkLoginPayload(v: unknown): v is { code: string; device_id: string } {
+  return isRecord(v) && typeof v.code === 'string' && typeof v.device_id === 'string';
+}
+
+function vkExchangePayload(v: unknown): { accessToken: string; userId: number | string } | null {
+  if (!isRecord(v)) return null;
+  const at = v.access_token;
+  const uid = v.user_id;
+  if (typeof at !== 'string') return null;
+  if (typeof uid !== 'number' && typeof uid !== 'string') return null;
+  return { accessToken: at, userId: uid };
+}
+
+type VkSdkLoginResponse = {
+  user: { id: number; email: string; fullName: string; role: string };
+  needsRole?: boolean;
+  userId?: number;
+};
 
 export default function VkIdButton() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -19,8 +41,6 @@ export default function VkIdButton() {
     const el = containerRef.current;
     if (!el) return;
 
-    // redirectUrl must match one of the authorized URLs in VK app settings
-    // For dev: add http://localhost:5173 in https://vk.com/editapp?id=54455065
     const redirectUrl =
       import.meta.env.VITE_APP_URL || `${window.location.origin}${window.location.pathname}`;
 
@@ -47,18 +67,21 @@ export default function VkIdButton() {
       })
       .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async (payload: unknown) => {
         try {
-          const { code, device_id } = payload as { code: string; device_id: string };
-          const exchanged = await VKID.Auth.exchangeCode(code, device_id);
+          if (!isVkLoginPayload(payload)) {
+            toast.error('Не удалось войти через VK');
+            return;
+          }
+          const { code, device_id } = payload;
+          const exchanged: unknown = await VKID.Auth.exchangeCode(code, device_id);
+          const tokens = vkExchangePayload(exchanged);
+          if (!tokens) {
+            toast.error('Не удалось войти через VK');
+            return;
+          }
 
-          const res = await publicApi.post<{
-            user: { id: number; email: string; fullName: string; role: string };
-            token: any;
-            needsRole?: boolean;
-            tempToken?: string;
-            userId?: number;
-          }>('/oauth/vk/sdk-login', {
-            accessToken: (exchanged as any).access_token,
-            userId: (exchanged as any).user_id,
+          const res = await publicApi.post<VkSdkLoginResponse>('/oauth/vk/sdk-login', {
+            accessToken: tokens.accessToken,
+            userId: tokens.userId,
           });
 
           const data = res.data;
@@ -68,7 +91,19 @@ export default function VkIdButton() {
             return;
           }
 
-          login(data.user as any);
+          const role = userRoleFromApiString(data.user.role);
+          if (!role) {
+            toast.error('Не удалось войти через VK');
+            return;
+          }
+
+          const authUser: AuthUser = {
+            id: data.user.id,
+            email: data.user.email,
+            fullName: data.user.fullName,
+            role,
+          };
+          login(authUser);
         } catch {
           toast.error('Не удалось войти через VK');
         }
@@ -76,7 +111,9 @@ export default function VkIdButton() {
 
     return () => {
       try {
-        (oneTap as { destroy?: () => void }).destroy?.();
+        if (isRecord(oneTap) && typeof oneTap.destroy === 'function') {
+          oneTap.destroy();
+        }
       } catch {
         /* ignore */
       }

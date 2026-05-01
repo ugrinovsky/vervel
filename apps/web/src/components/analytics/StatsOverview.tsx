@@ -8,6 +8,7 @@ import {
   normalizeIntensity,
 } from '@/constants/AnalyticsConstants';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
+import type { RechartsTooltipContentProps } from './rechartsTooltip';
 
 type Period = 'week' | 'month' | 'year';
 
@@ -35,12 +36,15 @@ const calcAvgIntensity = (data: WorkoutStats): number => {
   return Math.round(sum / data.timeline.length);
 };
 
-function SparklineTooltip({ active, payload }: any) {
+function SparklineTooltip({ active, payload }: RechartsTooltipContentProps) {
   if (!active || !payload?.length) return null;
+  const row = payload[0]?.payload as { label?: string } | undefined;
+  const label = row?.label ?? '';
+  const vol = Number(payload[0]?.value ?? 0);
   return (
     <div className="bg-gray-900/95 border border-white/10 rounded-lg px-2 py-1.5 text-xs shadow-xl">
-      <p className="text-white/50">{payload[0]?.payload?.label}</p>
-      <p className="font-semibold" style={{ color: 'var(--color_primary_icon)' }}>{formatVolume(payload[0]?.value)}</p>
+      <p className="text-white/50">{label}</p>
+      <p className="font-semibold" style={{ color: 'var(--color_primary_icon)' }}>{formatVolume(vol)}</p>
     </div>
   );
 }

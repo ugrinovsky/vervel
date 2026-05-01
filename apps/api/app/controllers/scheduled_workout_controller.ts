@@ -68,7 +68,7 @@ async function createAthleteWorkouts(
         exercises: workoutExercises,
         notes: workoutData.notes || '',
         zonesLoad: calculated.zonesLoad,
-        zonesLoadAbs: (calculated as any).zonesLoadAbs ?? {},
+        zonesLoadAbs: calculated.zonesLoadAbs,
         totalIntensity: calculated.totalIntensity,
         totalVolume: calculated.totalVolume,
         scheduledWorkoutId,

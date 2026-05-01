@@ -7,7 +7,7 @@ function cookieFlags() {
   const useNone = env.get('AUTH_COOKIE_SAME_SITE') === 'none'
   return {
     secure: useNone || process.env.NODE_ENV === 'production',
-    sameSite: (useNone ? 'none' : 'lax') as 'lax' | 'none',
+    sameSite: useNone ? ('none' as const) : ('lax' as const),
   }
 }
 

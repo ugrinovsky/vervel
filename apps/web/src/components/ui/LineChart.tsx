@@ -50,7 +50,8 @@ export default function LineChart({ series, valueKey, dates }: Props) {
   const toggle = (id: string | number) =>
     setHidden((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
 

@@ -124,7 +124,7 @@ export default class extends BaseSeeder {
       })
 
       workouts.push({
-        userId: user!.id,
+        userId: user.id,
         date,
         workoutType,
         exercises,
@@ -139,6 +139,6 @@ export default class extends BaseSeeder {
 
     await Workout.createMany(workouts)
 
-    console.log(`Created ${workouts.length} workouts for user ${user!.email}`)
+    console.log(`Created ${workouts.length} workouts for user ${user.email}`)
   }
 }

@@ -13,25 +13,7 @@ import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
 import WorkoutDetailSheet from '@/screens/ActivityScreen/WorkoutDetailSheet';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
-
-/**
- * Normalizes short API zone keys (from ExerciseCatalog) and legacy seeder keys
- * to the canonical camelCase keys that match BODY_ZONE_TO_API.
- * Zones that map to the same canonical key are merged (highest intensity wins).
- */
-export const ZONE_NORMALIZE: Record<string, string> = {
-  back: 'backMuscles',
-  trapezoids: 'backMuscles', // seeder stores 'trapezoids' directly
-  traps: 'backMuscles',
-  legs: 'legMuscles',
-  calves: 'calfMuscles',
-  glutes: 'glutealMuscles',
-  core: 'abdominalPress',
-  abs: 'abdominalPress',
-  obliques: 'obliquePress',
-  chest: 'chests',
-  arms: 'biceps',
-};
+import { ZONE_NORMALIZE } from './avatarViewZoneNormalize';
 
 
 type Phase = 'destroyed' | 'recovering' | 'almost_ready' | 'recovered' | 'untrained';
@@ -230,7 +212,7 @@ export default function AvatarView({
         ? { name: sorted[sorted.length - 1][0], zone: sorted[sorted.length - 1][1] }
         : null,
     };
-  }, [zones]);
+  }, [normalizedZones]);
 
   useEffect(() => {
     if (!selectedZone || avatarContext !== 'athlete_self') {
@@ -284,9 +266,18 @@ export default function AvatarView({
         />
 
         <div className="flex items-center justify-center gap-3 mt-3 text-xs text-(--color_text_muted) flex-wrap">
-          {(Object.entries(PHASE_CONFIG) as [Phase, (typeof PHASE_CONFIG)[Phase]][])
-            .filter(([, cfg]) => cfg.dotBg !== null)
-            .map(([phase, cfg]) => (
+          {(
+            [
+              'destroyed',
+              'recovering',
+              'almost_ready',
+              'recovered',
+              'untrained',
+            ] as const satisfies readonly Phase[]
+          )
+            .map((phase) => ({ phase, cfg: PHASE_CONFIG[phase] }))
+            .filter(({ cfg }) => cfg.dotBg !== null)
+            .map(({ phase, cfg }) => (
               <div key={phase} className="flex items-center gap-1.5">
                 <div className={`w-2.5 h-2.5 rounded-sm ${cfg.dotBg}`} />
                 <span>{cfg.label}</span>
