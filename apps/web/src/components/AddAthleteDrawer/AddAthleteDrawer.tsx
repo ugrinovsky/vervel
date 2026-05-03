@@ -205,8 +205,8 @@ export default function AddAthleteDrawer({ open, onClose, onAdded }: Props) {
           >
             <Tabs
               tabs={[
-                { id: 'email' as OtherTab, label: 'По email' },
-                { id: 'qr' as OtherTab, label: 'QR-код' },
+                { id: 'email', label: 'По email' },
+                { id: 'qr', label: 'QR-код' },
               ]}
               active={otherTab}
               onChange={setOtherTab}
