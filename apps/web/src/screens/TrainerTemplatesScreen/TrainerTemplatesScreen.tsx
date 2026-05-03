@@ -46,10 +46,6 @@ export default function TrainerTemplatesScreen() {
   const [saving, setSaving] = useState(false);
   const [aiGenerated, setAiGenerated] = useState(false);
 
-  useEffect(() => {
-    void loadTemplates();
-  }, []);
-
   async function loadTemplates() {
     try {
       setLoading(true);
@@ -61,6 +57,10 @@ export default function TrainerTemplatesScreen() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    void loadTemplates();
+  }, []);
 
   const openCreate = () => {
     setEditingTemplate(null);

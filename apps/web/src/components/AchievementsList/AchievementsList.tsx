@@ -22,10 +22,6 @@ export default function AchievementsList() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>('all');
 
-  useEffect(() => {
-    void loadAchievements();
-  }, []);
-
   async function loadAchievements() {
     try {
       setLoading(true);
@@ -47,6 +43,10 @@ export default function AchievementsList() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    void loadAchievements();
+  }, []);
 
   if (loading || !data) {
     return (
