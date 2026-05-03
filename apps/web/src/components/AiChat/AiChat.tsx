@@ -58,7 +58,7 @@ export default function AiChat({ open, onClose }: Props) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const sessionStartIdx = useRef(0);
+  const [sessionStartIdx, setSessionStartIdx] = useState(0);
   const prevScrollHeightRef = useRef(0);
   const restoringScrollRef = useRef(false);
   const prevLengthRef = useRef(0);
@@ -87,7 +87,7 @@ export default function AiChat({ open, onClose }: Props) {
     setInput('');
     setError(null);
     setLoading(false);
-    sessionStartIdx.current = 0;
+    setSessionStartIdx(0);
     prevLengthRef.current = 0;
   }, [open]);
 
@@ -130,11 +130,11 @@ export default function AiChat({ open, onClose }: Props) {
     if (history.length > 0) {
       setMessages(history);
       setDisplayCount(DISPLAY_STEP); // always start showing last 20
-      sessionStartIdx.current = history.length;
+      setSessionStartIdx(history.length);
     } else {
       setMessages([greeting]);
       setDisplayCount(DISPLAY_STEP);
-      sessionStartIdx.current = 1;
+      setSessionStartIdx(1);
     }
 
     // Scroll to bottom after loading history
@@ -214,7 +214,7 @@ export default function AiChat({ open, onClose }: Props) {
     };
     setMessages([greeting]);
     setDisplayCount(DISPLAY_STEP);
-    sessionStartIdx.current = 1;
+    setSessionStartIdx(1);
   };
 
   return (
@@ -324,7 +324,7 @@ export default function AiChat({ open, onClose }: Props) {
               )}
 
               {/* Suggestions — only at the start of session */}
-              {messages.length === sessionStartIdx.current && !loading && (
+              {messages.length === sessionStartIdx && !loading && (
                 <div className="pt-2">
                   <p className="text-[10px] text-(--color_text_muted) uppercase tracking-wider mb-2 pl-9">
                     Попробуйте спросить

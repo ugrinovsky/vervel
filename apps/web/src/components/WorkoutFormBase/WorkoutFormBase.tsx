@@ -8,7 +8,7 @@
  * Manages: date, time, workoutType, notes, exercises, template selection.
  * Callers supply: submit logic, optional assignee UI (headerSlot), optional templates list.
  */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import WorkoutTypeTabs, { type WorkoutType } from '@/components/WorkoutTypeTabs';
 import WorkoutDateTimeRow from '@/components/WorkoutDateTimeRow';
@@ -166,10 +166,12 @@ export default function WorkoutFormBase({
   const ignoreDbDraftRef = useRef(false);
   /** Latest values for DB-vs-local merge (effect intentionally keyed only by storageKey). */
   const dbDraftMergeRef = useRef({ localSavedAt: 0, hasInitialDate: false });
-  dbDraftMergeRef.current = {
-    localSavedAt: localDraft?.savedAt ?? 0,
-    hasInitialDate: !!initialDate,
-  };
+  useLayoutEffect(() => {
+    dbDraftMergeRef.current = {
+      localSavedAt: localDraft?.savedAt ?? 0,
+      hasInitialDate: !!initialDate,
+    };
+  }, [localDraft?.savedAt, initialDate]);
 
   // ── Form state (initialized from draft or props) ──────────────────
   const [date, setDate] = useState<Date>(() => {

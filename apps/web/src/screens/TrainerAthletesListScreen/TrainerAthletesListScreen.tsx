@@ -34,7 +34,7 @@ export default function TrainerAthletesListScreen() {
   type ViewMode = '2' | '3' | 'list';
   const [view, setView] = useState<ViewMode>(() => {
     const stored = localStorage.getItem('athletes_view_mode');
-    return stored === '3' || stored === 'list' ? (stored as ViewMode) : '2';
+    return stored === '3' || stored === 'list' ? stored : '2';
   });
 
   const setViewMode = (v: ViewMode) => {

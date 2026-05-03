@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
@@ -153,11 +153,9 @@ export default function LeaderboardScreen() {
   const [period, setPeriod] = useState<7 | 30>(30);
   const [metric, setMetric] = useState<Metric>('progressionCoeff');
   const [loading, setLoading] = useState(true);
-  const periodRef = useRef(period);
-  periodRef.current = period;
 
   const load = useCallback(async (p?: 7 | 30) => {
-    const pr = p ?? periodRef.current;
+    const pr = p ?? period;
     setLoading(true);
     try {
       const res = isTrainer
@@ -171,7 +169,7 @@ export default function LeaderboardScreen() {
     } finally {
       setLoading(false);
     }
-  }, [id, isTrainer]);
+  }, [id, isTrainer, period]);
 
   const handleShare = async () => {
     const currentMetricDef = METRICS.find((m) => m.key === metric)!;

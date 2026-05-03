@@ -180,7 +180,7 @@ function SortableExerciseCard({
               bodyweight={ex.bodyweight}
               profileWeight={profileWeight}
               hideWeights={hideWeights}
-              onPatch={(patch) => onUpdate(patch as Partial<ExerciseData>)}
+              onPatch={(patch) => onUpdate(patch)}
               onAddSet={onAddSet}
               onRemoveSet={onRemoveSet}
               onDupSet={onDupSet}

@@ -61,8 +61,11 @@ export function useEmbeddedOAuthLaunch(): { launchBootStatus: EmbedLaunchBootSta
   const navigate = useNavigate();
   const loginRef = useRef(login);
   const navigateRef = useRef(navigate);
-  loginRef.current = login;
-  navigateRef.current = navigate;
+
+  useEffect(() => {
+    loginRef.current = login;
+    navigateRef.current = navigate;
+  }, [login, navigate]);
 
   const [launchBootStatus, setLaunchBootStatus] = useState<EmbedLaunchBootStatus>(() =>
     typeof window !== 'undefined' && hasEmbeddedOAuthLaunchContext() ? 'pending' : 'ready',
@@ -100,7 +103,7 @@ export function useEmbeddedOAuthLaunch(): { launchBootStatus: EmbedLaunchBootSta
             const raw = await bridge.send('VKWebAppGetLaunchParams');
             embedOAuthDbg('launch params from bridge', raw && typeof raw === 'object' ? Object.keys(raw) : raw);
             if (raw && typeof raw === 'object') {
-              const fromBridge = bridgeLaunchParamsToRecord(raw as Record<string, unknown>);
+              const fromBridge = bridgeLaunchParamsToRecord(raw);
               if (fromBridge.sign && fromBridge.vk_app_id) {
                 launchParams = fromBridge;
                 sessionStorage.setItem(EMBED_OAUTH_LAUNCH_SESSION_KEY, JSON.stringify(fromBridge));

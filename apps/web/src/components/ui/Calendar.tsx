@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { format, startOfMonth, isSameDay, isToday, getDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -90,14 +90,14 @@ function StrikethroughMiniIcon({
 export default function Calendar(props: CalendarProps) {
   const { selectedDate, onMonthChange, onTodayClick, month = new Date() } = props;
   const [currentMonth, setCurrentMonth] = useState<Date>(month);
-  const directionRef = useRef<1 | -1>(1);
+  const [animDir, setAnimDir] = useState<1 | -1>(1);
 
   useEffect(() => {
     setCurrentMonth(month);
   }, [month]);
 
   const navigate = (delta: 1 | -1) => {
-    directionRef.current = delta;
+    setAnimDir(delta);
     const next = new Date(currentMonth);
     next.setMonth(currentMonth.getMonth() + delta);
     setCurrentMonth(next);
@@ -106,7 +106,7 @@ export default function Calendar(props: CalendarProps) {
 
   const goToToday = () => {
     const today = new Date();
-    directionRef.current = today >= currentMonth ? 1 : -1;
+    setAnimDir(today >= currentMonth ? 1 : -1);
     setCurrentMonth(today);
     onMonthChange?.(today);
     onTodayClick?.(today);
@@ -114,7 +114,6 @@ export default function Calendar(props: CalendarProps) {
 
   const startDayIndex = getMondayIndex(startOfMonth(currentMonth));
   const monthKey = format(currentMonth, 'yyyy-MM');
-  const animDir = directionRef.current;
 
   return (
     <div className="glass p-6 rounded-xl">

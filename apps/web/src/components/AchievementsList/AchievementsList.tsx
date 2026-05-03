@@ -23,10 +23,10 @@ export default function AchievementsList() {
   const [filter, setFilter] = useState<Filter>('all');
 
   useEffect(() => {
-    loadAchievements();
+    void loadAchievements();
   }, []);
 
-  const loadAchievements = async () => {
+  async function loadAchievements() {
     try {
       setLoading(true);
       const response = await streakApi.getAchievements();
@@ -46,7 +46,7 @@ export default function AchievementsList() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   if (loading || !data) {
     return (

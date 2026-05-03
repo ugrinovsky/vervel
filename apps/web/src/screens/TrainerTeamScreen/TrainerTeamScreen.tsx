@@ -41,7 +41,7 @@ export default function TrainerTeamScreen() {
   const [showAddAthlete, setShowAddAthlete] = useState(false)
   const [view, setView] = useState<ViewMode>(() => {
     const s = localStorage.getItem('athletes_view_mode')
-    return s === '3' || s === 'list' ? (s as ViewMode) : '2'
+    return s === '3' || s === 'list' ? s : '2'
   })
 
   const setViewMode = (v: ViewMode) => {

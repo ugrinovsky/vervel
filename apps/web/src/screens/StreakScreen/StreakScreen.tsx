@@ -18,9 +18,11 @@ export default function StreakScreen() {
   const [loading, setLoading] = useState(true);
   const [modeLoading, setModeLoading] = useState(false);
 
-  useEffect(() => { loadProfile(); }, []);
+  useEffect(() => {
+    void loadProfile();
+  }, []);
 
-  const loadProfile = async () => {
+  async function loadProfile() {
     try {
       setLoading(true);
       const response = await profileApi.getProfile();
@@ -30,7 +32,7 @@ export default function StreakScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const handleSetMode = async (mode: 'simple' | 'intensive') => {
     if (!profileData || modeLoading || profileData.stats.streakMode === mode) return;
