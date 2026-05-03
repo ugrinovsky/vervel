@@ -52,7 +52,7 @@ export class StreakService {
       workoutDate,
       currentStreak: userStreak.currentStreak,
       longestStreak: userStreak.longestStreak,
-      mode: userStreak.mode === 'intensive' ? 'intensive' : ('simple' as StreakMode),
+      mode: userStreak.mode === 'intensive' ? 'intensive' : 'simple',
     })
 
     userStreak.currentStreak = computation.newCurrentStreak

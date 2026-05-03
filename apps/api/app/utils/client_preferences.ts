@@ -37,14 +37,30 @@ export function patchClientPreferencesFromBody(body: unknown): Partial<ClientPre
   return out
 }
 
+const CLIENT_PREF_KEYS = [
+  'athleteOnboardingComplete',
+  'trainerOnboardingComplete',
+  'athleteCoachIntent',
+  'trainerWorkStyle',
+  'coachTeamBannerDismissed',
+] as const satisfies readonly (keyof ClientPreferences)[]
+
+function mergeDefinedField<K extends keyof ClientPreferences>(
+  base: ClientPreferences,
+  patch: Partial<ClientPreferences>,
+  key: K
+): void {
+  const v = patch[key]
+  if (v !== undefined) base[key] = v
+}
+
 export function mergeClientPreferences(
   existing: ClientPreferences | JsonObject | null | undefined,
   patch: Partial<ClientPreferences>
 ): ClientPreferences {
-  const base = { ...(existing ?? {}) } as Record<string, unknown>
-  for (const [k, v] of Object.entries(patch)) {
-    if (v === undefined) continue
-    base[k] = v
+  const base: ClientPreferences = { ...(existing ?? {}) }
+  for (const k of CLIENT_PREF_KEYS) {
+    mergeDefinedField(base, patch, k)
   }
-  return base as ClientPreferences
+  return base
 }
