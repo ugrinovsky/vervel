@@ -33,8 +33,8 @@ export default function ProgressionHubScreen() {
 
           <Tabs
             tabs={[
-              { id: 'journal' as HubTab, label: 'Журнал' },
-              { id: 'advanced' as HubTab, label: 'Эталоны и ИИ' },
+              { id: 'journal', label: 'Журнал' },
+              { id: 'advanced', label: 'Эталоны и ИИ' },
             ]}
             active={hubTab}
             onChange={(id) => setHubTab(id)}
