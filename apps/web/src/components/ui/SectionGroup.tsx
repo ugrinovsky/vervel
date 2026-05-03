@@ -44,10 +44,10 @@ export default function SectionGroup({
   const hasTitle = title != null && title !== '';
   const hasDescription = description != null && description !== '';
 
-  const spacingAfter = showBreakAfter ? '' : 'mb-4';
+  const spacingAfter = showBreakAfter ? 'mb-4' : 'mb-6';
 
   return (
-    <section className={`space-y-3 ${spacingAfter} ${className}`.trim()}>
+    <section className={`flex flex-col gap-3 ${spacingAfter} ${className}`.trim()}>
       {showLabel && (hasTitle || hasDescription) && (
         <header className="space-y-1 px-0.5">
           {hasTitle && (

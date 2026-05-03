@@ -97,7 +97,7 @@ export default function ProfileScreen() {
           description="Ваш аккаунт, кошелек для оплаты ИИ-функций и настройки приложения"
         />
 
-        <ScreenHint className="mb-4">
+        <ScreenHint className="mb-6">
           <span className="text-white font-medium">Профиль</span> — данные и фото аккаунта.{' '}
           <span className="text-white font-medium">Кошелек</span> — баланс для ИИ-функций,
           история списаний и пополнение.{' '}

@@ -24,13 +24,10 @@ const dotChild = {
 
 /** Декоративный разрыв между блоками секций (не несёт смысла — только визуал). */
 export default function SectionBreak({ variant = 'dots', className = '' }: SectionBreakProps) {
-  /** После контента группы: нижний отступ до следующей секции (сверху — из space-y у section). */
-  const spacing = 'mb-4';
-
   if (variant === 'line') {
     return (
       <motion.div
-        className={`${spacing} flex justify-center py-1 ${className}`.trim()}
+        className={`flex justify-center py-1 ${className}`.trim()}
         aria-hidden
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
@@ -48,7 +45,7 @@ export default function SectionBreak({ variant = 'dots', className = '' }: Secti
 
   return (
     <motion.div
-      className={`${spacing} flex justify-center items-center gap-1 py-1 ${className}`.trim()}
+      className={`flex justify-center items-center gap-1 py-1 ${className}`.trim()}
       aria-hidden
       variants={dotsContainer}
       initial="hidden"

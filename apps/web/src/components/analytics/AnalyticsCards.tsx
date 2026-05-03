@@ -78,7 +78,7 @@ export default function AnalyticsCards({ stats, monthStats, periodization, timeR
         <WorkoutRadar period={timeRange} data={stats} />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 pb-4">
+      <div className="grid grid-cols-2 gap-3">
         {cards.map((card, idx) => {
           const isLastOdd = cards.length % 2 !== 0 && idx === cards.length - 1;
           return (

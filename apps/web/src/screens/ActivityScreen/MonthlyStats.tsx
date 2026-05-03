@@ -10,7 +10,7 @@ interface MonthlyStatsProps {
 
 export default function MonthlyStats({ stats }: MonthlyStatsProps) {
   return (
-    <div className="glass p-5 rounded-xl mb-6">
+    <div className="glass p-5 rounded-xl">
       <h2 className="text-lg font-bold text-white mb-4">Статистика месяца</h2>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

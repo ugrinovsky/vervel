@@ -784,7 +784,7 @@ export default function TrainerCalendarScreen() {
 
           {/* Timeline */}
           <DndContext sensors={sensors} modifiers={[restrictToTimeline]} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <div ref={timelineRef} className="pb-4">
+            <div ref={timelineRef}>
               {TIMELINE_HOURS.map((hour) => {
                 const hourWorkouts = workoutsByHour[hour] ?? [];
                 const hasWorkouts = hourWorkouts.length > 0;

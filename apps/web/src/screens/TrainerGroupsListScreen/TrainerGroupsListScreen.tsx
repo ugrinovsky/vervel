@@ -127,7 +127,7 @@ export default function TrainerGroupsListScreen() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className={`${cardClass} rounded-2xl p-5 mb-6`}
+          className={`${cardClass} rounded-2xl p-5`}
         >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-white">Все группы</h2>
