@@ -5,9 +5,11 @@ declare module '@adonisjs/core/types' {
       message: {
         id: number
         content: string
-        senderId: number
-        sender: { id: number; fullName: string | null; email: string }
+        senderId: number | null
+        sender: { id: number; fullName: string | null; email: string } | null
         createdAt: unknown
+        aiGenerated?: boolean
+        aiCharge?: number | null
       }
     }
     'push:message': {

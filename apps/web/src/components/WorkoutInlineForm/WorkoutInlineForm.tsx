@@ -214,6 +214,12 @@ export default function WorkoutInlineForm({
         <span>{preselectedAssignee.type === 'group' ? '👥' : '🏃'}</span>
         <span className="text-sm text-white">{preselectedAssignee.name}</span>
       </div>
+      {!editWorkout && (
+        <p className="text-xs text-(--color_text_muted) mt-2.5 leading-relaxed">
+          После создания тренировки в соответствующий чат уйдёт сообщение с планом — атлет увидит его в
+          «Диалогах».
+        </p>
+      )}
     </div>
   ) : (
     <div>
@@ -289,6 +295,12 @@ export default function WorkoutInlineForm({
             </button>
           ))}
         </div>
+      )}
+      {!editWorkout && selectedAssignees.length > 0 && (
+        <p className="text-xs text-(--color_text_muted) mt-2.5 leading-relaxed">
+          После создания тренировки выбранные атлеты получат в чате сообщение с планом — как только вы нажмёте
+          «Создать тренировку».
+        </p>
       )}
     </div>
   );

@@ -202,6 +202,8 @@ router
     router.post('parse-notes-text', '#controllers/ai_controller.parseNotesText')
     router.post('apply-parsed-workout', '#controllers/ai_controller.applyParsedWorkout')
     router.post('generate-workout', '#controllers/ai_controller.generateWorkout')
+    router.get('chat/messages', '#controllers/ai_controller.chatMessages')
+    router.delete('chat/messages', '#controllers/ai_controller.clearChatHistory')
     router.post('chat', '#controllers/ai_controller.chat')
   })
   .prefix('ai')

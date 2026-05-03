@@ -88,6 +88,17 @@ export type AiTextParseUiPayload = {
   warning: string | null
 }
 
+/** Сообщение ИИ-чата (как в GET /chats/:id/messages, таблица messages) */
+export interface AiChatApiMessage {
+  id: number
+  content: string
+  senderId: number | null
+  sender: { id: number; fullName: string | null; email: string } | null
+  createdAt: string
+  aiGenerated: boolean
+  aiCharge: number | null
+}
+
 export interface AiBalance {
   balance: number
   costs: {
@@ -137,12 +148,19 @@ export const aiApi = {
   generateWorkout: (prompt: string) =>
     privateApi.post<{ data: AiWorkoutResult }>('/ai/generate-workout', { prompt }),
 
+  /** История ИИ-чата из БД (та же модель, что и обычные диалоги). */
+  getChatMessages: (params?: { limit?: number; before_id?: number }) =>
+    privateApi.get<{ success: boolean; data: AiChatApiMessage[] }>('/ai/chat/messages', {
+      params,
+    }),
+
+  clearChatMessages: () => privateApi.delete<{ success: boolean }>('/ai/chat/messages'),
+
   /**
-   * AI-чат — фитнес-советник.
-   * Принимает историю диалога и возвращает ответ ассистента.
+   * AI-чат — текст сообщения; история и ответ сохраняются на сервере.
    */
-  chat: (messages: Array<{ role: 'user' | 'assistant'; content: string }>) =>
-    privateApi.post<{ reply: string; balance: number; cost: number }>('/ai/chat', { messages }),
+  chat: (content: string) =>
+    privateApi.post<{ reply: string; balance: number; cost: number }>('/ai/chat', { content }),
 
   /**
    * Парсит заметки тренировки через AI и возвращает превью — НЕ сохраняет.

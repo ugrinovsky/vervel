@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { getApiErrorMessage } from '@/utils/apiError';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -16,7 +16,7 @@ interface Props {
   onAdded: () => void;
 }
 
-type Tab = 'email' | 'invite' | 'qr';
+type OtherTab = 'email' | 'qr';
 
 function QrScanTab({ active, onAdded }: { active: boolean; onAdded: () => void }) {
   const [state, setState] = useState<'scanning' | 'loading' | 'success' | 'error'>('scanning');
@@ -96,10 +96,19 @@ function QrScanTab({ active, onAdded }: { active: boolean; onAdded: () => void }
 }
 
 export default function AddAthleteDrawer({ open, onClose, onAdded }: Props) {
-  const [tab, setTab] = useState<Tab>('email');
+  const [showOtherMethods, setShowOtherMethods] = useState(false);
+  const [otherTab, setOtherTab] = useState<OtherTab>('email');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      setShowOtherMethods(false);
+      setOtherTab('email');
+      setInviteLink(null);
+    }
+  }, [open]);
 
   const handleAddByEmail = async () => {
     if (!email.trim()) return;
@@ -137,88 +146,100 @@ export default function AddAthleteDrawer({ open, onClose, onAdded }: Props) {
     }
   };
 
-  const tabs = [
-    { id: 'email' as Tab, label: 'По email' },
-    { id: 'invite' as Tab, label: 'Ссылка' },
-    { id: 'qr' as Tab, label: 'QR-код' },
-  ];
-
   return (
     <BottomSheet id="add-athlete" open={open} onClose={onClose} title="Добавить атлета" emoji="➕">
       <div className="space-y-4">
-        <Tabs tabs={tabs} active={tab} onChange={setTab} />
+        <p className="text-xs text-(--color_text_muted) leading-relaxed">
+          <span className="text-white/90 font-medium">Рекомендуем:</span> пригласительная ссылка — отправьте
+          атлету в мессенджер, он зарегистрируется сам.
+        </p>
 
-        {/* Email tab */}
-        {tab === 'email' && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-3"
-          >
-            <AppInput
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="email@example.com"
-              onKeyDown={(e) => e.key === 'Enter' && handleAddByEmail()}
-            />
-            <AccentButton
-              onClick={handleAddByEmail}
-              disabled={loading || !email.trim()}
-              loading={loading}
-              loadingText="Добавляем..."
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-3"
+        >
+          {!inviteLink ? (
+            <button
+              onClick={handleGenerateInvite}
+              disabled={loading}
+              className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              Добавить
-            </AccentButton>
-          </motion.div>
-        )}
-
-        {/* Invite link tab */}
-        {tab === 'invite' && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-3"
-          >
-            {!inviteLink ? (
+              {loading ? 'Генерируем...' : 'Сгенерировать ссылку'}
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <div className="bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-sm text-white break-all">
+                {inviteLink}
+              </div>
               <button
-                onClick={handleGenerateInvite}
-                disabled={loading}
-                className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+                onClick={handleCopyLink}
+                className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_bg_card_hover) text-white hover:opacity-90 transition-opacity"
               >
-                {loading ? 'Генерируем...' : 'Сгенерировать ссылку'}
+                Скопировать
               </button>
-            ) : (
-              <div className="space-y-3">
-                <div className="bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-sm text-white break-all">
-                  {inviteLink}
-                </div>
-                <button
-                  onClick={handleCopyLink}
-                  className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_bg_card_hover) text-white hover:opacity-90 transition-opacity"
+              <button
+                onClick={() => setInviteLink(null)}
+                className="w-full py-2 text-sm text-(--color_text_muted) hover:text-white transition-colors"
+              >
+                Создать новую
+              </button>
+            </div>
+          )}
+        </motion.div>
+
+        <button
+          type="button"
+          onClick={() => setShowOtherMethods((v) => !v)}
+          className="flex w-full items-center justify-between gap-2 rounded-xl border border-(--color_border) bg-(--color_bg_card_hover) px-3 py-2.5 text-left text-sm text-white/80 hover:bg-white/[0.06] transition-colors"
+        >
+          <span>Другие способы (email, QR)</span>
+          <span className="text-(--color_text_muted) text-xs">{showOtherMethods ? '▼' : '▶'}</span>
+        </button>
+
+        {showOtherMethods && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-3 rounded-xl border border-(--color_border) bg-(--color_bg_card) p-3"
+          >
+            <Tabs
+              tabs={[
+                { id: 'email' as OtherTab, label: 'По email' },
+                { id: 'qr' as OtherTab, label: 'QR-код' },
+              ]}
+              active={otherTab}
+              onChange={setOtherTab}
+            />
+            {otherTab === 'email' && (
+              <div className="space-y-3 pt-1">
+                <AppInput
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="email@example.com"
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddByEmail()}
+                />
+                <AccentButton
+                  onClick={handleAddByEmail}
+                  disabled={loading || !email.trim()}
+                  loading={loading}
+                  loadingText="Добавляем..."
                 >
-                  Скопировать
-                </button>
-                <button
-                  onClick={() => setInviteLink(null)}
-                  className="w-full py-2 text-sm text-(--color_text_muted) hover:text-white transition-colors"
-                >
-                  Создать новую
-                </button>
+                  Добавить
+                </AccentButton>
               </div>
             )}
+            {otherTab === 'qr' && (
+              <QrScanTab
+                active={otherTab === 'qr' && open && showOtherMethods}
+                onAdded={() => {
+                  onAdded();
+                  onClose();
+                }}
+              />
+            )}
           </motion.div>
-        )}
-
-        {/* QR tab */}
-        {tab === 'qr' && (
-          <QrScanTab
-            active={tab === 'qr' && open}
-            onAdded={() => {
-              onAdded();
-              onClose();
-            }}
-          />
         )}
       </div>
     </BottomSheet>

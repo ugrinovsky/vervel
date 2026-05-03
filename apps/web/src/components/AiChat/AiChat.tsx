@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { SparklesIcon, PaperAirplaneIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import ModalOverlay from '@/components/ModalOverlay/ModalOverlay';
 import ReactMarkdown from 'react-markdown';
-import { aiApi } from '@/api/ai';
+import { aiApi, type AiChatApiMessage } from '@/api/ai';
 import { checkForNewAchievements } from '@/hooks/useAchievementToast';
 import { useAuth, useActiveMode } from '@/contexts/AuthContext';
 import { useAiBalance } from '@/hooks/useAiBalance';
@@ -14,10 +14,23 @@ const DISPLAY_STEP = 20;
 const MAX_INPUT_LENGTH = 1000;
 
 interface Message {
+  id?: number;
   role: 'user' | 'assistant';
   content: string;
   /** Фактически списано ₽ (только у assistant) */
   cost?: number;
+}
+
+function mapFromApi(m: AiChatApiMessage): Message {
+  if (m.aiGenerated) {
+    return {
+      id: m.id,
+      role: 'assistant',
+      content: m.content,
+      cost: m.aiCharge ?? undefined,
+    };
+  }
+  return { id: m.id, role: 'user', content: m.content };
 }
 
 const ATHLETE_SUGGESTIONS = [
@@ -46,12 +59,11 @@ export default function AiChat({ open, onClose }: Props) {
   const inTrainerMode = isTrainer && (!isAthlete || activeMode === 'trainer');
   const suggestions = inTrainerMode ? TRAINER_SUGGESTIONS : ATHLETE_SUGGESTIONS;
 
-  const storageKey = user?.id ? `aiChat_${user.id}` : null;
-
   const [messages, setMessages] = useState<Message[]>([]);
   const [displayCount, setDisplayCount] = useState(DISPLAY_STEP);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -87,6 +99,7 @@ export default function AiChat({ open, onClose }: Props) {
     setInput('');
     setError(null);
     setLoading(false);
+    setHistoryLoading(false);
     setSessionStartIdx(0);
     prevLengthRef.current = 0;
   }, [open]);
@@ -103,7 +116,7 @@ export default function AiChat({ open, onClose }: Props) {
   // IntersectionObserver on top sentinel
   useEffect(() => {
     const sentinel = topSentinelRef.current;
-    if (!sentinel || messages.length === 0) return;
+    if (!sentinel || messages.length === 0 || historyLoading) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) loadMoreHistory();
@@ -112,40 +125,38 @@ export default function AiChat({ open, onClose }: Props) {
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [loadMoreHistory, messages.length]);
+  }, [loadMoreHistory, messages.length, historyLoading]);
 
-  // Load history from localStorage when sheet opens (messages cleared on close)
+  // Загрузка истории с сервера (таблица messages, как у обычных чатов)
   useEffect(() => {
-    if (!open || !storageKey) return;
+    if (!open || !user?.id) return;
 
-    const stored = localStorage.getItem(storageKey);
-    const history: Message[] = stored ? JSON.parse(stored) : [];
+    let cancelled = false;
+    setHistoryLoading(true);
+    setError(null);
 
-    const greeting: Message = {
-      role: 'assistant',
-      content:
-        'Привет! Я ИИ-помощник Vervel. Задавай вопросы про тренировки, питание или восстановление — помогу разобраться 💪',
+    (async () => {
+      try {
+        const res = await aiApi.getChatMessages({ limit: 50 });
+        if (cancelled) return;
+        const mapped = res.data.data.map(mapFromApi);
+        setMessages(mapped);
+        setDisplayCount(DISPLAY_STEP);
+        setSessionStartIdx(mapped.length);
+        setTimeout(() => scrollToBottom('instant'), 50);
+      } catch (err: unknown) {
+        if (!cancelled) {
+          setError(getApiErrorMessage(err, 'Не удалось загрузить историю'));
+        }
+      } finally {
+        if (!cancelled) setHistoryLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
     };
-
-    if (history.length > 0) {
-      setMessages(history);
-      setDisplayCount(DISPLAY_STEP); // always start showing last 20
-      setSessionStartIdx(history.length);
-    } else {
-      setMessages([greeting]);
-      setDisplayCount(DISPLAY_STEP);
-      setSessionStartIdx(1);
-    }
-
-    // Scroll to bottom after loading history
-    setTimeout(() => scrollToBottom('instant'), 50);
-  }, [open, storageKey, scrollToBottom]);
-
-  // Persist history on messages change
-  useEffect(() => {
-    if (!storageKey || messages.length === 0) return;
-    localStorage.setItem(storageKey, JSON.stringify(messages.slice(-50)));
-  }, [messages, storageKey]);
+  }, [open, user?.id, scrollToBottom]);
 
   // Scroll to bottom on new message/loading
   useEffect(() => {
@@ -170,13 +181,8 @@ export default function AiChat({ open, onClose }: Props) {
     setLoading(true);
     setError(null);
 
-    const contextMessages = newMessages
-      .slice(1)
-      .slice(-10)
-      .map((m) => ({ role: m.role, content: m.content }));
-
     try {
-      const res = await aiApi.chat(contextMessages);
+      const res = await aiApi.chat(text);
       const assistantMsg: Message = {
         role: 'assistant',
         content: res.data.reply,
@@ -204,17 +210,16 @@ export default function AiChat({ open, onClose }: Props) {
     }
   };
 
-  const handleClearHistory = () => {
-    if (!storageKey) return;
-    localStorage.removeItem(storageKey);
-    const greeting: Message = {
-      role: 'assistant',
-      content:
-        'Привет! Я ИИ-помощник Vervel. Задавай вопросы про тренировки, питание или восстановление — помогу разобраться 💪',
-    };
-    setMessages([greeting]);
-    setDisplayCount(DISPLAY_STEP);
-    setSessionStartIdx(1);
+  const handleClearHistory = async () => {
+    try {
+      await aiApi.clearChatMessages();
+      setMessages([]);
+      setDisplayCount(DISPLAY_STEP);
+      setSessionStartIdx(0);
+      setError(null);
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Не удалось очистить историю'));
+    }
   };
 
   return (
@@ -238,9 +243,9 @@ export default function AiChat({ open, onClose }: Props) {
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                {messages.length > 1 && (
+                {messages.length > 0 && (
                   <button
-                    onClick={handleClearHistory}
+                    onClick={() => void handleClearHistory()}
                     className="text-[10px] text-(--color_text_muted) hover:text-white transition-colors"
                   >
                     Очистить
@@ -260,16 +265,30 @@ export default function AiChat({ open, onClose }: Props) {
               {/* Top sentinel — triggers loading older messages */}
               <div ref={topSentinelRef} className="h-px" />
 
+              {historyLoading && (
+                <div className="flex justify-center py-8">
+                  <LoadingSpinner size="sm" variant="emeraldAccent" />
+                </div>
+              )}
+
+              {messages.length === 0 && !historyLoading && !error && (
+                <p className="text-sm text-(--color_text_secondary) pl-9 pr-2 leading-relaxed">
+                  Привет! Я ИИ-помощник Vervel. Задавай вопросы про тренировки, питание или
+                  восстановление — помогу разобраться 💪
+                </p>
+              )}
+
               {/* Loading older indicator */}
-              {hasMoreHistory && (
+              {!historyLoading && hasMoreHistory && (
                 <div className="flex justify-center py-1">
                   <LoadingSpinner size="xs" variant="emeraldAccent" />
                 </div>
               )}
 
-              {displayedMessages.map((msg, i) => (
+              {!historyLoading &&
+                displayedMessages.map((msg, i) => (
                 <motion.div
-                  key={i}
+                  key={msg.id ?? `${msg.role}-${i}-${msg.content.slice(0, 12)}`}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -303,7 +322,7 @@ export default function AiChat({ open, onClose }: Props) {
               ))}
 
               {/* Loading indicator */}
-              {loading && (
+              {!historyLoading && loading && (
                 <div className="flex justify-start">
                   <div className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 mr-2 mt-0.5">
                     <SparklesIcon className="w-3.5 h-3.5 text-emerald-400" />
@@ -324,7 +343,7 @@ export default function AiChat({ open, onClose }: Props) {
               )}
 
               {/* Suggestions — only at the start of session */}
-              {messages.length === sessionStartIdx && !loading && (
+              {messages.length === sessionStartIdx && !loading && !historyLoading && (
                 <div className="pt-2">
                   <p className="text-[10px] text-(--color_text_muted) uppercase tracking-wider mb-2 pl-9">
                     Попробуйте спросить

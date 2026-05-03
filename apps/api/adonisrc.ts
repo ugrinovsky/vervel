@@ -89,6 +89,7 @@ export default defineConfig({
         timeout: 30000,
       },
     ],
-    forceExit: false,
+    // Иначе после Japa процесс часто не завершается (пул pg / сервер) — зависает `git commit` на pre-commit.
+    forceExit: true,
   },
 })

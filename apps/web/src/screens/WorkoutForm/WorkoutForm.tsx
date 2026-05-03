@@ -51,7 +51,7 @@ export default function WorkoutForm() {
       });
       toast.success('Тренировка сохранена 💪');
       checkForNewAchievements();
-      navigate('/calendar', { state: { date: toDateKey(data.date) } });
+      navigate('/calendar', { state: { date: toDateKey(data.date), savedWorkout: true } });
     } catch (err: unknown) {
       const msg =
         err !== null &&
@@ -84,18 +84,20 @@ export default function WorkoutForm() {
         <ScreenHeader
           icon="💪"
           title="Новая тренировка"
-          description="Добавьте упражнения, подходы и веса вручную — или воспользуйтесь ИИ-распознаванием по фото или описанию"
+          description="Сначала дата, тип и упражнения из каталога — этого достаточно для сохранения. ИИ — по кнопке «Дополнить» ниже."
         />
 
         <ScreenHint className="mb-4">
-          Выберите тип тренировки, добавьте упражнения и подходы.{' '}
-          <span className="text-white font-medium">ИИ-распознавание</span> — по фото или текстовому
-          описанию ИИ заполнит форму автоматически.
+          Быстрый путь: добавьте 1–2 упражнения и нажмите «Сохранить».{' '}
+          <span className="text-white font-medium">ИИ</span> (фото, текст, генерация) — если нужно
+          дополнить запись.
         </ScreenHint>
 
         <WorkoutFormBase
           initialDate={initialDate}
           storageKey={storageKey}
+          lightOnboarding
+          athleteQuickMode
           notesLabel="Заметки (опционально)"
           notesPlaceholder="Как прошла тренировка, самочувствие..."
           submitLabel="Сохранить"

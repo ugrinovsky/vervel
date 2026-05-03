@@ -14,6 +14,8 @@ import { AiBalanceService, InsufficientBalanceError } from '#services/AiBalanceS
 import { ExerciseCatalog, type CatalogExercise } from '#services/ExerciseCatalog'
 import { tokenizeForMatch, tokenSubsetOverlap } from '#services/exercise_match_helpers'
 import AchievementService from '#services/AchievementService'
+import Chat from '#models/chat'
+import Message from '#models/message'
 import Workout from '#models/workout'
 import { WorkoutCalculator } from '#services/WorkoutCalculator'
 import { aiExercisesToWorkoutExercises } from '#services/WorkoutConverter'
@@ -74,17 +76,9 @@ const applyParsedWorkoutValidator = vine.compile(
   })
 )
 
-const chatValidator = vine.compile(
+const chatContentValidator = vine.compile(
   vine.object({
-    messages: vine
-      .array(
-        vine.object({
-          role: vine.enum(['user', 'assistant'] as const),
-          content: vine.string().trim().minLength(1).maxLength(2000),
-        })
-      )
-      .minLength(1)
-      .maxLength(20),
+    content: vine.string().trim().minLength(1).maxLength(2000),
   })
 )
 
@@ -532,17 +526,63 @@ export default class AiController {
   }
 
   /**
+   * GET /ai/chat/messages
+   * История ИИ-чата в той же таблице messages, что и обычные диалоги.
+   */
+  async chatMessages({ auth, request, response }: HttpContext) {
+    const userId = auth.user!.id
+    const chat = await Chat.query().where('type', 'ai').where('ownerUserId', userId).first()
+    if (!chat) {
+      return response.ok({ success: true, data: [] })
+    }
+
+    const limit = Math.min(Math.max(Number(request.input('limit', 50)) || 50, 1), 100)
+    const beforeId = request.input('before_id', null)
+
+    let query = Message.query()
+      .where('chatId', chat.id)
+      .orderBy('createdAt', 'desc')
+      .orderBy('id', 'desc')
+      .limit(limit)
+
+    if (beforeId) {
+      query = query.where('id', '<', Number(beforeId))
+    }
+
+    const rows = await query
+    for (const m of rows) {
+      if (!m.aiGenerated && m.senderId) {
+        await m.load('sender', (q) => q.select('id', 'fullName', 'email'))
+      }
+    }
+
+    return response.ok({ success: true, data: rows.reverse().map((m) => m.serialize()) })
+  }
+
+  /**
+   * DELETE /ai/chat/messages
+   * Удалить все сообщения ИИ-чата (чат-строка остаётся).
+   */
+  async clearChatHistory({ auth, response }: HttpContext) {
+    const userId = auth.user!.id
+    const chat = await Chat.query().where('type', 'ai').where('ownerUserId', userId).first()
+    if (chat) {
+      await Message.query().where('chatId', chat.id).delete()
+    }
+    return response.ok({ success: true })
+  }
+
+  /**
    * POST /ai/chat
-   * Универсальный AI-чат для атлетов и тренеров.
-   * Стоимость рассчитывается по фактическим токенам × markup.
-   * Возвращает reply, balance, cost (фактически списано).
+   * Универсальный AI-чат: сообщения пользователя и ответы пишутся в БД (как в обычных чатах).
+   * Тело: { content: string }.
    */
   async chat({ auth, request, response }: HttpContext) {
     if (!YandexAiService.isEnabled()) {
       return response.forbidden({ message: 'AI-функция временно недоступна' })
     }
 
-    const data = await request.validateUsing(chatValidator)
+    const data = await request.validateUsing(chatContentValidator)
     const userId = auth.user!.id
 
     // Rate limit: 30 chat requests per user per hour
@@ -562,8 +602,27 @@ export default class AiController {
       })
     }
 
+    const chat = await Chat.findOrCreateAiForUser(userId)
+
+    const userMessage = await Message.create({
+      chatId: chat.id,
+      senderId: userId,
+      content: data.content,
+      aiGenerated: false,
+    })
+
+    const recentRows = await Message.query()
+      .where('chatId', chat.id)
+      .orderBy('id', 'desc')
+      .limit(20)
+
+    const contextMessages = recentRows.reverse().map((m) => ({
+      role: m.aiGenerated ? ('assistant' as const) : ('user' as const),
+      content: m.content,
+    }))
+
     try {
-      const { reply, inputTokens, outputTokens } = await YandexAiService.chat(data.messages)
+      const { reply, inputTokens, outputTokens } = await YandexAiService.chat(contextMessages)
       const cost = AiBalanceService.calculateChatCost(inputTokens, outputTokens)
 
       let newBalance: number
@@ -574,6 +633,7 @@ export default class AiController {
           `AI-чат (${inputTokens}+${outputTokens} токенов)`
         )
       } catch (chargeErr) {
+        await userMessage.delete()
         if (chargeErr instanceof InsufficientBalanceError) {
           return response.paymentRequired({
             message: `Недостаточно средств для оплаты ответа`,
@@ -584,11 +644,20 @@ export default class AiController {
         throw chargeErr
       }
 
+      await Message.create({
+        chatId: chat.id,
+        senderId: null,
+        content: reply,
+        aiGenerated: true,
+        aiCharge: cost,
+      })
+
       // Проверяем достижения (огрехи не должны ломать ответ)
       AchievementService.checkAndUnlockAchievements(userId).catch(() => {})
 
       return response.ok({ reply, balance: newBalance, cost })
     } catch (err) {
+      await userMessage.delete()
       return response.internalServerError({
         message: 'Не удалось получить ответ от AI',
         detail: err?.message,

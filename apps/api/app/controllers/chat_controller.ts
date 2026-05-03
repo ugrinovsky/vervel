@@ -326,6 +326,10 @@ export default class ChatController {
     const chat = await Chat.find(chatId)
     if (!chat) return null
 
+    if (chat.type === 'ai') {
+      return chat.ownerUserId === userId ? chat : null
+    }
+
     // Trainer access
     if (chat.trainerId === userId) return chat
 
@@ -361,7 +365,6 @@ export default class ChatController {
 
     let query = Message.query()
       .where('chatId', params.chatId)
-      .preload('sender', (q) => q.select('id', 'fullName', 'email'))
       .orderBy('createdAt', 'desc')
       .limit(limit)
 
@@ -370,6 +373,12 @@ export default class ChatController {
     }
 
     const messages = await query
+
+    for (const m of messages) {
+      if (!m.aiGenerated && m.senderId) {
+        await m.load('sender', (q) => q.select('id', 'fullName', 'email'))
+      }
+    }
 
     return response.ok({ success: true, data: messages.reverse().map((m) => m.serialize()) })
   }
@@ -386,13 +395,15 @@ export default class ChatController {
       return response.notFound({ message: 'Чат не найден или нет доступа' })
     }
 
-    await db.rawQuery(
-      `INSERT INTO chat_reads (chat_id, user_id, last_read_at)
-       VALUES (?, ?, ?)
-       ON CONFLICT (chat_id, user_id)
-       DO UPDATE SET last_read_at = EXCLUDED.last_read_at`,
-      [chatId, user.id, DateTime.now().toISO()]
-    )
+    if (chat.type !== 'ai') {
+      await db.rawQuery(
+        `INSERT INTO chat_reads (chat_id, user_id, last_read_at)
+         VALUES (?, ?, ?)
+         ON CONFLICT (chat_id, user_id)
+         DO UPDATE SET last_read_at = EXCLUDED.last_read_at`,
+        [chatId, user.id, DateTime.now().toISO()]
+      )
+    }
 
     return response.ok({ success: true })
   }
@@ -457,6 +468,9 @@ export default class ChatController {
 
     const chat = await this.findChatForUser(user.id, chatId)
     if (!chat) return response.notFound({ message: 'Чат не найден' })
+    if (chat.type === 'ai') {
+      return response.badRequest({ message: 'Поток недоступен для ИИ-чата' })
+    }
 
     // After_id: use Last-Event-ID header (auto-sent by browser on reconnect) or query param
     const lastEventId = request.header('last-event-id')
@@ -518,9 +532,11 @@ export default class ChatController {
       message: {
         id: number
         content: string
-        senderId: number
-        sender: { id: number; fullName: string | null; email: string }
+        senderId: number | null
+        sender: { id: number; fullName: string | null; email: string } | null
         createdAt: unknown
+        aiGenerated?: boolean
+        aiCharge?: number | null
       }
     }) => {
       if (event.chatId !== chatId) return
@@ -566,6 +582,12 @@ export default class ChatController {
       return response.notFound({ message: 'Чат не найден или нет доступа' })
     }
 
+    if (chat.type === 'ai') {
+      return response.badRequest({
+        message: 'Сообщения ИИ-помощнику отправляются через окно ассистента',
+      })
+    }
+
     const message = await Message.create({
       chatId: Number(params.chatId),
       senderId: user.id,
@@ -601,7 +623,9 @@ export default class ChatController {
     } else {
       senderLabel = message.sender.fullName ?? message.sender.email
       url = '/dialogs'
-      recipientIds = [chat.trainerId]
+      if (chat.trainerId) {
+        recipientIds = [chat.trainerId]
+      }
     }
 
     if (recipientIds.length > 0) {

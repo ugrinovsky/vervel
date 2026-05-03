@@ -5,7 +5,7 @@ import User from './user.js'
 import TrainerGroup from './trainer_group.js'
 import Message from './message.js'
 
-export type ChatType = 'group' | 'personal'
+export type ChatType = 'group' | 'personal' | 'ai'
 
 export default class Chat extends BaseModel {
   @column({ isPrimary: true })
@@ -15,13 +15,17 @@ export default class Chat extends BaseModel {
   declare type: ChatType
 
   @column()
-  declare trainerId: number
+  declare trainerId: number | null
 
   @column()
   declare groupId: number | null
 
   @column()
   declare athleteId: number | null
+
+  /** Владелец потока ИИ-чата (type === 'ai'); для остальных типов null */
+  @column()
+  declare ownerUserId: number | null
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
@@ -50,6 +54,22 @@ export default class Chat extends BaseModel {
 
     if (!chat) {
       chat = await Chat.create({ type: 'personal', trainerId, groupId: null, athleteId })
+    }
+
+    return chat
+  }
+
+  static async findOrCreateAiForUser(userId: number): Promise<Chat> {
+    let chat = await Chat.query().where('type', 'ai').where('ownerUserId', userId).first()
+
+    if (!chat) {
+      chat = await Chat.create({
+        type: 'ai',
+        trainerId: null,
+        groupId: null,
+        athleteId: null,
+        ownerUserId: userId,
+      })
     }
 
     return chat

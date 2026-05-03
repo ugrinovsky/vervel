@@ -5,12 +5,12 @@ import MonthlyStats from './MonthlyStats';
 import DayDetails from './DayDetails';
 import { useActivityData } from './useActivityData';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import AccentButton from '@/components/ui/AccentButton';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { parseAthleteWorkoutDraft } from '@/util/localStorageWorkoutDraft';
 
@@ -25,7 +25,9 @@ function useWorkoutDraft(userId?: number) {
 
 export default function ActivityScreen() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
+  const [savedWorkoutBanner, setSavedWorkoutBanner] = useState(false);
   const draft = useWorkoutDraft(user?.id);
   const draftDate = draft?.date ? format(new Date(draft.date), 'yyyy-MM-dd') : null;
 
@@ -41,6 +43,14 @@ export default function ActivityScreen() {
     monthlyStats,
     refetch,
   } = useActivityData(draftDate);
+
+  useEffect(() => {
+    const st = location.state;
+    if (st === null || typeof st !== 'object' || Array.isArray(st) || st.savedWorkout !== true) return;
+    setSavedWorkoutBanner(true);
+    const dateKey = 'date' in st && typeof st.date === 'string' ? st.date : undefined;
+    navigate(location.pathname, { replace: true, state: dateKey ? { date: dateKey } : null });
+  }, [location.state, location.pathname, navigate]);
 
   const handleSelectDay = (day: DayData) => setSelectedDate(day.date);
   const handleMonthChange = (newMonth: Date) => setCurrentMonth(newMonth);
@@ -59,6 +69,28 @@ export default function ActivityScreen() {
             title="Активность"
             description="Календарь тренировок — нажмите на день, чтобы посмотреть детали, добавить или изменить запись"
           />
+          {savedWorkoutBanner && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 flex flex-col gap-3 rounded-2xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3.5"
+            >
+              <div>
+                <p className="text-sm font-semibold text-emerald-200">Тренировка сохранена</p>
+                <p className="text-xs text-white/70 mt-0.5">Когда появятся данные, день будет подсвечен в календаре.</p>
+              </div>
+              <AccentButton
+                size="sm"
+                className="w-full sm:w-auto self-start"
+                onClick={() => {
+                  setSavedWorkoutBanner(false);
+                  navigate('/workouts/new');
+                }}
+              >
+                Залогировать ещё
+              </AccentButton>
+            </motion.div>
+          )}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -119,6 +151,31 @@ export default function ActivityScreen() {
           title="Активность"
           description="Календарь тренировок — нажмите на день, чтобы посмотреть детали, добавить или изменить запись"
         />
+
+        {savedWorkoutBanner && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 flex flex-col gap-3 rounded-2xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3.5"
+          >
+            <div>
+              <p className="text-sm font-semibold text-emerald-200">Тренировка сохранена</p>
+              <p className="text-xs text-white/70 mt-0.5">
+                Выбран день в календаре ниже — там детали записи.
+              </p>
+            </div>
+            <AccentButton
+              size="sm"
+              className="w-full sm:w-auto self-start"
+              onClick={() => {
+                setSavedWorkoutBanner(false);
+                navigate('/workouts/new');
+              }}
+            >
+              Залогировать ещё
+            </AccentButton>
+          </motion.div>
+        )}
 
         <div className="border-t border-(--color_border) my-3" />
 
