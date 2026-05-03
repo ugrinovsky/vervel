@@ -67,6 +67,10 @@ router
 
     router.get('profile', '#controllers/profile_controller.getProfile')
     router.put('profile', '#controllers/profile_controller.updateProfile')
+    router.patch(
+      'profile/client-preferences',
+      '#controllers/profile_controller.patchClientPreferences'
+    )
     router.post('profile/photo', '#controllers/profile_controller.uploadPhoto')
     router.put('profile/password', '#controllers/profile_controller.changePassword')
     router.post('profile/become-athlete', '#controllers/profile_controller.becomeAthlete')

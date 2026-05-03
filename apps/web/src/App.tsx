@@ -17,6 +17,8 @@ import InviteScreen from '@/screens/InviteScreen/InviteScreen';
 import DocsScreen from '@/screens/DocsScreen/DocsScreen';
 import AvatarScreen from '@/screens/AvatarScreen/AvatarScreen';
 import LandingScreen from '@/screens/LandingScreen/LandingScreen';
+import AthleteOnboardingScreen from '@/screens/AthleteOnboardingScreen/AthleteOnboardingScreen';
+import TrainerOnboardingScreen from '@/screens/TrainerOnboardingScreen/TrainerOnboardingScreen';
 import { AuthProvider, useAuth, useActiveMode } from '@/contexts/AuthContext';
 import EmbeddedOAuthLaunchGate from '@/vk/EmbeddedOAuthLaunchGate';
 import { SheetStackProvider } from '@/contexts/SheetStackContext';
@@ -25,9 +27,12 @@ import IncomingCallWatcher from '@/components/VideoCall/IncomingCallWatcher';
 
 import 'tailwindcss';
 import './App.css';
+import { shouldShowAthleteOnboarding } from '@/util/athleteOnboarding';
+import { shouldShowTrainerOnboarding } from '@/util/trainerOnboarding';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { activeMode } = useActiveMode();
   const location = useLocation();
 
   if (!user) {
@@ -36,6 +41,20 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (!user.role) {
     return <Navigate to={`/select-role?userId=${user.id}`} replace />;
+  }
+
+  if (
+    location.pathname !== '/athlete-onboarding' &&
+    shouldShowAthleteOnboarding(user, activeMode)
+  ) {
+    return <Navigate to="/athlete-onboarding" replace />;
+  }
+
+  if (
+    location.pathname !== '/trainer-onboarding' &&
+    shouldShowTrainerOnboarding(user, activeMode)
+  ) {
+    return <Navigate to="/trainer-onboarding" replace />;
   }
 
   return children;
@@ -62,6 +81,8 @@ function AppContent(): JSX.Element {
     location.pathname === '/register' ||
     location.pathname === '/auth/callback' ||
     location.pathname === '/select-role' ||
+    location.pathname === '/athlete-onboarding' ||
+    location.pathname === '/trainer-onboarding' ||
     location.pathname.startsWith('/invite/') ||
     location.pathname.startsWith('/docs/');
   const showIncomingCallWatcher = !!user && isAthlete && activeMode === 'athlete' && !isAuthPage;
@@ -99,6 +120,22 @@ function AppContent(): JSX.Element {
         <Route
           path="/home"
           element={<ProtectedRoute><HomeScreen /></ProtectedRoute>}
+        />
+        <Route
+          path="/athlete-onboarding"
+          element={
+            <ProtectedRoute>
+              <AthleteOnboardingScreen />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/trainer-onboarding"
+          element={
+            <ProtectedRoute>
+              <TrainerOnboardingScreen />
+            </ProtectedRoute>
+          }
         />
         {uniqueRoutes.map((rout) => (
           <Route

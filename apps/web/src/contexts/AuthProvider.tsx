@@ -1,9 +1,10 @@
-import { useState, useCallback, useMemo, useEffect, type ReactNode } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef, type ReactNode } from 'react';
 import { ThemeController } from '@/util/ThemeController';
 import { clearAuxiliaryOAuthSessionStorage } from '@/auth/auxiliarySessionStorage';
 import { setApiAccessToken } from '@/api/http/baseApi';
 import type { AuthUser, AuthContextValue, BalanceContextValue, RoleContextValue } from './auth-types';
 import { AuthContext, BalanceContext, RoleContext } from './auth-contexts';
+import { migrateLocalOnboardingToServer } from '@/util/clientPreferencesMigration';
 
 function getStoredUser(): AuthUser | null {
   try {
@@ -56,6 +57,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (u.balance !== undefined) setBalance(u.balance);
     ThemeController.apply(u.themeHue ?? ThemeController.getStored());
   }, []);
+
+  const lastMigratedUserId = useRef<number | null>(null);
+  useEffect(() => {
+    if (!user) {
+      lastMigratedUserId.current = null;
+      return;
+    }
+    if (lastMigratedUserId.current === user.id) return;
+    void migrateLocalOnboardingToServer(user, updateUser).then((ok) => {
+      if (ok) lastMigratedUserId.current = user.id;
+    });
+  }, [user, updateUser]);
 
   const logout = useCallback(() => {
     localStorage.removeItem('user');

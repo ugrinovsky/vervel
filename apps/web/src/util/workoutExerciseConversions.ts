@@ -1,86 +1,185 @@
 import type { ExerciseData } from '@/api/trainer';
-import type { WorkoutExercise } from '@/api/workouts';
+import type { WorkoutExercise, WorkoutSet } from '@/api/workouts';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
 import type { ExerciseWithSets } from '@/types/Exercise';
+import { canonicalCustomExerciseKey } from '@/utils/canonicalCustomExerciseKey';
 
-/**
- * Выбор из каталога → черновик ExerciseData (минуты кардио, как в форме).
- * Используется WorkoutExercisesEditor и вставка в лист атлета.
- */
+function makeSet(partial: Omit<WorkoutSet, 'id'>): WorkoutSet {
+  return { id: crypto.randomUUID(), ...partial };
+}
+
+function pickedExerciseIdString(id: number | string): string {
+  return typeof id === 'number' ? String(id) : id;
+}
+
+/** Выбор из каталога (ExercisePicker) → ExerciseData для редактора формы */
 export function exerciseWithSetsToExerciseData(
-  ex: ExerciseWithSets,
+  picked: ExerciseWithSets,
   workoutType: WorkoutType
 ): ExerciseData {
+  const name = picked.title;
+  const exerciseId = pickedExerciseIdString(picked.exerciseId);
+
   if (workoutType === 'cardio') {
-    return { exerciseId: String(ex.exerciseId), name: ex.title, duration: ex.duration ?? 20 };
+    return {
+      name,
+      exerciseId,
+      duration: picked.duration ?? 20,
+      bodyweight: picked.bodyweight,
+    };
   }
-  if (workoutType === 'crossfit') {
-    return { exerciseId: String(ex.exerciseId), name: ex.title, reps: ex.sets?.[0]?.reps ?? 10 };
+
+  if (workoutType === 'bodybuilding') {
+    const setsDetail =
+      picked.sets.length > 0
+        ? picked.sets.map((s) => ({ reps: s.reps, weight: s.weight }))
+        : [
+            { reps: 10, weight: 0 },
+            { reps: 10, weight: 0 },
+            { reps: 10, weight: 0 },
+          ];
+    return {
+      name,
+      exerciseId,
+      bodyweight: picked.bodyweight,
+      sets: setsDetail.length,
+      setsDetail,
+    };
   }
-  const setsDetail = ex.sets?.length
-    ? ex.sets.map((s) => ({ reps: s.reps, weight: s.weight || undefined }))
-    : [{ reps: 10 }, { reps: 10 }, { reps: 10 }];
+
+  const first = picked.sets[0];
   return {
-    exerciseId: String(ex.exerciseId),
-    name: ex.title,
-    sets: setsDetail.length,
-    reps: setsDetail[0]?.reps ?? 10,
-    setsDetail,
+    name,
+    exerciseId,
+    bodyweight: picked.bodyweight,
+    reps: first?.reps ?? 10,
+    weight: picked.bodyweight ? 0 : (first?.weight ?? 0),
+  };
+}
+
+/** Выбор из каталога при редактировании сохранённой тренировки → WorkoutExercise */
+export function exerciseWithSetsToWorkoutExercise(
+  picked: ExerciseWithSets,
+  workoutType: WorkoutType
+): WorkoutExercise {
+  const exerciseId = pickedExerciseIdString(picked.exerciseId);
+  const shared = {
+    exerciseId,
+    bodyweight: picked.bodyweight,
+  };
+
+  if (workoutType === 'cardio') {
+    const minutes = picked.duration ?? 20;
+    const seconds = minutes * 60;
+    return {
+      ...shared,
+      type: 'cardio' as const,
+      sets: [makeSet({ time: seconds })],
+      duration: seconds,
+    };
+  }
+
+  if (workoutType === 'bodybuilding') {
+    const sets: WorkoutSet[] =
+      picked.sets.length > 0
+        ? picked.sets.map((s) =>
+            makeSet({
+              reps: s.reps,
+              weight: picked.bodyweight ? 0 : s.weight,
+            })
+          )
+        : [makeSet({ reps: 10, weight: 0 })];
+    return {
+      ...shared,
+      type: 'strength' as const,
+      sets,
+    };
+  }
+
+  const sets: WorkoutSet[] =
+    picked.sets.length > 0
+      ? picked.sets.map((s) =>
+          makeSet({
+            reps: s.reps,
+            weight: picked.bodyweight ? 0 : s.weight,
+          })
+        )
+      : [makeSet({ reps: 10, weight: 0 })];
+
+  return {
+    ...shared,
+    type: 'wod',
+    sets,
   };
 }
 
 /**
- * ExerciseData → тело PATCH/POST тренировки. Кардио: duration в API в секундах (в форме — минуты).
+ * Форма атлета (ExerciseData) → payload POST /workouts (совпадает с валидатором API).
  */
 export function exerciseDataToWorkoutExercise(
   ex: ExerciseData,
   workoutType: WorkoutType
 ): WorkoutExercise {
+  const exerciseId = ex.exerciseId ?? `custom:${canonicalCustomExerciseKey(ex.name)}`;
+  const zones = ex.zones && ex.zones.length > 0 ? ex.zones : undefined;
+  const zoneWeights =
+    ex.zoneWeights && Object.keys(ex.zoneWeights).length > 0 ? ex.zoneWeights : undefined;
+
+  const shared = {
+    exerciseId,
+    name: ex.name,
+    zones,
+    zoneWeights,
+    blockId: ex.blockId,
+    bodyweight: ex.bodyweight,
+  };
+
   if (workoutType === 'cardio') {
     const minutes = ex.duration ?? 20;
+    const seconds = minutes * 60;
     return {
-      exerciseId: ex.exerciseId!,
-      name: ex.name,
-      zones: ex.zones,
-      zoneWeights: ex.zoneWeights,
-      type: 'cardio',
-      duration: minutes * 60,
+      ...shared,
+      type: 'cardio' as const,
+      sets: [makeSet({ time: seconds })],
+      duration: seconds,
     };
   }
-  if (workoutType === 'crossfit') {
-    return {
-      exerciseId: ex.exerciseId!,
-      name: ex.name,
-      zones: ex.zones,
-      zoneWeights: ex.zoneWeights,
-      type: 'wod',
-      wodType: ex.wodType,
-      timeCap: ex.timeCap,
-      rounds: ex.rounds,
-      bodyweight: ex.bodyweight,
-      sets: [{ id: crypto.randomUUID(), reps: ex.reps ?? 0, weight: ex.bodyweight ? undefined : (ex.weight ?? 0) }],
-    };
-  }
-  return {
-    exerciseId: ex.exerciseId!,
-    name: ex.name,
-    zones: ex.zones,
-    zoneWeights: ex.zoneWeights,
-    type: 'strength',
-    bodyweight: ex.bodyweight,
-    sets: (ex.setsDetail ?? []).map((s) => ({
-      id: crypto.randomUUID(),
-      reps: s.reps ?? 0,
-      weight: ex.bodyweight ? undefined : (s.weight ?? 0),
-    })),
-    blockId: ex.blockId,
-  };
-}
 
-/** Каталог → сразу формат API тренировки (атлетский sheet, создание тренировки). */
-export function exerciseWithSetsToWorkoutExercise(
-  picked: ExerciseWithSets,
-  workoutType: WorkoutType
-): WorkoutExercise {
-  return exerciseDataToWorkoutExercise(exerciseWithSetsToExerciseData(picked, workoutType), workoutType);
+  if (workoutType === 'bodybuilding') {
+    if (ex.setsDetail && ex.setsDetail.length > 0) {
+      return {
+        ...shared,
+        type: 'strength' as const,
+        sets: ex.setsDetail.map((s) => makeSet({ reps: s.reps, weight: s.weight })),
+      };
+    }
+    const n = ex.sets ?? 3;
+    return {
+      ...shared,
+      type: 'strength' as const,
+      sets: Array.from({ length: n }, () =>
+        makeSet({ reps: ex.reps ?? 10, weight: ex.weight })
+      ),
+    };
+  }
+
+  // crossfit → wod
+  const sets: WorkoutSet[] =
+    ex.setsDetail && ex.setsDetail.length > 0
+      ? ex.setsDetail.map((s) => makeSet({ reps: s.reps, weight: s.weight }))
+      : [makeSet({ reps: ex.reps ?? 10, weight: ex.weight ?? 0 })];
+
+  const out: WorkoutExercise = {
+    ...shared,
+    type: 'wod',
+    sets,
+    wodType: ex.wodType,
+    rounds: ex.rounds,
+  };
+
+  if (ex.duration != null) {
+    out.duration = ex.duration * 60;
+  }
+
+  return out;
 }

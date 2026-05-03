@@ -1,4 +1,5 @@
 import { publicApi } from './http/publicApi';
+import type { ClientPreferences } from '@/types/clientPreferences';
 
 export type UserRole = 'athlete' | 'trainer' | 'both';
 
@@ -23,6 +24,9 @@ export interface AuthResponse {
     email: string;
     fullName: string;
     role: UserRole;
+    gender?: 'male' | 'female' | null;
+    themeHue?: number | null;
+    clientPreferences?: ClientPreferences;
   };
   token: {
     type: string;

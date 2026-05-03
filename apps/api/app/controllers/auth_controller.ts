@@ -7,6 +7,7 @@ import db from '@adonisjs/lucid/services/db'
 // @ts-ignore — no types for this package
 import disposableDomains from 'disposable-email-domains' assert { type: 'json' }
 import User from '#models/user'
+import { authUserPayload } from '#utils/auth_user_payload'
 import { registerValidator } from '#validators/auth_validator'
 import { AiBalanceService } from '#services/AiBalanceService'
 import { clearAuthTokenCookie, setAuthTokenCookie } from '#utils/auth_cookie'
@@ -60,14 +61,7 @@ export default class AuthController {
       setAuthTokenCookie(response, token.value!.release())
 
       return response.ok({
-        user: {
-          id: user.id,
-          email: user.email,
-          fullName: user.fullName,
-          role: user.role,
-          gender: user.gender,
-          themeHue: user.themeHue,
-        },
+        user: authUserPayload(user),
       })
     })
 
@@ -127,14 +121,7 @@ export default class AuthController {
         const token = await User.accessTokens.create(existing)
         setAuthTokenCookie(response, token.value!.release())
         return response.ok({
-          user: {
-            id: existing.id,
-            email: existing.email,
-            fullName: existing.fullName,
-            role: existing.role,
-            gender: existing.gender,
-            themeHue: existing.themeHue,
-          },
+          user: authUserPayload(existing),
           upgraded: true,
         })
       }
@@ -187,14 +174,7 @@ export default class AuthController {
     setAuthTokenCookie(response, token.value!.release())
 
     return response.created({
-      user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-        role: user.role,
-        gender: user.gender,
-        themeHue: user.themeHue,
-      },
+      user: authUserPayload(user),
     })
   }
 

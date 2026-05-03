@@ -1,4 +1,5 @@
 import { privateApi } from './http/privateApi';
+import type { ClientPreferences } from '@/types/clientPreferences';
 
 export interface ProfileUser {
   id: number;
@@ -13,6 +14,7 @@ export interface ProfileUser {
   photoUrl: string | null;
   balance: number;
   themeHue: number | null;
+  clientPreferences?: ClientPreferences;
   donatePhone: string | null;
   donateCard: string | null;
   donateYookassaLink: string | null;
@@ -54,6 +56,12 @@ export interface TrainerPublicProfile {
 export const profileApi = {
   getProfile: () =>
     privateApi.get<{ success: boolean; data: ProfileData }>('/profile'),
+
+  patchClientPreferences: (patch: Partial<ClientPreferences>) =>
+    privateApi.patch<{ success: boolean; data: { clientPreferences: ClientPreferences } }>(
+      '/profile/client-preferences',
+      patch
+    ),
 
   updateProfile: (data: {
     fullName?: string;

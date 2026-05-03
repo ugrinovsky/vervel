@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { getApiErrorMessage } from '@/utils/apiError';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -27,11 +27,17 @@ import toast from 'react-hot-toast';
 import GhostButton from '@/components/ui/GhostButton';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
-import { Bars3Icon, PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
-import { restrictToVerticalAxis } from '@/lib/workoutListDnd';
+import { applyVerticalListBounds, restrictToVerticalAxis } from '@/lib/workoutListDnd';
+import {
+  SORTABLE_EXERCISE_IDLE_DETAIL_DEFAULT,
+  SORTABLE_EXERCISE_IDLE_SUPERSET,
+  sortableWorkoutExerciseCardShellClassName,
+} from '@/workoutExerciseShared/sortableWorkoutExerciseCardStyles';
 import { exerciseWithSetsToWorkoutExercise } from '@/util/workoutExerciseConversions';
 import { InsertStartRow } from '@/components/workoutExerciseShared/WorkoutExerciseInsertControls';
+import { SortableDragHandle } from '@/components/workoutExerciseShared/SortableDragHandle';
 import { WorkoutExerciseBetweenRow } from '@/components/workoutExerciseShared/WorkoutExerciseBetweenRow';
 import {
   DndContext,
@@ -43,6 +49,7 @@ import {
   useSensors,
   type DragEndEvent,
   type DragStartEvent,
+  type Modifier,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -190,6 +197,7 @@ function ExerciseCard({
   onEditClick,
   onDelete,
   dragHandle,
+  isDragging,
 }: {
   ex: FullWorkout['exercises'][number];
   exerciseName: string;
@@ -199,6 +207,8 @@ function ExerciseCard({
   onDelete?: () => void;
   /** Ручка сортировки (только в режиме редактирования в sheet). */
   dragHandle?: ReactNode;
+  /** Как в WorkoutExercisesEditor — подсветка при reorder */
+  isDragging?: boolean;
 }) {
   const isInSuperset = !!ex.blockId;
   const isWod = ex.type === 'wod';
@@ -206,7 +216,14 @@ function ExerciseCard({
   const vol = isWod ? 0 : exerciseVolume(ex.sets);
 
   return (
-    <div className={`relative rounded-xl p-3 border space-y-2 ${isInSuperset ? 'bg-amber-500/10 border-amber-500/40' : 'bg-(--color_bg_card) border-(--color_border)'}`}>
+    <div
+      className={`${sortableWorkoutExerciseCardShellClassName({
+        isDragging: !!isDragging,
+        idleSurfaceClass: isInSuperset
+          ? SORTABLE_EXERCISE_IDLE_SUPERSET
+          : SORTABLE_EXERCISE_IDLE_DETAIL_DEFAULT,
+      })} p-3 space-y-2`}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           {dragHandle}
@@ -316,26 +333,18 @@ function SortableEditExerciseBlock({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className={`relative min-w-0 ${isDragging ? 'z-30' : ''}`}>
-      <div className={isDragging ? 'opacity-95' : undefined}>
+    <div className="relative min-w-0">
+      <div ref={setNodeRef} style={style} className="min-w-0">
         <ExerciseCard
           ex={ex}
           exerciseName={exerciseName}
           number={index + 1}
           isEditing
+          isDragging={isDragging}
           onEditClick={onEditClick}
           onDelete={onDelete}
           dragHandle={
-            <button
-              ref={setActivatorNodeRef}
-              type="button"
-              className="shrink-0 p-0.5 rounded text-white/35 hover:text-white/60 cursor-grab active:cursor-grabbing touch-none select-none"
-              title="Перетащить"
-              {...listeners}
-              {...attributes}
-            >
-              <Bars3Icon className="w-4 h-4" />
-            </button>
+            <SortableDragHandle ref={setActivatorNodeRef} {...listeners} {...attributes} />
           }
         />
       </div>
@@ -410,6 +419,13 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const editExerciseListBoundsRef = useRef<HTMLDivElement>(null);
+  const restrictEditExerciseListBounds = useCallback<Modifier>(
+    ({ transform, draggingNodeRect }) =>
+      applyVerticalListBounds(transform, draggingNodeRect, editExerciseListBoundsRef.current),
+    []
   );
 
   const [parsePreview, setParsePreview] = useState<AiParseWorkoutNotesResponse | null>(null);
@@ -876,12 +892,13 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
                       <DndContext
                         sensors={dndSensors}
                         collisionDetection={closestCorners}
-                        modifiers={[restrictToVerticalAxis]}
+                        modifiers={[restrictToVerticalAxis, restrictEditExerciseListBounds]}
                         onDragStart={handleEditDragStart}
                         onDragEnd={handleEditDragEnd}
                       >
-                        <InsertStartRow onClick={() => { setEditingExIdx(null); setInsertAt(0); }} />
-                        <SortableContext items={editSortIds} strategy={verticalListSortingStrategy}>
+                        <div ref={editExerciseListBoundsRef} className="min-w-0">
+                          <InsertStartRow onClick={() => { setEditingExIdx(null); setInsertAt(0); }} />
+                          <SortableContext items={editSortIds} strategy={verticalListSortingStrategy}>
                           {editExercises.map((ex, i, arr) => {
                             const name = exerciseIdForDisplay(
                               ex.name ?? exerciseMap.get(ex.exerciseId)?.title ?? ex.exerciseId,
@@ -931,7 +948,8 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
                               />
                             );
                           })}
-                        </SortableContext>
+                          </SortableContext>
+                        </div>
                       </DndContext>
                     )}
               </div>

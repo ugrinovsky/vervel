@@ -31,6 +31,7 @@ import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 import { useAuth } from '@/contexts/AuthContext';
 import { parseTrainerWorkoutDraft } from '@/util/localStorageWorkoutDraft';
 import { isRecord } from '@/utils/typeGuards';
+import { noPullRefreshProps } from '@/lib/noPullRefresh';
 
 function isScheduledWorkoutDragPayload(v: unknown): v is ScheduledWorkout {
   if (!isRecord(v)) return false;
@@ -157,6 +158,7 @@ function DraggableWorkout({
   return (
     <motion.div
       ref={setNodeRef}
+      {...noPullRefreshProps}
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: isDragging ? 0 : 1, x: 0 }}
       onClick={onEdit}

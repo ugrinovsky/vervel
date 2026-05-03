@@ -28,6 +28,12 @@ async function trainerUser() {
   return user
 }
 
+/** Очистка JSON-настроек для изоляции тестов `client_preferences`. */
+async function clearClientPreferences(user: User) {
+  user.clientPreferences = {}
+  await user.save()
+}
+
 // ─── Публичные роуты ──────────────────────────────────────────────────────────
 
 test.group('Публичные роуты', () => {
@@ -157,6 +163,98 @@ test.group('Profile', () => {
       .json({ fullName: 'Обновлённое Имя' })
     response.assertStatus(200)
     response.assertBodyContains({ success: true })
+  })
+})
+
+// ─── Profile: client_preferences ─────────────────────────────────────────────
+
+test.group('Profile: client_preferences', () => {
+  test('PATCH /profile/client-preferences → 401 без авторизации', async ({ client }) => {
+    const response = await client
+      .patch('/profile/client-preferences')
+      .json({ athleteOnboardingComplete: true })
+    response.assertStatus(401)
+  })
+
+  test('PATCH /profile/client-preferences → 400 без допустимых полей', async ({ client }) => {
+    const user = await athleteUser()
+    const empty = await client.patch('/profile/client-preferences').loginAs(user).json({})
+    empty.assertStatus(400)
+
+    const unknownKey = await client
+      .patch('/profile/client-preferences')
+      .loginAs(user)
+      .json({ unknownFlag: true })
+    unknownKey.assertStatus(400)
+  })
+
+  test('PATCH объединяет JSON; GET /profile и POST /login отражают client_preferences', async ({
+    client,
+    assert,
+  }) => {
+    const user = await athleteUser()
+    await clearClientPreferences(user)
+
+    try {
+      let response = await client
+        .patch('/profile/client-preferences')
+        .loginAs(user)
+        .json({ athleteOnboardingComplete: true })
+      response.assertStatus(200)
+      const patchBody = response.body() as {
+        data: { clientPreferences: Record<string, unknown> }
+      }
+      assert.equal(patchBody.data.clientPreferences.athleteOnboardingComplete, true)
+
+      response = await client.get('/profile').loginAs(user)
+      response.assertStatus(200)
+      const profileBody = response.body() as {
+        data: { user: { clientPreferences: Record<string, unknown> } }
+      }
+      assert.equal(profileBody.data.user.clientPreferences.athleteOnboardingComplete, true)
+
+      response = await client
+        .patch('/profile/client-preferences')
+        .loginAs(user)
+        .json({ athleteCoachIntent: 'solo' })
+      response.assertStatus(200)
+      const patchBody2 = response.body() as {
+        data: { clientPreferences: Record<string, unknown> }
+      }
+      assert.equal(patchBody2.data.clientPreferences.athleteOnboardingComplete, true)
+      assert.equal(patchBody2.data.clientPreferences.athleteCoachIntent, 'solo')
+
+      response = await client.post('/login').json({ email: user.email, password: 'password' })
+      response.assertStatus(200)
+      const loginBody = response.body() as {
+        user: { clientPreferences: Record<string, unknown> }
+      }
+      assert.equal(loginBody.user.clientPreferences.athleteOnboardingComplete, true)
+      assert.equal(loginBody.user.clientPreferences.athleteCoachIntent, 'solo')
+    } finally {
+      await clearClientPreferences(await User.findOrFail(user.id))
+    }
+  })
+
+  test('POST /login возвращает client_preferences тренера из БД', async ({ client, assert }) => {
+    const user = await trainerUser()
+    user.clientPreferences = {
+      trainerOnboardingComplete: true,
+      trainerWorkStyle: 'groups',
+    }
+    await user.save()
+
+    try {
+      const response = await client.post('/login').json({ email: user.email, password: 'password' })
+      response.assertStatus(200)
+      const body = response.body() as {
+        user: { clientPreferences: Record<string, unknown> }
+      }
+      assert.equal(body.user.clientPreferences.trainerOnboardingComplete, true)
+      assert.equal(body.user.clientPreferences.trainerWorkStyle, 'groups')
+    } finally {
+      await clearClientPreferences(await User.findOrFail(user.id))
+    }
   })
 })
 

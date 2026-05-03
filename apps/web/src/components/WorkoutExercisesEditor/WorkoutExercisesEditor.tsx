@@ -12,8 +12,20 @@ import type { ExerciseData } from '@/api/trainer';
 import type { ExerciseWithSets } from '@/types/Exercise';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
 import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
-import { useLayoutEffect, useState } from 'react';
-import { ArrowsRightLeftIcon, Bars3Icon } from '@heroicons/react/24/outline';
+import {
+  SORTABLE_EXERCISE_IDLE_EDITOR_DEFAULT,
+  SORTABLE_EXERCISE_IDLE_SUPERSET,
+  sortableWorkoutExerciseCardShellClassName,
+} from '@/workoutExerciseShared/sortableWorkoutExerciseCardStyles';
+import {
+  forwardRef,
+  useCallback,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
+import { ArrowsRightLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
 import {
   DndContext,
   closestCorners,
@@ -23,6 +35,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type Modifier,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -32,10 +45,16 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { restrictToVerticalAxis } from '@/lib/workoutListDnd';
+import { applyVerticalListBounds, restrictToVerticalAxis } from '@/lib/workoutListDnd';
 import { exerciseWithSetsToExerciseData } from '@/util/workoutExerciseConversions';
 import { InsertStartRow } from '@/components/workoutExerciseShared/WorkoutExerciseInsertControls';
+import { SortableDragHandle } from '@/components/workoutExerciseShared/SortableDragHandle';
 import { WorkoutExerciseBetweenRow } from '@/components/workoutExerciseShared/WorkoutExerciseBetweenRow';
+import GhostButton from '@/components/ui/GhostButton';
+
+export type WorkoutExercisesEditorHandle = {
+  openExercisePicker: () => void;
+};
 
 interface Props {
   workoutType: WorkoutType;
@@ -46,6 +65,8 @@ interface Props {
   profileWeight?: number;
   /** Назначение тренировки атлету — без полей веса */
   hideWeights?: boolean;
+  /** Скрыть «Добавить упражнение» — когда снаружи свой триггер каталога (лайт-онбординг) */
+  hideAddExerciseButton?: boolean;
 }
 
 function SortableExerciseCard({
@@ -100,36 +121,29 @@ function SortableExerciseCard({
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`min-w-0 ${isDragging ? 'z-30' : ''}`}
-    >
+    <div className="min-w-0">
       <div
-        className={`relative rounded-xl min-w-0 border transition-all duration-150 ${
-          isDragging
-            ? 'opacity-95 scale-[1.01] shadow-[0_0_20px_var(--color_primary_light)]/20 ring-2 ring-white/60 bg-(--color_bg_card_hover) border-white/20'
-            : handlePressed
-              ? 'ring-2 ring-white/40 shadow-[0_0_16px_var(--color_primary_light)]/15'
-              : ''
-        } ${isInBlock ? 'bg-amber-500/10 border-amber-500/40' : 'bg-white/[0.07] border-white/10'}`}
+        ref={setNodeRef}
+        style={style}
+        className={sortableWorkoutExerciseCardShellClassName({
+          isDragging,
+          handleActive: handlePressed,
+          idleSurfaceClass: isInBlock
+            ? SORTABLE_EXERCISE_IDLE_SUPERSET
+            : SORTABLE_EXERCISE_IDLE_EDITOR_DEFAULT,
+        })}
       >
         <div className="p-3">
           <div className="flex items-center gap-2 min-w-0">
-            <button
+            <SortableDragHandle
               ref={setActivatorNodeRef}
-              type="button"
-              className="shrink-0 p-0.5 rounded text-white/35 hover:text-white/60 cursor-grab active:cursor-grabbing touch-none select-none"
-              title="Перетащить"
               onPointerDownCapture={() => setHandlePressed(true)}
               onPointerUpCapture={() => setHandlePressed(false)}
               onPointerCancelCapture={() => setHandlePressed(false)}
               onBlur={() => setHandlePressed(false)}
               {...listeners}
               {...attributes}
-            >
-              <Bars3Icon className="w-4 h-4" />
-            </button>
+            />
             <span className="shrink-0 text-[10px] font-mono text-white/30 w-4 text-right tabular-nums">
               {String(index + 1).padStart(2, '0')}
             </span>
@@ -197,18 +211,35 @@ function SortableExerciseCard({
   );
 }
 
-export default function WorkoutExercisesEditor({
-  workoutType,
-  exercises,
-  onChange,
-  superset = true,
-  toolbar,
-  profileWeight,
-  hideWeights = false,
-}: Props) {
+const WorkoutExercisesEditor = forwardRef<WorkoutExercisesEditorHandle, Props>(
+  function WorkoutExercisesEditor(
+    {
+      workoutType,
+      exercises,
+      onChange,
+      superset = true,
+      toolbar,
+      profileWeight,
+      hideWeights = false,
+      hideAddExerciseButton = false,
+    },
+    ref
+  ) {
+  const [catalogPickerOpen, setCatalogPickerOpen] = useState(false);
   const [replacingIdx, setReplacingIdx] = useState<number | null>(null);
   const [insertAt, setInsertAt] = useState<number | null>(null);
   const [sortIds, setSortIds] = useState<string[]>([]);
+  const exerciseListBoundsRef = useRef<HTMLDivElement>(null);
+
+  const restrictToExerciseListBounds = useCallback<Modifier>(
+    ({ transform, draggingNodeRect }) =>
+      applyVerticalListBounds(transform, draggingNodeRect, exerciseListBoundsRef.current),
+    []
+  );
+
+  useImperativeHandle(ref, () => ({
+    openExercisePicker: () => setCatalogPickerOpen(true),
+  }));
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -356,6 +387,7 @@ export default function WorkoutExercisesEditor({
         if (next[j].blockId === bid) delete next[j].blockId;
         else break;
       }
+      delete a.blockId;
     } else {
       const newBlockId = a.blockId ?? crypto.randomUUID();
       a.blockId = newBlockId;
@@ -381,12 +413,13 @@ export default function WorkoutExercisesEditor({
             <DndContext
               sensors={sensors}
               collisionDetection={closestCorners}
-              modifiers={[restrictToVerticalAxis]}
+              modifiers={[restrictToVerticalAxis, restrictToExerciseListBounds]}
               onDragEnd={handleDragEnd}
             >
-              <InsertStartRow onClick={() => setInsertAt(0)} />
-              <SortableContext items={sortIds} strategy={verticalListSortingStrategy}>
-                {exercises.map((ex, i) => {
+              <div ref={exerciseListBoundsRef} className="min-w-0">
+                <InsertStartRow onClick={() => setInsertAt(0)} />
+                <SortableContext items={sortIds} strategy={verticalListSortingStrategy}>
+                  {exercises.map((ex, i) => {
                   const isInBlock = !!ex.blockId;
                   const isLast = i === exercises.length - 1;
                   const isLinkedToNext =
@@ -423,13 +456,25 @@ export default function WorkoutExercisesEditor({
                       />
                   );
                 })}
-              </SortableContext>
+                </SortableContext>
+              </div>
             </DndContext>
           ) : null}
         </div>
       )}
 
-      <ExercisePicker onSelect={handleExercisePicked} workoutType={workoutType} />
+      {!hideAddExerciseButton && (
+        <GhostButton onClick={() => setCatalogPickerOpen(true)} className="mt-6">
+          <PlusIcon className="w-4 h-4" />
+          Добавить упражнение
+        </GhostButton>
+      )}
+      <ExercisePicker
+        onSelect={handleExercisePicked}
+        workoutType={workoutType}
+        open={catalogPickerOpen}
+        onClose={() => setCatalogPickerOpen(false)}
+      />
 
       {replacingIdx !== null && (
         <ExercisePicker
@@ -450,4 +495,7 @@ export default function WorkoutExercisesEditor({
       )}
     </div>
   );
-}
+  }
+);
+
+export default WorkoutExercisesEditor;

@@ -9,6 +9,7 @@ import { HttpContext } from '@adonisjs/core/http'
 import { StreakService } from '#services/StreakService'
 import { computeLevel } from '#services/xp_logic'
 import User from '#models/user'
+import { mergeClientPreferences, patchClientPreferencesFromBody } from '#utils/client_preferences'
 import { isTrustedVkPhotoUrl } from '#utils/trusted_vk_photo_url'
 
 export default class ProfileController {
@@ -50,6 +51,7 @@ export default class ProfileController {
             createdAt: user.createdAt,
             balance: user.balance,
             themeHue: user.themeHue,
+            clientPreferences: user.clientPreferences ?? {},
             donatePhone: user.donatePhone,
             donateCard: user.donateCard,
             donateYookassaLink: user.donateYookassaLink,
@@ -157,6 +159,7 @@ export default class ProfileController {
             photoUrl: user.photoUrl,
             createdAt: user.createdAt,
             themeHue: user.themeHue,
+            clientPreferences: user.clientPreferences ?? {},
           },
         },
       })
@@ -367,6 +370,30 @@ export default class ProfileController {
     await measurement.delete()
 
     return response.ok({ success: true })
+  }
+
+  /**
+   * PATCH /profile/client-preferences
+   * Частичное слияние JSON настроек клиента (онбординг, подсказки UI).
+   */
+  async patchClientPreferences({ auth, request, response }: HttpContext) {
+    const user = auth.user!
+    const patch = patchClientPreferencesFromBody(request.all())
+    if (Object.keys(patch).length === 0) {
+      return response.badRequest({
+        success: false,
+        message: 'Нет допустимых полей для сохранения',
+      })
+    }
+
+    const merged = mergeClientPreferences(user.clientPreferences, patch)
+    user.clientPreferences = merged
+    await user.save()
+
+    return response.ok({
+      success: true,
+      data: { clientPreferences: merged },
+    })
   }
 
   async changePassword({ auth, request, response }: HttpContext) {

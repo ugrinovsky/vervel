@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useRef, useEffect } from 'react';
+import { createContext, useContext, useState, useRef, useEffect, useId } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { CONFIRM_DELETE_OPEN_EVENT } from '@/components/ui/confirmDeleteOpenEvent';
 
 const Ctx = createContext<{ trigger: () => void } | null>(null);
 
@@ -26,16 +27,30 @@ function ConfirmDeleteWrapper({
   trigger,
   children,
 }: WrapperProps) {
+  const instanceId = useId();
   const [confirming, setConfirming] = useState(false);
   const [contentBlocked, setContentBlocked] = useState(false);
   const unblockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => { if (unblockTimer.current) clearTimeout(unblockTimer.current); }, []);
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if (!(e instanceof CustomEvent)) return;
+      if (e.detail === instanceId) return;
+      setConfirming(false);
+      if (unblockTimer.current) clearTimeout(unblockTimer.current);
+      unblockTimer.current = setTimeout(() => setContentBlocked(false), 200);
+    };
+    window.addEventListener(CONFIRM_DELETE_OPEN_EVENT, handler);
+    return () => window.removeEventListener(CONFIRM_DELETE_OPEN_EVENT, handler);
+  }, [instanceId]);
+
   const open = () => {
     if (unblockTimer.current) clearTimeout(unblockTimer.current);
     setContentBlocked(true);
     setConfirming(true);
+    window.dispatchEvent(new CustomEvent(CONFIRM_DELETE_OPEN_EVENT, { detail: instanceId }));
   };
 
   const close = () => {

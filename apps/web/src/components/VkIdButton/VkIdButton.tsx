@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import * as VKID from '@vkid/sdk';
 import { useAuth } from '@/contexts/AuthContext';
 import type { AuthUser } from '@/contexts/auth-types';
+import type { ClientPreferences } from '@/types/clientPreferences';
 import { publicApi } from '@/api/http/publicApi';
 import toast from 'react-hot-toast';
 import { isRecord } from '@/utils/typeGuards';
@@ -27,7 +28,14 @@ function vkExchangePayload(v: unknown): { accessToken: string; userId: number | 
 }
 
 type VkSdkLoginResponse = {
-  user: { id: number; email: string; fullName: string; role: string };
+  user: {
+    id: number;
+    email: string;
+    fullName: string;
+    role: string;
+    themeHue?: number | null;
+    clientPreferences?: ClientPreferences;
+  };
   needsRole?: boolean;
   userId?: number;
 };
@@ -102,6 +110,8 @@ export default function VkIdButton() {
             email: data.user.email,
             fullName: data.user.fullName,
             role,
+            themeHue: data.user.themeHue,
+            clientPreferences: data.user.clientPreferences,
           };
           login(authUser);
         } catch {

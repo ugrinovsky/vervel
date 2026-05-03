@@ -15,6 +15,11 @@ interface ScreenProps {
   onRefresh?: () => Promise<void>;
   /** Включить pull-to-refresh жест */
   enablePullToRefresh?: boolean;
+  /**
+   * `nav` — отступ под нижний таббар (по умолчанию).
+   * `safe` — только safe area + небольшой зазор (экраны без нижней навигации, например онбординг).
+   */
+  bottomInset?: 'nav' | 'safe';
 }
 
 function PageLoader() {
@@ -54,9 +59,12 @@ export default function Screen({
   className = '',
   onRefresh = defaultRefresh,
   enablePullToRefresh = true,
+  bottomInset = 'nav',
 }: PropsWithChildren<ScreenProps>) {
   const screenRef = useRef<HTMLDivElement>(null);
   const touchStartYRef = useRef(0);
+  /** См. `noPullRefreshProps` / `SortableDragHandle` — не смешивать DnD с pull-to-refresh */
+  const pullIgnoredRef = useRef(false);
   // hasPulled: стал true при первом пересечении порога, остаётся true до touchend
   // После этого e.preventDefault() вызывается на КАЖДЫЙ touchmove — браузер не скроллит
   const hasPulledRef = useRef(false);
@@ -89,10 +97,13 @@ export default function Screen({
     const onTouchStart = (e: TouchEvent) => {
       touchStartYRef.current = e.touches[0].clientY;
       hasPulledRef.current = false;
+      const t = e.target;
+      pullIgnoredRef.current =
+        t instanceof Element && t.closest('[data-no-pull-refresh]') !== null;
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (isRefreshingRef.current) return;
+      if (pullIgnoredRef.current || isRefreshingRef.current) return;
 
       const dy = e.touches[0].clientY - touchStartYRef.current;
 
@@ -120,11 +131,16 @@ export default function Screen({
 
     const resetRaw = () => {
       hasPulledRef.current = false;
+      pullIgnoredRef.current = false;
       setPullProgress(0);
       rawY.set(0);
     };
 
     const onTouchEnd = async () => {
+      if (pullIgnoredRef.current) {
+        pullIgnoredRef.current = false;
+        return;
+      }
       if (isRefreshingRef.current) return;
       const visual = rawY.get();
 
@@ -190,8 +206,13 @@ export default function Screen({
 
       <motion.div
         ref={screenRef}
-        className={`screen flex flex-col items-stretch justify-center h-full w-full max-w-[798px] mx-auto ${className}`.trim()}
-        style={{ y: enablePullToRefresh ? springY : 0 }}
+        className={`screen flex flex-col items-stretch justify-start h-full w-full max-w-[798px] mx-auto ${className}`.trim()}
+        style={{
+          y: enablePullToRefresh ? springY : 0,
+          ...(bottomInset === 'safe' && {
+            paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))',
+          }),
+        }}
       >
         {loading ? <PageLoader /> : children}
       </motion.div>

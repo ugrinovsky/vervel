@@ -15,6 +15,7 @@ import Message from './message.js'
 import ScheduledWorkout from './scheduled_workout.js'
 import WorkoutTemplate from './workout_template.js'
 import UserMeasurement from './user_measurement.js'
+import type { ClientPreferences } from '#utils/client_preferences'
 
 const AuthFinder = withAuthFinder(() => hash.use('scrypt'), {
   uids: ['email'],
@@ -64,6 +65,10 @@ export default class User extends compose(BaseModel, AuthFinder) {
   /** Theme hue (0–359) — persisted per account so theme follows the user across devices. */
   @column()
   declare themeHue: number | null
+
+  /** Клиентские настройки (онбординг, подсказки UI) — JSON, следует за аккаунтом. */
+  @column()
+  declare clientPreferences: ClientPreferences | null
 
   @column()
   declare xp: number

@@ -10,6 +10,12 @@ import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import { trainerApi, type TodayOverview, type UnreadCounts } from '@/api/trainer';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  getTrainerGettingStartedSteps,
+  getTrainerQuickLinks,
+  getTrainerTodayDashboardHint,
+  getTrainerWorkStyleIntent,
+} from '@/util/trainerOnboarding';
 import { getCurrentHour } from '@/utils/date';
 
 function getGreeting(fullName: string | null | undefined) {
@@ -35,6 +41,7 @@ import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 export default function TrainerTodayScreen() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const workStyle = user ? getTrainerWorkStyleIntent(user) : null;
   const [overview, setOverview] = useState<TodayOverview | null>(null);
   const [unreadCounts, setUnreadCounts] = useState<UnreadCounts | null>(null);
   const [loading, setLoading] = useState(true);
@@ -90,6 +97,9 @@ export default function TrainerTodayScreen() {
         </AnimatedBlock>
 
         <ScreenHint className="mb-4">
+          {workStyle ? (
+            <span className="block mb-2">{getTrainerTodayDashboardHint(workStyle)}</span>
+          ) : null}
           Дашборд тренера на текущий день. Красные бейджи — непрочитанные сообщения от атлетов и групп.{' '}
           <span className="text-white font-medium">Тренировки на сегодня</span> — все запланированные
           занятия; нажмите, чтобы перейти в Календарь.
@@ -158,29 +168,7 @@ export default function TrainerTodayScreen() {
               Добавьте атлетов — и всё заработает: статистика, расписание, чаты, аналитика прогресса
             </p>
             <div className="space-y-3">
-              {([
-                {
-                  step: '1',
-                  title: 'Добавьте атлетов',
-                  desc: 'По email, QR-коду или пригласительной ссылке',
-                  to: '/trainer/athletes',
-                  label: 'Добавить',
-                },
-                {
-                  step: '2',
-                  title: 'Создайте шаблоны тренировок',
-                  desc: 'Готовые схемы — быстро назначаете, не тратите время',
-                  to: '/trainer/templates',
-                  label: 'Создать',
-                },
-                {
-                  step: '3',
-                  title: 'Запланируйте занятия',
-                  desc: 'Назначьте тренировки в Календаре — атлеты увидят их у себя',
-                  to: '/trainer/calendar',
-                  label: 'Открыть',
-                },
-              ] as const).map(({ step, title, desc, to, label }) => (
+              {getTrainerGettingStartedSteps(workStyle).map(({ step, title, desc, to, label }) => (
                 <div key={step} className="flex items-start gap-3">
                   <div className="w-7 h-7 rounded-full bg-(--color_primary_light)/30 text-(--color_primary) flex items-center justify-center text-sm font-bold shrink-0">
                     {step}
@@ -291,14 +279,7 @@ export default function TrainerTodayScreen() {
 
         {/* Quick Actions */}
         <AnimatedBlock delay={0.2}>
-          <ScreenLinks
-            links={[
-              { emoji: '📅', bg: 'bg-emerald-500/20', label: 'Календарь', sub: 'Назначить тренировки', to: '/trainer/calendar' },
-              { emoji: '👥', bg: 'bg-blue-500/20',    label: 'Группы',    sub: 'Управление группами',  to: '/trainer/groups' },
-              { emoji: '🏃', bg: 'bg-violet-500/20',  label: 'Атлеты',    sub: 'Управление атлетами',  to: '/trainer/athletes' },
-              { emoji: '📋', bg: 'bg-amber-500/20',   label: 'Шаблоны',   sub: 'Готовые тренировки',   to: '/trainer/templates' },
-            ]}
-          />
+          <ScreenLinks links={getTrainerQuickLinks(workStyle)} />
         </AnimatedBlock>
       </div>
     </Screen>

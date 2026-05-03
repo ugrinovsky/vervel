@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { publicApi } from '@/api/http/publicApi';
 import toast from 'react-hot-toast';
 import type { AuthUser } from '@/contexts/auth-types';
+import type { ClientPreferences } from '@/types/clientPreferences';
 import { userRoleFromApiString } from '@/util/userRole';
 
 const YANDEX_CLIENT_ID = import.meta.env.VITE_YANDEX_CLIENT_ID || '';
@@ -49,7 +50,14 @@ export default function YandexIdButton() {
     async (accessToken: string) => {
       try {
         const res = await publicApi.post<{
-          user: { id: number; email: string; fullName: string; role: string };
+          user: {
+            id: number;
+            email: string;
+            fullName: string;
+            role: string;
+            themeHue?: number | null;
+            clientPreferences?: ClientPreferences;
+          };
           needsRole?: boolean;
           userId?: number;
         }>('/oauth/yandex/sdk-login', { accessToken });
@@ -72,6 +80,8 @@ export default function YandexIdButton() {
           email: data.user.email,
           fullName: data.user.fullName,
           role,
+          themeHue: data.user.themeHue,
+          clientPreferences: data.user.clientPreferences,
         };
         login(authUser);
         toast.success(`Добро пожаловать, ${data.user.fullName}!`);

@@ -17,11 +17,18 @@ import {
   CalendarDaysIcon,
   SparklesIcon,
   TrophyIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import IconButton from '@/components/ui/IconButton';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 import { AI_CHAT_MIN_BALANCE } from '@/constants/ai';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  getAthleteCoachIntent,
+  dismissCoachTeamBanner,
+  isCoachTeamBannerDismissed,
+} from '@/util/athleteOnboarding';
 
 type ActiveChat = { chatId: number; title: string } | null;
 
@@ -54,6 +61,7 @@ function formatWorkoutDate(dateStr: string) {
 
 export default function AthleteMyTeamScreen() {
   const navigate = useNavigate();
+  const { user, updateUser } = useAuth();
   const [groups, setGroups] = useState<AthleteGroup[]>([]);
   const [trainers, setTrainers] = useState<AthleteTrainer[]>([]);
   const [upcomingWorkouts, setUpcomingWorkouts] = useState<UpcomingWorkout[]>([]);
@@ -62,6 +70,13 @@ export default function AthleteMyTeamScreen() {
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [openingChatFor, setOpeningChatFor] = useState<number | null>(null);
   const [unreadMap, setUnreadMap] = useState<Map<number, number>>(new Map());
+  const [coachConnectBannerOpen, setCoachConnectBannerOpen] = useState(true);
+
+  const showCoachConnectBanner =
+    !!user &&
+    getAthleteCoachIntent(user) === 'with_coach' &&
+    !isCoachTeamBannerDismissed(user) &&
+    coachConnectBannerOpen;
 
   const fetchUnread = useCallback(async () => {
     try {
@@ -166,6 +181,43 @@ export default function AthleteMyTeamScreen() {
           Назначенные тренировки видны в блоке{' '}
           <span className="text-white font-medium">Расписание</span> и в календаре активности.
         </ScreenHint>
+
+        {showCoachConnectBanner && !loading && trainers.length === 0 && user && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 pr-10 mb-4"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                if (!user) return;
+                void dismissCoachTeamBanner(user, updateUser).then(() =>
+                  setCoachConnectBannerOpen(false)
+                );
+              }}
+              className="absolute right-2 top-2 p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+              aria-label="Скрыть"
+            >
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+            <p className="text-sm font-semibold text-white mb-1">Вы указали, что тренируетесь с тренером</p>
+            <p className="text-xs text-(--color_text_muted) leading-relaxed mb-3">
+              Персонального тренера в списке пока нет. Попросите тренера добавить вас: по email этого
+              аккаунта, ссылкой-приглашением или отсканировав ваш <span className="text-white/90">QR в
+              профиле</span>.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => navigate('/profile')}
+                className="px-3 py-2 rounded-xl text-xs font-medium bg-(--color_primary_light) text-white"
+              >
+                Открыть профиль / QR
+              </button>
+            </div>
+          </motion.div>
+        )}
 
         {/* AI Assistant card */}
         <motion.button

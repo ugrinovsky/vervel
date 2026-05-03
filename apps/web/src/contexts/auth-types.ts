@@ -1,4 +1,5 @@
 import type { UserRole } from '@/api/auth';
+import type { ClientPreferences } from '@/types/clientPreferences';
 
 export interface AuthUser {
   id: number;
@@ -10,6 +11,8 @@ export interface AuthUser {
   photoUrl?: string | null;
   balance?: number;
   themeHue?: number | null;
+  /** Настройки клиента с сервера (онбординг, подсказки UI) — следуют за аккаунтом. */
+  clientPreferences?: ClientPreferences;
 }
 
 export interface AuthContextValue {

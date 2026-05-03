@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import Screen from '@/components/Screen/Screen'
+import ScreenHeader from '@/components/ScreenHeader/ScreenHeader'
+import ScreenHint from '@/components/ScreenHint/ScreenHint'
 import Tabs from '@/components/ui/Tabs'
 import Badge from '@/components/ui/Badge'
 import AccentButton from '@/components/ui/AccentButton'
@@ -144,17 +146,22 @@ export default function TrainerTeamScreen() {
       </BottomSheet>
 
       <div className="px-4 pt-4 pb-3">
-        <motion.h1
+        <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="text-3xl font-bold text-white mb-3 flex items-center gap-3"
         >
-          <span className="flex items-center justify-center w-12 h-12 rounded-2xl bg-linear-to-br from-(--color_primary_light)/20 to-(--color_primary)/20 border border-(--color_border)">
-            <span className="text-2xl">🏋️</span>
-          </span>
-          <span className="bg-linear-to-r from-white to-(--color_text_secondary) bg-clip-text text-transparent">Команда</span>
-        </motion.h1>
+          <ScreenHeader
+            icon="🏋️"
+            title="Команда"
+            description="Кто с вами в приложении: атлеты для персональных планов и чатов, группы — для совместных занятий и общего чата с участниками."
+            className="!mb-3"
+          />
+          <ScreenHint className="mb-4">
+            <span className="text-white font-medium">Атлеты</span> — список людей, которых вы ведёте;{' '}
+            <span className="text-white font-medium">Группы</span> — несколько человек вместе и отдельный чат. Приглашения и переписки завязаны на этих списках.
+          </ScreenHint>
+        </motion.div>
         <Tabs
           tabs={[
             { id: 'athletes', label: 'Атлеты' },

@@ -30,17 +30,17 @@ export default function ScreenHeader({
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
-          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-white mb-2 flex items-start gap-3">
             {icon && (
-              <span className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--color_primary_light)]/20 to-[var(--color_primary)]/20 border border-[var(--color_border)]">
+              <span className="flex shrink-0 items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--color_primary_light)]/20 to-[var(--color_primary)]/20 border border-[var(--color_border)]">
                 {typeof icon === 'string' ? (
-                  <span className="text-2xl">{icon}</span>
+                  <span className="text-2xl leading-none">{icon}</span>
                 ) : (
                   icon
                 )}
               </span>
             )}
-            <span className="bg-gradient-to-r from-white to-[var(--color_text_secondary)] bg-clip-text text-transparent">
+            <span className="min-w-0 flex-1 bg-gradient-to-r from-white to-[var(--color_text_secondary)] bg-clip-text text-transparent leading-tight">
               {title}
             </span>
           </h1>

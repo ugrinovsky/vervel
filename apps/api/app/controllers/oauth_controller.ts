@@ -4,6 +4,7 @@ import logger from '@adonisjs/core/services/logger'
 import { errorMessage } from '#utils/error'
 import { isRecord } from '#utils/type_guards'
 import User from '#models/user'
+import { authUserPayload } from '#utils/auth_user_payload'
 import OAuthProvider from '#models/oauth_provider'
 import type { ProviderName } from '#models/oauth_provider'
 import { DateTime } from 'luxon'
@@ -362,13 +363,7 @@ export default class OAuthController {
       }
 
       return response.ok({
-        user: {
-          id: user.id,
-          email: user.email,
-          fullName: user.fullName,
-          role: user.role,
-          themeHue: user.themeHue,
-        },
+        user: authUserPayload(user),
       })
     } catch (error) {
       logger.error({ err: errorMessage(error) }, 'oauth: vk sdk login error')
@@ -456,13 +451,7 @@ export default class OAuthController {
 
       return response.ok({
         accessToken,
-        user: {
-          id: user.id,
-          email: user.email,
-          fullName: user.fullName,
-          role: user.role,
-          themeHue: user.themeHue,
-        },
+        user: authUserPayload(user),
       })
     } catch (error) {
       logger.error({ err: errorMessage(error) }, 'oauth: vk mini app login error')
@@ -551,13 +540,7 @@ export default class OAuthController {
       }
 
       return response.ok({
-        user: {
-          id: user.id,
-          email: user.email,
-          fullName: user.fullName,
-          role: user.role,
-          themeHue: user.themeHue,
-        },
+        user: authUserPayload(user),
       })
     } catch (error) {
       logger.error({ err: errorMessage(error) }, 'oauth: yandex sdk login error')
@@ -591,13 +574,7 @@ export default class OAuthController {
 
     return response.ok({
       success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-        role: user.role,
-        themeHue: user.themeHue,
-      },
+      user: authUserPayload(user),
     })
   }
 }

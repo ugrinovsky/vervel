@@ -1,8 +1,7 @@
 import { useState, useEffect, useId } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-
-const CONFIRM_EVENT = 'confirm-delete:open';
 import { TrashIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { CONFIRM_DELETE_OPEN_EVENT } from '@/components/ui/confirmDeleteOpenEvent';
 
 interface Props {
   onConfirm: () => void;
@@ -40,14 +39,14 @@ export default function ConfirmDeleteButton({
       if (!(e instanceof CustomEvent)) return;
       if (e.detail !== id) setConfirming(false);
     };
-    window.addEventListener(CONFIRM_EVENT, handler);
-    return () => window.removeEventListener(CONFIRM_EVENT, handler);
+    window.addEventListener(CONFIRM_DELETE_OPEN_EVENT, handler);
+    return () => window.removeEventListener(CONFIRM_DELETE_OPEN_EVENT, handler);
   }, [id]);
 
   const startConfirming = (e: React.MouseEvent) => {
     e.stopPropagation();
     setConfirming(true);
-    window.dispatchEvent(new CustomEvent(CONFIRM_EVENT, { detail: id }));
+    window.dispatchEvent(new CustomEvent(CONFIRM_DELETE_OPEN_EVENT, { detail: id }));
   };
 
   /* ── inline variant ── */
