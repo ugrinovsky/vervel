@@ -220,9 +220,9 @@ export default function AiWorkoutRecognizer({ onResult, triggerClassName, trigge
                 }}
               />
 
-              <p className="text-[11px] text-white/30 text-center">
-                Стоимость: <span className="text-white/50">{COST_RECOGNIZE}₽</span> — списывается
-                после отправки
+              <p className="text-xs text-white/45 leading-relaxed rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                <span className="text-white/70">{COST_RECOGNIZE}₽</span> — списываются с баланса сразу при запуске
+                распознавания (до ответа ИИ). При сбое сервиса возврат не выполняется автоматически.
               </p>
 
               {(error || (balance !== null && balance < COST_RECOGNIZE)) && (

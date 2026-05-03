@@ -24,6 +24,7 @@ import {
   ViewColumnsIcon,
   Bars3Icon,
 } from '@heroicons/react/24/outline'
+import SectionGroup from '@/components/ui/SectionGroup'
 
 type Tab = 'athletes' | 'groups'
 type ViewMode = '2' | '3' | 'list'
@@ -146,30 +147,32 @@ export default function TrainerTeamScreen() {
       </BottomSheet>
 
       <div className="px-4 pt-4 pb-3">
-        <motion.div
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <ScreenHeader
-            icon="🏋️"
-            title="Команда"
-            description="Кто с вами в приложении: атлеты для персональных планов и чатов, группы — для совместных занятий и общего чата с участниками."
-            className="!mb-3"
+        <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-3">
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <ScreenHeader
+              icon="🏋️"
+              title="Команда"
+              description="Кто с вами в приложении: атлеты для персональных планов и чатов, группы — для совместных занятий и общего чата с участниками."
+              className="!mb-3"
+            />
+            <ScreenHint>
+              <span className="text-white font-medium">Атлеты</span> — список людей, которых вы ведёте;{' '}
+              <span className="text-white font-medium">Группы</span> — несколько человек вместе и отдельный чат. Приглашения и переписки завязаны на этих списках.
+            </ScreenHint>
+          </motion.div>
+          <Tabs
+            tabs={[
+              { id: 'athletes', label: 'Атлеты' },
+              { id: 'groups', label: 'Группы' },
+            ]}
+            active={tab}
+            onChange={setTab}
           />
-          <ScreenHint className="mb-4">
-            <span className="text-white font-medium">Атлеты</span> — список людей, которых вы ведёте;{' '}
-            <span className="text-white font-medium">Группы</span> — несколько человек вместе и отдельный чат. Приглашения и переписки завязаны на этих списках.
-          </ScreenHint>
-        </motion.div>
-        <Tabs
-          tabs={[
-            { id: 'athletes', label: 'Атлеты' },
-            { id: 'groups', label: 'Группы' },
-          ]}
-          active={tab}
-          onChange={setTab}
-        />
+        </SectionGroup>
       </div>
 
       <AnimatePresence mode="wait">
@@ -182,8 +185,10 @@ export default function TrainerTeamScreen() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
+            className="px-4"
           >
-            <div className="flex items-center gap-2 px-4 pb-2">
+            <SectionGroup title="Атлеты" bodyClassName="space-y-3">
+            <div className="flex items-center gap-2 pb-2">
               <div className="relative flex-1">
                 <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--color_text_muted) pointer-events-none" />
                 <input
@@ -211,7 +216,7 @@ export default function TrainerTeamScreen() {
             </div>
 
             {filteredAthletes.length === 0 ? (
-              <div className="px-4 py-10 text-center">
+              <div className="py-10 text-center">
                 <div className="text-3xl mb-2">🏃</div>
                 <p className="text-sm text-white font-medium mb-1">
                   {athletes.length === 0 ? 'Пока нет атлетов' : 'Ничего не найдено'}
@@ -230,7 +235,7 @@ export default function TrainerTeamScreen() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.15 }}
-                  className="flex flex-col gap-2 px-4 pb-4"
+                  className="flex flex-col gap-2 pb-4"
                 >
                   {filteredAthletes.map((athlete) => {
                     const athleteUnread = getAthleteUnread(athlete.id)
@@ -322,6 +327,7 @@ export default function TrainerTeamScreen() {
                 </motion.div>
               </AnimatePresence>
             )}
+            </SectionGroup>
           </motion.div>
         )}
 
@@ -333,8 +339,10 @@ export default function TrainerTeamScreen() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
+            className="px-4"
           >
-            <div className="flex items-center justify-between px-4 pb-2">
+            <SectionGroup title="Группы" bodyClassName="space-y-3" showBreakAfter={false}>
+            <div className="flex items-center justify-between pb-2">
               <span className="text-sm text-(--color_text_muted)">{groups.length} групп</span>
               <AccentButton size="sm" onClick={() => setShowCreateGroup(true)}>
                 <PlusIcon className="w-4 h-4" />
@@ -343,7 +351,7 @@ export default function TrainerTeamScreen() {
             </div>
 
             {groups.length === 0 ? (
-              <div className="px-4 py-10 text-center">
+              <div className="py-10 text-center">
                 <div className="text-3xl mb-2">👥</div>
                 <p className="text-sm text-white font-medium mb-1">Пока нет групп</p>
                 <p className="text-xs text-(--color_text_muted)">
@@ -351,7 +359,7 @@ export default function TrainerTeamScreen() {
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col gap-2 px-4 pb-4">
+              <div className="flex flex-col gap-2 pb-4">
               {groups.map((group) => {
                 const groupUnread = getGroupUnread(group.id)
                 return (
@@ -383,6 +391,7 @@ export default function TrainerTeamScreen() {
               })}
               </div>
             )}
+            </SectionGroup>
           </motion.div>
         )}
 

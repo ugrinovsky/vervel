@@ -32,6 +32,7 @@ import type {
   AiWorkoutResult,
 } from '@/api/ai';
 import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
+import SectionGroup from '@/components/ui/SectionGroup';
 
 export default function TrainerTemplatesScreen() {
   const navigate = useNavigate();
@@ -183,34 +184,35 @@ export default function TrainerTemplatesScreen() {
   return (
     <Screen className="trainer-templates-screen">
       <div className="p-4 w-full mx-auto">
-        <ScreenHeader
-          icon="📋"
-          title="Шаблоны"
-          description="Заготовки тренировок для быстрого назначения атлетам и группам — создайте один раз и используйте многократно"
-        />
+        <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
+          <ScreenHeader
+            icon="📋"
+            title="Шаблоны"
+            description="Заготовки тренировок для быстрого назначения атлетам и группам — создайте один раз и используйте многократно"
+          />
 
-        {/* Hint */}
-        <ScreenHint className="mb-4">
-          Шаблон — готовая тренировка. Создайте вручную или с помощью ИИ (фото, текст, запрос), затем
-          назначайте атлетам и группам через{' '}
-          <button onClick={() => navigate('/trainer/calendar')} className="text-white font-medium underline underline-offset-2 hover:no-underline">
-            Календарь
-          </button>
-          {' '}— не нужно каждый раз вводить упражнения заново.
-        </ScreenHint>
+          <ScreenHint>
+            Шаблон — готовая тренировка. Создайте вручную или с помощью ИИ (фото, текст, запрос), затем
+            назначайте атлетам и группам через{' '}
+            <button onClick={() => navigate('/trainer/calendar')} className="text-white font-medium underline underline-offset-2 hover:no-underline">
+              Календарь
+            </button>
+            {' '}— не нужно каждый раз вводить упражнения заново.
+          </ScreenHint>
+        </SectionGroup>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Все шаблоны</h2>
-            <AccentButton size="sm" onClick={openCreate}>
-              <PlusIcon className="w-4 h-4" />
-              Создать
-            </AccentButton>
-          </div>
+        <SectionGroup title="Все шаблоны" showBreakAfter={false}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
+          >
+            <div className="flex justify-end mb-4">
+              <AccentButton size="sm" onClick={openCreate}>
+                <PlusIcon className="w-4 h-4" />
+                Создать
+              </AccentButton>
+            </div>
 
           {loading ? (
             <div className="flex justify-center py-6">
@@ -305,7 +307,8 @@ export default function TrainerTemplatesScreen() {
               ))}
             </div>
           )}
-        </motion.div>
+          </motion.div>
+        </SectionGroup>
       </div>
 
       {/* ── Form BottomSheet ── */}

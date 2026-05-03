@@ -110,6 +110,10 @@ export default function AiWorkoutGenerator({ onResult, triggerClassName, trigger
               <p className="text-sm text-(--color_text_muted)">
                 Опишите тренировку — ИИ подберёт упражнения, подходы и веса.
               </p>
+              <p className="text-xs text-white/45 leading-relaxed rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                <span className="text-white/70">{COST_GENERATE}₽</span> — списываются с баланса сразу при запуске
+                запроса к ИИ (до ответа). При сбое сервиса возврат не выполняется автоматически.
+              </p>
 
               <div className="relative">
                 <textarea

@@ -23,6 +23,7 @@ import {
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
+import SectionGroup from '@/components/ui/SectionGroup';
 
 export default function TrainerAthletesListScreen() {
   const navigate = useNavigate();
@@ -87,63 +88,65 @@ export default function TrainerAthletesListScreen() {
   return (
     <Screen loading={loading} className="trainer-athletes-list-screen">
       <div className="p-4 w-full mx-auto">
-        <ScreenHeader
-          icon="🏃"
-          title="Атлеты"
-          description="Атлеты на индивидуальном ведении — смотрите аналитику, переписывайтесь и назначайте персональные тренировки"
-        />
+        <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
+          <ScreenHeader
+            icon="🏃"
+            title="Атлеты"
+            description="Атлеты на индивидуальном ведении — смотрите аналитику, переписывайтесь и назначайте персональные тренировки"
+          />
 
-        <ScreenHint className="mb-4">
-          Здесь атлеты на персональном ведении. Нажмите на карточку — увидите аналитику нагрузок,
-          историю тренировок и личный чат.{' '}
-          <span className="text-white font-medium">Назначить тренировку</span> можно через Календарь,
-          выбрав атлета при создании.
-        </ScreenHint>
+          <ScreenHint>
+            Здесь атлеты на персональном ведении. Нажмите на карточку — увидите аналитику нагрузок,
+            историю тренировок и личный чат.{' '}
+            <span className="text-white font-medium">Назначить тренировку</span> можно через Календарь,
+            выбрав атлета при создании.
+          </ScreenHint>
 
-        {/* Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-3 gap-3 mb-6"
-        >
-          <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
-            <UsersIcon className="w-5 h-5 text-(--color_primary_icon)" />
-            <div className="text-xl font-bold text-white">{athletes.length}</div>
-            <div className="text-[11px] text-(--color_text_muted) text-center">Всего</div>
-          </div>
-          <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
-            <ClockIcon
-              className={`w-5 h-5 ${athletes.filter((a) => a.status === 'pending').length > 0 ? 'text-amber-400' : 'text-(--color_text_muted)'}`}
-            />
-            <div
-              className={`text-xl font-bold ${athletes.filter((a) => a.status === 'pending').length > 0 ? 'text-amber-400' : 'text-white'}`}
-            >
-              {athletes.filter((a) => a.status === 'pending').length}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="grid grid-cols-3 gap-3"
+          >
+            <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
+              <UsersIcon className="w-5 h-5 text-(--color_primary_icon)" />
+              <div className="text-xl font-bold text-white">{athletes.length}</div>
+              <div className="text-[11px] text-(--color_text_muted) text-center">Всего</div>
             </div>
-            <div className="text-[11px] text-(--color_text_muted) text-center">Ожидают</div>
-          </div>
-          <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
-            <ChatBubbleLeftEllipsisIcon
-              className={`w-5 h-5 ${(unreadCounts?.athletes.reduce((s, a) => s + a.unread, 0) ?? 0) > 0 ? 'text-red-400' : 'text-(--color_text_muted)'}`}
-            />
-            <div
-              className={`text-xl font-bold ${(unreadCounts?.athletes.reduce((s, a) => s + a.unread, 0) ?? 0) > 0 ? 'text-red-400' : 'text-white'}`}
-            >
-              {unreadCounts?.athletes.reduce((s, a) => s + a.unread, 0) ?? 0}
+            <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
+              <ClockIcon
+                className={`w-5 h-5 ${athletes.filter((a) => a.status === 'pending').length > 0 ? 'text-amber-400' : 'text-(--color_text_muted)'}`}
+              />
+              <div
+                className={`text-xl font-bold ${athletes.filter((a) => a.status === 'pending').length > 0 ? 'text-amber-400' : 'text-white'}`}
+              >
+                {athletes.filter((a) => a.status === 'pending').length}
+              </div>
+              <div className="text-[11px] text-(--color_text_muted) text-center">Ожидают</div>
             </div>
-            <div className="text-[11px] text-(--color_text_muted) text-center">Новых сообщ.</div>
-          </div>
-        </motion.div>
+            <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
+              <ChatBubbleLeftEllipsisIcon
+                className={`w-5 h-5 ${(unreadCounts?.athletes.reduce((s, a) => s + a.unread, 0) ?? 0) > 0 ? 'text-red-400' : 'text-(--color_text_muted)'}`}
+              />
+              <div
+                className={`text-xl font-bold ${(unreadCounts?.athletes.reduce((s, a) => s + a.unread, 0) ?? 0) > 0 ? 'text-red-400' : 'text-white'}`}
+              >
+                {unreadCounts?.athletes.reduce((s, a) => s + a.unread, 0) ?? 0}
+              </div>
+              <div className="text-[11px] text-(--color_text_muted) text-center">Новых сообщ.</div>
+            </div>
+          </motion.div>
+        </SectionGroup>
 
-        {/* Athletes grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
+        <SectionGroup title="Список" showBreakAfter={false}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="space-y-3"
+          >
           {/* Search */}
           {athletes.length > 0 && (
-            <div className="relative mb-3">
+            <div className="relative">
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--color_text_muted) pointer-events-none" />
               <input
                 type="text"
@@ -155,26 +158,21 @@ export default function TrainerAthletesListScreen() {
             </div>
           )}
 
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-(--color_text_muted) uppercase tracking-wide">
-              Атлеты
-            </h2>
-            <div className="flex items-center gap-2">
-              <Tabs
-                size="sm"
-                active={view}
-                onChange={setViewMode}
-                tabs={[
-                  { id: '2', label: <Squares2X2Icon className="w-4 h-4" /> },
-                  { id: '3', label: <ViewColumnsIcon className="w-4 h-4" /> },
-                  { id: 'list', label: <Bars3Icon className="w-4 h-4" /> },
-                ]}
-              />
-              <AccentButton size="sm" onClick={() => setShowAddDrawer(true)}>
-                <PlusIcon className="w-4 h-4" />
-                Добавить
-              </AccentButton>
-            </div>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Tabs
+              size="sm"
+              active={view}
+              onChange={setViewMode}
+              tabs={[
+                { id: '2', label: <Squares2X2Icon className="w-4 h-4" /> },
+                { id: '3', label: <ViewColumnsIcon className="w-4 h-4" /> },
+                { id: 'list', label: <Bars3Icon className="w-4 h-4" /> },
+              ]}
+            />
+            <AccentButton size="sm" onClick={() => setShowAddDrawer(true)}>
+              <PlusIcon className="w-4 h-4" />
+              Добавить
+            </AccentButton>
           </div>
 
           {athletes.length === 0 ? (
@@ -295,7 +293,8 @@ export default function TrainerAthletesListScreen() {
               )}
             </AnimatePresence>
           )}
-        </motion.div>
+          </motion.div>
+        </SectionGroup>
       </div>
 
       <AddAthleteDrawer

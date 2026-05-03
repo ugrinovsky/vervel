@@ -15,6 +15,7 @@ import { drawLeaderboardCard, shareCanvas } from '@/utils/shareCard';
 import IconButton from '@/components/ui/IconButton';
 import CardHeader from '@/components/ui/CardHeader';
 import { ArrowUpOnSquareIcon } from '@heroicons/react/24/outline';
+import SectionGroup from '@/components/ui/SectionGroup';
 
 type Metric = 'progressionCoeff' | 'relativeVolume' | 'streakWeeks' | 'xp';
 
@@ -208,132 +209,134 @@ export default function LeaderboardScreen() {
 
   return (
     <Screen loading={loading} className="leaderboard-screen">
-      <div className="p-4 w-full max-w-lg mx-auto space-y-4">
-        <div className="flex items-center justify-between mb-5">
-          <BackButton onClick={() => navigate(-1)} />
-          {entries.length > 0 && (
-            <IconButton onClick={handleShare}>
-              <ArrowUpOnSquareIcon className="w-3.5 h-3.5" />
-              Поделиться · {currentMetric.label}
-            </IconButton>
-          )}
-        </div>
+      <div className="p-4 w-full max-w-lg mx-auto">
+        <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
+          <div className="flex items-center justify-between">
+            <BackButton onClick={() => navigate(-1)} />
+            {entries.length > 0 && (
+              <IconButton onClick={handleShare}>
+                <ArrowUpOnSquareIcon className="w-3.5 h-3.5" />
+                Поделиться · {currentMetric.label}
+              </IconButton>
+            )}
+          </div>
 
-        <ScreenHeader icon="🏆" title="Лидерборд" description="Рейтинг атлетов группы" />
+          <ScreenHeader icon="🏆" title="Лидерборд" description="Рейтинг атлетов группы" />
 
-        {/* Period */}
-        <ToggleGroup
-          cols={2}
-          value={String(period)}
-          onChange={(v) => {
-            const n = Number(v);
-            if (n !== 7 && n !== 30) return;
-            setPeriod(n);
-            load(n);
-          }}
-          options={[
-            { value: '7', label: '7 дней' },
-            { value: '30', label: '30 дней' },
-          ]}
-        />
+          <ToggleGroup
+            cols={2}
+            value={String(period)}
+            onChange={(v) => {
+              const n = Number(v);
+              if (n !== 7 && n !== 30) return;
+              setPeriod(n);
+              load(n);
+            }}
+            options={[
+              { value: '7', label: '7 дней' },
+              { value: '30', label: '30 дней' },
+            ]}
+          />
 
-        {/* Metric */}
-        <ToggleGroup
-          joined
-          value={metric}
-          onChange={(v) => setMetric(v)}
-          options={METRICS.map((m) => ({ value: m.key, label: m.label }))}
-          itemPy="py-1.5"
-        />
+          <ToggleGroup
+            joined
+            value={metric}
+            onChange={(v) => setMetric(v)}
+            options={METRICS.map((m) => ({ value: m.key, label: m.label }))}
+            itemPy="py-1.5"
+          />
 
-        {/* Metric hint */}
-        <div className="min-h-18 px-3 py-2.5 rounded-xl bg-(--color_bg_card) border border-(--color_border) text-xs text-(--color_text_muted) leading-relaxed">
-          {currentMetric.hint}
-          {metricEmpty && entries.length > 0 && (
-            <div className="mt-1.5 text-(--color_text_muted)/70">
-              Данных по этой метрике пока нет — атлеты отсортированы по количеству тренировок.
-            </div>
-          )}
-        </div>
+          <div className="min-h-18 px-3 py-2.5 rounded-xl bg-(--color_bg_card) border border-(--color_border) text-xs text-(--color_text_muted) leading-relaxed">
+            {currentMetric.hint}
+            {metricEmpty && entries.length > 0 && (
+              <div className="mt-1.5 text-(--color_text_muted)/70">
+                Данных по этой метрике пока нет — атлеты отсортированы по количеству тренировок.
+              </div>
+            )}
+          </div>
+        </SectionGroup>
 
         {sorted.length === 0 ? (
-          <div className="text-center py-12 text-(--color_text_muted) text-sm">
-            Нет данных за выбранный период
-          </div>
+          <SectionGroup title="Рейтинг" showBreakAfter={false}>
+            <div className="text-center py-12 text-(--color_text_muted) text-sm">
+              Нет данных за выбранный период
+            </div>
+          </SectionGroup>
         ) : (
           <>
-            {/* Podium */}
             {sorted.length >= 2 && (
-              <AnimatedBlock className={`${cardClass} rounded-2xl px-4 pt-3 pb-0 overflow-hidden`}>
-                <CardHeader title="Топ-3" />
-                <Podium sorted={sorted} metric={metric} format={currentMetric.format} />
-              </AnimatedBlock>
+              <SectionGroup title="Топ-3">
+                <AnimatedBlock className={`${cardClass} rounded-2xl px-4 pt-3 pb-0 overflow-hidden`}>
+                  <Podium sorted={sorted} metric={metric} format={currentMetric.format} />
+                </AnimatedBlock>
+              </SectionGroup>
             )}
 
-            {/* Line chart */}
-            <AnimatedBlock delay={0.08} className={`${cardClass} rounded-2xl p-4`}>
-              <CardHeader
-                title="Активность"
-                description={`${metric === 'relativeVolume' ? 'объём (кг)' : 'тренировок'} по ${period === 7 ? 'дням' : 'неделям'}`}
-              />
-              <LineChart
-                dates={sorted[0]?.weeklySeries?.map((p) => p.date) ?? []}
-                valueKey={metric === 'relativeVolume' ? 'volume' : 'workouts'}
-                series={sorted.map((e) => ({
-                  id: e.userId,
-                  label: e.fullName?.split(' ')[0] || 'Атлет',
-                  points: e.weeklySeries,
-                }))}
-              />
-            </AnimatedBlock>
+            <SectionGroup title="Активность">
+              <AnimatedBlock delay={0.08} className={`${cardClass} rounded-2xl p-4`}>
+                <CardHeader
+                  title="График"
+                  description={`${metric === 'relativeVolume' ? 'объём (кг)' : 'тренировок'} по ${period === 7 ? 'дням' : 'неделям'}`}
+                />
+                <LineChart
+                  dates={sorted[0]?.weeklySeries?.map((p) => p.date) ?? []}
+                  valueKey={metric === 'relativeVolume' ? 'volume' : 'workouts'}
+                  series={sorted.map((e) => ({
+                    id: e.userId,
+                    label: e.fullName?.split(' ')[0] || 'Атлет',
+                    points: e.weeklySeries,
+                  }))}
+                />
+              </AnimatedBlock>
+            </SectionGroup>
 
-            {/* Detail cards */}
-            <CardHeader title="Атлеты" />
-            <div className="space-y-2">
-              {sorted.map((entry, i) => {
-                const value = entry[metric];
-                const hasValue = (value ?? 0) > 0;
-                const medal = hasValue ? (MEDALS[i] ?? null) : null;
-                const isTop3 = hasValue && i < 3;
+            <SectionGroup title="Атлеты" showBreakAfter={false}>
+              <div className="space-y-2">
+                {sorted.map((entry, i) => {
+                  const value = entry[metric];
+                  const hasValue = (value ?? 0) > 0;
+                  const medal = hasValue ? (MEDALS[i] ?? null) : null;
+                  const isTop3 = hasValue && i < 3;
 
-                return (
-                  <AnimatedBlock
-                    key={entry.userId}
-                    delay={0.12 + i * 0.04}
-                    className={`${cardClass} rounded-2xl p-4 ${isTop3 ? 'border border-(--color_primary_light)/30' : ''}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-7 shrink-0 text-center">
-                        {medal ? (
-                          <span className="text-xl">{medal}</span>
-                        ) : (
-                          <span className="text-sm font-bold text-(--color_text_muted)">{i + 1}</span>
-                        )}
-                      </div>
-                      <Initials name={entry.fullName} />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-semibold text-white truncate">
-                          {entry.fullName || 'Атлет'}
+                  return (
+                    <AnimatedBlock
+                      key={entry.userId}
+                      delay={0.12 + i * 0.04}
+                      className={`${cardClass} rounded-2xl p-4 ${isTop3 ? 'border border-(--color_primary_light)/30' : ''}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-7 shrink-0 text-center">
+                          {medal ? (
+                            <span className="text-xl">{medal}</span>
+                          ) : (
+                            <span className="text-sm font-bold text-(--color_text_muted)">{i + 1}</span>
+                          )}
                         </div>
-                        <div className="text-xs text-(--color_text_muted)">
-                          Lv {entry.level} · {getLevelRange(entry.level)}
+                        <Initials name={entry.fullName} />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-white truncate">
+                            {entry.fullName || 'Атлет'}
+                          </div>
+                          <div className="text-xs text-(--color_text_muted)">
+                            Lv {entry.level} · {getLevelRange(entry.level)}
+                          </div>
+                        </div>
+                        <div className="text-sm font-bold text-white shrink-0">
+                          {currentMetric.format(value ?? null)}
                         </div>
                       </div>
-                      <div className="text-sm font-bold text-white shrink-0">
-                        {currentMetric.format(value ?? null)}
-                      </div>
-                    </div>
 
-                    <div className="flex gap-3 mt-2.5 text-[10px] text-(--color_text_muted)">
-                      <span>🏋️ {entry.workouts} трен.</span>
-                      <span>⚖️ {entry.volume.toLocaleString()} кг</span>
-                      <span>🔥 {entry.streakWeeks} нед</span>
-                      <span>⭐ {entry.xp} XP</span>
-                    </div>
-                  </AnimatedBlock>
-                );
-              })}
-            </div>
+                      <div className="flex gap-3 mt-2.5 text-[10px] text-(--color_text_muted)">
+                        <span>🏋️ {entry.workouts} трен.</span>
+                        <span>⚖️ {entry.volume.toLocaleString()} кг</span>
+                        <span>🔥 {entry.streakWeeks} нед</span>
+                        <span>⭐ {entry.xp} XP</span>
+                      </div>
+                    </AnimatedBlock>
+                  );
+                })}
+              </div>
+            </SectionGroup>
           </>
         )}
       </div>

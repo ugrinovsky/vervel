@@ -14,6 +14,7 @@ import { parseWorkoutPreview } from '@/components/ChatBox/workoutPreviewParse';
 import { isKlipyMessageContent } from '@/util/klipyMessage'
 import { formatDialogTime } from '@/utils/date'
 import SearchInput from '@/components/ui/SearchInput'
+import SectionGroup from '@/components/ui/SectionGroup'
 
 type DialogTab = 'all' | 'personal' | 'group'
 
@@ -168,60 +169,63 @@ export default function DialogsScreen() {
         transition={SPRING}
         className="will-change-transform"
       >
-        {/* AI assistant — only on "all" tab */}
-        {activeTab === 'all' &&
-        <div
-          onClick={() => setAiChatOpen(true)}
-          className="flex items-center gap-3 px-4 cursor-pointer hover:bg-(--color_bg_card_hover) active:bg-(--color_bg_card_hover) transition-colors"
-        >
-          <div className="shrink-0 py-3">
-            <div className="w-12.5 h-12.5 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
-              <SparklesIcon className="w-6 h-6 text-emerald-400" />
-            </div>
-          </div>
-          <div className="flex-1 min-w-0 flex items-center py-3 border-b border-(--color_border)/50">
-            <div className="flex-1 min-w-0">
-              <div className="text-[15px] font-semibold text-white leading-snug">ИИ-помощник</div>
-              <div className="text-[13px] text-(--color_text_muted) leading-snug mt-0.5">
-                Тренировки, питание, восстановление
+        <SectionGroup showLabel={false} bodyClassName="space-y-0" showBreakAfter={false}>
+          {/* AI assistant — only on "all" tab */}
+          {activeTab === 'all' && (
+            <div
+              onClick={() => setAiChatOpen(true)}
+              className="flex items-center gap-3 px-4 cursor-pointer hover:bg-(--color_bg_card_hover) active:bg-(--color_bg_card_hover) transition-colors"
+            >
+              <div className="shrink-0 py-3">
+                <div className="w-12.5 h-12.5 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
+                  <SparklesIcon className="w-6 h-6 text-emerald-400" />
+                </div>
+              </div>
+              <div className="flex-1 min-w-0 flex items-center py-3 border-b border-(--color_border)/50">
+                <div className="flex-1 min-w-0">
+                  <div className="text-[15px] font-semibold text-white leading-snug">ИИ-помощник</div>
+                  <div className="text-[13px] text-(--color_text_muted) leading-snug mt-0.5">
+                    Тренировки, питание, восстановление
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>}
+          )}
 
-        {filteredDialogs && filteredDialogs.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mx-4 mt-4 bg-(--color_bg_card) rounded-2xl p-10 border border-(--color_border) text-center"
-          >
-            <div className="text-4xl mb-3">{search ? '🔍' : isTrainer ? '🏋️' : '🤝'}</div>
-            <p className="text-white font-medium mb-1">
-              {search
-                ? 'Ничего не найдено'
-                : isTrainer
-                  ? 'Нет активных чатов'
-                  : 'Пока нет тренера или группы'}
-            </p>
-            {!search && (
-              <p className="text-sm text-(--color_text_muted)">
-                {isTrainer
-                  ? 'Пригласите атлета или создайте группу'
-                  : 'Попросите тренера добавить вас или вступите в группу'}
+          {filteredDialogs && filteredDialogs.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mx-4 mt-4 bg-(--color_bg_card) rounded-2xl p-10 border border-(--color_border) text-center"
+            >
+              <div className="text-4xl mb-3">{search ? '🔍' : isTrainer ? '🏋️' : '🤝'}</div>
+              <p className="text-white font-medium mb-1">
+                {search
+                  ? 'Ничего не найдено'
+                  : isTrainer
+                    ? 'Нет активных чатов'
+                    : 'Пока нет тренера или группы'}
               </p>
-            )}
-          </motion.div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.22 }}
-          >
-            {filteredDialogs?.map((dialog) => (
-              <DialogRow key={dialog.chatId} dialog={dialog} onOpen={() => openChat(dialog)} />
-            ))}
-          </motion.div>
-        )}
+              {!search && (
+                <p className="text-sm text-(--color_text_muted)">
+                  {isTrainer
+                    ? 'Пригласите атлета или создайте группу'
+                    : 'Попросите тренера добавить вас или вступите в группу'}
+                </p>
+              )}
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.22 }}
+            >
+              {filteredDialogs?.map((dialog) => (
+                <DialogRow key={dialog.chatId} dialog={dialog} onOpen={() => openChat(dialog)} />
+              ))}
+            </motion.div>
+          )}
+        </SectionGroup>
       </motion.div>
     </Screen>
   )

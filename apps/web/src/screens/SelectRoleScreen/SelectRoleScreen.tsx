@@ -57,7 +57,7 @@ export default function SelectRoleScreen() {
       const role = getRole();
       if (role === 'athlete') navigate('/athlete-onboarding');
       else if (role === 'trainer') navigate('/trainer-onboarding');
-      else navigate('/home');
+      else navigate('/trainer-onboarding');
     } catch {
       toast.error('Ошибка сохранения роли');
     } finally {

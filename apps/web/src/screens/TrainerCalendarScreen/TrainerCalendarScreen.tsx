@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { getDaysInMonth, startOfMonth } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -32,6 +33,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { parseTrainerWorkoutDraft } from '@/util/localStorageWorkoutDraft';
 import { isRecord } from '@/utils/typeGuards';
 import { noPullRefreshProps } from '@/lib/noPullRefresh';
+import SectionGroup from '@/components/ui/SectionGroup';
 
 function isScheduledWorkoutDragPayload(v: unknown): v is ScheduledWorkout {
   if (!isRecord(v)) return false;
@@ -47,6 +49,8 @@ const WORKOUT_TYPE_COLORS: Record<string, string> = {
   bodybuilding: 'bg-emerald-500/15 ring-1 ring-inset ring-emerald-500/30',
   cardio: 'bg-amber-500/15 ring-1 ring-inset ring-amber-500/30',
 };
+
+const TRAINER_DAY1_TIP_KEY = 'vervel_trainer_calendar_day1_tip_dismissed';
 
 const INTRO_STRIPE_STYLE = {
   backgroundColor: 'rgba(14,165,233,0.12)',
@@ -379,9 +383,18 @@ function IntroSessionForm({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function TrainerCalendarScreen() {
+  const navigate = useNavigate();
   const today = new Date();
   const { user } = useAuth();
   const introDraftKey = user ? `trainer_intro_draft_${user.id}` : undefined;
+
+  const [day1TipDismissed, setDay1TipDismissed] = useState(() => {
+    try {
+      return localStorage.getItem(TRAINER_DAY1_TIP_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
 
   const trainerDraft = useMemo(() => {
     if (!user) return null;
@@ -402,6 +415,7 @@ export default function TrainerCalendarScreen() {
   const [activeWorkout, setActiveWorkout] = useState<ScheduledWorkout | null>(null);
   const [draggedWidth, setDraggedWidth] = useState<number | undefined>(undefined);
   const [sheetTab, setSheetTab] = useState<'workout' | 'intro'>('workout');
+  const [daySlotFilter, setDaySlotFilter] = useState<'all' | 'intros'>('all');
   const timelineRef = useRef<HTMLDivElement>(null);
 
   const restrictToTimeline = useMemo<Modifier>(
@@ -495,15 +509,32 @@ export default function TrainerCalendarScreen() {
     [workouts, selectedKey]
   );
 
+  useEffect(() => {
+    setDaySlotFilter('all');
+  }, [selectedKey]);
+
+  const hasIntroOnDay = useMemo(
+    () => selectedWorkouts.some((w) => w.workoutData.type === 'intro'),
+    [selectedWorkouts],
+  );
+
+  const timelineWorkouts = useMemo(
+    () =>
+      daySlotFilter === 'intros'
+        ? selectedWorkouts.filter((w) => w.workoutData.type === 'intro')
+        : selectedWorkouts,
+    [selectedWorkouts, daySlotFilter],
+  );
+
   const workoutsByHour = useMemo(() => {
     const map: Record<number, ScheduledWorkout[]> = {};
-    for (const w of selectedWorkouts) {
+    for (const w of timelineWorkouts) {
       const h = getWorkoutHour(w.scheduledDate);
       if (!map[h]) map[h] = [];
       map[h].push(w);
     }
     return map;
-  }, [selectedWorkouts]);
+  }, [timelineWorkouts]);
 
   const handleDelete = async (id: number) => {
     try {
@@ -600,66 +631,113 @@ export default function TrainerCalendarScreen() {
     loadWorkouts(month);
   };
 
+  const isCurrentMonthView =
+    currentMonth.getFullYear() === today.getFullYear() && currentMonth.getMonth() === today.getMonth();
+
+  const showTrainerDay1Tip =
+    !day1TipDismissed &&
+    !loading &&
+    (athletes.length === 0 ||
+      (athletes.length > 0 && workouts.length === 0 && isCurrentMonthView));
+
+  const dismissTrainerDay1Tip = () => {
+    try {
+      localStorage.setItem(TRAINER_DAY1_TIP_KEY, '1');
+    } catch {
+      /* ignore */
+    }
+    setDay1TipDismissed(true);
+  };
+
   return (
     <Screen className="trainer-calendar-screen">
       <div className="flex flex-col px-4 w-full">
-        {/* ── Page header ── */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="pt-4 pb-1 shrink-0">
-          <ScreenHeader
-            icon="📅"
-            title="Календарь"
-            description="Планируйте тренировки для атлетов и групп по датам — нажмите на слот времени, чтобы назначить тренировку"
-          />
-          <ScreenHint className="mb-2">
-            Выберите день в календаре, нажмите на слот времени — откроется форма тренировки.
-            Можно назначить{' '}
-            <span className="text-white font-medium">сразу нескольким атлетам или группам</span>.
-            Используйте шаблоны, чтобы не вводить упражнения заново.
-          </ScreenHint>
-        </motion.div>
-
-        {/* ── Draft restore banner ── */}
-        {trainerDraft && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-3 flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30 shrink-0"
-          >
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-amber-300">Незаконченная тренировка</p>
-              <p className="text-xs text-amber-400/70 mt-0.5 truncate">
-                {trainerDraft.exercises.length} упр. · {trainerDraft.workoutType === 'bodybuilding' ? 'Силовая' : trainerDraft.workoutType === 'crossfit' ? 'CrossFit' : 'Кардио'}
-              </p>
-            </div>
-            <AccentButton size="sm" onClick={openDraftForm} className="shrink-0">
-              Продолжить
-            </AccentButton>
+        <SectionGroup showLabel={false} showBreakAfter={false} className="shrink-0" bodyClassName="space-y-0">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="pt-4 pb-1">
+            <ScreenHeader
+              icon="📅"
+              title="Календарь"
+              description="Планируйте тренировки для атлетов и групп по датам — нажмите на слот времени, чтобы назначить тренировку"
+            />
+            {showTrainerDay1Tip && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-3 rounded-2xl border border-(--color_primary_light)/35 bg-(--color_primary_light)/10 px-4 py-3"
+              >
+                <p className="text-sm font-semibold text-white mb-1.5">С чего начать</p>
+                {athletes.length === 0 ? (
+                  <p className="text-xs text-(--color_text_muted) leading-relaxed mb-3">
+                    <span className="text-white/90">1.</span> Добавьте атлета — удобнее всего пригласительная ссылка
+                    на экране «Атлеты».{' '}
+                    <span className="text-white/90">2.</span> Вернитесь сюда и нажмите на время в сетке — откроется
+                    назначение; атлеты получат план в чате.
+                  </p>
+                ) : (
+                  <p className="text-xs text-(--color_text_muted) leading-relaxed mb-3">
+                    Атлеты уже в списке — нажмите на слот времени в выбранном дне ниже и создайте первую тренировку.
+                    После сохранения план уйдёт в чаты.
+                  </p>
+                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  {athletes.length === 0 && (
+                    <AccentButton size="sm" onClick={() => navigate('/trainer/athletes')}>
+                      Открыть атлетов
+                    </AccentButton>
+                  )}
+                  <GhostButton variant="solid" type="button" className="!px-4 !py-2 text-xs" onClick={dismissTrainerDay1Tip}>
+                    Понятно
+                  </GhostButton>
+                </div>
+              </motion.div>
+            )}
+            <ScreenHint className="mb-2">
+              Выберите день в календаре, нажмите на слот времени — откроется форма тренировки.
+              Можно назначить{' '}
+              <span className="text-white font-medium">сразу нескольким атлетам или группам</span>.
+              Используйте шаблоны, чтобы не вводить упражнения заново.
+            </ScreenHint>
+            {trainerDraft && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-3 flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-amber-300">Незаконченная тренировка</p>
+                  <p className="text-xs text-amber-400/70 mt-0.5 truncate">
+                    {trainerDraft.exercises.length} упр. · {trainerDraft.workoutType === 'bodybuilding' ? 'Силовая' : trainerDraft.workoutType === 'crossfit' ? 'CrossFit' : 'Кардио'}
+                  </p>
+                </div>
+                <AccentButton size="sm" onClick={openDraftForm} className="shrink-0">
+                  Продолжить
+                </AccentButton>
+              </motion.div>
+            )}
           </motion.div>
-        )}
+        </SectionGroup>
 
-        {/* ── Calendar (top) ── */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="pt-1 pb-1 shrink-0">
-          <Calendar
-            mode="count"
-            days={calendarDays}
-            selectedDate={selectedDate}
-            month={currentMonth}
-            onSelect={(day) => {
-              setSelectedDate(day.date);
-              setSelectedTime(null);
-            }}
-            onTodayClick={(today) => {
-              setSelectedDate(today);
-              setSelectedTime(null);
-            }}
-            onMonthChange={handleMonthChange}
-          />
-        </motion.div>
+        <SectionGroup title="Месяц" className="shrink-0" bodyClassName="space-y-0">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="pt-1 pb-1">
+            <Calendar
+              mode="count"
+              days={calendarDays}
+              selectedDate={selectedDate}
+              month={currentMonth}
+              onSelect={(day) => {
+                setSelectedDate(day.date);
+                setSelectedTime(null);
+              }}
+              onTodayClick={(today) => {
+                setSelectedDate(today);
+                setSelectedTime(null);
+              }}
+              onMonthChange={handleMonthChange}
+            />
+          </motion.div>
+        </SectionGroup>
 
-        {/* ── Divider ── */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="border-t border-(--color_border) shrink-0 mt-3 mb-3" />
-
-        {/* ── Selected day timeline (bottom) ── */}
+        <SectionGroup title="Расписание дня" className="min-h-0 min-w-0" bodyClassName="space-y-0">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           {/* Day header */}
           <div className="flex items-center justify-between pt-3 pb-2 shrink-0">
@@ -677,8 +755,24 @@ export default function TrainerCalendarScreen() {
                   ? '…'
                   : selectedWorkouts.length === 0
                     ? 'Нет тренировок — нажмите на слот ниже'
-                    : `${selectedWorkouts.length} тренировок`}
+                    : daySlotFilter === 'intros'
+                      ? timelineWorkouts.length === 0
+                        ? 'Нет вводных в этот день'
+                        : `${timelineWorkouts.length} вводных · всего ${selectedWorkouts.length} слотов`
+                      : `${selectedWorkouts.length} тренировок`}
               </div>
+              {hasIntroOnDay && selectedWorkouts.length > 0 && (
+                <Tabs
+                  size="sm"
+                  className="mt-2"
+                  tabs={[
+                    { id: 'all' as const, label: 'Все слоты' },
+                    { id: 'intros' as const, label: 'Лиды' },
+                  ]}
+                  active={daySlotFilter}
+                  onChange={(id) => setDaySlotFilter(id)}
+                />
+              )}
             </div>
             {selectedTime === null && (
               <AccentButton size="sm" onClick={() => openFormAt(currentHourString())}>
@@ -789,17 +883,20 @@ export default function TrainerCalendarScreen() {
             </DragOverlay>
           </DndContext>
         </motion.div>
+        </SectionGroup>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <ScreenLinks
-            className="pb-4"
-            links={[
-              { emoji: '🏃', bg: 'bg-emerald-500/20', label: 'Атлеты',   sub: 'список атлетов',    to: '/trainer/athletes' },
-              { emoji: '👥', bg: 'bg-blue-500/20',    label: 'Группы',   sub: 'список групп',      to: '/trainer/groups' },
-              { emoji: '📋', bg: 'bg-violet-500/20',  label: 'Шаблоны',  sub: 'готовые тренировки', to: '/trainer/templates' },
-            ]}
-          />
-        </motion.div>
+        <SectionGroup title="Ещё" className="shrink-0" showBreakAfter={false}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+            <ScreenLinks
+              className="pb-4"
+              links={[
+                { emoji: '🏃', bg: 'bg-emerald-500/20', label: 'Атлеты',   sub: 'список атлетов',    to: '/trainer/athletes' },
+                { emoji: '👥', bg: 'bg-blue-500/20',    label: 'Группы',   sub: 'список групп',      to: '/trainer/groups' },
+                { emoji: '📋', bg: 'bg-violet-500/20',  label: 'Шаблоны',  sub: 'готовые тренировки', to: '/trainer/templates' },
+              ]}
+            />
+          </motion.div>
+        </SectionGroup>
       </div>
 
       <BottomSheet

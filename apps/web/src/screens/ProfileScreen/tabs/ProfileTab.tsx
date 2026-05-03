@@ -14,6 +14,7 @@ import ListButton from '@/components/ui/ListButton';
 import { CameraIcon } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import SectionGroup from '@/components/ui/SectionGroup';
 import { isOAuthPlaceholderEmail, profileEmailSubtitle } from '@/util/oauthPlaceholderEmail';
 import { userRoleFromApiString } from '@/util/userRole';
 
@@ -115,10 +116,7 @@ export default function ProfileTab({ data, trainerStats }: Props) {
   };
 
   return (
-    <AnimatedBlock
-      key="profile"
-      className="space-y-4"
-    >
+    <AnimatedBlock key="profile" className="space-y-6">
       <BottomSheet id="profile-qr" open={qrOpen} onClose={() => setQrOpen(false)} emoji="📲" title="QR-код для тренера">
         <p className="text-sm text-(--color_text_muted) mb-5">
           Покажите этот код тренеру, чтобы он мог добавить вас в команду
@@ -148,82 +146,93 @@ export default function ProfileTab({ data, trainerStats }: Props) {
         onChange={handleFileSelect}
       />
 
-      {/* User Info */}
-      <div className="bg-(--color_bg_card) rounded-2xl border border-(--color_border) overflow-hidden">
-        <div className="flex items-center gap-4 p-6">
-          <button
-            onClick={() => fileRef.current?.click()}
-            disabled={uploadingPhoto}
-            className="relative shrink-0"
-          >
-            <UserAvatar photoUrl={photoUrl} size={96} />
-            {!photoUrl && !uploadingPhoto && (
-              <div className="absolute inset-0 rounded-full bg-black/50 flex flex-col items-center justify-center gap-0.5">
-                <CameraIcon className="w-6 h-6 text-white" />
-                <span className="text-[9px] text-white/80 font-medium leading-none">Фото</span>
-              </div>
-            )}
-            {photoUrl && !uploadingPhoto && (
-              <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-(--color_primary_light) flex items-center justify-center border-2 border-(--color_bg_card)">
-                <CameraIcon className="w-3 h-3 text-white" />
-              </div>
-            )}
-            {uploadingPhoto && (
-              <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center">
-                <LoadingSpinner size="sm" variant="light" />
-              </div>
-            )}
-          </button>
-          <div className="min-w-0">
-            <div className="text-xl font-bold text-white truncate">{data.user.fullName || 'Без имени'}</div>
-            {emailSubtitle && (
-              <div className="text-sm text-(--color_text_muted) truncate">{emailSubtitle}</div>
-            )}
-            <div className="text-xs text-(--color_text_muted) mt-1">Участник с {formatDate(data.user.createdAt)}</div>
-          </div>
-        </div>
-        {inTrainerMode && (
-          <button
-            onClick={() => navigate('/trainer/personal')}
-            className="w-full flex items-center gap-3 px-6 py-4 border-t border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
-          >
-            <span className="text-xl">🪪</span>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-white">Профессиональный профиль</div>
-              <div className="text-xs text-(--color_text_muted) mt-0.5">Фото, специализации, образование — видно атлетам</div>
+      <SectionGroup showLabel={false} showBreakAfter={false}>
+        <div className="bg-(--color_bg_card) rounded-2xl border border-(--color_border) overflow-hidden">
+          <div className="flex items-center gap-4 p-6">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploadingPhoto}
+              className="relative shrink-0"
+            >
+              <UserAvatar photoUrl={photoUrl} size={96} />
+              {!photoUrl && !uploadingPhoto && (
+                <div className="absolute inset-0 rounded-full bg-black/50 flex flex-col items-center justify-center gap-0.5">
+                  <CameraIcon className="w-6 h-6 text-white" />
+                  <span className="text-[9px] text-white/80 font-medium leading-none">Фото</span>
+                </div>
+              )}
+              {photoUrl && !uploadingPhoto && (
+                <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-(--color_primary_light) flex items-center justify-center border-2 border-(--color_bg_card)">
+                  <CameraIcon className="w-3 h-3 text-white" />
+                </div>
+              )}
+              {uploadingPhoto && (
+                <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center">
+                  <LoadingSpinner size="sm" variant="light" />
+                </div>
+              )}
+            </button>
+            <div className="min-w-0">
+              <div className="text-xl font-bold text-white truncate">{data.user.fullName || 'Без имени'}</div>
+              {emailSubtitle && (
+                <div className="text-sm text-(--color_text_muted) truncate">{emailSubtitle}</div>
+              )}
+              <div className="text-xs text-(--color_text_muted) mt-1">Участник с {formatDate(data.user.createdAt)}</div>
             </div>
-            <span className="text-(--color_text_muted) text-sm shrink-0">→</span>
-          </button>
-        )}
-      </div>
-
-      {/* Stats — trainer only */}
-      {inTrainerMode && (
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
-            <div className="text-2xl font-bold text-white">{trainerStats?.athleteCount ?? '—'}</div>
-            <div className="text-xs text-(--color_text_muted) mt-1">Атлетов</div>
           </div>
-          <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
-            <div className="text-2xl font-bold text-white">{trainerStats?.groupCount ?? '—'}</div>
-            <div className="text-xs text-(--color_text_muted) mt-1">Групп</div>
-          </div>
-          <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
-            <div className="text-2xl font-bold text-white">{trainerStats?.totalScheduledWorkouts ?? '—'}</div>
-            <div className="text-xs text-(--color_text_muted) mt-1">Тренировок</div>
-          </div>
+          {inTrainerMode && (
+            <button
+              type="button"
+              onClick={() => navigate('/trainer/personal')}
+              className="w-full flex items-center gap-3 px-6 py-4 border-t border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
+            >
+              <span className="text-xl">🪪</span>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-white">Профессиональный профиль</div>
+                <div className="text-xs text-(--color_text_muted) mt-0.5">Фото, специализации, образование — видно атлетам</div>
+              </div>
+              <span className="text-(--color_text_muted) text-sm shrink-0">→</span>
+            </button>
+          )}
         </div>
+      </SectionGroup>
+
+      {inTrainerMode && (
+        <SectionGroup title="Показатели">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+              <div className="text-2xl font-bold text-white">{trainerStats?.athleteCount ?? '—'}</div>
+              <div className="text-xs text-(--color_text_muted) mt-1">Атлетов</div>
+            </div>
+            <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+              <div className="text-2xl font-bold text-white">{trainerStats?.groupCount ?? '—'}</div>
+              <div className="text-xs text-(--color_text_muted) mt-1">Групп</div>
+            </div>
+            <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+              <div className="text-2xl font-bold text-white">{trainerStats?.totalScheduledWorkouts ?? '—'}</div>
+              <div className="text-xs text-(--color_text_muted) mt-1">Тренировок</div>
+            </div>
+          </div>
+        </SectionGroup>
       )}
 
-      {/* Achievements + QR (athletes) */}
       {inAthleteMode && (
-        <>
+        <SectionGroup title="Прогресс и приглашения">
           <div
-            className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) cursor-pointer hover:bg-(--color_bg_card_hover) transition-colors flex items-center justify-between"
+            role="button"
+            tabIndex={0}
             onClick={() => navigate('/streak')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                navigate('/streak');
+              }
+            }}
+            className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) cursor-pointer hover:bg-(--color_bg_card_hover) transition-colors flex items-center justify-between"
           >
             <div>
-              <h2 className="text-base font-semibold text-white mb-0.5">Ачивки и Streak</h2>
+              <div className="text-base font-semibold text-white mb-0.5">Ачивки и серия</div>
               <p className="text-sm text-(--color_text_muted)">Посмотреть достижения</p>
             </div>
             <div className="flex items-center gap-2">
@@ -239,8 +248,6 @@ export default function ProfileTab({ data, trainerStats }: Props) {
             </div>
             <div className="text-(--color_text_muted) text-sm">→</div>
           </ListButton>
-
-          {/* Referral link */}
           <ListButton
             onClick={() => {
               const url = `${window.location.origin}/register?ref=${data.user.id}`;
@@ -262,79 +269,79 @@ export default function ProfileTab({ data, trainerStats }: Props) {
             </div>
             <div className="text-(--color_text_muted) text-sm">📋</div>
           </ListButton>
-        </>
+        </SectionGroup>
       )}
 
-
-      {/* Cabinet switcher */}
       {isBoth && (
-        <ListButton
-          onClick={() => {
-            switchMode();
-            navigate(activeMode === 'trainer' ? '/' : '/trainer');
-          }}
-        >
-          <div className="text-3xl">{activeMode === 'trainer' ? '🏃' : '🏋️'}</div>
-          <div className="flex-1">
-            <div className="text-sm font-medium text-white">
-              {activeMode === 'trainer' ? 'Перейти в кабинет атлета' : 'Перейти в кабинет тренера'}
+        <SectionGroup title="Кабинет" showBreakAfter={false}>
+          <ListButton
+            onClick={() => {
+              switchMode();
+              navigate(activeMode === 'trainer' ? '/' : '/trainer');
+            }}
+          >
+            <div className="text-3xl">{activeMode === 'trainer' ? '🏃' : '🏋️'}</div>
+            <div className="flex-1">
+              <div className="text-sm font-medium text-white">
+                {activeMode === 'trainer' ? 'Перейти в кабинет атлета' : 'Перейти в кабинет тренера'}
+              </div>
+              <div className="text-xs text-(--color_text_muted) mt-0.5">
+                {activeMode === 'trainer' ? 'Тренировки, аватар, статистика' : 'Группы, атлеты, расписание'}
+              </div>
             </div>
-            <div className="text-xs text-(--color_text_muted) mt-0.5">
-              {activeMode === 'trainer' ? 'Тренировки, аватар, статистика' : 'Группы, атлеты, расписание'}
-            </div>
-          </div>
-          <div className="text-(--color_text_muted) text-sm">→</div>
-        </ListButton>
+            <div className="text-(--color_text_muted) text-sm">→</div>
+          </ListButton>
+        </SectionGroup>
       )}
 
-      {/* Become athlete */}
       {isTrainer && !isAthlete && (
-        <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
-          <div className="flex items-start gap-4">
-            <div className="text-3xl">🏃</div>
-            <div className="flex-1">
-              <h2 className="text-base font-semibold text-white mb-1">Стать атлетом</h2>
-              <p className="text-sm text-(--color_text_muted) mb-4">
-                Активируйте режим атлета, чтобы вести собственные тренировки и статистику.
-              </p>
-              <AccentButton
-                size="sm"
-                onClick={handleBecomeAthlete}
-                disabled={becomingAthlete}
-                loading={becomingAthlete}
-                loadingText="Активация..."
-                className="px-5 py-2.5 rounded-xl"
-              >
-                Стать атлетом
-              </AccentButton>
+        <SectionGroup title="Режим атлета" showBreakAfter={false}>
+          <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
+            <div className="flex items-start gap-4">
+              <div className="text-3xl">🏃</div>
+              <div className="flex-1">
+                <p className="text-sm text-(--color_text_muted) mb-4">
+                  Активируйте режим атлета, чтобы вести собственные тренировки и статистику.
+                </p>
+                <AccentButton
+                  size="sm"
+                  onClick={handleBecomeAthlete}
+                  disabled={becomingAthlete}
+                  loading={becomingAthlete}
+                  loadingText="Активация..."
+                  className="px-5 py-2.5 rounded-xl"
+                >
+                  Стать атлетом
+                </AccentButton>
+              </div>
             </div>
           </div>
-        </div>
+        </SectionGroup>
       )}
 
-      {/* Become trainer */}
       {isAthlete && !isTrainer && (
-        <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
-          <div className="flex items-start gap-4">
-            <div className="text-3xl">🏋️</div>
-            <div className="flex-1">
-              <h2 className="text-base font-semibold text-white mb-1">Стать тренером</h2>
-              <p className="text-sm text-(--color_text_muted) mb-4">
-                Активируйте режим тренера, чтобы вести группы, атлетов и расписание тренировок.
-              </p>
-              <AccentButton
-                size="sm"
-                onClick={handleBecomeTrainer}
-                disabled={becomingTrainer}
-                loading={becomingTrainer}
-                loadingText="Активация..."
-                className="px-5 py-2.5 rounded-xl"
-              >
-                Стать тренером
-              </AccentButton>
+        <SectionGroup title="Режим тренера" showBreakAfter={false}>
+          <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
+            <div className="flex items-start gap-4">
+              <div className="text-3xl">🏋️</div>
+              <div className="flex-1">
+                <p className="text-sm text-(--color_text_muted) mb-4">
+                  Активируйте режим тренера, чтобы вести группы, атлетов и расписание тренировок.
+                </p>
+                <AccentButton
+                  size="sm"
+                  onClick={handleBecomeTrainer}
+                  disabled={becomingTrainer}
+                  loading={becomingTrainer}
+                  loadingText="Активация..."
+                  className="px-5 py-2.5 rounded-xl"
+                >
+                  Стать тренером
+                </AccentButton>
+              </div>
             </div>
           </div>
-        </div>
+        </SectionGroup>
       )}
     </AnimatedBlock>
   );

@@ -13,6 +13,7 @@ import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import AccentButton from '@/components/ui/AccentButton';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AppInput from '@/components/ui/AppInput';
+import SectionGroup from '@/components/ui/SectionGroup';
 
 export default function TrainerPersonalScreen() {
   const navigate = useNavigate();
@@ -153,26 +154,27 @@ export default function TrainerPersonalScreen() {
   return (
     <Screen className="trainer-personal-screen">
       <div className="p-4 w-full mx-auto">
-        <BackButton onClick={() => navigate(-1)} className="mb-5" />
+        <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
+          <BackButton onClick={() => navigate(-1)} />
 
-        <ScreenHeader
-          icon="🪪"
-          title="Профессиональный профиль"
-          description="Фото, специализации и образование — видно вашим атлетам"
-        />
+          <ScreenHeader
+            icon="🪪"
+            title="Профессиональный профиль"
+            description="Фото, специализации и образование — видно вашим атлетам"
+          />
 
-        {/* Hint */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-(--color_bg_card) rounded-xl px-4 py-3 border border-(--color_border) mb-4 flex items-start gap-3"
-        >
-          <span className="text-xl shrink-0">💡</span>
-          <p className="text-xs text-(--color_text_muted) leading-relaxed">
-            Ваш профиль виден атлетам на странице команды и в ссылке-приглашении.{' '}
-            <span className="text-white">Заполненный профиль</span> повышает доверие — атлет видит ваше фото, специализации и опыт ещё до того, как примет приглашение.
-          </p>
-        </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-(--color_bg_card) rounded-xl px-4 py-3 border border-(--color_border) flex items-start gap-3"
+          >
+            <span className="text-xl shrink-0">💡</span>
+            <p className="text-xs text-(--color_text_muted) leading-relaxed">
+              Ваш профиль виден атлетам на странице команды и в ссылке-приглашении.{' '}
+              <span className="text-white">Заполненный профиль</span> повышает доверие — атлет видит ваше фото, специализации и опыт ещё до того, как примет приглашение.
+            </p>
+          </motion.div>
+        </SectionGroup>
 
         {cropSrc && (
           <AvatarCropModal
@@ -182,11 +184,11 @@ export default function TrainerPersonalScreen() {
           />
         )}
 
-        {/* Photo */}
+        <SectionGroup title="Визитка" bodyClassName="space-y-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center mb-6"
+          className="flex flex-col items-center"
         >
           <div className="relative">
             <button
@@ -216,12 +218,11 @@ export default function TrainerPersonalScreen() {
           <p className="text-xs text-(--color_text_muted) mt-2">Нажмите для смены фото</p>
         </motion.div>
 
-        {/* Bio */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) mb-4"
+          className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
         >
           <FormField label="О себе">
             <textarea
@@ -235,12 +236,11 @@ export default function TrainerPersonalScreen() {
           <p className="text-xs text-(--color_text_muted) text-right mt-1">{bio.length}/500</p>
         </motion.div>
 
-        {/* Education */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) mb-4"
+          className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
         >
           <FormField label="Образование">
             <AppInput
@@ -252,12 +252,11 @@ export default function TrainerPersonalScreen() {
           </FormField>
         </motion.div>
 
-        {/* Specializations */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) mb-6"
+          className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
         >
           <FormField label="Специализации">
             <>
@@ -299,13 +298,14 @@ export default function TrainerPersonalScreen() {
             </>
           </FormField>
         </motion.div>
+        </SectionGroup>
 
-        {/* Donation requisites */}
+        <SectionGroup title="Поддержка от атлетов">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
-          className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) mb-6"
+          className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
         >
           <FormField label="Реквизиты для поддержки">
             <p className="text-xs text-(--color_text_muted) mb-4">
@@ -381,23 +381,25 @@ export default function TrainerPersonalScreen() {
             </div>
           </FormField>
         </motion.div>
+        </SectionGroup>
 
-        {/* Save */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <AccentButton
-            onClick={handleSave}
-            disabled={saving}
-            loading={saving}
-            loadingText="Сохранение..."
-            className="font-semibold"
+        <SectionGroup title="Сохранение" showBreakAfter={false}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
           >
-            Сохранить профиль
-          </AccentButton>
-        </motion.div>
+            <AccentButton
+              onClick={handleSave}
+              disabled={saving}
+              loading={saving}
+              loadingText="Сохранение..."
+              className="font-semibold"
+            >
+              Сохранить профиль
+            </AccentButton>
+          </motion.div>
+        </SectionGroup>
       </div>
     </Screen>
   );

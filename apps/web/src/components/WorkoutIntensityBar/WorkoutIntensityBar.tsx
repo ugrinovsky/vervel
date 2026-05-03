@@ -11,19 +11,20 @@ export default function WorkoutIntensityBar({
   hasMissingRpe,
   className = '',
 }: Props) {
+  const needsHint = hasMissingWeights || hasMissingRpe;
+  let hint: string | null = null;
+  if (hasMissingWeights && hasMissingRpe) {
+    hint = 'В форме укажите веса и оценку нагрузки 1–5.';
+  } else if (hasMissingWeights) {
+    hint = 'В форме укажите веса — тогда появится интенсивность.';
+  } else if (hasMissingRpe) {
+    hint = 'В форме оцените нагрузку 1–5 — так точнее аналитика.';
+  }
+
   return (
     <div className={className}>
-      {hasMissingWeights && (
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/4 border border-(--color_border) text-xs text-(--color_text_muted) mb-1.5">
-          <span>⚖️</span>
-          <span>Укажите веса — тогда покажем интенсивность</span>
-        </div>
-      )}
-      {hasMissingRpe && (
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-sky-500/10 border border-sky-500/25 text-xs text-sky-100/90 mb-1.5">
-          <span>⭐</span>
-          <span>Оцените нагрузку по ощущениям (1–5) в форме тренировки — так аналитика точнее</span>
-        </div>
+      {needsHint && (
+        <p className="text-[11px] text-(--color_text_muted) leading-snug pr-1">{hint}</p>
       )}
       {!hasMissingWeights && <IntensityStrip intensity={intensity} />}
     </div>

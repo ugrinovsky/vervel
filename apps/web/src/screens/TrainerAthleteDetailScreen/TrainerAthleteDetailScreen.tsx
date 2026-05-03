@@ -24,6 +24,7 @@ import CallButton from '@/components/VideoCall/CallButton';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import BackButton from '@/components/BackButton/BackButton';
 import type { MonthlyStatsData } from '@/screens/ActivityScreen/useActivityData';
+import SectionGroup from '@/components/ui/SectionGroup';
 
 type Tab = 'analytics' | 'activity' | 'avatar';
 
@@ -194,13 +195,13 @@ export default function TrainerAthleteDetailScreen() {
       </BottomSheet>
 
       <div className="p-4 w-full mx-auto">
-        <BackButton onClick={() => navigate('/trainer/athletes')} className="mb-5" />
+        <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-5">
+        <BackButton onClick={() => navigate('/trainer/athletes')} />
 
-        {/* ── Hero ─────────────────────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-4 mb-5 pt-4 pb-5 px-4 rounded-2xl bg-(--color_bg_card) border border-(--color_border)"
+          className="flex items-center gap-4 pt-4 pb-5 px-4 rounded-2xl bg-(--color_bg_card) border border-(--color_border)"
         >
           <UserAvatar photoUrl={athletePhotoUrl} name={athleteName} size={76} className="shrink-0" />
           <div className="flex-1 min-w-0">
@@ -246,12 +247,11 @@ export default function TrainerAthleteDetailScreen() {
           </div>
         </motion.div>
 
-        {/* ── Action buttons ────────────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="grid grid-cols-3 gap-3 mb-5"
+          className="grid grid-cols-3 gap-3"
         >
           <AccentButton onClick={() => setShowCreate(true)} className="font-medium">
             <PlusIcon className="w-4 h-4" />
@@ -265,12 +265,11 @@ export default function TrainerAthleteDetailScreen() {
           <CallButton athleteId={id} />
         </motion.div>
 
-        {/* ── Tab bar ───────────────────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="flex gap-1 mb-6 bg-(--color_bg_card) rounded-xl p-1"
+          className="flex gap-1 bg-(--color_bg_card) rounded-xl p-1"
         >
           {(
             [
@@ -292,45 +291,44 @@ export default function TrainerAthleteDetailScreen() {
             </button>
           ))}
         </motion.div>
+        </SectionGroup>
 
-        {/* ── Analytics tab ─────────────────────────────────────────────── */}
         {tab === 'analytics' && (
-          <>
+          <SectionGroup title="Аналитика" showBreakAfter={false}>
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-5"
+              className="space-y-5"
             >
               <AnalyticsPeriodToggle value={timeRange} onChange={setTimeRange} showHint={false} />
-            </motion.div>
 
-            {stats ? (
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 }}
-              >
-                <AnalyticsCards
-                  stats={stats}
-                  monthStats={monthStats}
-                  periodization={periodization}
-                  timeRange={timeRange}
-                />
-              </motion.div>
-            ) : (
-              <div className="text-center text-(--color_text_muted) py-12 text-sm">
-                Нет данных за выбранный период
-              </div>
-            )}
-          </>
+              {stats ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05 }}
+                >
+                  <AnalyticsCards
+                    stats={stats}
+                    monthStats={monthStats}
+                    periodization={periodization}
+                    timeRange={timeRange}
+                  />
+                </motion.div>
+              ) : (
+                <div className="text-center text-(--color_text_muted) py-12 text-sm">
+                  Нет данных за выбранный период
+                </div>
+              )}
+            </motion.div>
+          </SectionGroup>
         )}
 
-        {/* ── Activity tab ──────────────────────────────────────────────── */}
         {tab === 'activity' && (
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-            {monthlyStatsData && <MonthlyStats stats={monthlyStatsData} />}
+          <SectionGroup title="Активность">
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+              {monthlyStatsData && <MonthlyStats stats={monthlyStatsData} />}
 
-            <div className="mb-6">
               <Calendar
                 mode="load"
                 selectedDate={selectedDate}
@@ -340,39 +338,40 @@ export default function TrainerAthleteDetailScreen() {
                 days={days}
                 hideTrainerBadge
               />
-            </div>
 
-            <AnimatePresence>
-              {selectedDate && (
-                <motion.div
-                  key={selectedDate.toISOString()}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <DayDetails date={selectedDate} workouts={dayWorkouts} onDeleted={() => {}} readOnly />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
+              <AnimatePresence mode="wait">
+                {selectedDate && (
+                  <motion.div
+                    key={selectedDate.toISOString()}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <DayDetails date={selectedDate} workouts={dayWorkouts} onDeleted={() => {}} readOnly />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </SectionGroup>
         )}
 
-        {/* ── Avatar tab ────────────────────────────────────────────────── */}
         {tab === 'avatar' && (
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-            {!avatarLoading && !avatarData ? (
-              <div className="text-center text-(--color_text_muted) py-12 text-sm">Нет данных</div>
-            ) : (
-              <AvatarView
-                zones={avatarData?.zones ?? {}}
-                totalWorkouts={avatarData?.totalWorkouts ?? 0}
-                lastWorkoutDaysAgo={avatarData?.lastWorkoutDaysAgo ?? null}
-                loading={avatarLoading}
-                avatarContext="trainer_view"
-              />
-            )}
-          </motion.div>
+          <SectionGroup title="Зоны мышц" showBreakAfter={false}>
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+              {!avatarLoading && !avatarData ? (
+                <div className="text-center text-(--color_text_muted) py-12 text-sm">Нет данных</div>
+              ) : (
+                <AvatarView
+                  zones={avatarData?.zones ?? {}}
+                  totalWorkouts={avatarData?.totalWorkouts ?? 0}
+                  lastWorkoutDaysAgo={avatarData?.lastWorkoutDaysAgo ?? null}
+                  loading={avatarLoading}
+                  avatarContext="trainer_view"
+                />
+              )}
+            </motion.div>
+          </SectionGroup>
         )}
       </div>
     </Screen>

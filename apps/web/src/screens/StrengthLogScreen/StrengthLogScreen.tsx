@@ -493,7 +493,14 @@ function ExerciseCard({
   );
 }
 
-export default function StrengthLogScreen({ embedded = false }: { embedded?: boolean }) {
+export default function StrengthLogScreen({
+  embedded = false,
+  /** Пакет «ИИ: предложить связи с эталонами» и пояснения к стоимости — вкладка «Эталоны и ИИ» в хабе. */
+  showStandardsAiBatch = true,
+}: {
+  embedded?: boolean;
+  showStandardsAiBatch?: boolean;
+}) {
   const navigate = useNavigate();
   const { balance, setBalance } = useBalance();
   const [payload, setPayload] = useState<StrengthLogPayload | null>(null);
@@ -1023,7 +1030,10 @@ export default function StrengthLogScreen({ embedded = false }: { embedded?: boo
                 Выбрать из истории
               </GhostButton>
             )}
-            {standards.length > 0 && unlinkedTotalCount > 0 && aiFeatureEnabled && (
+            {showStandardsAiBatch &&
+              standards.length > 0 &&
+              unlinkedTotalCount > 0 &&
+              aiFeatureEnabled && (
               <div className="space-y-1.5">
                 <GhostButton
                   variant="outline-accent"

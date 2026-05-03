@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import ShareResultCard from '@/components/ShareResultCard/ShareResultCard';
 import { cardClass } from '@/components/ui/Card';
+import SectionGroup from '@/components/ui/SectionGroup';
 
 export default function StreakScreen() {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
@@ -57,15 +58,14 @@ export default function StreakScreen() {
 
   return (
     <Screen className="streak-screen">
-      <div className="p-4 w-full max-w-4xl mx-auto space-y-6">
+      <div className="p-4 w-full max-w-4xl mx-auto">
         <ScreenHeader
           icon={mode === 'intensive' ? '⚡' : '🔥'}
           title="Ударный режим"
           description="Тренируйтесь регулярно каждую неделю — счётчик растёт, пропустите неделю — сбросится"
         />
 
-        {/* ── Режим ── */}
-        <div className="space-y-2">
+        <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-2">
           <ToggleGroup
             cols={2}
             value={mode}
@@ -86,72 +86,73 @@ export default function StreakScreen() {
               Сложнее, но результат быстрее. Пропустите неделю — серия сбросится.</>
             )}
           </ScreenHint>
-        </div>
+        </SectionGroup>
 
-        {/* ── Текущая неделя ── */}
-        <AnimatedBlock delay={0.05}>
-          <StreakCard
-            currentStreak={stats.streak}
-            longestStreak={stats.longestStreak}
-            mode={mode}
-            currentWeekWorkouts={stats.currentWeekWorkouts ?? 0}
-            weeklyRequired={stats.weeklyRequired ?? 3}
-          />
-        </AnimatedBlock>
+        <SectionGroup title="Текущая неделя">
+          <AnimatedBlock delay={0.05}>
+            <StreakCard
+              currentStreak={stats.streak}
+              longestStreak={stats.longestStreak}
+              mode={mode}
+              currentWeekWorkouts={stats.currentWeekWorkouts ?? 0}
+              weeklyRequired={stats.weeklyRequired ?? 3}
+            />
+          </AnimatedBlock>
+        </SectionGroup>
 
-        {/* ── Прогресс: XP + статистика ── */}
-        <AnimatedBlock delay={0.1} className={`${cardClass} rounded-2xl p-4 space-y-4`}>
-          {/* XP / Level */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <div>
-                <div className="text-sm font-semibold text-white">⭐ {stats.xp} XP · Lv {stats.level}</div>
-                <div className="text-xs text-(--color_text_muted) mt-0.5">{stats.levelName}</div>
+        <SectionGroup title="Опыт и статистика">
+          <AnimatedBlock delay={0.1} className={`${cardClass} rounded-2xl p-4 space-y-4`}>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <div className="text-sm font-semibold text-white">⭐ {stats.xp} XP · Lv {stats.level}</div>
+                  <div className="text-xs text-(--color_text_muted) mt-0.5">{stats.levelName}</div>
+                </div>
+                <div className="text-xs text-(--color_text_muted)">
+                  до Lv {stats.level + 1}: {stats.xpForNextLevel - stats.xp} XP
+                </div>
               </div>
-              <div className="text-xs text-(--color_text_muted)">
-                до Lv {stats.level + 1}: {stats.xpForNextLevel - stats.xp} XP
+              <div className="h-2 rounded-full bg-white/8">
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${stats.xpProgressPct}%`, backgroundColor: 'var(--color_primary_light)' }}
+                />
               </div>
             </div>
-            <div className="h-2 rounded-full bg-white/8">
-              <div
-                className="h-full rounded-full transition-all duration-700"
-                style={{ width: `${stats.xpProgressPct}%`, backgroundColor: 'var(--color_primary_light)' }}
-              />
+
+            <div className="border-t border-(--color_border)" />
+
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { value: stats.totalWorkouts, label: 'Тренировок' },
+                { value: stats.streak,        label: 'Недель подряд' },
+                { value: stats.longestStreak, label: 'Рекорд' },
+              ].map(({ value, label }) => (
+                <div key={label} className="text-center">
+                  <div className="text-2xl font-bold text-(--color_text_primary)">{value}</div>
+                  <div className="text-xs text-(--color_text_muted) mt-0.5">{label}</div>
+                </div>
+              ))}
             </div>
-          </div>
+          </AnimatedBlock>
+        </SectionGroup>
 
-          {/* Divider */}
-          <div className="border-t border-(--color_border)" />
+        <SectionGroup title="Достижения">
+          <AnimatedBlock delay={0.15}>
+            <AchievementsList />
+          </AnimatedBlock>
+        </SectionGroup>
 
-          {/* Stats grid */}
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { value: stats.totalWorkouts, label: 'Тренировок' },
-              { value: stats.streak,        label: 'Недель подряд' },
-              { value: stats.longestStreak, label: 'Рекорд' },
-            ].map(({ value, label }) => (
-              <div key={label} className="text-center">
-                <div className="text-2xl font-bold text-(--color_text_primary)">{value}</div>
-                <div className="text-xs text-(--color_text_muted) mt-0.5">{label}</div>
-              </div>
-            ))}
-          </div>
-        </AnimatedBlock>
-
-        {/* ── Достижения ── */}
-        <AnimatedBlock delay={0.15}>
-          <AchievementsList />
-        </AnimatedBlock>
-
-        {/* ── Действия ── */}
-        <AnimatedBlock delay={0.2} className="space-y-3">
-          <ShareResultCard profileData={profileData} />
-          <ScreenLinks links={[
-            { emoji: '💪', bg: 'bg-orange-500/20', label: 'Добавить тренировку', sub: 'Чтобы не прервать серию', to: '/workouts/new' },
-            { emoji: '📅', bg: 'bg-blue-500/20',   label: 'Календарь',           sub: 'История тренировок',    to: '/calendar' },
-            { emoji: '📊', bg: 'bg-violet-500/20', label: 'Аналитика',           sub: 'Прогресс и нагрузки',   to: '/analytics' },
-          ]} />
-        </AnimatedBlock>
+        <SectionGroup title="Ещё" showBreakAfter={false}>
+          <AnimatedBlock delay={0.2} className="space-y-3">
+            <ShareResultCard profileData={profileData} />
+            <ScreenLinks links={[
+              { emoji: '💪', bg: 'bg-orange-500/20', label: 'Добавить тренировку', sub: 'Чтобы не прервать серию', to: '/workouts/new' },
+              { emoji: '📅', bg: 'bg-blue-500/20',   label: 'Календарь',           sub: 'История тренировок',    to: '/calendar' },
+              { emoji: '📊', bg: 'bg-violet-500/20', label: 'Аналитика',           sub: 'Прогресс и нагрузки',   to: '/analytics' },
+            ]} />
+          </AnimatedBlock>
+        </SectionGroup>
       </div>
     </Screen>
   );

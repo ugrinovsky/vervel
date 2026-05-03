@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, Link } from 'react-router';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
@@ -23,6 +23,7 @@ import IconButton from '@/components/ui/IconButton';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 import { AI_CHAT_MIN_BALANCE } from '@/constants/ai';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
+import SectionGroup from '@/components/ui/SectionGroup';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   getAthleteCoachIntent,
@@ -175,19 +176,21 @@ export default function AthleteMyTeamScreen() {
           description="Тренеры и группы, с которыми вы работаете — покажите QR-код тренеру или введите код приглашения, чтобы присоединиться"
         />
 
-        <ScreenHint className="mb-4">
-          Здесь ваши персональные тренеры и группы. Нажмите{' '}
-          <span className="text-white font-medium">Чат</span> — чтобы написать тренеру напрямую.
-          Назначенные тренировки видны в блоке{' '}
-          <span className="text-white font-medium">Расписание</span> и в календаре активности.
-        </ScreenHint>
+        <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
+          <ScreenHint>
+            Все беседы — в разделе{' '}
+            <Link to="/dialogs" className="text-(--color_primary_light) font-medium underline underline-offset-2">
+              Диалоги
+            </Link>
+            . Здесь — тренеры, группы и расписание; беседу открывает кнопка «Чат» на карточке.
+          </ScreenHint>
 
-        {showCoachConnectBanner && !loading && trainers.length === 0 && user && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="relative rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 pr-10 mb-4"
-          >
+          {showCoachConnectBanner && !loading && trainers.length === 0 && user && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="relative rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 pr-10"
+            >
             <button
               type="button"
               onClick={() => {
@@ -217,15 +220,16 @@ export default function AthleteMyTeamScreen() {
               </button>
             </div>
           </motion.div>
-        )}
+          )}
+        </SectionGroup>
 
-        {/* AI Assistant card */}
-        <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          onClick={() => setAiChatOpen(true)}
-          className="w-full flex items-center gap-3 p-4 bg-(--color_bg_card) rounded-2xl border border-(--color_border) mb-4 hover:bg-(--color_bg_card_hover) transition-colors text-left"
-        >
+        <SectionGroup title="ИИ-помощник">
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={() => setAiChatOpen(true)}
+            className="w-full flex items-center gap-3 p-4 bg-(--color_bg_card) rounded-2xl border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
+          >
           <div className="w-10 h-10 flex items-center justify-center rounded-full bg-emerald-500/20 shrink-0">
             <SparklesIcon className="w-5 h-5 text-emerald-400" />
           </div>
@@ -240,8 +244,10 @@ export default function AthleteMyTeamScreen() {
           <span className="text-xs text-(--color_text_muted) shrink-0">
             от {AI_CHAT_MIN_BALANCE}₽/сообщение
           </span>
-        </motion.button>
+          </motion.button>
+        </SectionGroup>
 
+        <SectionGroup title="Команда и расписание" bodyClassName="space-y-4" showBreakAfter={false}>
         {isEmpty ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -261,7 +267,7 @@ export default function AthleteMyTeamScreen() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) mb-4"
+                className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
               >
                 <div className="flex items-center gap-2 mb-4">
                   <UsersIcon className="w-5 h-5 text-(--color_primary_icon)" />
@@ -390,7 +396,7 @@ export default function AthleteMyTeamScreen() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) mt-4"
+                className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
               >
                 <div className="flex items-center gap-2 mb-4">
                   <CalendarDaysIcon className="w-5 h-5 text-(--color_primary_icon)" />
@@ -441,6 +447,7 @@ export default function AthleteMyTeamScreen() {
             )}
           </>
         )}
+        </SectionGroup>
       </div>
     </Screen>
   );

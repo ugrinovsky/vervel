@@ -7,12 +7,14 @@ import { avatarApi, type ZoneState } from '@/api/avatar';
 import { athleteApi } from '@/api/athlete';
 import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedBlock from '@/components/ui/AnimatedBlock';
+import SectionGroup from '@/components/ui/SectionGroup';
 import { useAuth } from '@/contexts/AuthContext';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import AccentButton from '@/components/ui/AccentButton';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { toDateKey, getCurrentHour } from '@/utils/date';
+import { useAthleteWorkoutDraftLocal } from '@/hooks/useAthleteWorkoutDraftLocal';
 
 
 interface TodayWorkout {
@@ -59,6 +61,7 @@ const ONBOARDING_FEATURES = [
 export default function AvatarScreen() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { draft: workoutDraft } = useAthleteWorkoutDraftLocal(user?.id);
   const [zones, setZones] = useState<Record<string, ZoneState>>({});
   const [totalWorkouts, setTotalWorkouts] = useState(0);
   const [allTimeWorkouts, setAllTimeWorkouts] = useState(0);
@@ -144,8 +147,8 @@ export default function AvatarScreen() {
           description="Визуализация восстановления мышц — красный цвет значит активная нагрузка, зелёный — мышцы готовы к следующей тренировке"
         />
 
-        {/* Greeting block */}
-        <AnimatedBlock className="w-full rounded-2xl p-4 mb-4 border border-(--color_primary_light)/30 bg-(--color_primary_light)/10">
+        <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
+        <AnimatedBlock className="w-full rounded-2xl p-4 border border-(--color_primary_light)/30 bg-(--color_primary_light)/10">
           <div className="flex items-center gap-3">
             <div className="text-2xl">
               {getCurrentHour() < 12 ? '☀️' : getCurrentHour() < 18 ? '🌤️' : '🌙'}
@@ -159,6 +162,29 @@ export default function AvatarScreen() {
           </div>
         </AnimatedBlock>
 
+        {workoutDraft && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-amber-300">Незаконченная тренировка</p>
+              <p className="text-xs text-amber-400/70 mt-0.5 truncate">
+                {workoutDraft.exercises.length} упр. ·{' '}
+                {workoutDraft.workoutType === 'bodybuilding'
+                  ? 'Силовая'
+                  : workoutDraft.workoutType === 'crossfit'
+                    ? 'CrossFit'
+                    : 'Кардио'}
+              </p>
+            </div>
+            <AccentButton size="sm" onClick={() => navigate('/workouts/new')} className="shrink-0">
+              Продолжить
+            </AccentButton>
+          </motion.div>
+        )}
+
         {/* Тренировка от тренера сегодня */}
         <AnimatePresence>
           {todayWorkout && (
@@ -167,7 +193,7 @@ export default function AvatarScreen() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               onClick={() => navigate('/calendar')}
-              className="w-full text-left rounded-2xl p-4 mb-4 main-button relative overflow-hidden"
+              className="w-full text-left rounded-2xl p-4 main-button relative overflow-hidden"
             >
               <div className="absolute inset-0 bg-black/20" />
               <div className="relative flex items-center gap-3">
@@ -195,7 +221,7 @@ export default function AvatarScreen() {
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="mb-4 rounded-2xl p-4 bg-(--color_bg_card) border border-(--color_border)"
+              className="rounded-2xl p-4 bg-(--color_bg_card) border border-(--color_border)"
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold text-white">Эта неделя</span>
@@ -233,7 +259,7 @@ export default function AvatarScreen() {
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4 rounded-2xl p-4 bg-amber-500/10 border border-amber-500/30"
+            className="rounded-2xl p-4 bg-amber-500/10 border border-amber-500/30"
           >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-3">
               <div className="min-w-0 w-full sm:flex-1">
@@ -257,7 +283,7 @@ export default function AvatarScreen() {
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4 rounded-2xl p-4 bg-sky-500/10 border border-sky-500/30"
+            className="rounded-2xl p-4 bg-sky-500/10 border border-sky-500/30"
           >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-3">
               <div className="min-w-0 w-full sm:flex-1">
@@ -279,7 +305,9 @@ export default function AvatarScreen() {
             </div>
           </motion.div>
         )}
+        </SectionGroup>
 
+        <SectionGroup title="Карта нагрузки" showBreakAfter={false}>
         {/* Пока грузим статистику — не показываем карту: иначе новый пользователь сначала видит аватар, потом онбординг */}
         {loading ? (
           <AnimatedBlock delay={0.12}>
@@ -321,7 +349,7 @@ export default function AvatarScreen() {
           </motion.div>
         ) : (
           <>
-            <ScreenHint className="mb-4">
+            <ScreenHint>
               Карта обновляется автоматически после каждой тренировки.{' '}
               <span className="text-white font-medium">Нажмите на зону</span> — увидите детали нагрузки
               и статус восстановления. Чем ярче цвет — тем свежее нагрузка на эту группу мышц.
@@ -339,6 +367,7 @@ export default function AvatarScreen() {
             </AnimatedBlock>
           </>
         )}
+        </SectionGroup>
       </div>
     </Screen>
   );

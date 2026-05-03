@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useNavigate } from 'react-router';
 import AnimatedBlock from '@/components/ui/AnimatedBlock';
@@ -21,6 +21,7 @@ import {
   isMobileBrowser,
 } from '@/components/PwaInstallHint/pwaInstallShared';
 import { PwaInstructions } from '@/components/PwaInstallHint/PwaInstallHint';
+import SectionGroup from '@/components/ui/SectionGroup';
 
 interface Props {
   data: ProfileData;
@@ -211,7 +212,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
   };
 
   return (
-    <AnimatedBlock key="settings" className="space-y-4">
+    <AnimatedBlock key="settings" className="space-y-0">
       <BottomSheet id="settings-feedback" open={feedbackOpen} onClose={() => setFeedbackOpen(false)} emoji="💬" title="Написать нам">
         <div className="space-y-3">
           <ToggleGroup
@@ -249,137 +250,63 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
         </div>
       </BottomSheet>
 
-      {/* Theme picker */}
-      <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
-        <h2 className="text-base font-semibold text-white mb-4">Цвет темы</h2>
-        <div className="grid grid-cols-8 gap-3">
-          {/* Standalone dark / light / auto themes */}
-          {/* Auto theme — CSS diagonal half-dark / half-light */}
-          <button
-            onClick={() => handleSpecialThemeChange('auto')}
-            title="Авто"
-            className="relative aspect-square w-full rounded-full border-2 transition-all overflow-hidden"
-            style={{
-              borderColor: activeSpecial === 'auto' ? 'rgba(128,128,128,0.8)' : 'rgba(128,128,128,0.3)',
-              transform: activeSpecial === 'auto' ? 'scale(1.15)' : 'scale(1)',
-            }}
-          >
-            <span className="absolute inset-0" style={{ background: '#F0EFED', clipPath: 'polygon(0 0, 100% 0, 0 100%)' }} />
-            <span className="absolute inset-0" style={{ background: '#22222A', clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }} />
-          </button>
-          {([
-            { id: 'dark' as const, title: 'Тёмная', bg: 'linear-gradient(135deg, #22222A 0%, #0D0D11 100%)', border: 'rgba(255,255,255,0.15)', activeBorder: 'white' },
-            { id: 'light' as const, title: 'Светлая', bg: 'linear-gradient(135deg, #F6F6F6 0%, #ECECEC 100%)', border: 'rgba(0,0,0,0.15)', activeBorder: 'rgba(0,0,0,0.5)' },
-          ] as const).map((t) => (
-            <button
-              key={t.id}
-              onClick={() => handleSpecialThemeChange(t.id)}
-              title={t.title}
-              className="relative aspect-square w-full rounded-full border-2 transition-all"
-              style={{
-                background: t.bg,
-                borderColor: activeSpecial === t.id ? t.activeBorder : t.border,
-                transform: activeSpecial === t.id ? 'scale(1.15)' : 'scale(1)',
-              }}
+      <SectionGroup title="Аккаунт">
+        <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
+          <h3 className="text-sm font-semibold text-white mb-4">Личные данные</h3>
+          <div className="space-y-4">
+            <AppInput
+              type="text"
+              label="Имя"
+              value={nameField}
+              onChange={(e) => setNameField(e.target.value)}
+              placeholder="Ваше имя"
             />
-          ))}
-          {/* Hue presets */}
-          {THEME_PRESETS.map((preset) => (
-            <button
-              key={preset.hue}
-              onClick={() => handleThemeChange(preset.hue)}
-              title={preset.label}
-              className="relative aspect-square w-full rounded-full border-2 transition-all"
-              style={{
-                background: `hsl(${preset.hue}, 74%, 30%)`,
-                borderColor: activeSpecial === null && activeHue === preset.hue ? 'var(--color_text_primary)' : 'var(--color_border)',
-                transform: activeSpecial === null && activeHue === preset.hue ? 'scale(1.15)' : 'scale(1)',
-              }}
+            <AppInput
+              type="email"
+              label="Email"
+              value={emailField}
+              onChange={(e) => setEmailField(e.target.value)}
+              placeholder={
+                isOAuthPlaceholderEmail(data.user.email)
+                  ? 'Укажите email, если нужны уведомления на почту'
+                  : 'email@example.com'
+              }
             />
-          ))}
-        </div>
-        <div className="mt-4 flex items-center gap-3">
-          <label className="text-xs text-(--color_text_muted)">Свой цвет</label>
-          <input
-            type="range"
-            min={0}
-            max={359}
-            value={activeHue}
-            onChange={(e) => handleThemeChange(Number(e.target.value))}
-            className="flex-1 h-2 rounded-full appearance-none cursor-pointer"
-            style={{
-              background: `linear-gradient(to right, ${Array.from({ length: 12 }, (_, i) => `hsl(${i * 30}, 74%, 30%)`).join(', ')})`,
-            }}
-          />
-          <div
-            className="w-8 h-8 rounded-lg border border-(--color_border)"
-            style={{ background: `hsl(${activeHue}, 74%, 30%)` }}
-          />
-        </div>
-        {themeChanged && (
-          <div className="mt-4">
-            <AccentButton onClick={handleApplyTheme}>Применить тему</AccentButton>
+            {isOAuthPlaceholderEmail(data.user.email) && (
+              <p className="text-xs text-(--color_text_muted) -mt-2">
+                Вход без пароля: в поле выше не настоящая почта. Укажи свой email, если нужны письма с сервиса.
+              </p>
+            )}
+            <div>
+              <label className="text-xs text-(--color_text_muted) mb-2 block">Пол</label>
+              <ToggleGroup
+                cols={2}
+                value={genderField}
+                onChange={(v) => setGenderField(genderField === v ? null : v)}
+                options={[
+                  { value: 'male', label: '👨 Мужской' },
+                  { value: 'female', label: '👩 Женский' },
+                ]}
+              />
+            </div>
+            <AccentButton
+              onClick={handleSaveProfile}
+              disabled={saving}
+              loading={saving}
+              loadingText="Сохранение..."
+            >
+              Сохранить
+            </AccentButton>
           </div>
-        )}
-      </div>
-
-      {/* Profile settings */}
-      <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
-        <h2 className="text-base font-semibold text-white mb-4">Личные данные</h2>
-        <div className="space-y-4">
-          <AppInput
-            type="text"
-            label="Имя"
-            value={nameField}
-            onChange={(e) => setNameField(e.target.value)}
-            placeholder="Ваше имя"
-          />
-          <AppInput
-            type="email"
-            label="Email"
-            value={emailField}
-            onChange={(e) => setEmailField(e.target.value)}
-            placeholder={
-              isOAuthPlaceholderEmail(data.user.email)
-                ? 'Укажите email, если нужны уведомления на почту'
-                : 'email@example.com'
-            }
-          />
-          {isOAuthPlaceholderEmail(data.user.email) && (
-            <p className="text-xs text-(--color_text_muted) -mt-2">
-              Вход без пароля: в поле выше не настоящая почта. Укажи свой email, если нужны письма с сервиса.
-            </p>
-          )}
-          <div>
-            <label className="text-xs text-(--color_text_muted) mb-2 block">Пол</label>
-            <ToggleGroup
-              cols={2}
-              value={genderField}
-              onChange={(v) => setGenderField(genderField === v ? null : v)}
-              options={[
-                { value: 'male', label: '👨 Мужской' },
-                { value: 'female', label: '👩 Женский' },
-              ]}
-            />
-          </div>
-          <AccentButton
-            onClick={handleSaveProfile}
-            disabled={saving}
-            loading={saving}
-            loadingText="Сохранение..."
-          >
-            Сохранить
-          </AccentButton>
         </div>
 
-        {/* Body weight */}
         {!isTrainer && (
-          <div className="mt-6 pt-6 border-t border-(--color_border)">
+          <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
             <h3 className="text-sm font-semibold text-white mb-1">Вес тела</h3>
-            <p className="text-xs text-(--color_text_muted) mb-3">
-              Используется для расчёта интенсивности упражнений с собственным весом и рейтинга. История сохраняется.
+            <p className="text-xs text-(--color_text_muted) mb-3 leading-relaxed">
+              Для расчёта нагрузки в упражнениях с весом тела и рейтинга. История сохраняется.
             </p>
-            {currentBodyWeight && (
+            {currentBodyWeight != null && currentBodyWeight > 0 && (
               <p className="text-xs text-emerald-400 mb-2">Текущий: {currentBodyWeight} кг</p>
             )}
             <div className="space-y-2">
@@ -396,16 +323,15 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
                 loadingText="..."
                 className="w-full"
               >
-                Сохранить
+                Сохранить вес
               </AccentButton>
             </div>
           </div>
         )}
 
-        {/* Пароль только для аккаунта с почтой/паролем; OAuth-плейсхолдер — без пароля в БД */}
         {!isPasswordlessOAuth && (
-          <div className="mt-6 pt-6 border-t border-(--color_border)">
-            <h3 className="text-sm font-semibold text-white mb-3">Сменить пароль</h3>
+          <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
+            <h3 className="text-sm font-semibold text-white mb-3">Пароль</h3>
             <div className="space-y-3">
               <AppInput
                 type="password"
@@ -436,70 +362,150 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
             </div>
           </div>
         )}
-      </div>
+      </SectionGroup>
 
-      {/* Push notifications */}
-      <div className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)">
-        <p className="text-sm font-semibold text-white mb-1">Уведомления</p>
-        {!isStandalone && (isMobileBrowser() || !pushSupported) ? (
-          <PwaInstructions platform={pwaPlatform} />
-        ) : pushSupported ? (
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs text-(--color_text_muted)">
-              {pushPermission === 'granted' && 'Включены'}
-              {pushPermission === 'default' && 'Получайте уведомления о сообщениях и тренировках'}
-              {pushPermission === 'denied' && 'Заблокированы — разрешите в настройках браузера'}
-            </p>
-            {pushPermission !== 'denied' && (
-              <button
-                onClick={enablePush}
-                disabled={pushLoading || pushPermission === 'granted'}
-                className="shrink-0 px-4 py-2 rounded-xl text-xs font-medium transition-all disabled:opacity-50"
-                style={{
-                  background: pushPermission === 'granted' ? 'var(--color_bg_card_hover)' : 'var(--color_primary_light)',
-                  color: 'white',
-                }}
-              >
-                {pushLoading ? '...' : pushPermission === 'granted' ? 'Включены' : 'Включить'}
-              </button>
-            )}
-          </div>
-        ) : (
-          <p className="text-xs text-(--color_text_muted)">Не поддерживаются в этом браузере</p>
-        )}
-      </div>
-
-      {/* Feedback */}
-      <GhostButton variant="solid" onClick={() => setFeedbackOpen(true)} className="w-full">
-        💬 Написать нам
-      </GhostButton>
-
-      {/* Legal links */}
-      <div className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)">
-        <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wider mb-3">Документы</p>
-        <div className="space-y-2">
-          {[
-            { path: '/docs/privacy', label: 'Политика конфиденциальности' },
-            { path: '/docs/offer', label: 'Публичная оферта' },
-            { path: '/docs/seller', label: 'Реквизиты продавца' },
-          ].map(({ path, label }) => (
+      <SectionGroup title="Оформление">
+        <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
+          <h3 className="text-sm font-semibold text-white mb-4">Тема</h3>
+          <div className="grid grid-cols-8 gap-3">
             <button
-              key={path}
-              onClick={() => navigate(path)}
-              className="w-full flex items-center justify-between text-sm text-(--color_text_muted) hover:text-white transition-colors"
+              onClick={() => handleSpecialThemeChange('auto')}
+              title="Авто"
+              className="relative aspect-square w-full rounded-full border-2 transition-all overflow-hidden"
+              style={{
+                borderColor: activeSpecial === 'auto' ? 'rgba(128,128,128,0.8)' : 'rgba(128,128,128,0.3)',
+                transform: activeSpecial === 'auto' ? 'scale(1.15)' : 'scale(1)',
+              }}
             >
-              <span>{label}</span>
-              <span className="text-xs">→</span>
+              <span className="absolute inset-0" style={{ background: '#F0EFED', clipPath: 'polygon(0 0, 100% 0, 0 100%)' }} />
+              <span className="absolute inset-0" style={{ background: '#22222A', clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }} />
             </button>
-          ))}
+            {([
+              { id: 'dark' as const, title: 'Тёмная', bg: 'linear-gradient(135deg, #22222A 0%, #0D0D11 100%)', border: 'rgba(255,255,255,0.15)', activeBorder: 'white' },
+              { id: 'light' as const, title: 'Светлая', bg: 'linear-gradient(135deg, #F6F6F6 0%, #ECECEC 100%)', border: 'rgba(0,0,0,0.15)', activeBorder: 'rgba(0,0,0,0.5)' },
+            ] as const).map((t) => (
+              <button
+                key={t.id}
+                onClick={() => handleSpecialThemeChange(t.id)}
+                title={t.title}
+                className="relative aspect-square w-full rounded-full border-2 transition-all"
+                style={{
+                  background: t.bg,
+                  borderColor: activeSpecial === t.id ? t.activeBorder : t.border,
+                  transform: activeSpecial === t.id ? 'scale(1.15)' : 'scale(1)',
+                }}
+              />
+            ))}
+            {THEME_PRESETS.map((preset) => (
+              <button
+                key={preset.hue}
+                onClick={() => handleThemeChange(preset.hue)}
+                title={preset.label}
+                className="relative aspect-square w-full rounded-full border-2 transition-all"
+                style={{
+                  background: `hsl(${preset.hue}, 74%, 30%)`,
+                  borderColor: activeSpecial === null && activeHue === preset.hue ? 'var(--color_text_primary)' : 'var(--color_border)',
+                  transform: activeSpecial === null && activeHue === preset.hue ? 'scale(1.15)' : 'scale(1)',
+                }}
+              />
+            ))}
+          </div>
+          <div className="mt-4 flex items-center gap-3">
+            <label className="text-xs text-(--color_text_muted)">Свой цвет</label>
+            <input
+              type="range"
+              min={0}
+              max={359}
+              value={activeHue}
+              onChange={(e) => handleThemeChange(Number(e.target.value))}
+              className="flex-1 h-2 rounded-full appearance-none cursor-pointer"
+              style={{
+                background: `linear-gradient(to right, ${Array.from({ length: 12 }, (_, i) => `hsl(${i * 30}, 74%, 30%)`).join(', ')})`,
+              }}
+            />
+            <div
+              className="w-8 h-8 rounded-lg border border-(--color_border)"
+              style={{ background: `hsl(${activeHue}, 74%, 30%)` }}
+            />
+          </div>
+          {themeChanged && (
+            <div className="mt-4">
+              <AccentButton onClick={handleApplyTheme}>Применить тему</AccentButton>
+            </div>
+          )}
         </div>
-        <p className="text-[10px] text-(--color_text_muted) mt-3 leading-relaxed">
-          Vervel · ИП/Самозанятый · По вопросам: nazar9505@yandex.ru
-        </p>
-      </div>
+      </SectionGroup>
+
+      <SectionGroup title="Уведомления">
+        <div className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)">
+          <h3 className="text-sm font-semibold text-white mb-2">Push в браузере</h3>
+          {!isStandalone && (isMobileBrowser() || !pushSupported) ? (
+            <PwaInstructions platform={pwaPlatform} />
+          ) : pushSupported ? (
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-(--color_text_muted) leading-relaxed">
+                {pushPermission === 'granted' && 'Включены'}
+                {pushPermission === 'default' && 'Получайте уведомления о сообщениях и тренировках'}
+                {pushPermission === 'denied' && 'Заблокированы — разрешите в настройках браузера'}
+              </p>
+              {pushPermission !== 'denied' && (
+                <button
+                  onClick={enablePush}
+                  disabled={pushLoading || pushPermission === 'granted'}
+                  className="shrink-0 px-4 py-2 rounded-xl text-xs font-medium transition-all disabled:opacity-50"
+                  style={{
+                    background: pushPermission === 'granted' ? 'var(--color_bg_card_hover)' : 'var(--color_primary_light)',
+                    color: 'white',
+                  }}
+                >
+                  {pushLoading ? '...' : pushPermission === 'granted' ? 'Включены' : 'Включить'}
+                </button>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-(--color_text_muted)">Не поддерживаются в этом браузере</p>
+          )}
+        </div>
+      </SectionGroup>
+
+      <SectionGroup title="Помощь и документы">
+        <div className="bg-(--color_bg_card) rounded-2xl border border-(--color_border) overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setFeedbackOpen(true)}
+            className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left text-sm font-medium text-white hover:bg-(--color_bg_card_hover) transition-colors"
+          >
+            <span>💬 Написать нам</span>
+            <span className="text-(--color_text_muted) text-xs shrink-0">→</span>
+          </button>
+          <div className="border-t border-(--color_border) px-5 py-4">
+            <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wider mb-3">Документы</p>
+            <div className="space-y-2">
+              {[
+                { path: '/docs/privacy', label: 'Политика конфиденциальности' },
+                { path: '/docs/offer', label: 'Публичная оферта' },
+                { path: '/docs/seller', label: 'Реквизиты продавца' },
+              ].map(({ path, label }) => (
+                <button
+                  key={path}
+                  type="button"
+                  onClick={() => navigate(path)}
+                  className="w-full flex items-center justify-between text-sm text-(--color_text_muted) hover:text-white transition-colors"
+                >
+                  <span>{label}</span>
+                  <span className="text-xs">→</span>
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-(--color_text_muted) mt-3 leading-relaxed">
+              Vervel · ИП/Самозанятый · По вопросам: nazar9505@yandex.ru
+            </p>
+          </div>
+        </div>
+      </SectionGroup>
 
       {!hideLogoutInEmbeddedShell && (
-        <div className="w-full space-y-2">
+        <SectionGroup title="Сессия" showBreakAfter={false}>
           <GhostButton variant="solid" onClick={handleLogout} className="w-full">
             {isPasswordlessOAuth ? 'Выйти из Vervel' : 'Выйти из аккаунта'}
           </GhostButton>
@@ -508,7 +514,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
               На сервере отзывается токен и снимается cookie входа; здесь сбрасывается локальный профиль.
             </p>
           )}
-        </div>
+        </SectionGroup>
       )}
     </AnimatedBlock>
   );

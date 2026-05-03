@@ -18,6 +18,7 @@ import {
   ChatBubbleLeftEllipsisIcon,
 } from '@heroicons/react/24/outline';
 import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
+import SectionGroup from '@/components/ui/SectionGroup';
 
 export default function TrainerGroupsListScreen() {
   const navigate = useNavigate();
@@ -76,24 +77,26 @@ export default function TrainerGroupsListScreen() {
   return (
     <Screen loading={loading} className="trainer-groups-list-screen">
       <div className="p-4 w-full mx-auto">
-        <ScreenHeader
-          icon="👥"
-          title="Группы"
-          description="Ваши тренировочные группы — создавайте группы, добавляйте атлетов, назначайте тренировки и ведите чат"
-        />
+        <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
+          <ScreenHeader
+            icon="👥"
+            title="Группы"
+            description="Ваши тренировочные группы — создавайте группы, добавляйте атлетов, назначайте тренировки и ведите чат"
+          />
 
-        <ScreenHint className="mb-4">
-          Создайте группу, добавьте атлетов по коду или QR и назначайте тренировки сразу всей группе через{' '}
-          <span className="text-white font-medium">Календарь</span>.
-          В каждой группе есть общий чат для общения с участниками.
-        </ScreenHint>
+          <ScreenHint>
+            Создайте группу, добавьте атлетов по коду или QR и назначайте тренировки сразу всей группе через{' '}
+            <span className="text-white font-medium">Календарь</span>.
+            В каждой группе есть общий чат для общения с участниками.
+          </ScreenHint>
+        </SectionGroup>
 
-        {/* Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-3 gap-3 mb-6"
-        >
+        <SectionGroup title="Сводка" showBreakAfter={false}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="grid grid-cols-3 gap-3"
+          >
           <Card className="p-3 flex flex-col items-center gap-1.5">
             <UserGroupIcon className="w-5 h-5 text-(--color_primary_icon)" />
             <div className="text-xl font-bold text-white">{groups.length}</div>
@@ -191,7 +194,8 @@ export default function TrainerGroupsListScreen() {
               })}
             </div>
           )}
-        </motion.div>
+          </motion.div>
+        </SectionGroup>
       </div>
 
       <BottomSheet

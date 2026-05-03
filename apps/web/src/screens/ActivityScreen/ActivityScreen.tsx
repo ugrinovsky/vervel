@@ -8,28 +8,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
+import SectionGroup from '@/components/ui/SectionGroup';
 import AccentButton from '@/components/ui/AccentButton';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect, useMemo, useState } from 'react';
-import { format } from 'date-fns';
-import { parseAthleteWorkoutDraft } from '@/util/localStorageWorkoutDraft';
-
-function useWorkoutDraft(userId?: number) {
-  return useMemo(() => {
-    if (!userId) return null;
-    const raw = localStorage.getItem(`workout_draft_${userId}`);
-    if (!raw) return null;
-    return parseAthleteWorkoutDraft(raw);
-  }, [userId]);
-}
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
+import { useAthleteWorkoutDraftLocal } from '@/hooks/useAthleteWorkoutDraftLocal';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 export default function ActivityScreen() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
   const [savedWorkoutBanner, setSavedWorkoutBanner] = useState(false);
-  const draft = useWorkoutDraft(user?.id);
-  const draftDate = draft?.date ? format(new Date(draft.date), 'yyyy-MM-dd') : null;
+  const { draft, draftDateKey } = useAthleteWorkoutDraftLocal(user?.id);
+  const {
+    permission: pushPermission,
+    loading: pushLoading,
+    enable: enablePush,
+    supported: pushSupported,
+  } = usePushNotifications();
 
   const {
     selectedDate,
@@ -42,7 +40,7 @@ export default function ActivityScreen() {
     dayWorkouts,
     monthlyStats,
     refetch,
-  } = useActivityData(draftDate);
+  } = useActivityData(draftDateKey);
 
   useEffect(() => {
     const st = location.state;
@@ -56,6 +54,13 @@ export default function ActivityScreen() {
   const handleMonthChange = (newMonth: Date) => setCurrentMonth(newMonth);
   const handleGoToToday = (today: Date) => setSelectedDate(today);
 
+  const handleEnablePushNudge = async () => {
+    await enablePush();
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      toast.success('Уведомления включены');
+    }
+  };
+
   if (loading) {
     return <Screen loading className="activity-screen" />;
   }
@@ -64,38 +69,79 @@ export default function ActivityScreen() {
     return (
       <Screen className="activity-screen">
         <div className="p-4">
-          <ScreenHeader
-            icon="📅"
-            title="Активность"
-            description="Календарь тренировок — нажмите на день, чтобы посмотреть детали, добавить или изменить запись"
-          />
-          {savedWorkoutBanner && (
-            <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-4 flex flex-col gap-3 rounded-2xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3.5"
-            >
-              <div>
-                <p className="text-sm font-semibold text-emerald-200">Тренировка сохранена</p>
-                <p className="text-xs text-white/70 mt-0.5">Когда появятся данные, день будет подсвечен в календаре.</p>
-              </div>
-              <AccentButton
-                size="sm"
-                className="w-full sm:w-auto self-start"
-                onClick={() => {
-                  setSavedWorkoutBanner(false);
-                  navigate('/workouts/new');
-                }}
+          <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
+            <ScreenHeader
+              icon="📅"
+              title="Активность"
+              description="Календарь тренировок — нажмите на день, чтобы посмотреть детали, добавить или изменить запись"
+            />
+            {draft && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30"
               >
-                Залогировать ещё
-              </AccentButton>
-            </motion.div>
-          )}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) space-y-4"
-          >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-amber-300">Незаконченная тренировка</p>
+                  <p className="text-xs text-amber-400/70 mt-0.5 truncate">
+                    {draft.exercises.length} упр. ·{' '}
+                    {draft.workoutType === 'bodybuilding'
+                      ? 'Силовая'
+                      : draft.workoutType === 'crossfit'
+                        ? 'CrossFit'
+                        : 'Кардио'}
+                  </p>
+                </div>
+                <AccentButton size="sm" onClick={() => navigate('/workouts/new')} className="shrink-0">
+                  Продолжить
+                </AccentButton>
+              </motion.div>
+            )}
+            {savedWorkoutBanner && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col gap-3 rounded-2xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3.5"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-emerald-200">Тренировка сохранена</p>
+                  <p className="text-xs text-white/70 mt-0.5">Когда появятся данные, день будет подсвечен в календаре.</p>
+                </div>
+                <AccentButton
+                  size="sm"
+                  className="w-full sm:w-auto self-start"
+                  onClick={() => {
+                    setSavedWorkoutBanner(false);
+                    navigate('/workouts/new');
+                  }}
+                >
+                  Залогировать ещё
+                </AccentButton>
+                {pushSupported && pushPermission === 'default' && (
+                  <div className="pt-2 border-t border-emerald-500/25">
+                    <p className="text-xs text-white/65 mb-2">
+                      Можно включить напоминания в браузере — так проще не пропустить следующую тренировку.
+                    </p>
+                    <AccentButton
+                      size="sm"
+                      className="w-full sm:w-auto self-start"
+                      disabled={pushLoading}
+                      onClick={() => void handleEnablePushNudge()}
+                    >
+                      {pushLoading ? 'Запрос…' : 'Включить уведомления'}
+                    </AccentButton>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </SectionGroup>
+
+          <SectionGroup title="С чего начать" showBreakAfter={false}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) space-y-4"
+            >
             <div className="text-center">
               <div className="text-4xl mb-2">📅</div>
               <h3 className="font-semibold text-white mb-1">Ещё нет тренировок</h3>
@@ -137,7 +183,8 @@ export default function ActivityScreen() {
                 </div>
               ))}
             </div>
-          </motion.div>
+            </motion.div>
+          </SectionGroup>
         </div>
       </Screen>
     );
@@ -146,85 +193,98 @@ export default function ActivityScreen() {
   return (
     <Screen className="activity-screen">
       <div className="relative p-4">
-        <ScreenHeader
-          icon="📅"
-          title="Активность"
-          description="Календарь тренировок — нажмите на день, чтобы посмотреть детали, добавить или изменить запись"
-        />
+        <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
+          <ScreenHeader
+            icon="📅"
+            title="Активность"
+            description="Календарь тренировок — нажмите на день, чтобы посмотреть детали, добавить или изменить запись"
+          />
 
-        {savedWorkoutBanner && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 flex flex-col gap-3 rounded-2xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3.5"
-          >
-            <div>
-              <p className="text-sm font-semibold text-emerald-200">Тренировка сохранена</p>
-              <p className="text-xs text-white/70 mt-0.5">
-                Выбран день в календаре ниже — там детали записи.
-              </p>
-            </div>
-            <AccentButton
-              size="sm"
-              className="w-full sm:w-auto self-start"
-              onClick={() => {
-                setSavedWorkoutBanner(false);
-                navigate('/workouts/new');
-              }}
+          {savedWorkoutBanner && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col gap-3 rounded-2xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3.5"
             >
-              Залогировать ещё
-            </AccentButton>
-          </motion.div>
-        )}
+              <div>
+                <p className="text-sm font-semibold text-emerald-200">Тренировка сохранена</p>
+                <p className="text-xs text-white/70 mt-0.5">
+                  Выбран день в календаре ниже — там детали записи.
+                </p>
+              </div>
+              <AccentButton
+                size="sm"
+                className="w-full sm:w-auto self-start"
+                onClick={() => {
+                  setSavedWorkoutBanner(false);
+                  navigate('/workouts/new');
+                }}
+              >
+                Залогировать ещё
+              </AccentButton>
+              {pushSupported && pushPermission === 'default' && (
+                <div className="pt-2 border-t border-emerald-500/25">
+                  <p className="text-xs text-white/65 mb-2">
+                    Можно включить напоминания в браузере — так проще не пропустить следующую тренировку.
+                  </p>
+                  <AccentButton
+                    size="sm"
+                    className="w-full sm:w-auto self-start"
+                    disabled={pushLoading}
+                    onClick={() => void handleEnablePushNudge()}
+                  >
+                    {pushLoading ? 'Запрос…' : 'Включить уведомления'}
+                  </AccentButton>
+                </div>
+              )}
+            </motion.div>
+          )}
 
-        <div className="border-t border-(--color_border) my-3" />
-
-        {/* Draft restore banner */}
-        {draft && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30"
-          >
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-amber-300">Незаконченная тренировка</p>
-              <p className="text-xs text-amber-400/70 mt-0.5 truncate">
-                {draft.exercises.length} упр. · {draft.workoutType === 'bodybuilding' ? 'Силовая' : draft.workoutType === 'crossfit' ? 'CrossFit' : 'Кардио'}
-              </p>
-            </div>
-            <AccentButton size="sm" onClick={() => navigate('/workouts/new')} className="shrink-0">
-              Продолжить
-            </AccentButton>
-          </motion.div>
-        )}
-
-        <div className="mb-4">
           <ScreenHint>
             Нажмите на день — откроются детали тренировок.{' '}
             <span className="text-white font-medium">Насыщенность цвета</span> отражает интенсивность нагрузки.
             Нет цвета — день без тренировок. В ячейке перечёркнутые весы или звезда — в этот день не хватает весов в
             подходах или оценки нагрузки (см. легенду под календарём).
           </ScreenHint>
-        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-4"
-        >
-          <Calendar
-            mode="load"
-            selectedDate={selectedDate}
-            onSelect={handleSelectDay}
-            onMonthChange={handleMonthChange}
-            onTodayClick={handleGoToToday}
-            month={currentMonth}
-            days={days}
-          />
-        </motion.div>
+          {draft && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-amber-300">Незаконченная тренировка</p>
+                <p className="text-xs text-amber-400/70 mt-0.5 truncate">
+                  {draft.exercises.length} упр. · {draft.workoutType === 'bodybuilding' ? 'Силовая' : draft.workoutType === 'crossfit' ? 'CrossFit' : 'Кардио'}
+                </p>
+              </div>
+              <AccentButton size="sm" onClick={() => navigate('/workouts/new')} className="shrink-0">
+                Продолжить
+              </AccentButton>
+            </motion.div>
+          )}
+        </SectionGroup>
 
-        <AnimatePresence>
+        <SectionGroup title="Календарь">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Calendar
+              mode="load"
+              selectedDate={selectedDate}
+              onSelect={handleSelectDay}
+              onMonthChange={handleMonthChange}
+              onTodayClick={handleGoToToday}
+              month={currentMonth}
+              days={days}
+            />
+          </motion.div>
+        </SectionGroup>
+
+        <AnimatePresence mode="wait">
           {selectedDate && (
             <motion.div
               key={selectedDate.toISOString()}
@@ -232,57 +292,59 @@ export default function ActivityScreen() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
-              className="mb-4"
             >
-              <DayDetails date={selectedDate} workouts={dayWorkouts} onDeleted={refetch} onRefresh={refetch} draft={draft} />
+              <SectionGroup title="День">
+                <DayDetails date={selectedDate} workouts={dayWorkouts} onDeleted={refetch} onRefresh={refetch} draft={draft} />
+              </SectionGroup>
             </motion.div>
           )}
         </AnimatePresence>
 
         {monthlyStats && (
+          <SectionGroup title="Итоги месяца">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+            >
+              <MonthlyStats stats={monthlyStats} />
+            </motion.div>
+          </SectionGroup>
+        )}
+
+        <SectionGroup title="Ещё" showBreakAfter={false}>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="mb-4"
+            transition={{ delay: 0.2 }}
           >
-            <MonthlyStats stats={monthlyStats} />
+            <ScreenLinks
+              links={[
+                {
+                  emoji: '🏋️',
+                  bg: 'bg-emerald-500/20',
+                  label: 'Новая тренировка',
+                  sub: 'вручную или ИИ',
+                  to: '/workouts/new',
+                },
+                {
+                  emoji: '📊',
+                  bg: 'bg-blue-500/20',
+                  label: 'Аналитика',
+                  sub: 'графики и прогресс',
+                  to: '/analytics',
+                },
+                {
+                  emoji: '🔥',
+                  bg: 'bg-orange-500/20',
+                  label: 'Серия дней',
+                  sub: 'ударный режим',
+                  to: '/streak',
+                },
+              ]}
+            />
           </motion.div>
-        )}
-
-        {/* Tip: links to related screens */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mb-4 mt-4"
-        >
-          <ScreenLinks
-            links={[
-              {
-                emoji: '🏋️',
-                bg: 'bg-emerald-500/20',
-                label: 'Новая тренировка',
-                sub: 'вручную или ИИ',
-                to: '/workouts/new',
-              },
-              {
-                emoji: '📊',
-                bg: 'bg-blue-500/20',
-                label: 'Аналитика',
-                sub: 'графики и прогресс',
-                to: '/analytics',
-              },
-              {
-                emoji: '🔥',
-                bg: 'bg-orange-500/20',
-                label: 'Серия дней',
-                sub: 'ударный режим',
-                to: '/streak',
-              },
-            ]}
-          />
-        </motion.div>
+        </SectionGroup>
       </div>
     </Screen>
   );

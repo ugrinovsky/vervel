@@ -84,20 +84,19 @@ export default function WorkoutForm() {
         <ScreenHeader
           icon="💪"
           title="Новая тренировка"
-          description="Сначала дата, тип и упражнения из каталога — этого достаточно для сохранения. ИИ — по кнопке «Дополнить» ниже."
+          description="Удобнее всего заполнить через ИИ: вставить текст программы, фото листа или кратко описать тренировку. Каталог — если нужно добрать упражнение вручную."
         />
 
         <ScreenHint className="mb-4">
-          Быстрый путь: добавьте 1–2 упражнения и нажмите «Сохранить».{' '}
-          <span className="text-white font-medium">ИИ</span> (фото, текст, генерация) — если нужно
-          дополнить запись.
+          Выберите дату и тип, затем{' '}
+          <span className="text-white font-medium">ИИ</span> подставит упражнения и подходы. Сохранить можно,
+          как только в списке есть хотя бы одно упражнение.
         </ScreenHint>
 
         <WorkoutFormBase
           initialDate={initialDate}
           storageKey={storageKey}
           lightOnboarding
-          athleteQuickMode
           notesLabel="Заметки (опционально)"
           notesPlaceholder="Как прошла тренировка, самочувствие..."
           submitLabel="Сохранить"

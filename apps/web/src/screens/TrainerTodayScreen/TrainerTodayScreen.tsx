@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import AnimatedBlock from '@/components/ui/AnimatedBlock';
+import SectionGroup from '@/components/ui/SectionGroup';
 import Badge from '@/components/ui/Badge';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
@@ -80,8 +81,8 @@ export default function TrainerTodayScreen() {
           description="Что происходит сегодня — запланированные тренировки, непрочитанные сообщения и активность атлетов"
         />
 
-        {/* Greeting block */}
-        <AnimatedBlock className="w-full rounded-2xl p-4 mb-4 border border-(--color_primary_light)/30 bg-(--color_primary_light)/10"
+        <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
+        <AnimatedBlock className="w-full rounded-2xl p-4 border border-(--color_primary_light)/30 bg-(--color_primary_light)/10"
         >
           <div className="flex items-center gap-3">
             <div className="text-2xl">
@@ -96,7 +97,7 @@ export default function TrainerTodayScreen() {
           </div>
         </AnimatedBlock>
 
-        <ScreenHint className="mb-4">
+        <ScreenHint>
           {workStyle ? (
             <span className="block mb-2">{getTrainerTodayDashboardHint(workStyle)}</span>
           ) : null}
@@ -107,7 +108,7 @@ export default function TrainerTodayScreen() {
 
         {/* Unread messages banners */}
         {unreadCounts && (
-          <>
+          <div className="space-y-3">
             {(() => {
               const groupsWithUnread = unreadCounts.groups.filter((g) => g.unread > 0);
               const groupsTotal = groupsWithUnread.reduce((s, g) => s + g.unread, 0);
@@ -118,7 +119,7 @@ export default function TrainerTodayScreen() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   onClick={() => navigate('/trainer/groups')}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) mb-3 hover:bg-(--color_bg_card_hover) transition-colors text-left"
+                  className="w-full flex items-center gap-3 p-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
                 >
                   <ChatBubbleLeftEllipsisIcon className="w-6 h-6 text-(--color_primary_icon) shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -143,7 +144,7 @@ export default function TrainerTodayScreen() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.05 }}
                   onClick={() => navigate('/trainer/athletes')}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) mb-3 hover:bg-(--color_bg_card_hover) transition-colors text-left"
+                  className="w-full flex items-center gap-3 p-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
                 >
                   <ChatBubbleLeftEllipsisIcon className="w-6 h-6 text-(--color_primary_icon) shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -157,12 +158,12 @@ export default function TrainerTodayScreen() {
                 </motion.button>
               );
             })()}
-          </>
+          </div>
         )}
 
         {/* Getting started guide — показываем пока нет атлетов */}
         {overview && overview.stats.athleteCount === 0 && (
-          <AnimatedBlock className="rounded-2xl p-5 bg-(--color_bg_card) border border-amber-500/20 mb-6">
+          <AnimatedBlock className="rounded-2xl p-5 bg-(--color_bg_card) border border-amber-500/20">
             <h3 className="text-base font-semibold text-white mb-1">🚀 С чего начать</h3>
             <p className="text-xs text-(--color_text_muted) mb-4">
               Добавьте атлетов — и всё заработает: статистика, расписание, чаты, аналитика прогресса
@@ -188,99 +189,106 @@ export default function TrainerTodayScreen() {
             </div>
           </AnimatedBlock>
         )}
+        </SectionGroup>
 
-        {overview && <>
-        {/* Stats */}
-        <AnimatedBlock className="grid grid-cols-3 gap-3 mb-6">
-          <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
-            <ClockIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
-            <div className="text-2xl font-bold text-white">{overview.stats.todayWorkoutsCount}</div>
-            <div className="text-xs text-(--color_text_muted) mt-1">Тренировок</div>
-          </div>
-          <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
-            <UsersIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
-            <div className="text-2xl font-bold text-white">{overview.stats.athleteCount}</div>
-            <div className="text-xs text-(--color_text_muted) mt-1">Атлетов</div>
-          </div>
-          <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
-            <UserGroupIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
-            <div className="text-2xl font-bold text-white">{overview.stats.groupCount}</div>
-            <div className="text-xs text-(--color_text_muted) mt-1">Групп</div>
-          </div>
-        </AnimatedBlock>
+        {overview && (
+          <>
+            <SectionGroup title="Сводка">
+              <AnimatedBlock className="grid grid-cols-3 gap-3">
+                <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+                  <ClockIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-white">{overview.stats.todayWorkoutsCount}</div>
+                  <div className="text-xs text-(--color_text_muted) mt-1">Тренировок</div>
+                </div>
+                <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+                  <UsersIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-white">{overview.stats.athleteCount}</div>
+                  <div className="text-xs text-(--color_text_muted) mt-1">Атлетов</div>
+                </div>
+                <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+                  <UserGroupIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-white">{overview.stats.groupCount}</div>
+                  <div className="text-xs text-(--color_text_muted) mt-1">Групп</div>
+                </div>
+              </AnimatedBlock>
+            </SectionGroup>
 
-        {/* Today's Workouts */}
-        <AnimatedBlock delay={0.1} className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) mb-6">
-          <h2 className="text-lg font-semibold text-white mb-4">Тренировки на сегодня</h2>
-
-          {overview.todayWorkouts.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="text-4xl mb-2">🎉</div>
-              <p className="text-sm text-(--color_text_muted)">
-                Сегодня нет запланированных тренировок
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {overview.todayWorkouts.map((workout) => (
-                <button
-                  key={workout.id}
-                  onClick={() => navigate('/trainer/calendar')}
-                  className="w-full text-left p-4 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) hover:border-(--color_primary_light)/40 transition-colors"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <ClockIcon className="w-4 h-4 text-(--color_primary_icon)" />
-                      <span className="text-sm font-medium text-white">
-                        {formatTime(workout.scheduledDate)}
-                      </span>
-                    </div>
-                    <span className="text-xs px-2 py-1 rounded-full bg-(--color_primary_light) text-white">
-                      {WORKOUT_TYPE_CONFIG[workout.workoutData.type] ?? workout.workoutData.type}
-                    </span>
+            <SectionGroup title="Тренировки на сегодня">
+              <AnimatedBlock
+                delay={0.1}
+                className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
+              >
+                {overview.todayWorkouts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="text-4xl mb-2">🎉</div>
+                    <p className="text-sm text-(--color_text_muted)">
+                      Сегодня нет запланированных тренировок
+                    </p>
                   </div>
+                ) : (
+                  <div className="space-y-3">
+                    {overview.todayWorkouts.map((workout) => (
+                      <button
+                        key={workout.id}
+                        onClick={() => navigate('/trainer/calendar')}
+                        className="w-full text-left p-4 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) hover:border-(--color_primary_light)/40 transition-colors"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <ClockIcon className="w-4 h-4 text-(--color_primary_icon)" />
+                            <span className="text-sm font-medium text-white">
+                              {formatTime(workout.scheduledDate)}
+                            </span>
+                          </div>
+                          <span className="text-xs px-2 py-1 rounded-full bg-(--color_primary_light) text-white">
+                            {WORKOUT_TYPE_CONFIG[workout.workoutData.type] ?? workout.workoutData.type}
+                          </span>
+                        </div>
 
-                  <div className="mb-2">
-                    <div className="text-xs text-(--color_text_muted) mb-1">Назначено для:</div>
-                    <div className="flex flex-wrap gap-1">
-                      {workout.assignedTo.map((assigned) => (
-                        <span
-                          key={assigned.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(
-                              assigned.type === 'group'
-                                ? `/trainer/groups/${assigned.id}`
-                                : `/trainer/athletes/${assigned.id}`
-                            );
-                          }}
-                          className="text-xs px-2 py-1 rounded-lg bg-(--color_bg_card) text-white hover:bg-(--color_primary_light)/20 transition-colors cursor-pointer"
-                        >
-                          {assigned.type === 'group' ? '👥' : '🏃'} {assigned.name}
-                        </span>
-                      ))}
-                    </div>
+                        <div className="mb-2">
+                          <div className="text-xs text-(--color_text_muted) mb-1">Назначено для:</div>
+                          <div className="flex flex-wrap gap-1">
+                            {workout.assignedTo.map((assigned) => (
+                              <span
+                                key={assigned.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(
+                                    assigned.type === 'group'
+                                      ? `/trainer/groups/${assigned.id}`
+                                      : `/trainer/athletes/${assigned.id}`
+                                  );
+                                }}
+                                className="text-xs px-2 py-1 rounded-lg bg-(--color_bg_card) text-white hover:bg-(--color_primary_light)/20 transition-colors cursor-pointer"
+                              >
+                                {assigned.type === 'group' ? '👥' : '🏃'} {assigned.name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {workout.workoutData.exercises && workout.workoutData.exercises.length > 0 && (
+                          <div>
+                            <div className="text-xs text-(--color_text_muted) mb-1">Упражнения:</div>
+                            <div className="text-xs text-white">
+                              {workout.workoutData.exercises.map((ex) => ex.name).join(', ')}
+                            </div>
+                          </div>
+                        )}
+                      </button>
+                    ))}
                   </div>
+                )}
+              </AnimatedBlock>
+            </SectionGroup>
+          </>
+        )}
 
-                  {workout.workoutData.exercises && workout.workoutData.exercises.length > 0 && (
-                    <div>
-                      <div className="text-xs text-(--color_text_muted) mb-1">Упражнения:</div>
-                      <div className="text-xs text-white">
-                        {workout.workoutData.exercises.map((ex) => ex.name).join(', ')}
-                      </div>
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </AnimatedBlock>
-        </>}
-
-        {/* Quick Actions */}
-        <AnimatedBlock delay={0.2}>
-          <ScreenLinks links={getTrainerQuickLinks(workStyle)} />
-        </AnimatedBlock>
+        <SectionGroup title="Ещё" showBreakAfter={false}>
+          <AnimatedBlock delay={0.2}>
+            <ScreenLinks links={getTrainerQuickLinks(workStyle)} />
+          </AnimatedBlock>
+        </SectionGroup>
       </div>
     </Screen>
   );

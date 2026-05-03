@@ -17,6 +17,7 @@ import BackButton from '@/components/BackButton/BackButton';
 import AccentButton from '@/components/ui/AccentButton';
 import IconButton from '@/components/ui/IconButton';
 import { cardClass } from '@/components/ui/Card';
+import SectionGroup from '@/components/ui/SectionGroup';
 
 type Tab = 'members' | 'chat';
 
@@ -93,63 +94,63 @@ export default function TrainerGroupDetailScreen() {
       />
 
       <div className="p-4 w-full mx-auto">
-        <BackButton onClick={() => navigate('/trainer/groups')} className="mb-5" />
+        <SectionGroup showLabel={false} bodyClassName="space-y-4" showBreakAfter={false}>
+          <BackButton onClick={() => navigate('/trainer/groups')} />
 
-        <ScreenHeader
-          icon="👥"
-          title={group?.name || 'Группа'}
-          description={`${athletes.length} атлетов`}
-        />
+          <ScreenHeader
+            icon="👥"
+            title={group?.name || 'Группа'}
+            description={`${athletes.length} атлетов`}
+          />
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6">
-          <button
-            onClick={() => setActiveTab('members')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-colors ${
-              activeTab === 'members'
-                ? 'bg-(--color_primary_light) text-white'
-                : 'bg-(--color_bg_card) text-(--color_text_muted) hover:text-white'
-            }`}
-          >
-            <UsersIcon className="w-4 h-4" />
-            Участники
-          </button>
-          <button
-            onClick={() => setActiveTab('chat')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-colors ${
-              activeTab === 'chat'
-                ? 'bg-(--color_primary_light) text-white'
-                : 'bg-(--color_bg_card) text-(--color_text_muted) hover:text-white'
-            }`}
-          >
-            <ChatBubbleLeftIcon className="w-4 h-4" />
-            Чат
-          </button>
-          <IconButton size="icon" onClick={() => setShowCreateSheet(true)} title="Создать тренировку">
-            <PlusIcon className="w-4 h-4" />
-          </IconButton>
-          <IconButton size="icon" onClick={() => navigate(`/groups/${id}/leaderboard`)} title="Лидерборд">
-            <TrophyIcon className="w-4 h-4" />
-          </IconButton>
-          <CallButton groupId={id} />
-        </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setActiveTab('members')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-colors ${
+                activeTab === 'members'
+                  ? 'bg-(--color_primary_light) text-white'
+                  : 'bg-(--color_bg_card) text-(--color_text_muted) hover:text-white'
+              }`}
+            >
+              <UsersIcon className="w-4 h-4" />
+              Участники
+            </button>
+            <button
+              onClick={() => setActiveTab('chat')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-colors ${
+                activeTab === 'chat'
+                  ? 'bg-(--color_primary_light) text-white'
+                  : 'bg-(--color_bg_card) text-(--color_text_muted) hover:text-white'
+              }`}
+            >
+              <ChatBubbleLeftIcon className="w-4 h-4" />
+              Чат
+            </button>
+            <IconButton size="icon" onClick={() => setShowCreateSheet(true)} title="Создать тренировку">
+              <PlusIcon className="w-4 h-4" />
+            </IconButton>
+            <IconButton size="icon" onClick={() => navigate(`/groups/${id}/leaderboard`)} title="Лидерборд">
+              <TrophyIcon className="w-4 h-4" />
+            </IconButton>
+            <CallButton groupId={id} />
+          </div>
+        </SectionGroup>
 
-        {/* Tab Content */}
         {activeTab === 'members' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`${cardClass} rounded-2xl p-5 mb-6`}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">Участники</h2>
-              {availableAthletes.length > 0 && (
+          <SectionGroup title="Участники" showBreakAfter={false}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`${cardClass} rounded-2xl p-5`}
+            >
+            {availableAthletes.length > 0 && (
+              <div className="flex justify-end mb-4">
                 <AccentButton size="sm" onClick={() => setShowAddPicker(!showAddPicker)}>
                   <PlusIcon className="w-4 h-4" />
                   Добавить
                 </AccentButton>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Add picker */}
             {showAddPicker && (
@@ -212,7 +213,8 @@ export default function TrainerGroupDetailScreen() {
                 ))}
               </div>
             )}
-          </motion.div>
+            </motion.div>
+          </SectionGroup>
         )}
 
         <BottomSheet

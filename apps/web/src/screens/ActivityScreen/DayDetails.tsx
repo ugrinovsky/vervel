@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useNavigate } from 'react-router';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { ChevronRightIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { getWorkoutTypeLabel } from './utils';
 import { formatVolume } from '@/constants/AnalyticsConstants';
 import WorkoutDetailSheet from './WorkoutDetailSheet';
@@ -58,58 +58,75 @@ function WorkoutTile({
   const hasVolume = (workout.volume ?? 0) > 0;
   const volumeKg = workout.volume ?? 0;
   const volumeLabel = formatVolume(volumeKg);
-const timeLabel = extractTime(workout.date);
+  const timeLabel = extractTime(workout.date);
   const fromTrainer = workout.scheduledWorkoutId != null;
 
-  const body = (
-    <div onClick={onClick} className="w-full text-left p-4 cursor-pointer active:scale-[0.98]">
-      {/* Заголовок */}
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm font-semibold text-white truncate">
-            {getWorkoutTypeLabel(workout.type ?? 'unknown')}
-          </span>
-          {timeLabel && (
-            <span className="text-xs text-(--color_text_muted) tabular-nums shrink-0">{timeLabel}</span>
-          )}
+  const openButton = (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex-1 min-w-0 text-left p-4 pr-3 transition-colors hover:bg-white/[0.04] active:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-(--color_primary_light)/40 focus-visible:ring-inset"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 min-w-0 flex-wrap">
+            <span className="text-sm font-semibold text-white truncate">
+              {getWorkoutTypeLabel(workout.type ?? 'unknown')}
+            </span>
+            {timeLabel && (
+              <span className="text-xs text-(--color_text_muted) tabular-nums shrink-0">{timeLabel}</span>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5 mt-2">
+            {isUpcoming ? (
+              <span className="text-xs px-1.5 py-0.5 bg-(--color_primary_light)/15 text-(--color_primary_icon) rounded-full border border-(--color_primary_light)/30 font-medium">
+                Предстоящая
+              </span>
+            ) : (
+              <span className="text-xs px-1.5 py-0.5 bg-white/5 text-(--color_text_muted) rounded-full border border-white/10 font-medium">
+                Прошедшая
+              </span>
+            )}
+            {fromTrainer && (
+              <span className="text-xs px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30 font-medium">
+                от тренера
+              </span>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          {isUpcoming ? (
-            <span className="text-xs px-1.5 py-0.5 bg-(--color_primary_light)/15 text-(--color_primary_icon) rounded-full border border-(--color_primary_light)/30 font-medium">
-              Предстоящая
-            </span>
-          ) : (
-            <span className="text-xs px-1.5 py-0.5 bg-white/5 text-(--color_text_muted) rounded-full border border-white/10 font-medium">
-              Прошедшая
-            </span>
-          )}
-          {fromTrainer && (
-            <span className="text-xs px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30 font-medium">
-              от тренера
-            </span>
-          )}
-          {onDelete
-            ? <ConfirmDeleteWrapper.Trigger />
-            : <span className="text-xs text-(--color_text_muted)">→</span>
-          }
+        <div className="flex flex-col items-end gap-1 shrink-0 pt-0.5">
+          <ChevronRightIcon
+            className="w-5 h-5 text-(--color_text_muted) transition-opacity group-hover:text-white/80"
+            aria-hidden
+          />
+          <span className="text-[10px] text-(--color_text_muted) whitespace-nowrap">Подробнее</span>
         </div>
       </div>
 
-      {/* Интенсивность */}
       <WorkoutIntensityBar
         intensity={workout.intensity ?? 0}
         hasMissingWeights={workout.hasMissingWeights}
         hasMissingRpe={workout.hasMissingRpe}
-        className="mb-2"
+        className="mt-3"
       />
 
-      {/* Объём (только для силовых) */}
       {hasVolume && (
         <div className="flex items-center gap-1.5 mt-2">
           <span className="text-xs text-(--color_text_muted)">Объём:</span>
           <span className="text-sm font-semibold text-emerald-400">{volumeLabel}</span>
         </div>
       )}
+    </button>
+  );
+
+  const body = (
+    <div className="flex w-full min-w-0 items-stretch">
+      {openButton}
+      {onDelete ? (
+        <div className="shrink-0 flex items-start border-l border-white/10 py-3 px-2">
+          <ConfirmDeleteWrapper.Trigger title="Удалить тренировку" />
+        </div>
+      ) : null}
     </div>
   );
 
@@ -131,11 +148,13 @@ const timeLabel = extractTime(workout.date);
   }
 
   return (
-    <div className={`relative w-full rounded-xl border transition-colors bg-(--color_bg_card) ${
-      isUpcoming
-        ? 'border-(--color_primary_light)/40 ring-1 ring-inset ring-(--color_primary_light)/20'
-        : 'border-(--color_border) hover:border-(--color_primary_light)/30'
-    }`}>
+    <div
+      className={`relative w-full overflow-hidden rounded-xl border transition-colors bg-(--color_bg_card) ${
+        isUpcoming
+          ? 'border-(--color_primary_light)/40 ring-1 ring-inset ring-(--color_primary_light)/20'
+          : 'border-(--color_border) hover:border-(--color_primary_light)/30'
+      }`}
+    >
       {body}
     </div>
   );

@@ -132,12 +132,6 @@ interface Props {
    */
   lightOnboarding?: boolean;
 
-  /**
-   * Режим «быстро» для экрана атлета: сначала ручной ввод из каталога, ИИ — по кнопке «Дополнить».
-   * Требует lightOnboarding.
-   */
-  athleteQuickMode?: boolean;
-
   /** Called with form data on save. Should handle toasts and throw on hard error. */
   onSubmit: (data: WorkoutFormData) => Promise<void>;
   onCancel?: () => void;
@@ -158,7 +152,6 @@ export default function WorkoutFormBase({
   hideExerciseWeights = false,
   hideAiAssist = false,
   lightOnboarding = false,
-  athleteQuickMode = false,
   onSubmit,
   onCancel,
 }: Props) {
@@ -212,11 +205,7 @@ export default function WorkoutFormBase({
   const [aiPhotoNeedsTypePick, setAiPhotoNeedsTypePick] = useState(false);
 
   const exercisesEditorRef = useRef<WorkoutExercisesEditorHandle>(null);
-  const [liteMoreAiOpen, setLiteMoreAiOpen] = useState(false);
   const [liteToolbarMoreOpen, setLiteToolbarMoreOpen] = useState(false);
-  /** Только athleteQuickMode: раскрыть блок ИИ после явного выбора «Дополнить с ИИ». */
-  const [athleteQuickAiOpen, setAthleteQuickAiOpen] = useState(false);
-  const effectiveHideAiAssist = athleteQuickMode ? !athleteQuickAiOpen : hideAiAssist;
   const [notesLiteOpen, setNotesLiteOpen] = useState(() => {
     if (!lightOnboarding) return true;
     const fromDraft = localDraft?.notes?.trim() ?? '';
@@ -309,7 +298,6 @@ export default function WorkoutFormBase({
     setSelectedTemplateId(null);
     setAiGenerated(false);
     setAiPhotoExpanded(false);
-    setLiteMoreAiOpen(false);
     setLiteToolbarMoreOpen(false);
     setNotesLiteOpen(!lightOnboarding || initialNotes.trim().length > 0);
     setAiPhotoUrl((prev) => {
@@ -670,68 +658,28 @@ export default function WorkoutFormBase({
         {exercises.length === 0 && !aiPhotoUrl && (
           <div
             className={`rounded-2xl mb-3 space-y-2 ${
-              lightOnboarding && !effectiveHideAiAssist
+              lightOnboarding && !hideAiAssist
                 ? 'relative overflow-hidden border border-emerald-400/20 bg-gradient-to-br from-emerald-500/15 via-(--color_bg_card) to-violet-500/10 p-4 shadow-[0_0_40px_-12px_rgba(16,185,129,0.35)]'
-                : lightOnboarding && effectiveHideAiAssist
+                : lightOnboarding && hideAiAssist
                   ? 'border border-white/10 bg-white/[0.02] p-3.5'
                   : 'bg-(--color_bg_card) border border-(--color_border) p-4'
             }`}
           >
-            {effectiveHideAiAssist ? (
-              athleteQuickMode ? (
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3 p-1">
-                    <span className="text-xl shrink-0">✏️</span>
-                    <span className="flex-1 min-w-0 text-sm text-(--color_text_muted) leading-snug">
-                      Укажите дату и тип выше, затем добавьте одно или два упражнения из каталога — этого
-                      достаточно, чтобы сохранить тренировку.
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => exercisesEditorRef.current?.openExercisePicker()}
-                    className="group flex w-full cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-2.5 text-left transition-colors hover:bg-white/[0.08] hover:border-white/20 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/40"
-                  >
-                    <span className="text-lg shrink-0" aria-hidden>
-                      ➕
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-medium text-white">Добавить из каталога</span>
-                      <span className="mt-0.5 block text-xs text-(--color_text_muted)">
-                        Ручной ввод по одному упражнению
-                      </span>
-                    </span>
-                    <span
-                      className="shrink-0 text-base text-white/35 transition-colors group-hover:text-emerald-400/80"
-                      aria-hidden
-                    >
-                      →
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAthleteQuickAiOpen(true)}
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.03] py-2.5 text-xs text-white/55 transition-colors hover:bg-white/[0.06] hover:text-white/80"
-                  >
-                    Дополнить с ИИ — фото, текст или генерация
-                  </button>
-                </div>
-              ) : (
-                <div
-                  className={`flex items-center gap-3 ${lightOnboarding ? 'p-1' : 'p-2'}`}
-                >
-                  <span className="text-xl shrink-0">✏️</span>
-                  <span className="flex-1 min-w-0 text-sm text-(--color_text_muted) leading-snug">
-                    {lightOnboarding
-                      ? 'Выберите упражнения в списке ниже — пара штук достаточно, чтобы увидеть прогресс.'
-                      : 'Добавьте одно или два упражнения из каталога ниже — так вы быстрее увидите прогресс в календаре.'}
-                  </span>
-                </div>
-              )
+            {hideAiAssist ? (
+              <div
+                className={`flex items-center gap-3 ${lightOnboarding ? 'p-1' : 'p-2'}`}
+              >
+                <span className="text-xl shrink-0">✏️</span>
+                <span className="flex-1 min-w-0 text-sm text-(--color_text_muted) leading-snug">
+                  {lightOnboarding
+                    ? 'Выберите упражнения в списке ниже — пара штук достаточно, чтобы увидеть прогресс.'
+                    : 'Добавьте одно или два упражнения из каталога ниже — так вы быстрее увидите прогресс в календаре.'}
+                </span>
+              </div>
             ) : lightOnboarding ? (
               <>
                 <p className="text-[11px] font-medium text-emerald-200/90 tracking-wide">
-                  Самый быстрый путь
+                  Через ИИ
                 </p>
                 <AiWorkoutTextParser
                   onResult={handleAiTextParsed}
@@ -753,63 +701,48 @@ export default function WorkoutFormBase({
                     </>
                   }
                 />
-                <button
-                  type="button"
-                  onClick={() => setLiteMoreAiOpen((v) => !v)}
-                  className="flex w-full items-center justify-center gap-1 py-2 text-xs text-white/45 hover:text-white/70 transition-colors"
-                >
-                  {liteMoreAiOpen ? (
-                    <>
-                      <ChevronUpIcon className="w-3.5 h-3.5" />
-                      Свернуть
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDownIcon className="w-3.5 h-3.5" />
-                      Распознать по фото или сгенерировать по описанию
-                    </>
-                  )}
-                </button>
-                {liteMoreAiOpen && (
-                  <div className="space-y-2 border-t border-white/10 pt-3">
-                    <AiWorkoutRecognizer
-                      onResult={handleAiRecognizedResult}
-                      triggerClassName="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/5 border border-white/10 text-left hover:bg-white/[0.07] transition-colors"
-                      triggerContent={
-                        <>
-                          <span className="text-lg shrink-0">📸</span>
-                          <span className="flex-1 min-w-0">
-                            <span className="block text-sm font-medium text-white">
-                              Распознать по фото
-                            </span>
-                            <span className="block text-xs text-(--color_text_muted)">
-                              Загрузите снимок программы
-                            </span>
+                <p className="text-[10px] font-medium text-white/35 uppercase tracking-wider pt-1">
+                  Или так же через ИИ
+                </p>
+                <div className="space-y-2">
+                  <AiWorkoutRecognizer
+                    onResult={handleAiRecognizedResult}
+                    triggerClassName="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/5 border border-white/10 text-left hover:bg-white/[0.07] transition-colors"
+                    triggerContent={
+                      <>
+                        <span className="text-lg shrink-0">📸</span>
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-sm font-medium text-white">
+                            Распознать по фото
                           </span>
-                          <span className="text-emerald-400/60 text-base shrink-0">→</span>
-                        </>
-                      }
-                    />
-                    <AiWorkoutGenerator
-                      onResult={handleAiGeneratedResult}
-                      triggerClassName="w-full flex items-center gap-3 p-2.5 rounded-xl bg-violet-500/10 border border-violet-500/25 text-left hover:bg-violet-500/15 transition-colors"
-                      triggerContent={
-                        <>
-                          <span className="text-lg shrink-0">✨</span>
-                          <span className="flex-1 min-w-0">
-                            <span className="block text-sm font-medium text-white">
-                              Сгенерировать по описанию
-                            </span>
-                            <span className="block text-xs text-(--color_text_muted)">
-                              Опишите желаемую тренировку
-                            </span>
+                          <span className="block text-xs text-(--color_text_muted)">
+                            Загрузите снимок программы
                           </span>
-                          <span className="text-violet-400/60 text-base shrink-0">→</span>
-                        </>
-                      }
-                    />
-                  </div>
-                )}
+                        </span>
+                        <span className="text-emerald-400/60 text-base shrink-0">→</span>
+                      </>
+                    }
+                  />
+                  <AiWorkoutGenerator
+                    onResult={handleAiGeneratedResult}
+                    triggerClassName="w-full flex items-center gap-3 p-2.5 rounded-xl bg-violet-500/10 border border-violet-500/25 text-left hover:bg-violet-500/15 transition-colors"
+                    triggerContent={
+                      <>
+                        <span className="text-lg shrink-0">✨</span>
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-sm font-medium text-white">
+                            Сгенерировать по описанию
+                          </span>
+                          <span className="block text-xs text-(--color_text_muted)">
+                            Опишите желаемую тренировку
+                          </span>
+                        </span>
+                        <span className="text-violet-400/60 text-base shrink-0">→</span>
+                      </>
+                    }
+                  />
+                </div>
+                <div className="h-px bg-white/10 my-1" />
                 <button
                   type="button"
                   onClick={() => exercisesEditorRef.current?.openExercisePicker()}
@@ -819,9 +752,9 @@ export default function WorkoutFormBase({
                     ✏️
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-medium text-white">Выбрать из каталога</span>
+                    <span className="block text-sm font-medium text-white">Добрать из каталога</span>
                     <span className="mt-0.5 block text-xs text-(--color_text_muted)">
-                      Вручную, по одному упражнению
+                      Если чего-то не хватает — вручную по одному
                     </span>
                   </span>
                   <span
@@ -926,14 +859,14 @@ export default function WorkoutFormBase({
           profileWeight={profileWeight}
           hideWeights={hideExerciseWeights}
           hideAddExerciseButton={
-            lightOnboarding && !effectiveHideAiAssist && exercises.length === 0
+            lightOnboarding && !hideAiAssist && exercises.length === 0
           }
           onChange={(exs) => {
             setExercises(exs);
             setAiGenerated(false);
           }}
           toolbar={
-            effectiveHideAiAssist
+            hideAiAssist
               ? undefined
               : exercises.length > 0 && !aiGenerated
                 ? lightOnboarding

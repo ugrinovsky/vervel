@@ -126,11 +126,20 @@ function ConfirmDeleteWrapper({
   );
 }
 
-function Trigger({ className = '' }: { className?: string }) {
+function Trigger({
+  className = '',
+  title = 'Удалить',
+}: {
+  className?: string;
+  /** e.g. "Удалить тренировку" for clearer context */
+  title?: string;
+}) {
   const ctx = useContext(Ctx);
   return (
     <button
       type="button"
+      title={title}
+      aria-label={title}
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => { e.stopPropagation(); ctx?.trigger(); }}
       className={`p-1 text-(--color_text_muted) hover:text-red-400 transition-colors ${className}`}
