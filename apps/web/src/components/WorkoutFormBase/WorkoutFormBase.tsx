@@ -8,7 +8,7 @@
  * Manages: date, time, workoutType, notes, exercises, template selection.
  * Callers supply: submit logic, optional assignee UI (headerSlot), optional templates list.
  */
-import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import WorkoutTypeTabs, { type WorkoutType } from '@/components/WorkoutTypeTabs';
 import WorkoutDateTimeRow from '@/components/WorkoutDateTimeRow';
@@ -35,6 +35,9 @@ import type {
   AiWorkoutResult,
 } from '@/api/ai';
 import { WORKOUT_TYPE_CONFIG, DEFAULT_WORKOUT_TYPE } from '@/constants/workoutTypes';
+import type { ClientPreferences } from '@/types/clientPreferences';
+import { workoutTypeForAthletePrimaryGoal } from '@/util/athletePrimaryGoalWorkoutType';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { nowRoundedToHour, today, parseTimeString, parseLocalDate, toDateKey } from '@/utils/date';
 import {
   convertExercisesForType,
@@ -132,9 +135,17 @@ interface Props {
    */
   lightOnboarding?: boolean;
 
+  /**
+   * Главная цель атлета (онбординг): при силе / кардио / гибкости вкладки «Силовая · Кроссфит · Кардио»
+   * скрыты; тип фиксируется автоматически. Для «Общая форма» или если не задано — полный выбор.
+   */
+  athletePrimaryGoal?: ClientPreferences['athletePrimaryGoal'];
+
   /** Called with form data on save. Should handle toasts and throw on hard error. */
   onSubmit: (data: WorkoutFormData) => Promise<void>;
   onCancel?: () => void;
+  /** Онбординг: завершить шаг без сохранения тренировки. */
+  onSkipFirstWorkout?: () => void;
 }
 
 export default function WorkoutFormBase({
@@ -152,8 +163,10 @@ export default function WorkoutFormBase({
   hideExerciseWeights = false,
   hideAiAssist = false,
   lightOnboarding = false,
+  athletePrimaryGoal,
   onSubmit,
   onCancel,
+  onSkipFirstWorkout,
 }: Props) {
   // ── Draft state ───────────────────────────────────────────────────
   const localDraft = storageKey ? loadLocalDraft(storageKey) : null;
@@ -256,8 +269,7 @@ export default function WorkoutFormBase({
         const dbDraft = rawDraft;
         const { localSavedAt, hasInitialDate } = dbDraftMergeRef.current;
         if (dbDraft.savedAt > localSavedAt) {
-          const dbHasMeaningful =
-            (dbDraft.exercises?.length ?? 0) > 0 || !!dbDraft.notes?.trim();
+          const dbHasMeaningful = (dbDraft.exercises?.length ?? 0) > 0 || !!dbDraft.notes?.trim();
           // DB draft is newer — silently apply it
           if (dbDraft.workoutType) setWorkoutType(dbDraft.workoutType);
           if (dbDraft.notes != null) setNotes(dbDraft.notes);
@@ -334,6 +346,22 @@ export default function WorkoutFormBase({
       .catch(() => {});
   }, [hideExerciseWeights]);
 
+  const lockedWorkoutType = useMemo(
+    () =>
+      athletePrimaryGoal && athletePrimaryGoal !== 'general'
+        ? workoutTypeForAthletePrimaryGoal(athletePrimaryGoal)
+        : null,
+    [athletePrimaryGoal]
+  );
+
+  // Черновик / смена цели: привязать тип и упражнения к зафиксированному типу
+  useLayoutEffect(() => {
+    if (lockedWorkoutType == null || aiPhotoNeedsTypePick) return;
+    if (workoutType === lockedWorkoutType) return;
+    setExercises((ex) => convertExercisesForType(ex, workoutType, lockedWorkoutType));
+    setWorkoutType(lockedWorkoutType);
+  }, [lockedWorkoutType, aiPhotoNeedsTypePick, workoutType]);
+
   // ── Type change with exercise normalization ───────────────────────
 
   const handleWorkoutTypeChange = (newType: WorkoutType) => {
@@ -367,8 +395,13 @@ export default function WorkoutFormBase({
   // ── AI result handler ─────────────────────────────────────────────
 
   const handleAiGeneratedResult = (result: AiWorkoutResult, photoUrl?: string) => {
-    setWorkoutType(result.workoutType);
-    const converted = convertAiResult(result);
+    const targetType = lockedWorkoutType ?? result.workoutType;
+    setWorkoutType(targetType);
+    const baseConverted = convertAiResult(result);
+    const converted =
+      lockedWorkoutType != null
+        ? convertExercisesForType(baseConverted, result.workoutType, lockedWorkoutType)
+        : baseConverted;
     setExercises(converted);
     setAiGenerated(true);
     setSelectedTemplateId(null);
@@ -383,12 +416,12 @@ export default function WorkoutFormBase({
   };
 
   const handleAiRecognizedResult = (result: AiRecognizedWorkoutResult, photoUrl?: string) => {
-    // Тип тренировки выбирается пользователем вручную (вкладками сверху).
-    const converted = convertAiExercises(result.exercises, workoutType);
+    const typeForConvert = lockedWorkoutType ?? workoutType;
+    const converted = convertAiExercises(result.exercises, typeForConvert);
     setExercises(converted);
     setAiGenerated(true);
     setSelectedTemplateId(null);
-    setAiPhotoNeedsTypePick(true);
+    setAiPhotoNeedsTypePick(lockedWorkoutType == null);
     if (photoUrl) {
       setAiPhotoUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
@@ -401,20 +434,20 @@ export default function WorkoutFormBase({
 
   const handleAiTextParsed = (payload: AiTextParseUiPayload) => {
     const nameMap = new Map(payload.previewItems.map((item) => [item.exerciseId, item.name]));
-    const baseConverted: ExerciseData[] = payload.exercises.map((ex: AiParsedWorkoutExercisePayload) => ({
-      exerciseId: ex.exerciseId,
-      name:
-        nameMap.get(ex.exerciseId) ??
-        exerciseIdForDisplay(String(ex.exerciseId)),
-      zones: Array.isArray(ex.zones) ? ex.zones : undefined,
-      zoneWeights:
-        ex.zoneWeights && typeof ex.zoneWeights === 'object' ? ex.zoneWeights : undefined,
-      bodyweight: ex.bodyweight,
-      setsDetail: ex.sets?.map((s) => ({ reps: s.reps ?? 10, weight: s.weight })) ?? [],
-      sets: ex.sets?.length ?? 3,
-      blockId: ex.blockId,
-      duration: ex.sets?.[0]?.time ? Math.round(Number(ex.sets?.[0]?.time ?? 0) / 60) : undefined,
-    }));
+    const baseConverted: ExerciseData[] = payload.exercises.map(
+      (ex: AiParsedWorkoutExercisePayload) => ({
+        exerciseId: ex.exerciseId,
+        name: nameMap.get(ex.exerciseId) ?? exerciseIdForDisplay(String(ex.exerciseId)),
+        zones: Array.isArray(ex.zones) ? ex.zones : undefined,
+        zoneWeights:
+          ex.zoneWeights && typeof ex.zoneWeights === 'object' ? ex.zoneWeights : undefined,
+        bodyweight: ex.bodyweight,
+        setsDetail: ex.sets?.map((s) => ({ reps: s.reps ?? 10, weight: s.weight })) ?? [],
+        sets: ex.sets?.length ?? 3,
+        blockId: ex.blockId,
+        duration: ex.sets?.[0]?.time ? Math.round(Number(ex.sets?.[0]?.time ?? 0) / 60) : undefined,
+      })
+    );
 
     // С бэка "по тексту" приходит силовой формат по умолчанию (bodybuilding),
     // а тип тренировки пользователь выбирает сам вкладками — поэтому конвертируем под текущий.
@@ -443,8 +476,13 @@ export default function WorkoutFormBase({
         }
         return ex;
       }) ?? [];
-    setWorkoutType(template.workoutType);
-    setExercises(normalized);
+    const targetType = lockedWorkoutType ?? template.workoutType;
+    setWorkoutType(targetType);
+    setExercises(
+      lockedWorkoutType != null && template.workoutType !== lockedWorkoutType
+        ? convertExercisesForType(normalized, template.workoutType, lockedWorkoutType)
+        : normalized
+    );
     setAiGenerated(false);
     setSelectedTemplateId(template.id);
     setShowTemplatePicker(false);
@@ -470,9 +508,15 @@ export default function WorkoutFormBase({
 
   /* ─── Render ─────────────────────────────────────────────────────── */
 
+  const { ai: aiEnabled } = useFeatureFlags();
+  // Combine prop and feature flag — if either says no AI, hide it everywhere
+  const showAi = aiEnabled && !hideAiAssist;
   const rootGap = lightOnboarding ? 'space-y-4' : 'space-y-5';
 
-  const aiToolbarBlock = (
+  const showWorkoutTypeTabs =
+    !aiPhotoNeedsTypePick && (!athletePrimaryGoal || athletePrimaryGoal === 'general');
+
+  const aiToolbarBlock = showAi ? (
     <div className="flex flex-wrap gap-3 mb-1">
       <AiWorkoutRecognizer
         onResult={handleAiRecognizedResult}
@@ -498,7 +542,7 @@ export default function WorkoutFormBase({
       <AiWorkoutGenerator onResult={handleAiGeneratedResult} />
       <span className="text-xs text-white/40 self-center">· 10₽</span>
     </div>
-  );
+  ) : null;
 
   return (
     <div className={rootGap}>
@@ -535,10 +579,19 @@ export default function WorkoutFormBase({
             <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-1.5">
               Тип тренировки
             </p>
-            <WorkoutTypeTabs
-              value={aiPhotoNeedsTypePick ? null : workoutType}
-              onChange={handleWorkoutTypeChange}
-            />
+            {showWorkoutTypeTabs ? (
+              <WorkoutTypeTabs
+                value={aiPhotoNeedsTypePick ? null : workoutType}
+                onChange={handleWorkoutTypeChange}
+              />
+            ) : lockedWorkoutType != null ? (
+              <div>
+                <p className="text-sm font-medium text-white">{WORKOUT_TYPE_CONFIG[workoutType]}</p>
+                <p className="text-[11px] text-(--color_text_muted) mt-0.5">
+                  По вашей главной цели
+                </p>
+              </div>
+            ) : null}
             {aiPhotoNeedsTypePick && (
               <p className="mt-2 text-[11px] text-amber-300/90">
                 После распознавания по фото выберите тип тренировки вручную.
@@ -560,10 +613,19 @@ export default function WorkoutFormBase({
 
           <div>
             <SectionLabel>Тип тренировки</SectionLabel>
-            <WorkoutTypeTabs
-              value={aiPhotoNeedsTypePick ? null : workoutType}
-              onChange={handleWorkoutTypeChange}
-            />
+            {showWorkoutTypeTabs ? (
+              <WorkoutTypeTabs
+                value={aiPhotoNeedsTypePick ? null : workoutType}
+                onChange={handleWorkoutTypeChange}
+              />
+            ) : lockedWorkoutType != null ? (
+              <div>
+                <p className="text-sm font-medium text-white">{WORKOUT_TYPE_CONFIG[workoutType]}</p>
+                <p className="text-[11px] text-(--color_text_muted) mt-0.5">
+                  По вашей главной цели
+                </p>
+              </div>
+            ) : null}
             {aiPhotoNeedsTypePick && (
               <p className="mt-2 text-[11px] text-amber-300/90">
                 После распознавания по фото выберите тип тренировки вручную.
@@ -658,17 +720,15 @@ export default function WorkoutFormBase({
         {exercises.length === 0 && !aiPhotoUrl && (
           <div
             className={`rounded-2xl mb-3 space-y-2 ${
-              lightOnboarding && !hideAiAssist
+              lightOnboarding && !!showAi
                 ? 'relative overflow-hidden border border-emerald-400/20 bg-gradient-to-br from-emerald-500/15 via-(--color_bg_card) to-violet-500/10 p-4 shadow-[0_0_40px_-12px_rgba(16,185,129,0.35)]'
-                : lightOnboarding && hideAiAssist
+                : lightOnboarding && !showAi
                   ? 'border border-white/10 bg-white/[0.02] p-3.5'
                   : 'bg-(--color_bg_card) border border-(--color_border) p-4'
             }`}
           >
-            {hideAiAssist ? (
-              <div
-                className={`flex items-center gap-3 ${lightOnboarding ? 'p-1' : 'p-2'}`}
-              >
+            {!showAi ? (
+              <div className={`flex items-center gap-3 ${lightOnboarding ? 'p-1' : 'p-2'}`}>
                 <span className="text-xl shrink-0">✏️</span>
                 <span className="flex-1 min-w-0 text-sm text-(--color_text_muted) leading-snug">
                   {lightOnboarding
@@ -752,7 +812,9 @@ export default function WorkoutFormBase({
                     ✏️
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-medium text-white">Добрать из каталога</span>
+                    <span className="block text-sm font-medium text-white">
+                      Добрать из каталога
+                    </span>
                     <span className="mt-0.5 block text-xs text-(--color_text_muted)">
                       Если чего-то не хватает — вручную по одному
                     </span>
@@ -814,7 +876,9 @@ export default function WorkoutFormBase({
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border)">
                   <span className="text-xl shrink-0">✏️</span>
                   <span className="flex-1 min-w-0">
-                    <span className="block text-sm font-medium text-white/70">Вручную из каталога</span>
+                    <span className="block text-sm font-medium text-white/70">
+                      Вручную из каталога
+                    </span>
                     <span className="block text-xs text-(--color_text_muted)">
                       Добавьте упражнения по одному ниже
                     </span>
@@ -858,37 +922,33 @@ export default function WorkoutFormBase({
           exercises={exercises}
           profileWeight={profileWeight}
           hideWeights={hideExerciseWeights}
-          hideAddExerciseButton={
-            lightOnboarding && !hideAiAssist && exercises.length === 0
-          }
+          hideAddExerciseButton={lightOnboarding && !!showAi && exercises.length === 0}
           onChange={(exs) => {
             setExercises(exs);
             setAiGenerated(false);
           }}
           toolbar={
-            hideAiAssist
-              ? undefined
-              : exercises.length > 0 && !aiGenerated
-                ? lightOnboarding
-                  ? (
-                      <div className="mb-1">
-                        <button
-                          type="button"
-                          onClick={() => setLiteToolbarMoreOpen((v) => !v)}
-                          className="flex w-full items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-left text-xs text-white/55 hover:text-white/75 transition-colors"
-                        >
-                          <span>Добавить ещё через ИИ (фото, текст, генерация · 10₽)</span>
-                          {liteToolbarMoreOpen ? (
-                            <ChevronUpIcon className="w-3.5 h-3.5 shrink-0 opacity-60" />
-                          ) : (
-                            <ChevronDownIcon className="w-3.5 h-3.5 shrink-0 opacity-60" />
-                          )}
-                        </button>
-                        {liteToolbarMoreOpen ? aiToolbarBlock : null}
-                      </div>
-                    )
-                  : aiToolbarBlock
-                : undefined
+            !showAi ? undefined : exercises.length > 0 && !aiGenerated ? (
+              lightOnboarding ? (
+                <div className="mb-1">
+                  <button
+                    type="button"
+                    onClick={() => setLiteToolbarMoreOpen((v) => !v)}
+                    className="flex w-full items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-left text-xs text-white/55 hover:text-white/75 transition-colors"
+                  >
+                    <span>Добавить ещё через ИИ (фото, текст, генерация · 10₽)</span>
+                    {liteToolbarMoreOpen ? (
+                      <ChevronUpIcon className="w-3.5 h-3.5 shrink-0 opacity-60" />
+                    ) : (
+                      <ChevronDownIcon className="w-3.5 h-3.5 shrink-0 opacity-60" />
+                    )}
+                  </button>
+                  {liteToolbarMoreOpen ? aiToolbarBlock : null}
+                </div>
+              ) : (
+                aiToolbarBlock
+              )
+            ) : undefined
           }
         />
       </div>
@@ -963,6 +1023,16 @@ export default function WorkoutFormBase({
             {submitLabel}
           </AccentButton>
         </div>
+        {onSkipFirstWorkout && (
+          <button
+            type="button"
+            onClick={onSkipFirstWorkout}
+            disabled={saving}
+            className="w-full pt-1 text-xs text-(--color_text_muted) hover:text-emerald-400/90 transition-colors disabled:opacity-40"
+          >
+            Пропустить — добавлю тренировку из календаря
+          </button>
+        )}
       </div>
     </div>
   );

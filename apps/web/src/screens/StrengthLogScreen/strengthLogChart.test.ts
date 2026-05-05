@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildStrengthLogChartPoints,
+  buildStrengthLogChartRowsWithTrend,
   maxWeightInSets,
   strengthLogProgressPercent,
 } from './strengthLogChart';
@@ -91,6 +92,36 @@ describe('buildStrengthLogChartPoints', () => {
     const pts = buildStrengthLogChartPoints(entry);
     expect(pts).toHaveLength(2);
     expect(pts[0].label).not.toBe(pts[1].label);
+  });
+});
+
+describe('buildStrengthLogChartRowsWithTrend', () => {
+  const twoSessionEntry: StrengthLogEntry = {
+    exerciseId: 'x',
+    exerciseName: 'Жим',
+    sessions: [
+      { date: '2026-01-02', workoutId: 2, sets: [], best1RM: 120 },
+      { date: '2026-01-01', workoutId: 1, sets: [], best1RM: 100 },
+    ],
+    standardId: null,
+    dashboardMetric: null,
+  };
+
+  it('без экстраполяции — только факт, без тренда', () => {
+    const rows = buildStrengthLogChartRowsWithTrend(twoSessionEntry, { extrapolateNext: false });
+    expect(rows).toHaveLength(2);
+    expect(rows.every((r) => r.trend == null)).toBe(true);
+    expect(rows.map((r) => r.kg)).toEqual([100, 120]);
+  });
+
+  it('с экстраполяцией — пунктирный ряд trend и лишняя точка на оси X', () => {
+    const rows = buildStrengthLogChartRowsWithTrend(twoSessionEntry, { extrapolateNext: true });
+    expect(rows).toHaveLength(3);
+    expect(rows[2].name).toBe('· · ·');
+    expect(rows[2].kg).toBeNull();
+    expect(rows[2].trend).toBe(140);
+    expect(rows[0].trend).toBe(100);
+    expect(rows[1].trend).toBe(120);
   });
 });
 

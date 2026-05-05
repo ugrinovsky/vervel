@@ -7,6 +7,7 @@ import { aiApi } from '@/api/ai';
 import type { AiBalance } from '@/api/ai';
 import { paymentsApi } from '@/api/payments';
 import { useServerPagination } from '@/hooks/useServerPagination';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import AiChat from '@/components/AiChat/AiChat';
 import AccentButton from '@/components/ui/AccentButton';
 import ListButton from '@/components/ui/ListButton';
@@ -22,9 +23,14 @@ interface Props {
 }
 
 export default function WalletTab({ balance, inTrainerMode }: Props) {
+  const flags = useFeatureFlags();
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [topping, setTopping] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
+
+  useEffect(() => {
+    if (!flags.ai) setAiChatOpen(false);
+  }, [flags.ai]);
 
   const txFetcher = useCallback(
     (offset: number, limit: number) =>
@@ -62,7 +68,7 @@ export default function WalletTab({ balance, inTrainerMode }: Props) {
 
   return (
     <AnimatedBlock key="wallet" className="space-y-6">
-      <AiChat open={aiChatOpen} onClose={() => setAiChatOpen(false)} />
+      <AiChat open={aiChatOpen && flags.ai} onClose={() => setAiChatOpen(false)} />
 
       <SectionGroup title="Баланс" description="ИИ-функции и донаты тренерам">
         <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
@@ -77,7 +83,7 @@ export default function WalletTab({ balance, inTrainerMode }: Props) {
             {[
               ...(inTrainerMode ? [{ label: 'Генерация', cost: '10₽' }] : []),
               { label: 'Распознавание', cost: '10₽' },
-              { label: 'ИИ-чат', cost: 'от 0.5₽' },
+              ...(flags.ai ? [{ label: 'ИИ-чат', cost: 'от 0.5₽' }] : []),
             ].map(({ label, cost }) => (
               <div
                 key={label}
@@ -109,20 +115,22 @@ export default function WalletTab({ balance, inTrainerMode }: Props) {
         </div>
       </SectionGroup>
 
-      <SectionGroup title="ИИ-помощник">
-        <ListButton onClick={() => setAiChatOpen(true)} className="gap-3 p-4">
-          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-emerald-500/20 shrink-0">
-            <SparklesIcon className="w-5 h-5 text-emerald-400" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold text-white">Открыть чат</div>
-            <p className="text-xs text-(--color_text_muted) mt-0.5">
-              Тренировки, питание, восстановление — от 0.5₽/сообщение
-            </p>
-          </div>
-          <span className="text-(--color_text_muted) text-sm">→</span>
-        </ListButton>
-      </SectionGroup>
+      {flags.ai && (
+        <SectionGroup title="ИИ-помощник">
+          <ListButton onClick={() => setAiChatOpen(true)} className="gap-3 p-4">
+            <div className="w-10 h-10 flex items-center justify-center rounded-full bg-emerald-500/20 shrink-0">
+              <SparklesIcon className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold text-white">Открыть чат</div>
+              <p className="text-xs text-(--color_text_muted) mt-0.5">
+                Тренировки, питание, восстановление — от 0.5₽/сообщение
+              </p>
+            </div>
+            <span className="text-(--color_text_muted) text-sm">→</span>
+          </ListButton>
+        </SectionGroup>
+      )}
 
       <SectionGroup title="История" showBreakAfter={false}>
         <div className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)">

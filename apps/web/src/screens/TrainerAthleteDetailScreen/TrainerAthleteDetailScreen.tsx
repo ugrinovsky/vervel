@@ -19,19 +19,29 @@ import { useAthleteStats, type StatsPeriod } from '@/hooks/useAthleteStats';
 import { useAthleteAvatar } from '@/hooks/useAthleteAvatar';
 import { trainerApi, type PeriodizationData } from '@/api/trainer';
 import { useTrainerUnreadCounts } from '@/hooks/useTrainerUnreadCounts';
-import { ChatBubbleLeftIcon, PlusIcon, PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import {
+  ChatBubbleLeftIcon,
+  PlusIcon,
+  PencilIcon,
+  CheckIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline';
 import CallButton from '@/components/VideoCall/CallButton';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import BackButton from '@/components/BackButton/BackButton';
 import type { MonthlyStatsData } from '@/screens/ActivityScreen/useActivityData';
 import SectionGroup from '@/components/ui/SectionGroup';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
+import { useTrainerTeamsFeatureRedirect } from '@/hooks/useTrainerTeamsFeatureRedirect';
 
 type Tab = 'analytics' | 'activity' | 'avatar';
 
 const VOLUME_HIGH = 15000;
 const VOLUME_MEDIUM = 10000;
 
-function timelineTypeToCalendarWorkoutType(type: string | undefined): DayData['workoutType'] | undefined {
+function timelineTypeToCalendarWorkoutType(
+  type: string | undefined
+): DayData['workoutType'] | undefined {
   if (!type) return undefined;
   const t = type.toLowerCase();
   if (t === 'cardio') return 'cardio';
@@ -51,8 +61,10 @@ function getLoadLevel(volume?: number, intensity?: number): DayData['load'] {
 }
 
 export default function TrainerAthleteDetailScreen() {
+  useTrainerTeamsFeatureRedirect();
   const { athleteId } = useParams<{ athleteId: string }>();
   const navigate = useNavigate();
+  const flags = useFeatureFlags();
   const id = Number(athleteId);
 
   const [tab, setTab] = useState<Tab>('analytics');
@@ -123,7 +135,7 @@ export default function TrainerAthleteDetailScreen() {
   // Only show trainer-assigned workouts in coach view
   const trainerTimeline = useMemo(
     () => monthStats?.timeline.filter((e) => e.scheduledWorkoutId != null) ?? [],
-    [monthStats],
+    [monthStats]
   );
 
   // Calendar days derived from monthStats (trainer workouts only)
@@ -196,101 +208,131 @@ export default function TrainerAthleteDetailScreen() {
 
       <div className="p-4 w-full mx-auto">
         <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-5">
-        <BackButton onClick={() => navigate('/trainer/athletes')} />
+          <BackButton onClick={() => navigate('/trainer/athletes')} />
 
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-4 pt-4 pb-5 px-4 rounded-2xl bg-(--color_bg_card) border border-(--color_border)"
-        >
-          <UserAvatar photoUrl={athletePhotoUrl} name={athleteName} size={76} className="shrink-0" />
-          <div className="flex-1 min-w-0">
-          {/* Никнейм */}
-          <div className="flex items-center gap-1.5 min-h-7 w-full">
-            {editingNickname ? (
-              <>
-                <input
-                  value={nicknameInput}
-                  onChange={(e) => setNicknameInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleSaveNickname(); if (e.key === 'Escape') { setEditingNickname(false); setNicknameInput(nickname ?? ''); } }}
-                  maxLength={100}
-                  placeholder="Никнейм…"
-                  className="flex-1 text-left bg-transparent border-b border-(--color_primary_light)/60 text-lg font-bold text-white focus:outline-none leading-tight"
-                />
-                <button onClick={handleSaveNickname} disabled={savingNickname} className="p-0.5 text-emerald-400 hover:text-emerald-300 transition-colors shrink-0">
-                  <CheckIcon className="w-4 h-4" />
-                </button>
-                <button onClick={() => { setEditingNickname(false); setNicknameInput(nickname ?? ''); }} className="p-0.5 text-(--color_text_muted) hover:text-white transition-colors shrink-0">
-                  <XMarkIcon className="w-4 h-4" />
-                </button>
-              </>
-            ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-4 pt-4 pb-5 px-4 rounded-2xl bg-(--color_bg_card) border border-(--color_border)"
+          >
+            <UserAvatar
+              photoUrl={athletePhotoUrl}
+              name={athleteName}
+              size={76}
+              className="shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              {/* Никнейм */}
+              <div className="flex items-center gap-1.5 min-h-7 w-full">
+                {editingNickname ? (
+                  <>
+                    <input
+                      value={nicknameInput}
+                      onChange={(e) => setNicknameInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveNickname();
+                        if (e.key === 'Escape') {
+                          setEditingNickname(false);
+                          setNicknameInput(nickname ?? '');
+                        }
+                      }}
+                      maxLength={100}
+                      placeholder="Никнейм…"
+                      className="flex-1 text-left bg-transparent border-b border-(--color_primary_light)/60 text-lg font-bold text-white focus:outline-none leading-tight"
+                    />
+                    <button
+                      onClick={handleSaveNickname}
+                      disabled={savingNickname}
+                      className="p-0.5 text-emerald-400 hover:text-emerald-300 transition-colors shrink-0"
+                    >
+                      <CheckIcon className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingNickname(false);
+                        setNicknameInput(nickname ?? '');
+                      }}
+                      className="p-0.5 text-(--color_text_muted) hover:text-white transition-colors shrink-0"
+                    >
+                      <XMarkIcon className="w-4 h-4" />
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setNicknameInput(nickname ?? '');
+                      setEditingNickname(true);
+                    }}
+                    className="flex items-center gap-1.5 group"
+                  >
+                    <span
+                      className={`text-lg font-bold leading-tight ${nickname ? 'text-white' : 'text-(--color_text_muted) font-normal italic'}`}
+                    >
+                      {nickname || 'Никнейм…'}
+                    </span>
+                    <PencilIcon className="w-3.5 h-3.5 text-(--color_text_muted) opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                  </button>
+                )}
+              </div>
+
+              {/* Имя */}
+              <h1 className="text-base font-semibold text-white/70 leading-tight mt-0.5 truncate max-w-full">
+                {athleteName}
+              </h1>
+
+              {/* Email */}
+              {athleteEmail && (
+                <p className="text-xs text-(--color_text_muted) mt-0.5 truncate max-w-full">
+                  {athleteEmail}
+                </p>
+              )}
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="grid grid-cols-3 gap-3"
+          >
+            <AccentButton onClick={() => setShowCreate(true)} className="font-medium">
+              <PlusIcon className="w-4 h-4" />
+              Тренировка
+            </AccentButton>
+            <AccentButton onClick={() => setShowChat(true)} className="relative font-medium">
+              <ChatBubbleLeftIcon className="w-4 h-4" />
+              Чат
+              {unread > 0 && <Badge count={unread} className="absolute -top-1.5 -right-1.5" />}
+            </AccentButton>
+            {flags.videoCalls && <CallButton athleteId={id} />}
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="flex gap-1 bg-(--color_bg_card) rounded-xl p-1"
+          >
+            {(
+              [
+                ['analytics', 'Аналитика'],
+                ['activity', 'Активность'],
+                ['avatar', 'Зоны мышц'],
+              ] as [Tab, string][]
+            ).map(([t, label]) => (
               <button
-                onClick={() => { setNicknameInput(nickname ?? ''); setEditingNickname(true); }}
-                className="flex items-center gap-1.5 group"
+                key={t}
+                onClick={() => setTab(t)}
+                className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+                  tab === t
+                    ? 'bg-(--color_primary_light) text-white shadow'
+                    : 'text-(--color_text_secondary) hover:text-white'
+                }`}
               >
-                <span className={`text-lg font-bold leading-tight ${nickname ? 'text-white' : 'text-(--color_text_muted) font-normal italic'}`}>
-                  {nickname || 'Никнейм…'}
-                </span>
-                <PencilIcon className="w-3.5 h-3.5 text-(--color_text_muted) opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                {label}
               </button>
-            )}
-          </div>
-
-          {/* Имя */}
-          <h1 className="text-base font-semibold text-white/70 leading-tight mt-0.5 truncate max-w-full">{athleteName}</h1>
-
-          {/* Email */}
-          {athleteEmail && (
-            <p className="text-xs text-(--color_text_muted) mt-0.5 truncate max-w-full">{athleteEmail}</p>
-          )}
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="grid grid-cols-3 gap-3"
-        >
-          <AccentButton onClick={() => setShowCreate(true)} className="font-medium">
-            <PlusIcon className="w-4 h-4" />
-            Тренировка
-          </AccentButton>
-          <AccentButton onClick={() => setShowChat(true)} className="relative font-medium">
-            <ChatBubbleLeftIcon className="w-4 h-4" />
-            Чат
-            {unread > 0 && <Badge count={unread} className="absolute -top-1.5 -right-1.5" />}
-          </AccentButton>
-          <CallButton athleteId={id} />
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="flex gap-1 bg-(--color_bg_card) rounded-xl p-1"
-        >
-          {(
-            [
-              ['analytics', 'Аналитика'],
-              ['activity', 'Активность'],
-              ['avatar', 'Зоны мышц'],
-            ] as [Tab, string][]
-          ).map(([t, label]) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-                tab === t
-                  ? 'bg-(--color_primary_light) text-white shadow'
-                  : 'text-(--color_text_secondary) hover:text-white'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </motion.div>
+            ))}
+          </motion.div>
         </SectionGroup>
 
         {tab === 'analytics' && (
@@ -311,7 +353,8 @@ export default function TrainerAthleteDetailScreen() {
                   <AnalyticsCards
                     stats={stats}
                     monthStats={monthStats}
-                    periodization={periodization}
+                    advancedAnalytics={periodization}
+                    showAdvancedSettingsHint={false}
                     timeRange={timeRange}
                   />
                 </motion.div>
@@ -326,7 +369,11 @@ export default function TrainerAthleteDetailScreen() {
 
         {tab === 'activity' && (
           <SectionGroup title="Активность">
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-6"
+            >
               {monthlyStatsData && <MonthlyStats stats={monthlyStatsData} />}
 
               <Calendar
@@ -348,7 +395,12 @@ export default function TrainerAthleteDetailScreen() {
                     exit={{ opacity: 0, y: -8 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <DayDetails date={selectedDate} workouts={dayWorkouts} onDeleted={() => {}} readOnly />
+                    <DayDetails
+                      date={selectedDate}
+                      workouts={dayWorkouts}
+                      onDeleted={() => {}}
+                      readOnly
+                    />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -360,7 +412,9 @@ export default function TrainerAthleteDetailScreen() {
           <SectionGroup title="Зоны мышц" showBreakAfter={false}>
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
               {!avatarLoading && !avatarData ? (
-                <div className="text-center text-(--color_text_muted) py-12 text-sm">Нет данных</div>
+                <div className="text-center text-(--color_text_muted) py-12 text-sm">
+                  Нет данных
+                </div>
               ) : (
                 <AvatarView
                   zones={avatarData?.zones ?? {}}

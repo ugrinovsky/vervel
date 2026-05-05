@@ -18,6 +18,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import Tabs from '@/components/ui/Tabs';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 
 function buildWorkoutPreviewMessage(
   date: Date,
@@ -64,6 +65,7 @@ export default function WorkoutInlineForm({
   noCard = false,
 }: WorkoutInlineFormProps) {
   const { user } = useAuth();
+  const { teams: teamsEnabled } = useFeatureFlags();
   const storageKey = !editWorkout && user ? `trainer_workout_draft_${user.id}` : undefined;
 
   // ── Assignees ─────────────────────────────────────────────────────
@@ -84,7 +86,13 @@ export default function WorkoutInlineForm({
 
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
 
-  const showAssigneePicker = !preselectedAssignee;
+  const showAssigneePicker = !preselectedAssignee && teamsEnabled;
+
+  useEffect(() => {
+    if (!teamsEnabled && !editWorkout && !preselectedAssignee) {
+      setSelectedAssignees([]);
+    }
+  }, [teamsEnabled, editWorkout, preselectedAssignee]);
 
   useEffect(() => {
     trainerApi.getWorkoutTemplates().then((res) => setTemplates(res.data.data)).catch(() => {});
@@ -151,7 +159,14 @@ export default function WorkoutInlineForm({
   // ── Submit ────────────────────────────────────────────────────────
 
   const handleSubmit = async (data: WorkoutFormData) => {
-    const assignedTo = preselectedAssignee ? [preselectedAssignee] : selectedAssignees;
+    const assignedTo = (() => {
+      if (preselectedAssignee) return [preselectedAssignee];
+      if (!teamsEnabled) {
+        if (editWorkout) return editWorkout.assignedTo ?? [];
+        return [];
+      }
+      return selectedAssignees;
+    })();
 
     const scheduledDate = toApiDateTime(data.date, data.time);
     const normalizedExercises = data.exercises.map((ex) => {
@@ -221,6 +236,38 @@ export default function WorkoutInlineForm({
         </p>
       )}
     </div>
+  ) : !teamsEnabled ? (
+    editWorkout &&
+    editWorkout.assignedTo &&
+    editWorkout.workoutData.type !== 'intro' &&
+    editWorkout.assignedTo.length > 0 ? (
+      <div>
+        <SectionLabel>Назначено</SectionLabel>
+        <div className="flex flex-wrap gap-1.5 mt-1">
+          {editWorkout.assignedTo.map((a) => (
+            <span
+              key={`${a.type}-${a.id}`}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-(--color_bg_card_hover) border border-(--color_border) text-white text-xs"
+            >
+              {a.type === 'group' ? '👥' : '🏃'} {a.name}
+            </span>
+          ))}
+        </div>
+        <p className="text-xs text-(--color_text_muted) mt-2.5 leading-relaxed">
+          В настройках выключены «Атлеты и группы» — состав назначения не редактируется, только сама
+          тренировка.
+        </p>
+      </div>
+    ) : (
+      <div>
+        <SectionLabel>Назначение</SectionLabel>
+        <p className="text-xs text-(--color_text_muted) mt-1 leading-relaxed">
+          Пока в настройках выключены «Атлеты и группы», тренировка остаётся только в вашем календаре —
+          выбрать атлета или группу нельзя. Включите переключатель в профиле, если ведёте клиентов в
+          приложении (вкладка «Команда», приглашения, назначения).
+        </p>
+      </div>
+    )
   ) : (
     <div>
       <div className="mb-2">

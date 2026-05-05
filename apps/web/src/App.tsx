@@ -17,9 +17,10 @@ import InviteScreen from '@/screens/InviteScreen/InviteScreen';
 import DocsScreen from '@/screens/DocsScreen/DocsScreen';
 import AvatarScreen from '@/screens/AvatarScreen/AvatarScreen';
 import LandingScreen from '@/screens/LandingScreen/LandingScreen';
-import AthleteOnboardingScreen from '@/screens/AthleteOnboardingScreen/AthleteOnboardingScreen';
-import TrainerOnboardingScreen from '@/screens/TrainerOnboardingScreen/TrainerOnboardingScreen';
+import OnboardingScreen from '@/screens/OnboardingScreen/OnboardingScreen';
+import { shouldShowOnboarding } from '@/util/shouldShowOnboarding';
 import { AuthProvider, useAuth, useActiveMode } from '@/contexts/AuthContext';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import EmbeddedOAuthLaunchGate from '@/vk/EmbeddedOAuthLaunchGate';
 import { SheetStackProvider } from '@/contexts/SheetStackContext';
 import { useAchievementToast } from '@/hooks/useAchievementToast';
@@ -27,8 +28,6 @@ import IncomingCallWatcher from '@/components/VideoCall/IncomingCallWatcher';
 
 import 'tailwindcss';
 import './App.css';
-import { shouldShowAthleteOnboarding } from '@/util/athleteOnboarding';
-import { shouldShowTrainerOnboarding } from '@/util/trainerOnboarding';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -43,18 +42,8 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
     return <Navigate to={`/select-role?userId=${user.id}`} replace />;
   }
 
-  if (
-    location.pathname !== '/athlete-onboarding' &&
-    shouldShowAthleteOnboarding(user, activeMode)
-  ) {
-    return <Navigate to="/athlete-onboarding" replace />;
-  }
-
-  if (
-    location.pathname !== '/trainer-onboarding' &&
-    shouldShowTrainerOnboarding(user, activeMode)
-  ) {
-    return <Navigate to="/trainer-onboarding" replace />;
+  if (location.pathname !== '/onboarding' && shouldShowOnboarding(user, activeMode)) {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return children;
@@ -75,22 +64,22 @@ function AppContent(): JSX.Element {
   useAchievementToast();
   const { user } = useAuth();
   const { isAthlete, activeMode } = useActiveMode();
+  const flags = useFeatureFlags();
   const isAuthPage =
     location.pathname === '/' ||
     location.pathname === '/login' ||
     location.pathname === '/register' ||
     location.pathname === '/auth/callback' ||
     location.pathname === '/select-role' ||
-    location.pathname === '/athlete-onboarding' ||
-    location.pathname === '/trainer-onboarding' ||
+    location.pathname === '/onboarding' ||
     location.pathname.startsWith('/invite/') ||
     location.pathname.startsWith('/docs/');
-  const showIncomingCallWatcher = !!user && isAthlete && activeMode === 'athlete' && !isAuthPage;
+  const showIncomingCallWatcher =
+    !!user && isAthlete && activeMode === 'athlete' && !isAuthPage && flags.videoCalls;
 
   // Deduplicate routes (profile appears in both athlete and trainer routes)
   const uniqueRoutes = routes.filter(
-    (route, index, arr) =>
-      route.element && arr.findIndex((r) => r.path === route.path) === index
+    (route, index, arr) => route.element && arr.findIndex((r) => r.path === route.path) === index
   );
 
   return (
@@ -119,24 +108,24 @@ function AppContent(): JSX.Element {
         <Route path="/" element={<LandingScreen />} />
         <Route
           path="/home"
-          element={<ProtectedRoute><HomeScreen /></ProtectedRoute>}
-        />
-        <Route
-          path="/athlete-onboarding"
           element={
             <ProtectedRoute>
-              <AthleteOnboardingScreen />
+              <HomeScreen />
             </ProtectedRoute>
           }
         />
+        {/* Unified onboarding — replaces /athlete-onboarding and /trainer-onboarding */}
         <Route
-          path="/trainer-onboarding"
+          path="/onboarding"
           element={
             <ProtectedRoute>
-              <TrainerOnboardingScreen />
+              <OnboardingScreen />
             </ProtectedRoute>
           }
         />
+        {/* Legacy redirects — in case of bookmarks or old deep links */}
+        <Route path="/athlete-onboarding" element={<Navigate to="/onboarding" replace />} />
+        <Route path="/trainer-onboarding" element={<Navigate to="/onboarding" replace />} />
         {uniqueRoutes.map((rout) => (
           <Route
             key={rout.path}

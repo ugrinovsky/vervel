@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { WorkoutStats } from '@/types/Analytics';
 import type { PeriodizationData } from '@/api/trainer';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
@@ -7,18 +7,23 @@ import TopMuscles from './TopMuscles';
 import StatsOverview from './StatsOverview';
 import MuscleBalance from './MuscleBalance';
 import { MetricsOverview } from './MetricsOverview';
+import AnalyticsInsights from './AnalyticsInsights';
 import Recommendations from './Recommendations';
 import WeeklyOverview from './WeeklyOverview';
 import StreakBlock from './StreakBlock';
 import TrendChart from './TrendChart';
 import WeekdayChart from './WeekdayChart';
 import PeriodizationChart from './PeriodizationChart';
+import AcwrChart from './AcwrChart';
 
 interface Props {
   stats: WorkoutStats;
   /** Для StreakBlock нужны данные за месяц (28-дневный дот-календарь) */
   monthStats?: WorkoutStats | null;
-  periodization?: PeriodizationData | null;
+  /** Периодизация + ACWR; null — только основная аналитика */
+  advancedAnalytics?: PeriodizationData | null;
+  /** Подсказка «отключить в настройках» — уместна на экране атлета, не у кабинета тренера */
+  showAdvancedSettingsHint?: boolean;
   timeRange: 'week' | 'month' | 'year';
 }
 
@@ -33,44 +38,156 @@ interface CardDef {
   content: React.ReactNode;
 }
 
-export default function AnalyticsCards({ stats, monthStats, periodization, timeRange }: Props) {
+function CardGrid({
+  cards,
+  keyPrefix,
+  onOpen,
+}: {
+  cards: CardDef[];
+  keyPrefix: string;
+  onOpen: (id: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {cards.map((card, idx) => {
+        const isLastOdd = cards.length % 2 !== 0 && idx === cards.length - 1;
+        return (
+          <button
+            key={`${keyPrefix}-${card.id}`}
+            type="button"
+            onClick={() => onOpen(card.id)}
+            className={`relative h-32.5 rounded-2xl overflow-hidden text-left flex flex-col justify-between p-4 border active:scale-95 transition-transform${isLastOdd ? ' col-span-2' : ''}`}
+            style={{ backgroundColor: 'var(--color_bg_card)', borderColor: 'var(--color_border)' }}
+          >
+            <div
+              className="absolute -top-6 -left-6 w-20 h-20 rounded-full blur-2xl pointer-events-none"
+              style={{ backgroundColor: 'var(--color_primary_light)', opacity: 0.18 }}
+            />
+            <div
+              className="relative w-11 h-11 rounded-xl flex items-center justify-center text-[22px] leading-none shrink-0 mb-2"
+              style={{ backgroundColor: 'rgb(var(--color_primary_light_ch) / 0.15)' }}
+            >
+              {card.icon}
+            </div>
+            <div className="relative">
+              <div className="text-sm font-semibold text-white leading-tight">{card.title}</div>
+              <div className="text-[11px] mt-0.5" style={{ color: 'var(--color_text_muted)' }}>
+                {card.tileSubtitle ?? 'Открыть →'}
+              </div>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+export default function AnalyticsCards({
+  stats,
+  monthStats,
+  advancedAnalytics,
+  showAdvancedSettingsHint = true,
+  timeRange,
+}: Props) {
   const [activeCard, setActiveCard] = useState<string | null>(null);
 
   const periodLabel =
     timeRange === 'week' ? 'Неделя' : timeRange === 'month' ? 'Месяц' : 'Год';
 
-  const cards: CardDef[] = [
-    { id: 'muscles',         icon: '💪', title: 'Топ мышц',       content: <TopMuscles    period={timeRange} data={stats} /> },
-    { id: 'stats',           icon: '📊', title: 'Нагрузка',       content: <StatsOverview  period={timeRange} data={stats} /> },
-    { id: 'balance',         icon: '⚖️', title: 'Баланс мышц',    content: <MuscleBalance  period={timeRange} data={stats} /> },
-    { id: 'metrics',         icon: '🎯', title: 'Показатели',     content: <MetricsOverview stats={stats} period={timeRange} /> },
-    { id: 'recommendations', icon: '💡', title: 'Рекомендации',   content: <Recommendations stats={stats} /> },
-    {
-      id: 'weekly',
-      icon: '📅',
-      title: 'Календарь',
-      tileSubtitle: `${periodLabel} · открыть →`,
-      sheetTitle: `Календарь · ${periodLabel}`,
-      content: <WeeklyOverview period={timeRange} data={stats} />,
-    },
-    { id: 'streak',          icon: '🔥', title: 'Регулярность',   content: <StreakBlock      data={monthStats ?? stats} period={timeRange} /> },
-    { id: 'trend',           icon: '📉', title: 'Тренд нагрузки', content: <TrendChart       period={timeRange} data={stats} /> },
-    ...(timeRange === 'week'
-      ? []
-      : [
-          {
-            id: 'weekday',
-            icon: '🗓️',
-            title: 'Привычка по дням',
-            content: <WeekdayChart data={stats} />,
-          } satisfies CardDef,
-        ]),
-    ...(periodization
-      ? [{ id: 'periodization', icon: '📈', title: 'Периодизация', content: <PeriodizationChart data={periodization} /> } satisfies CardDef]
-      : []),
-  ];
+  const simpleCards: CardDef[] = useMemo(
+    () => [
+      {
+        id: 'muscles',
+        icon: '💪',
+        title: 'Топ мышц',
+        content: <TopMuscles period={timeRange} data={stats} />,
+      },
+      {
+        id: 'stats',
+        icon: '📊',
+        title: 'Нагрузка',
+        content: <StatsOverview period={timeRange} data={stats} />,
+      },
+      {
+        id: 'balance',
+        icon: '⚖️',
+        title: 'Баланс мышц',
+        content: <MuscleBalance period={timeRange} data={stats} />,
+      },
+      {
+        id: 'metrics',
+        icon: '🎯',
+        title: 'Показатели',
+        content: <MetricsOverview stats={stats} period={timeRange} />,
+      },
+      {
+        id: 'insights',
+        icon: '🔭',
+        title: 'Инсайты',
+        content: <AnalyticsInsights stats={stats} period={timeRange} />,
+      },
+      {
+        id: 'recommendations',
+        icon: '💡',
+        title: 'Рекомендации',
+        content: <Recommendations stats={stats} />,
+      },
+      {
+        id: 'weekly',
+        icon: '📅',
+        title: 'Календарь',
+        tileSubtitle: `${periodLabel} · открыть →`,
+        sheetTitle: `Календарь · ${periodLabel}`,
+        content: <WeeklyOverview period={timeRange} data={stats} />,
+      },
+      {
+        id: 'streak',
+        icon: '🔥',
+        title: 'Регулярность',
+        content: <StreakBlock data={monthStats ?? stats} period={timeRange} />,
+      },
+      {
+        id: 'trend',
+        icon: '📉',
+        title: 'Тренд нагрузки',
+        content: <TrendChart period={timeRange} data={stats} />,
+      },
+      ...(timeRange === 'week'
+        ? []
+        : [
+            {
+              id: 'weekday',
+              icon: '🗓️',
+              title: 'Привычка по дням',
+              content: <WeekdayChart data={stats} />,
+            } satisfies CardDef,
+          ]),
+    ],
+    [stats, monthStats, timeRange, periodLabel]
+  );
 
-  const openCard = cards.find((c) => c.id === activeCard) ?? null;
+  const advancedCards: CardDef[] = useMemo(() => {
+    if (!advancedAnalytics) return [];
+    return [
+      {
+        id: 'periodization',
+        icon: '📈',
+        title: 'Периодизация',
+        content: <PeriodizationChart data={advancedAnalytics} />,
+      },
+      {
+        id: 'acwr',
+        icon: '⚖️',
+        title: 'Неделя к базе',
+        tileSubtitle: 'Сравнение с обычным ритмом · открыть →',
+        content: <AcwrChart data={advancedAnalytics} />,
+      },
+    ];
+  }, [advancedAnalytics]);
+
+  const allCards = useMemo(() => [...simpleCards, ...advancedCards], [simpleCards, advancedCards]);
+
+  const openCard = allCards.find((c) => c.id === activeCard) ?? null;
 
   return (
     <>
@@ -78,35 +195,28 @@ export default function AnalyticsCards({ stats, monthStats, periodization, timeR
         <WorkoutRadar period={timeRange} data={stats} />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        {cards.map((card, idx) => {
-          const isLastOdd = cards.length % 2 !== 0 && idx === cards.length - 1;
-          return (
-            <button
-              key={card.id}
-              onClick={() => setActiveCard(card.id)}
-              className={`relative h-32.5 rounded-2xl overflow-hidden text-left flex flex-col justify-between p-4 border active:scale-95 transition-transform${isLastOdd ? ' col-span-2' : ''}`}
-              style={{ backgroundColor: 'var(--color_bg_card)', borderColor: 'var(--color_border)' }}
-            >
-              <div
-                className="absolute -top-6 -left-6 w-20 h-20 rounded-full blur-2xl pointer-events-none"
-                style={{ backgroundColor: 'var(--color_primary_light)', opacity: 0.18 }}
-              />
-              <div
-                className="relative w-11 h-11 rounded-xl flex items-center justify-center text-[22px] leading-none shrink-0 mb-2"
-                style={{ backgroundColor: 'rgb(var(--color_primary_light_ch) / 0.15)' }}
-              >
-                {card.icon}
-              </div>
-              <div className="relative">
-                <div className="text-sm font-semibold text-white leading-tight">{card.title}</div>
-                <div className="text-[11px] mt-0.5" style={{ color: 'var(--color_text_muted)' }}>
-                  {card.tileSubtitle ?? 'Открыть →'}
-                </div>
-              </div>
-            </button>
-          );
-        })}
+      <div className="space-y-5">
+        <div>
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-(--color_text_muted) mb-2">
+            Основная аналитика
+          </h3>
+          <CardGrid cards={simpleCards} keyPrefix="simple" onOpen={setActiveCard} />
+        </div>
+
+        {advancedCards.length > 0 && (
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-(--color_text_muted) mb-1">
+              Сложная аналитика
+            </h3>
+            {showAdvancedSettingsHint && (
+              <p className="text-[11px] text-(--color_text_muted) mb-2 leading-relaxed">
+                Модели нагрузки (форма, усталость, ACWR). Можно скрыть в профиле → настройки → «Сложная
+                аналитика».
+              </p>
+            )}
+            <CardGrid cards={advancedCards} keyPrefix="adv" onOpen={setActiveCard} />
+          </div>
+        )}
       </div>
 
       <BottomSheet

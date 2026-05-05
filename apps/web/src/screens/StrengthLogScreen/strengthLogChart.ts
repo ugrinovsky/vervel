@@ -25,6 +25,74 @@ export interface StrengthLogChartPoint {
   date: string;
 }
 
+/** МНК по индексам 0..n-1: y ≈ slope·i + intercept */
+export function strengthLogLinearRegression(values: readonly number[]): {
+  slope: number;
+  intercept: number;
+} | null {
+  const n = values.length;
+  if (n < 2) return null;
+  let sumX = 0;
+  let sumY = 0;
+  let sumXY = 0;
+  let sumXX = 0;
+  for (let i = 0; i < n; i++) {
+    const y = values[i];
+    sumX += i;
+    sumY += y;
+    sumXY += i * y;
+    sumXX += i * i;
+  }
+  const denom = n * sumXX - sumX * sumX;
+  if (Math.abs(denom) < 1e-9) {
+    const meanY = sumY / n;
+    return { slope: 0, intercept: meanY };
+  }
+  const slope = (n * sumXY - sumX * sumY) / denom;
+  const intercept = (sumY - slope * sumX) / n;
+  return { slope, intercept };
+}
+
+export interface StrengthLogChartRow {
+  name: string;
+  kg: number | null;
+  trend: number | null;
+}
+
+/**
+ * Строки для Recharts: факт (`kg`) и пунктирный тренд (`trend`).
+ * При extrapolateNext добавляется одна точка «вперёд» по тому же тренду (для закреплённых).
+ */
+export function buildStrengthLogChartRowsWithTrend(
+  entry: StrengthLogEntry,
+  opts: { extrapolateNext: boolean },
+): StrengthLogChartRow[] {
+  const points = buildStrengthLogChartPoints(entry);
+  if (points.length === 0) return [];
+  if (points.length < 2 || !opts.extrapolateNext) {
+    return points.map((p) => ({ name: p.label, kg: p.value, trend: null }));
+  }
+  const ys = points.map((p) => p.value);
+  const reg = strengthLogLinearRegression(ys);
+  if (reg == null) {
+    return points.map((p) => ({ name: p.label, kg: p.value, trend: null }));
+  }
+  const { slope, intercept } = reg;
+  const round1 = (x: number) => Math.round(x * 10) / 10;
+  const rows: StrengthLogChartRow[] = points.map((p, i) => ({
+    name: p.label,
+    kg: p.value,
+    trend: round1(slope * i + intercept),
+  }));
+  const nextIdx = points.length;
+  rows.push({
+    name: '· · ·',
+    kg: null,
+    trend: round1(slope * nextIdx + intercept),
+  });
+  return rows;
+}
+
 /** Ось X: от старых сессий к новым. Значение: best1RM или макс. вес в сессии. */
 export function buildStrengthLogChartPoints(entry: StrengthLogEntry): StrengthLogChartPoint[] {
   const chron = [...entry.sessions].reverse();

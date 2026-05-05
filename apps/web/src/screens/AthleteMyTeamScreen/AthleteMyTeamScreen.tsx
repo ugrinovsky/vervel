@@ -21,6 +21,7 @@ import {
 } from '@heroicons/react/24/outline';
 import IconButton from '@/components/ui/IconButton';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { AI_CHAT_MIN_BALANCE } from '@/constants/ai';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import SectionGroup from '@/components/ui/SectionGroup';
@@ -63,6 +64,7 @@ function formatWorkoutDate(dateStr: string) {
 export default function AthleteMyTeamScreen() {
   const navigate = useNavigate();
   const { user, updateUser } = useAuth();
+  const flags = useFeatureFlags();
   const [groups, setGroups] = useState<AthleteGroup[]>([]);
   const [trainers, setTrainers] = useState<AthleteTrainer[]>([]);
   const [upcomingWorkouts, setUpcomingWorkouts] = useState<UpcomingWorkout[]>([]);
@@ -88,6 +90,10 @@ export default function AthleteMyTeamScreen() {
       // silent
     }
   }, []);
+
+  useEffect(() => {
+    if (!flags.ai) setAiChatOpen(false);
+  }, [flags.ai]);
 
   useEffect(() => {
     const load = async () => {
@@ -167,7 +173,7 @@ export default function AthleteMyTeamScreen() {
         title={activeChat?.title ?? ''}
         onClose={() => setActiveChat(null)}
       />
-      <AiChat open={aiChatOpen} onClose={() => setAiChatOpen(false)} />
+      <AiChat open={aiChatOpen && flags.ai} onClose={() => setAiChatOpen(false)} />
 
       <div className="p-4 w-full mx-auto">
         <ScreenHeader
@@ -179,7 +185,10 @@ export default function AthleteMyTeamScreen() {
         <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
           <ScreenHint>
             Все беседы — в разделе{' '}
-            <Link to="/dialogs" className="text-(--color_primary_light) font-medium underline underline-offset-2">
+            <Link
+              to="/dialogs"
+              className="text-(--color_primary_light) font-medium underline underline-offset-2"
+            >
               Диалоги
             </Link>
             . Здесь — тренеры, группы и расписание; беседу открывает кнопка «Чат» на карточке.
@@ -191,262 +200,290 @@ export default function AthleteMyTeamScreen() {
               animate={{ opacity: 1, y: 0 }}
               className="relative rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 pr-10"
             >
-            <button
-              type="button"
-              onClick={() => {
-                if (!user) return;
-                void dismissCoachTeamBanner(user, updateUser).then(() =>
-                  setCoachConnectBannerOpen(false)
-                );
-              }}
-              className="absolute right-2 top-2 p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
-              aria-label="Скрыть"
-            >
-              <XMarkIcon className="w-5 h-5" />
-            </button>
-            <p className="text-sm font-semibold text-white mb-1">Вы указали, что тренируетесь с тренером</p>
-            <p className="text-xs text-(--color_text_muted) leading-relaxed mb-3">
-              Персонального тренера в списке пока нет. Попросите тренера добавить вас: по email этого
-              аккаунта, ссылкой-приглашением или отсканировав ваш <span className="text-white/90">QR в
-              профиле</span>.
-            </p>
-            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => navigate('/profile')}
-                className="px-3 py-2 rounded-xl text-xs font-medium bg-(--color_primary_light) text-white"
+                onClick={() => {
+                  if (!user) return;
+                  void dismissCoachTeamBanner(user, updateUser).then(() =>
+                    setCoachConnectBannerOpen(false)
+                  );
+                }}
+                className="absolute right-2 top-2 p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+                aria-label="Скрыть"
               >
-                Открыть профиль / QR
+                <XMarkIcon className="w-5 h-5" />
               </button>
-            </div>
-          </motion.div>
+              <p className="text-sm font-semibold text-white mb-1">
+                Вы указали, что тренируетесь с тренером
+              </p>
+              <p className="text-xs text-(--color_text_muted) leading-relaxed mb-3">
+                Персонального тренера в списке пока нет. Попросите тренера добавить вас: по email
+                этого аккаунта, ссылкой-приглашением или отсканировав ваш{' '}
+                <span className="text-white/90">QR в профиле</span>.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigate('/profile')}
+                  className="px-3 py-2 rounded-xl text-xs font-medium bg-(--color_primary_light) text-white"
+                >
+                  Открыть профиль / QR
+                </button>
+              </div>
+            </motion.div>
           )}
         </SectionGroup>
 
-        <SectionGroup title="ИИ-помощник">
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            onClick={() => setAiChatOpen(true)}
-            className="w-full flex items-center gap-3 p-4 bg-(--color_bg_card) rounded-2xl border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
-          >
-          <div className="w-10 h-10 flex items-center justify-center rounded-full bg-emerald-500/20 shrink-0">
-            <SparklesIcon className="w-5 h-5 text-emerald-400" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-white">ИИ-помощник</span>
-            </div>
-            <p className="text-xs text-(--color_text_muted) mt-0.5">
-              Вопросы про тренировки, питание, восстановление
-            </p>
-          </div>
-          <span className="text-xs text-(--color_text_muted) shrink-0">
-            от {AI_CHAT_MIN_BALANCE}₽/сообщение
-          </span>
-          </motion.button>
-        </SectionGroup>
+        {flags.ai && (
+          <SectionGroup title="ИИ-помощник">
+            <motion.button
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              onClick={() => setAiChatOpen(true)}
+              className="w-full flex items-center gap-3 p-4 bg-(--color_bg_card) rounded-2xl border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
+            >
+              <div className="w-10 h-10 flex items-center justify-center rounded-full bg-emerald-500/20 shrink-0">
+                <SparklesIcon className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-white">ИИ-помощник</span>
+                </div>
+                <p className="text-xs text-(--color_text_muted) mt-0.5">
+                  Вопросы про тренировки, питание, восстановление
+                </p>
+              </div>
+              <span className="text-xs text-(--color_text_muted) shrink-0">
+                от {AI_CHAT_MIN_BALANCE}₽/сообщение
+              </span>
+            </motion.button>
+          </SectionGroup>
+        )}
 
         <SectionGroup title="Команда и расписание" bodyClassName="space-y-4" showBreakAfter={false}>
-        {isEmpty ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-(--color_bg_card) rounded-2xl p-10 border border-(--color_border) text-center"
-          >
-            <div className="text-4xl mb-3">🏋️</div>
-            <p className="text-white font-medium mb-1">Пока нет тренера или группы</p>
-            <p className="text-sm text-(--color_text_muted)">
-              Попросите тренера добавить вас или вступите в группу по QR-коду из профиля
-            </p>
-          </motion.div>
-        ) : (
-          <>
-            {/* Personal trainers */}
-            {trainers.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
-              >
-                <div className="flex items-center gap-2 mb-4">
-                  <UsersIcon className="w-5 h-5 text-(--color_primary_icon)" />
-                  <h2 className="text-lg font-semibold text-white">Персональные тренеры</h2>
-                </div>
-                <div className="space-y-3">
-                  {trainers.map((trainer) => {
-                    const trainerUnread = trainer.chatId ? (unreadMap.get(trainer.chatId) ?? 0) : 0;
-                    const _initials = (trainer.fullName || trainer.email)[0].toUpperCase();
-                    return (
-                      <div
-                        key={trainer.id}
-                        className="p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors border border-white/10"
-                      >
-                        <div className="flex items-start gap-3">
-                          <UserAvatar photoUrl={trainer.photoUrl} name={trainer.fullName} size={40} />
-                          <div className="min-w-0 flex-1">
-                            <div className="text-sm font-medium text-white">
-                              {trainer.fullName || 'Без имени'}
-                            </div>
-                            <div className="text-xs text-(--color_text_muted)">
-                              {trainer.email}
-                            </div>
-                            {trainer.specializations && trainer.specializations.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {trainer.specializations.map((s) => (
-                                  <span
-                                    key={s}
-                                    className="px-2 py-0.5 rounded-full bg-(--color_primary_light)/15 text-(--color_primary_light) text-[10px] font-medium"
-                                  >
-                                    {s}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                            {trainer.bio && (
-                              <p className="text-xs text-(--color_text_muted) leading-relaxed mt-1 line-clamp-2">
-                                {trainer.bio}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex flex-col gap-1.5 shrink-0">
-                            <IconButton onClick={() => navigate(`/trainer/profile/${trainer.id}`)}>
-                              <UserCircleIcon className="w-3.5 h-3.5" />
-                              Профиль
-                            </IconButton>
-                            <IconButton
-                              variant="accent"
-                              onClick={() => openTrainerChat(trainer)}
-                              disabled={openingChatFor === trainer.id}
-                              className="relative"
-                            >
-                              {trainerUnread > 0 && <Badge count={trainerUnread} size="xs" className="absolute -top-1.5 -right-1.5" />}
-                              <ChatBubbleLeftIcon className="w-3.5 h-3.5" />
-                              Чат
-                            </IconButton>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Groups */}
-            {groups.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
-              >
-                <div className="flex items-center gap-2 mb-4">
-                  <UserGroupIcon className="w-5 h-5 text-(--color_primary_icon)" />
-                  <h2 className="text-lg font-semibold text-white">Мои группы</h2>
-                </div>
-                <div className="space-y-2">
-                  {groups.map((group) => {
-                    const groupUnread = group.chatId ? (unreadMap.get(group.chatId) ?? 0) : 0;
-                    return (
-                      <div
-                        key={group.id}
-                        className="p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-(--color_primary_light)/20 flex items-center justify-center shrink-0">
-                            <UserGroupIcon className="w-4 h-4 text-(--color_primary_icon)" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="text-sm font-medium text-white truncate">
-                              {group.name}
-                            </div>
-                            <div className="text-xs text-(--color_text_muted)">
-                              Тренер: {group.trainer.fullName || group.trainer.email} ·{' '}
-                              {group.memberCount} участников
-                            </div>
-                          </div>
-                          <div className="flex flex-col gap-1.5 shrink-0">
-                            <IconButton onClick={() => navigate(`/groups/${group.id}/leaderboard`)}>
-                              <TrophyIcon className="w-3.5 h-3.5" />
-                              Рейтинг
-                            </IconButton>
-                            <IconButton
-                              variant="accent"
-                              onClick={() => openGroupChat(group)}
-                              disabled={openingChatFor === group.id}
-                              className="relative"
-                            >
-                              {groupUnread > 0 && <Badge count={groupUnread} size="xs" className="absolute -top-1.5 -right-1.5" />}
-                              <ChatBubbleLeftIcon className="w-3.5 h-3.5" />
-                              Чат
-                            </IconButton>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Upcoming workouts */}
-            {upcomingWorkouts.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
-              >
-                <div className="flex items-center gap-2 mb-4">
-                  <CalendarDaysIcon className="w-5 h-5 text-(--color_primary_icon)" />
-                  <h2 className="text-lg font-semibold text-white">Расписание</h2>
-                  <span className="ml-auto text-xs text-(--color_text_muted)">
-                    Следующие 14 дней
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {upcomingWorkouts.map((w) => {
-                    const label = WORKOUT_TYPE_CONFIG[w.workoutType] ?? w.workoutType;
-                    const color = WORKOUT_COLORS[w.workoutType] ?? 'text-white';
-                    const dateStr = formatWorkoutDate(w.date);
-                    const isToday = dateStr === 'Сегодня';
-                    return (
-                      <div
-                        key={w.id}
-                        onClick={() => navigate('/calendar')}
-                        className="flex items-center gap-3 p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors cursor-pointer"
-                      >
+          {isEmpty ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-(--color_bg_card) rounded-2xl p-10 border border-(--color_border) text-center"
+            >
+              <div className="text-4xl mb-3">🏋️</div>
+              <p className="text-white font-medium mb-1">Пока нет тренера или группы</p>
+              <p className="text-sm text-(--color_text_muted)">
+                Попросите тренера добавить вас или вступите в группу по QR-коду из профиля
+              </p>
+            </motion.div>
+          ) : (
+            <>
+              {/* Personal trainers */}
+              {trainers.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
+                >
+                  <div className="flex items-center gap-2 mb-4">
+                    <UsersIcon className="w-5 h-5 text-(--color_primary_icon)" />
+                    <h2 className="text-lg font-semibold text-white">Персональные тренеры</h2>
+                  </div>
+                  <div className="space-y-3">
+                    {trainers.map((trainer) => {
+                      const trainerUnread = trainer.chatId
+                        ? (unreadMap.get(trainer.chatId) ?? 0)
+                        : 0;
+                      const _initials = (trainer.fullName || trainer.email)[0].toUpperCase();
+                      return (
                         <div
-                          className={`w-2 h-2 rounded-full shrink-0 ${isToday ? 'bg-(--color_primary_light)' : 'bg-white/20'}`}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className={`text-xs font-semibold ${color}`}>{label}</span>
-                            {isToday && (
-                              <span className="px-1.5 leading-4 rounded bg-(--color_primary_light)/20 text-(--color_primary_light) text-[10px] font-medium">
-                                Сегодня
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-xs text-(--color_text_muted) mt-0.5">
-                            {w.exerciseCount} упражнений
-                            {w.notes ? ` · ${w.notes}` : ''}
+                          key={trainer.id}
+                          className="p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors border border-white/10"
+                        >
+                          <div className="flex items-start gap-3">
+                            <UserAvatar
+                              photoUrl={trainer.photoUrl}
+                              name={trainer.fullName}
+                              size={40}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-medium text-white">
+                                {trainer.fullName || 'Без имени'}
+                              </div>
+                              <div className="text-xs text-(--color_text_muted)">
+                                {trainer.email}
+                              </div>
+                              {trainer.specializations && trainer.specializations.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {trainer.specializations.map((s) => (
+                                    <span
+                                      key={s}
+                                      className="px-2 py-0.5 rounded-full bg-(--color_primary_light)/15 text-(--color_primary_light) text-[10px] font-medium"
+                                    >
+                                      {s}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              {trainer.bio && (
+                                <p className="text-xs text-(--color_text_muted) leading-relaxed mt-1 line-clamp-2">
+                                  {trainer.bio}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-1.5 shrink-0">
+                              <IconButton
+                                onClick={() => navigate(`/trainer/profile/${trainer.id}`)}
+                              >
+                                <UserCircleIcon className="w-3.5 h-3.5" />
+                                Профиль
+                              </IconButton>
+                              <IconButton
+                                variant="accent"
+                                onClick={() => openTrainerChat(trainer)}
+                                disabled={openingChatFor === trainer.id}
+                                className="relative"
+                              >
+                                {trainerUnread > 0 && (
+                                  <Badge
+                                    count={trainerUnread}
+                                    size="xs"
+                                    className="absolute -top-1.5 -right-1.5"
+                                  />
+                                )}
+                                <ChatBubbleLeftIcon className="w-3.5 h-3.5" />
+                                Чат
+                              </IconButton>
+                            </div>
                           </div>
                         </div>
-                        {!isToday && (
-                          <div className="text-xs font-medium shrink-0 text-(--color_text_muted)">
-                            {dateStr}
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Groups */}
+              {groups.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
+                >
+                  <div className="flex items-center gap-2 mb-4">
+                    <UserGroupIcon className="w-5 h-5 text-(--color_primary_icon)" />
+                    <h2 className="text-lg font-semibold text-white">Мои группы</h2>
+                  </div>
+                  <div className="space-y-2">
+                    {groups.map((group) => {
+                      const groupUnread = group.chatId ? (unreadMap.get(group.chatId) ?? 0) : 0;
+                      return (
+                        <div
+                          key={group.id}
+                          className="p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-(--color_primary_light)/20 flex items-center justify-center shrink-0">
+                              <UserGroupIcon className="w-4 h-4 text-(--color_primary_icon)" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-medium text-white truncate">
+                                {group.name}
+                              </div>
+                              <div className="text-xs text-(--color_text_muted)">
+                                Тренер: {group.trainer.fullName || group.trainer.email} ·{' '}
+                                {group.memberCount} участников
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-1.5 shrink-0">
+                              {flags.leaderboard && (
+                                <IconButton
+                                  onClick={() => navigate(`/groups/${group.id}/leaderboard`)}
+                                >
+                                  <TrophyIcon className="w-3.5 h-3.5" />
+                                  Рейтинг
+                                </IconButton>
+                              )}
+                              <IconButton
+                                variant="accent"
+                                onClick={() => openGroupChat(group)}
+                                disabled={openingChatFor === group.id}
+                                className="relative"
+                              >
+                                {groupUnread > 0 && (
+                                  <Badge
+                                    count={groupUnread}
+                                    size="xs"
+                                    className="absolute -top-1.5 -right-1.5"
+                                  />
+                                )}
+                                <ChatBubbleLeftIcon className="w-3.5 h-3.5" />
+                                Чат
+                              </IconButton>
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
-          </>
-        )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Upcoming workouts */}
+              {upcomingWorkouts.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
+                >
+                  <div className="flex items-center gap-2 mb-4">
+                    <CalendarDaysIcon className="w-5 h-5 text-(--color_primary_icon)" />
+                    <h2 className="text-lg font-semibold text-white">Расписание</h2>
+                    <span className="ml-auto text-xs text-(--color_text_muted)">
+                      Следующие 14 дней
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {upcomingWorkouts.map((w) => {
+                      const label = WORKOUT_TYPE_CONFIG[w.workoutType] ?? w.workoutType;
+                      const color = WORKOUT_COLORS[w.workoutType] ?? 'text-white';
+                      const dateStr = formatWorkoutDate(w.date);
+                      const isToday = dateStr === 'Сегодня';
+                      return (
+                        <div
+                          key={w.id}
+                          onClick={() => navigate('/calendar')}
+                          className="flex items-center gap-3 p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors cursor-pointer"
+                        >
+                          <div
+                            className={`w-2 h-2 rounded-full shrink-0 ${isToday ? 'bg-(--color_primary_light)' : 'bg-white/20'}`}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs font-semibold ${color}`}>{label}</span>
+                              {isToday && (
+                                <span className="px-1.5 leading-4 rounded bg-(--color_primary_light)/20 text-(--color_primary_light) text-[10px] font-medium">
+                                  Сегодня
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-(--color_text_muted) mt-0.5">
+                              {w.exerciseCount} упражнений
+                              {w.notes ? ` · ${w.notes}` : ''}
+                            </div>
+                          </div>
+                          {!isToday && (
+                            <div className="text-xs font-medium shrink-0 text-(--color_text_muted)">
+                              {dateStr}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </>
+          )}
         </SectionGroup>
       </div>
     </Screen>

@@ -33,8 +33,10 @@ import type {
 } from '@/api/ai';
 import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
 import SectionGroup from '@/components/ui/SectionGroup';
+import { useTrainerCabinetRedirect } from '@/hooks/useTrainerCabinetRedirect';
 
 export default function TrainerTemplatesScreen() {
+  useTrainerCabinetRedirect('templates');
   const navigate = useNavigate();
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
   const [loading, setLoading] = useState(true);

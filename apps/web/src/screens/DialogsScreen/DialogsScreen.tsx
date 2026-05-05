@@ -9,6 +9,7 @@ import UserAvatar from '@/components/UserAvatar/UserAvatar'
 import { type DialogItem } from '@/api/chat'
 import { useActiveMode } from '@/contexts/AuthContext'
 import { useDialogs } from '@/hooks/useDialogs'
+import { useFeatureFlags } from '@/hooks/useFeatureFlags'
 import { SparklesIcon, UserGroupIcon } from '@heroicons/react/24/outline'
 import { parseWorkoutPreview } from '@/components/ChatBox/workoutPreviewParse';
 import { isKlipyMessageContent } from '@/util/klipyMessage'
@@ -70,10 +71,15 @@ function DialogRow({ dialog, onOpen }: { dialog: DialogItem; onOpen: () => void 
 
 export default function DialogsScreen() {
   const { isTrainer } = useActiveMode()
+  const flags = useFeatureFlags()
   const { data: dialogs, refresh } = useDialogs(30_000)
   const loading = dialogs === null
   const [activeDialog, setActiveDialog] = useState<DialogItem | null>(null)
   const [aiChatOpen, setAiChatOpen] = useState(false)
+
+  useEffect(() => {
+    if (!flags.ai) setAiChatOpen(false)
+  }, [flags.ai])
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState<DialogTab>('all')
 
@@ -124,7 +130,7 @@ export default function DialogsScreen() {
         dialog={activeDialog}
         onClose={closeChat}
       />
-      <AiChat open={aiChatOpen} onClose={() => setAiChatOpen(false)} />
+      <AiChat open={aiChatOpen && flags.ai} onClose={() => setAiChatOpen(false)} />
 
       <motion.h1
         initial={{ opacity: 0, y: -12 }}
@@ -170,8 +176,8 @@ export default function DialogsScreen() {
         className="will-change-transform"
       >
         <SectionGroup showLabel={false} bodyClassName="space-y-0" showBreakAfter={false}>
-          {/* AI assistant — only on "all" tab */}
-          {activeTab === 'all' && (
+          {/* AI assistant — только при включённых AI-функциях в настройках */}
+          {activeTab === 'all' && flags.ai && (
             <div
               onClick={() => setAiChatOpen(true)}
               className="flex items-center gap-3 px-4 cursor-pointer hover:bg-(--color_bg_card_hover) active:bg-(--color_bg_card_hover) transition-colors"

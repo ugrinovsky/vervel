@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { authApi, type UserRole } from '@/api/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import AppInput from '@/components/ui/AppInput';
+import GenderToggle from '@/components/ui/GenderToggle';
 
 export default function RegisterScreen() {
   const [fullName, setFullName] = useState('');
@@ -188,36 +189,11 @@ export default function RegisterScreen() {
               onKeyDown={handleKeyDown}
             />
 
-            {/* Gender selection */}
-            <div>
-              <label className="block text-sm font-medium mb-3 text-(--color_text_secondary)">Пол</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setGender(gender === 'male' ? null : 'male')}
-                  className={`p-3 rounded-xl border text-center transition-all ${
-                    gender === 'male'
-                      ? 'border-emerald-400 bg-emerald-500/20 text-(--color_text_primary)'
-                      : 'border-(--color_border) bg-(--color_bg_card) text-(--color_text_muted)'
-                  }`}
-                >
-                  <div className="text-2xl mb-1">♂</div>
-                  <div className="text-sm font-medium">Мужской</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setGender(gender === 'female' ? null : 'female')}
-                  className={`p-3 rounded-xl border text-center transition-all ${
-                    gender === 'female'
-                      ? 'border-emerald-400 bg-emerald-500/20 text-(--color_text_primary)'
-                      : 'border-(--color_border) bg-(--color_bg_card) text-(--color_text_muted)'
-                  }`}
-                >
-                  <div className="text-2xl mb-1">♀</div>
-                  <div className="text-sm font-medium">Женский</div>
-                </button>
-              </div>
-            </div>
+            <GenderToggle
+              value={gender}
+              onChange={setGender}
+              labelClassName="block text-sm font-medium mb-3 text-(--color_text_secondary)"
+            />
 
             {/* Role selection */}
             <div>

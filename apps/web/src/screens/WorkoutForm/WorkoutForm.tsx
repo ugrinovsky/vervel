@@ -5,17 +5,23 @@ import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
-import WorkoutFormBase, { type WorkoutFormData } from '@/components/WorkoutFormBase/WorkoutFormBase';
+import WorkoutFormBase, {
+  type WorkoutFormData,
+} from '@/components/WorkoutFormBase/WorkoutFormBase';
 import { parseLocalDate, toApiDateTime, toDateKey } from '@/utils/date';
 import { workoutsApi } from '@/api/workouts';
 import { checkForNewAchievements } from '@/hooks/useAchievementToast';
 import { exerciseDataToWorkoutExercise } from '@/util/workoutExerciseConversions';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureUnlock } from '@/hooks/useFeatureUnlock';
+import { workoutTypeForAthletePrimaryGoal } from '@/util/athletePrimaryGoalWorkoutType';
+import { DEFAULT_WORKOUT_TYPE } from '@/constants/workoutTypes';
 
 export default function WorkoutForm() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { unlock } = useFeatureUnlock();
   const locationState = location.state;
   const prefillDate =
     locationState !== null &&
@@ -28,6 +34,11 @@ export default function WorkoutForm() {
 
   const initialDate = prefillDate ? parseLocalDate(prefillDate) : undefined;
   const storageKey = user ? `workout_draft_${user.id}` : undefined;
+  const athletePrimaryGoal = user?.clientPreferences?.athletePrimaryGoal;
+  const initialWorkoutType =
+    athletePrimaryGoal && athletePrimaryGoal !== 'general'
+      ? workoutTypeForAthletePrimaryGoal(athletePrimaryGoal)
+      : DEFAULT_WORKOUT_TYPE;
 
   // If we came from Calendar with a prefilled date, apply it once and clear the route state.
   // Otherwise the same history entry would keep forcing the old date on future visits.
@@ -51,6 +62,7 @@ export default function WorkoutForm() {
       });
       toast.success('Тренировка сохранена 💪');
       checkForNewAchievements();
+      void unlock('workout_saved');
       navigate('/calendar', { state: { date: toDateKey(data.date), savedWorkout: true } });
     } catch (err: unknown) {
       const msg =
@@ -88,15 +100,26 @@ export default function WorkoutForm() {
         />
 
         <ScreenHint className="mb-4">
-          Выберите дату и тип, затем{' '}
-          <span className="text-white font-medium">ИИ</span> подставит упражнения и подходы. Сохранить можно,
-          как только в списке есть хотя бы одно упражнение.
+          {athletePrimaryGoal && athletePrimaryGoal !== 'general' ? (
+            <>
+              Выберите дату — тип тренировки совпадает с вашей главной целью. Затем{' '}
+              <span className="text-white font-medium">ИИ</span> подставит упражнения и подходы.
+              Сохранить можно, как только в списке есть хотя бы одно упражнение.
+            </>
+          ) : (
+            <>
+              Выберите дату и тип, затем <span className="text-white font-medium">ИИ</span> подставит
+              упражнения и подходы. Сохранить можно, как только в списке есть хотя бы одно упражнение.
+            </>
+          )}
         </ScreenHint>
 
         <WorkoutFormBase
           initialDate={initialDate}
+          initialType={initialWorkoutType}
           storageKey={storageKey}
           lightOnboarding
+          athletePrimaryGoal={athletePrimaryGoal}
           notesLabel="Заметки (опционально)"
           notesPlaceholder="Как прошла тренировка, самочувствие..."
           submitLabel="Сохранить"

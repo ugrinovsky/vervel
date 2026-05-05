@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { BookOpenIcon } from '@heroicons/react/24/outline';
 import Screen from '@/components/Screen/Screen';
@@ -13,12 +13,16 @@ import type { Exercise } from '@/types/Exercise';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import { ExerciseLibraryCard } from '@/components/ExerciseCard/ExerciseCard';
 import SectionGroup from '@/components/ui/SectionGroup';
+import { useTrainerCabinetRedirect } from '@/hooks/useTrainerCabinetRedirect';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 
 /* ------------------------------------------------------------------ */
 /* Screen                                                               */
 /* ------------------------------------------------------------------ */
 
 export default function TrainerExerciseLibraryScreen() {
+  useTrainerCabinetRedirect('library');
+  const flags = useFeatureFlags();
   const { data: exercises, loading } = useExercises();
   const {
     search, setSearch,
@@ -30,6 +34,32 @@ export default function TrainerExerciseLibraryScreen() {
   } = useExerciseFilters(exercises);
 
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const libraryMoreLinks = useMemo(() => {
+    const links: Array<{
+      emoji: string;
+      bg: string;
+      label: string;
+      sub: string;
+      to: string;
+    }> = [];
+    if (flags.trainerTemplates) {
+      links.push({
+        emoji: '📋',
+        bg: 'bg-violet-500/20',
+        label: 'Шаблоны',
+        sub: 'готовые тренировки',
+        to: '/trainer/templates',
+      });
+    }
+    links.push({
+      emoji: '📅',
+      bg: 'bg-blue-500/20',
+      label: 'Календарь',
+      sub: 'расписание тренировок',
+      to: '/trainer/calendar',
+    });
+    return links;
+  }, [flags.trainerTemplates]);
   const filterBarRef = useRef<HTMLDivElement>(null);
   const [filterBarHeight, setFilterBarHeight] = useState(0);
 
@@ -152,13 +182,7 @@ export default function TrainerExerciseLibraryScreen() {
 
         <SectionGroup title="Ещё" className="px-4" showBreakAfter={false}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <ScreenLinks
-              className="pb-4"
-              links={[
-                { emoji: '📋', bg: 'bg-violet-500/20', label: 'Шаблоны', sub: 'готовые тренировки', to: '/trainer/templates' },
-                { emoji: '📅', bg: 'bg-blue-500/20', label: 'Календарь', sub: 'расписание тренировок', to: '/trainer/calendar' },
-              ]}
-            />
+            <ScreenLinks className="pb-4" links={libraryMoreLinks} />
           </motion.div>
         </SectionGroup>
 

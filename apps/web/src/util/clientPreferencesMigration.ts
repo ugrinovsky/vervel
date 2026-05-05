@@ -22,6 +22,7 @@ function clearLegacyLocalKeys(userId: number): void {
 
 /**
  * Одноразово поднимает старые значения из localStorage в `users.client_preferences` после деплоя API.
+ * Также мигрирует athleteCoachIntent → athleteScenario если новое поле ещё не выставлено.
  * @returns `true`, если синхронизация не нужна или прошла успешно (можно не повторять в этой сессии).
  */
 export async function migrateLocalOnboardingToServer(
@@ -63,6 +64,12 @@ export async function migrateLocalOnboardingToServer(
     }
   } catch {
     return false;
+  }
+
+  // Migrate athleteCoachIntent → athleteScenario for existing users who already have the old field
+  // but haven't gone through the new onboarding yet.
+  if (prefs.athleteCoachIntent != null && prefs.athleteScenario == null) {
+    patch.athleteScenario = prefs.athleteCoachIntent; // 'solo' | 'with_coach' are valid athleteScenario values
   }
 
   if (Object.keys(patch).length === 0) return true;

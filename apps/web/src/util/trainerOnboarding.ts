@@ -158,12 +158,63 @@ const GETTING_STARTED_BOTH: TrainerGettingStartedStep[] = [
  * Пока нет атлетов — порядок шагов «С чего начать» на «Сегодня».
  * Если формат не выбран (старые аккаунты), используем сценарий «индивидуально».
  */
+export type TrainerGettingStartedOptions = {
+  /** Если false — убираем шаги со ссылкой на шаблоны (как в настройках тренера). */
+  templates?: boolean;
+  /** Если false — убираем шаги про команду / атлетов / группы (согласовано с календарём без назначений). */
+  teams?: boolean;
+};
+
+const ROSTER_PATHS = ['/trainer/athletes', '/trainer/groups', '/trainer/team'] as const;
+
+function isRosterPath(path: string): boolean {
+  return ROSTER_PATHS.some((p) => p === path);
+}
+
 export function getTrainerGettingStartedSteps(
-  style: TrainerWorkStyleIntent | null
+  style: TrainerWorkStyleIntent | null,
+  options?: TrainerGettingStartedOptions
 ): TrainerGettingStartedStep[] {
-  if (style === 'groups') return GETTING_STARTED_GROUPS;
-  if (style === 'both') return GETTING_STARTED_BOTH;
-  return GETTING_STARTED_INDIVIDUAL;
+  let steps: TrainerGettingStartedStep[];
+  if (style === 'groups') steps = [...GETTING_STARTED_GROUPS];
+  else if (style === 'both') steps = [...GETTING_STARTED_BOTH];
+  else steps = [...GETTING_STARTED_INDIVIDUAL];
+
+  const showTemplates = options?.templates !== false;
+  const showTeams = options?.teams !== false;
+
+  if (!showTemplates) {
+    const hadTemplates = steps.some((s) => s.to === '/trainer/templates');
+    steps = steps.filter((s) => s.to !== '/trainer/templates');
+    if (
+      hadTemplates &&
+      style === 'both' &&
+      !steps.some((s) => s.to === '/trainer/calendar')
+    ) {
+      steps.push({
+        step: '0',
+        title: 'Запланируйте в календаре',
+        desc: 'Назначьте тренировки и слоты — атлеты увидят у себя',
+        to: '/trainer/calendar',
+        label: 'Открыть',
+      });
+    }
+  }
+
+  if (!showTeams) {
+    steps = steps.filter((s) => !isRosterPath(s.to));
+    if (!steps.some((s) => s.to === '/trainer/calendar')) {
+      steps.push({
+        step: '0',
+        title: 'Календарь',
+        desc: 'Планирование без ростера в приложении. Включите «Атлеты и группы» в настройках, чтобы назначать тренировки из списка клиентов.',
+        to: '/trainer/calendar',
+        label: 'Открыть',
+      });
+    }
+  }
+
+  return steps.map((s, i) => ({ ...s, step: String(i + 1) }));
 }
 
 /** Быстрые ссылки на «Сегодня» — порядок зависит от формата работы из онбординга */
@@ -206,12 +257,24 @@ const Q = {
   },
 } satisfies Record<string, TrainerQuickLink>;
 
-export function getTrainerQuickLinks(style: TrainerWorkStyleIntent | null): TrainerQuickLink[] {
-  if (style === 'individual') return [Q.athletes, Q.templates, Q.calendar, Q.groups];
-  if (style === 'groups') return [Q.groups, Q.athletes, Q.calendar, Q.templates];
+export function getTrainerQuickLinks(
+  style: TrainerWorkStyleIntent | null,
+  visibility?: { templates?: boolean; teams?: boolean }
+): TrainerQuickLink[] {
+  const showTemplates = visibility?.templates !== false;
+  const showTeams = visibility?.teams !== false;
+  const filter = (arr: TrainerQuickLink[]) =>
+    arr.filter((l) => {
+      if (l.to === '/trainer/templates' && !showTemplates) return false;
+      if ((l.to === '/trainer/athletes' || l.to === '/trainer/groups') && !showTeams) return false;
+      return true;
+    });
+
+  if (style === 'individual') return filter([Q.athletes, Q.templates, Q.calendar, Q.groups]);
+  if (style === 'groups') return filter([Q.groups, Q.athletes, Q.calendar, Q.templates]);
   /* both: первая строка — не «Атлеты», чтобы отличаться от individual */
-  if (style === 'both') return [Q.templates, Q.athletes, Q.groups, Q.calendar];
-  return [Q.calendar, Q.groups, Q.athletes, Q.templates];
+  if (style === 'both') return filter([Q.templates, Q.athletes, Q.groups, Q.calendar]);
+  return filter([Q.calendar, Q.groups, Q.athletes, Q.templates]);
 }
 
 /** Шаг онбординга «Атлеты» — заголовок и тексты зависят от формата на шаге 1 */

@@ -17,6 +17,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import SectionGroup from '@/components/ui/SectionGroup';
 import { isOAuthPlaceholderEmail, profileEmailSubtitle } from '@/util/oauthPlaceholderEmail';
 import { userRoleFromApiString } from '@/util/userRole';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 
 interface Props {
   data: ProfileData;
@@ -27,6 +28,7 @@ export default function ProfileTab({ data, trainerStats }: Props) {
   const navigate = useNavigate();
   const { login, user } = useAuth();
   const { isAthlete, isTrainer, activeMode, switchMode } = useActiveMode();
+  const flags = useFeatureFlags();
   const isBoth = isTrainer && isAthlete;
   const inTrainerMode = isTrainer && (!isAthlete || activeMode === 'trainer');
   const inAthleteMode = isAthlete && (!isTrainer || activeMode === 'athlete');
@@ -34,7 +36,11 @@ export default function ProfileTab({ data, trainerStats }: Props) {
   const [becomingAthlete, setBecomingAthlete] = useState(false);
   const [becomingTrainer, setBecomingTrainer] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
-  const [referralStats, setReferralStats] = useState<{ count: number; totalEarned: number; bonusPerReferral: number } | null>(null);
+  const [referralStats, setReferralStats] = useState<{
+    count: number;
+    totalEarned: number;
+    bonusPerReferral: number;
+  } | null>(null);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(data.user.photoUrl ?? null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -68,16 +74,26 @@ export default function ProfileTab({ data, trainerStats }: Props) {
   };
 
   useEffect(() => {
+    if (!flags.teams) setQrOpen(false);
+  }, [flags.teams]);
+
+  useEffect(() => {
     if (!inAthleteMode) return;
     privateApi
-      .get<{ success: boolean; data: { count: number; totalEarned: number; bonusPerReferral: number } }>('/referral/stats')
+      .get<{
+        success: boolean;
+        data: { count: number; totalEarned: number; bonusPerReferral: number };
+      }>('/referral/stats')
       .then((res) => setReferralStats(res.data.data))
       .catch(() => {});
   }, [inAthleteMode]);
 
-
   const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    new Date(dateStr).toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
 
   const handleBecomeAthlete = async () => {
     try {
@@ -117,18 +133,26 @@ export default function ProfileTab({ data, trainerStats }: Props) {
 
   return (
     <AnimatedBlock key="profile" className="space-y-6">
-      <BottomSheet id="profile-qr" open={qrOpen} onClose={() => setQrOpen(false)} emoji="📲" title="QR-код для тренера">
-        <p className="text-sm text-(--color_text_muted) mb-5">
-          Покажите этот код тренеру, чтобы он мог добавить вас в команду
-        </p>
-        <div className="flex items-center justify-center">
-          <AthleteQrCode
-            athleteId={data.user.id}
-            name={data.user.fullName}
-            email={isOAuthPlaceholderEmail(data.user.email) ? undefined : data.user.email}
-          />
-        </div>
-      </BottomSheet>
+      {flags.teams && (
+        <BottomSheet
+          id="profile-qr"
+          open={qrOpen}
+          onClose={() => setQrOpen(false)}
+          emoji="📲"
+          title="QR-код для тренера"
+        >
+          <p className="text-sm text-(--color_text_muted) mb-5">
+            Покажите этот код тренеру, чтобы он мог добавить вас в команду
+          </p>
+          <div className="flex items-center justify-center">
+            <AthleteQrCode
+              athleteId={data.user.id}
+              name={data.user.fullName}
+              email={isOAuthPlaceholderEmail(data.user.email) ? undefined : data.user.email}
+            />
+          </div>
+        </BottomSheet>
+      )}
 
       {cropSrc && (
         <AvatarCropModal
@@ -174,11 +198,15 @@ export default function ProfileTab({ data, trainerStats }: Props) {
               )}
             </button>
             <div className="min-w-0">
-              <div className="text-xl font-bold text-white truncate">{data.user.fullName || 'Без имени'}</div>
+              <div className="text-xl font-bold text-white truncate">
+                {data.user.fullName || 'Без имени'}
+              </div>
               {emailSubtitle && (
                 <div className="text-sm text-(--color_text_muted) truncate">{emailSubtitle}</div>
               )}
-              <div className="text-xs text-(--color_text_muted) mt-1">Участник с {formatDate(data.user.createdAt)}</div>
+              <div className="text-xs text-(--color_text_muted) mt-1">
+                Участник с {formatDate(data.user.createdAt)}
+              </div>
             </div>
           </div>
           {inTrainerMode && (
@@ -190,7 +218,9 @@ export default function ProfileTab({ data, trainerStats }: Props) {
               <span className="text-xl">🪪</span>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-white">Профессиональный профиль</div>
-                <div className="text-xs text-(--color_text_muted) mt-0.5">Фото, специализации, образование — видно атлетам</div>
+                <div className="text-xs text-(--color_text_muted) mt-0.5">
+                  Фото, специализации, образование — видно атлетам
+                </div>
               </div>
               <span className="text-(--color_text_muted) text-sm shrink-0">→</span>
             </button>
@@ -202,7 +232,9 @@ export default function ProfileTab({ data, trainerStats }: Props) {
         <SectionGroup title="Показатели">
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
-              <div className="text-2xl font-bold text-white">{trainerStats?.athleteCount ?? '—'}</div>
+              <div className="text-2xl font-bold text-white">
+                {trainerStats?.athleteCount ?? '—'}
+              </div>
               <div className="text-xs text-(--color_text_muted) mt-1">Атлетов</div>
             </div>
             <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
@@ -210,7 +242,9 @@ export default function ProfileTab({ data, trainerStats }: Props) {
               <div className="text-xs text-(--color_text_muted) mt-1">Групп</div>
             </div>
             <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
-              <div className="text-2xl font-bold text-white">{trainerStats?.totalScheduledWorkouts ?? '—'}</div>
+              <div className="text-2xl font-bold text-white">
+                {trainerStats?.totalScheduledWorkouts ?? '—'}
+              </div>
               <div className="text-xs text-(--color_text_muted) mt-1">Тренировок</div>
             </div>
           </div>
@@ -219,35 +253,41 @@ export default function ProfileTab({ data, trainerStats }: Props) {
 
       {inAthleteMode && (
         <SectionGroup title="Прогресс и приглашения">
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => navigate('/streak')}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                navigate('/streak');
-              }
-            }}
-            className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) cursor-pointer hover:bg-(--color_bg_card_hover) transition-colors flex items-center justify-between"
-          >
-            <div>
-              <div className="text-base font-semibold text-white mb-0.5">Ачивки и серия</div>
-              <p className="text-sm text-(--color_text_muted)">Посмотреть достижения</p>
+          {flags.streaks && (
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => navigate('/streak')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  navigate('/streak');
+                }
+              }}
+              className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) cursor-pointer hover:bg-(--color_bg_card_hover) transition-colors flex items-center justify-between"
+            >
+              <div>
+                <div className="text-base font-semibold text-white mb-0.5">Ачивки и серия</div>
+                <p className="text-sm text-(--color_text_muted)">Посмотреть достижения</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🏆</span>
+                <span className="text-(--color_text_muted) text-sm">→</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🏆</span>
-              <span className="text-(--color_text_muted) text-sm">→</span>
-            </div>
-          </div>
-          <ListButton onClick={() => setQrOpen(true)}>
-            <div className="text-3xl">📲</div>
-            <div className="flex-1">
-              <div className="text-sm font-medium text-white">QR-код для тренера</div>
-              <div className="text-xs text-(--color_text_muted) mt-0.5">Покажите тренеру, чтобы он добавил вас в команду</div>
-            </div>
-            <div className="text-(--color_text_muted) text-sm">→</div>
-          </ListButton>
+          )}
+          {flags.teams && (
+            <ListButton onClick={() => setQrOpen(true)}>
+              <div className="text-3xl">📲</div>
+              <div className="flex-1">
+                <div className="text-sm font-medium text-white">QR-код для тренера</div>
+                <div className="text-xs text-(--color_text_muted) mt-0.5">
+                  Покажите тренеру, чтобы он добавил вас в команду
+                </div>
+              </div>
+              <div className="text-(--color_text_muted) text-sm">→</div>
+            </ListButton>
+          )}
           <ListButton
             onClick={() => {
               const url = `${window.location.origin}/register?ref=${data.user.id}`;
@@ -262,7 +302,8 @@ export default function ProfileTab({ data, trainerStats }: Props) {
                 +{referralStats?.bonusPerReferral ?? 50}₽ на баланс за каждого
                 {referralStats && referralStats.count > 0 && (
                   <span className="ml-2 text-(--color_primary_light)">
-                    · {referralStats.count} {referralStats.count === 1 ? 'приведён' : 'приведено'} · +{referralStats.totalEarned}₽
+                    · {referralStats.count} {referralStats.count === 1 ? 'приведён' : 'приведено'} ·
+                    +{referralStats.totalEarned}₽
                   </span>
                 )}
               </div>
@@ -283,10 +324,14 @@ export default function ProfileTab({ data, trainerStats }: Props) {
             <div className="text-3xl">{activeMode === 'trainer' ? '🏃' : '🏋️'}</div>
             <div className="flex-1">
               <div className="text-sm font-medium text-white">
-                {activeMode === 'trainer' ? 'Перейти в кабинет атлета' : 'Перейти в кабинет тренера'}
+                {activeMode === 'trainer'
+                  ? 'Перейти в кабинет атлета'
+                  : 'Перейти в кабинет тренера'}
               </div>
               <div className="text-xs text-(--color_text_muted) mt-0.5">
-                {activeMode === 'trainer' ? 'Тренировки, аватар, статистика' : 'Группы, атлеты, расписание'}
+                {activeMode === 'trainer'
+                  ? 'Тренировки, аватар, статистика'
+                  : 'Группы, атлеты, расписание'}
               </div>
             </div>
             <div className="text-(--color_text_muted) text-sm">→</div>

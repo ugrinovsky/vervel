@@ -162,11 +162,29 @@ export interface PeriodizationPoint {
   tsb: number;
 }
 
+export type AcwrRiskZone = 'insufficient_data' | 'low' | 'optimal' | 'elevated' | 'high';
+
+export interface AcwrPoint {
+  date: string;
+  ratio: number | null;
+  acute: number;
+  chronic: number;
+}
+
 export interface PeriodizationData {
   current: { atl: number; ctl: number; tsb: number };
   phase: { name: string; emoji: string; advice: string };
   series: PeriodizationPoint[];
   weeklyLoad: Array<{ week: string; load: number; workouts: number }>;
+  acwr: {
+    current: {
+      ratio: number | null;
+      acute: number;
+      chronic: number;
+      zone: AcwrRiskZone;
+    };
+    series: AcwrPoint[];
+  };
 }
 
 export const trainerApi = {

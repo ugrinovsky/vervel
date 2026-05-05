@@ -11,24 +11,35 @@ import SectionGroup from '@/components/ui/SectionGroup';
 import { useWorkoutStats } from '@/hooks/useWorkoutsStats';
 import { athleteApi } from '@/api/athlete';
 import type { PeriodizationData } from '@/api/trainer';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 
 type TimeRange = 'week' | 'month' | 'year';
 
 export default function AnalyticsScreen() {
   const navigate = useNavigate();
+  const flags = useFeatureFlags();
   const [timeRange, setTimeRange] = useState<TimeRange>('week');
   const { data: stats } = useWorkoutStats(timeRange);
   const { data: monthStats } = useWorkoutStats('month');
   const [periodization, setPeriodization] = useState<PeriodizationData | null>(null);
 
   useEffect(() => {
+    if (!flags.advancedAnalytics) {
+      setPeriodization(null);
+      return;
+    }
+    let cancelled = false;
     athleteApi
       .getMyPeriodization()
       .then((res) => {
+        if (cancelled) return;
         if (res.data.success) setPeriodization(res.data.data);
       })
       .catch(() => {});
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [flags.advancedAnalytics]);
 
   if (!stats) return null;
 
@@ -38,37 +49,39 @@ export default function AnalyticsScreen() {
         <ScreenHeader
           icon="📊"
           title="Аналитика"
-          description="Обзор объёма, зон и регулярности за период. Рост весов и упражнений — в «Силе и прогрессе»."
+          description="Обзор объёма, зон и регулярности за период; в карточке «Инсайты» — ритм, полнота журнала и ориентир по темпу. Рост весов — в «Силе и прогрессе»."
         />
 
-        <SectionGroup showLabel={false} showBreakAfter={false}>
-          <motion.button
-            type="button"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.06 }}
-            onClick={() => navigate('/progression')}
-            className="w-full rounded-2xl p-4 text-left border active:scale-[0.99] transition-transform flex items-center gap-3 group"
-            style={{
-              background:
-                'linear-gradient(135deg, rgb(var(--color_primary_light_ch) / 0.28) 0%, rgb(var(--color_primary_ch) / 0.12) 100%)',
-              borderColor: 'rgb(var(--color_primary_light_ch) / 0.45)',
-              boxShadow: '0 8px 28px rgb(var(--color_primary_ch) / 0.18)',
-            }}
-          >
-            <span className="text-3xl shrink-0" aria-hidden>
-              🏋️
-            </span>
-            <div className="flex-1 min-w-0">
-              <div className="text-base font-bold text-white">Открыть журнал</div>
-              <p className="text-xs text-(--color_text_muted) mt-0.5 leading-relaxed">
-                Журнал весов, динамика по упражнениям и силовые показатели — главный экран, если отслеживаете
-                рост силы.
-              </p>
-            </div>
-            <ChevronRightIcon className="w-6 h-6 shrink-0 text-(--color_primary_icon) group-hover:translate-x-0.5 transition-transform" />
-          </motion.button>
-        </SectionGroup>
+        {flags.progression && (
+          <SectionGroup showLabel={false} showBreakAfter={false}>
+            <motion.button
+              type="button"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.06 }}
+              onClick={() => navigate('/progression')}
+              className="w-full rounded-2xl p-4 text-left border active:scale-[0.99] transition-transform flex items-center gap-3 group"
+              style={{
+                background:
+                  'linear-gradient(135deg, rgb(var(--color_primary_light_ch) / 0.28) 0%, rgb(var(--color_primary_ch) / 0.12) 100%)',
+                borderColor: 'rgb(var(--color_primary_light_ch) / 0.45)',
+                boxShadow: '0 8px 28px rgb(var(--color_primary_ch) / 0.18)',
+              }}
+            >
+              <span className="text-3xl shrink-0" aria-hidden>
+                🏋️
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="text-base font-bold text-white">Открыть журнал</div>
+                <p className="text-xs text-(--color_text_muted) mt-0.5 leading-relaxed">
+                  Журнал весов, динамика по упражнениям и силовые показатели — главный экран, если
+                  отслеживаете рост силы.
+                </p>
+              </div>
+              <ChevronRightIcon className="w-6 h-6 shrink-0 text-(--color_primary_icon) group-hover:translate-x-0.5 transition-transform" />
+            </motion.button>
+          </SectionGroup>
+        )}
 
         <SectionGroup title="Данные за период" bodyClassName="space-y-4">
           <motion.div
@@ -87,7 +100,7 @@ export default function AnalyticsScreen() {
             <AnalyticsCards
               stats={stats}
               monthStats={monthStats}
-              periodization={periodization}
+              advancedAnalytics={flags.advancedAnalytics ? periodization : null}
               timeRange={timeRange}
             />
           </motion.div>

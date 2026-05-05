@@ -24,8 +24,10 @@ import {
 } from '@heroicons/react/24/outline';
 import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
 import SectionGroup from '@/components/ui/SectionGroup';
+import { useTrainerTeamsFeatureRedirect } from '@/hooks/useTrainerTeamsFeatureRedirect';
 
 export default function TrainerAthletesListScreen() {
+  useTrainerTeamsFeatureRedirect();
   const navigate = useNavigate();
   const [athletes, setAthletes] = useState<AthleteListItem[]>([]);
   const { data: unreadCounts, refresh: refreshUnread } = useTrainerUnreadCounts();

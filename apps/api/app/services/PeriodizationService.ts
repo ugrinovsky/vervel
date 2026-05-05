@@ -3,11 +3,32 @@ import { toLocalDateKey } from '#utils/date'
 
 type Phase = { name: string; emoji: string; advice: string }
 
+export type AcwrRiskZone = 'insufficient_data' | 'low' | 'optimal' | 'elevated' | 'high'
+
+export type AcwrPoint = {
+  date: string
+  ratio: number | null
+  acute: number
+  chronic: number
+}
+
+function acwrZone(ratio: number | null, chronic: number): AcwrRiskZone {
+  if (ratio === null || chronic < 1e-6) return 'insufficient_data'
+  if (ratio < 0.8) return 'low'
+  if (ratio <= 1.3) return 'optimal'
+  if (ratio <= 1.5) return 'elevated'
+  return 'high'
+}
+
 export type PeriodizationResult = {
   current: { atl: number; ctl: number; tsb: number }
   phase: Phase
   series: { date: string; atl: number; ctl: number; tsb: number }[]
   weeklyLoad: { week: string; load: number; workouts: number }[]
+  acwr: {
+    current: { ratio: number | null; acute: number; chronic: number; zone: AcwrRiskZone }
+    series: AcwrPoint[]
+  }
 }
 
 const PHASES = {
@@ -80,20 +101,44 @@ export class PeriodizationService {
       tlByDay.set(key, (tlByDay.get(key) ?? 0) + tl)
     }
 
+    const dailyTL: number[] = []
+    for (let d = 0; d < DAYS; d++) {
+      const date = new Date(startDate)
+      date.setDate(startDate.getDate() + d)
+      const key = toLocalDateKey(date)
+      dailyTL.push(tlByDay.get(key) ?? 0)
+    }
+
+    const prefix: number[] = new Array(dailyTL.length + 1)
+    prefix[0] = 0
+    for (const [i, value] of dailyTL.entries()) {
+      prefix[i + 1] = prefix[i] + value
+    }
+    const sumRange = (from: number, to: number) => prefix[to + 1] - prefix[from]
+
     let atl = 0
     let ctl = 0
     const series: { date: string; atl: number; ctl: number; tsb: number }[] = []
+    const acwrSeries: AcwrPoint[] = []
     const weeklyMap = new Map<string, { load: number; workouts: number }>()
 
     for (let d = 0; d < DAYS; d++) {
       const date = new Date(startDate)
       date.setDate(startDate.getDate() + d)
       const key = toLocalDateKey(date)
-      const tl = tlByDay.get(key) ?? 0
+      const tl = dailyTL[d]
 
       atl = atl * (6 / 7) + tl * (1 / 7)
       ctl = ctl * (41 / 42) + tl * (1 / 42)
       const tsb = ctl - atl
+
+      const from7 = Math.max(0, d - 6)
+      const from28 = Math.max(0, d - 27)
+      const acute = sumRange(from7, d)
+      const chronicSum = sumRange(from28, d)
+      const chronic = chronicSum / 4
+      const ratioRaw = chronic >= 1e-6 ? acute / chronic : null
+      const ratio = ratioRaw !== null ? Math.round(ratioRaw * 100) / 100 : null
 
       if (d >= DAYS - 90) {
         series.push({
@@ -101,6 +146,12 @@ export class PeriodizationService {
           atl: Math.round(atl * 10) / 10,
           ctl: Math.round(ctl * 10) / 10,
           tsb: Math.round(tsb * 10) / 10,
+        })
+        acwrSeries.push({
+          date: key,
+          ratio,
+          acute: Math.round(acute * 10) / 10,
+          chronic: Math.round(chronic * 10) / 10,
         })
       }
 
@@ -115,6 +166,11 @@ export class PeriodizationService {
     }
 
     const current = series[series.length - 1] ?? { atl: 0, ctl: 0, tsb: 0 }
+    const acwrLast = acwrSeries[acwrSeries.length - 1] ?? {
+      ratio: null,
+      acute: 0,
+      chronic: 0,
+    }
     const twoWeeksAgo = series[series.length - 15] ?? series[0] ?? { ctl: 0, atl: 0 }
     const trendCtl = current.ctl - twoWeeksAgo.ctl
     const tsb = current.tsb
@@ -153,6 +209,15 @@ export class PeriodizationService {
       phase,
       series,
       weeklyLoad,
+      acwr: {
+        current: {
+          ratio: acwrLast.ratio,
+          acute: acwrLast.acute,
+          chronic: acwrLast.chronic,
+          zone: acwrZone(acwrLast.ratio, acwrLast.chronic),
+        },
+        series: acwrSeries,
+      },
     }
   }
 }

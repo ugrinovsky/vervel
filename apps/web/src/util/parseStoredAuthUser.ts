@@ -5,14 +5,33 @@ import { isRecord } from '@/utils/typeGuards';
 function narrowClientPreferences(v: unknown): ClientPreferences | undefined {
   if (!isRecord(v)) return undefined;
   const o: ClientPreferences = {};
+
   if (typeof v.athleteOnboardingComplete === 'boolean') {
     o.athleteOnboardingComplete = v.athleteOnboardingComplete;
   }
   if (typeof v.trainerOnboardingComplete === 'boolean') {
     o.trainerOnboardingComplete = v.trainerOnboardingComplete;
   }
+
+  // athlete scenario (new unified field)
+  if (
+    v.athleteScenario === 'solo' ||
+    v.athleteScenario === 'with_coach' ||
+    v.athleteScenario === 'in_team'
+  ) {
+    o.athleteScenario = v.athleteScenario;
+  }
+  // legacy field — kept for backwards compat
   if (v.athleteCoachIntent === 'solo' || v.athleteCoachIntent === 'with_coach') {
     o.athleteCoachIntent = v.athleteCoachIntent;
+  }
+  if (
+    v.athletePrimaryGoal === 'strength' ||
+    v.athletePrimaryGoal === 'cardio' ||
+    v.athletePrimaryGoal === 'general' ||
+    v.athletePrimaryGoal === 'flexibility'
+  ) {
+    o.athletePrimaryGoal = v.athletePrimaryGoal;
   }
   if (
     v.trainerWorkStyle === 'individual' ||
@@ -21,9 +40,37 @@ function narrowClientPreferences(v: unknown): ClientPreferences | undefined {
   ) {
     o.trainerWorkStyle = v.trainerWorkStyle;
   }
+
   if (typeof v.coachTeamBannerDismissed === 'boolean') {
     o.coachTeamBannerDismissed = v.coachTeamBannerDismissed;
   }
+
+  if (v.uiMode === 'starter' || v.uiMode === 'pro' || v.uiMode === 'unleash') {
+    o.uiMode = v.uiMode;
+  }
+
+  // feature flags
+  const boolFlags = [
+    'featAi',
+    'featAnalytics',
+    'featProgression',
+    'featPeriodization',
+    'featAdvancedAnalytics',
+    'featTeams',
+    'featDialogs',
+    'featLeaderboard',
+    'featStreaks',
+    'featAvatar',
+    'featVideoCalls',
+    'featTrainerTemplates',
+    'featTrainerLibrary',
+  ] as const satisfies readonly (keyof ClientPreferences)[];
+
+  for (const key of boolFlags) {
+    const val = v[key];
+    if (typeof val === 'boolean') o[key] = val;
+  }
+
   return Object.keys(o).length > 0 ? o : undefined;
 }
 

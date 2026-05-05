@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { athleteApi } from '@/api/athlete';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureUnlock } from '@/hooks/useFeatureUnlock';
 import AccentButton from '@/components/ui/AccentButton';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
@@ -25,6 +26,7 @@ export default function InviteScreen() {
   const [notFound, setNotFound] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  const { unlock } = useFeatureUnlock();
 
   useEffect(() => {
     if (!token) return;
@@ -42,6 +44,7 @@ export default function InviteScreen() {
     setAccepting(true);
     try {
       await athleteApi.acceptInvite(token);
+      void unlock('invite_accepted');
       setAccepted(true);
       toast.success('Вы в команде тренера!');
       setTimeout(() => navigate('/my-team'), 1500);

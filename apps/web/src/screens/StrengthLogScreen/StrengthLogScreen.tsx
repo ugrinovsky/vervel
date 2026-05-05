@@ -23,6 +23,7 @@ import {
   BookmarkIcon,
   BookmarkSlashIcon,
   ChartBarIcon,
+  ChevronRightIcon,
   PresentationChartLineIcon,
   StarIcon,
   TableCellsIcon,
@@ -42,7 +43,10 @@ import { aiApi } from '@/api/ai';
 import { useBalance } from '@/contexts/AuthContext';
 import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
 import type { ExerciseWithSets } from '@/types/Exercise';
-import { buildStrengthLogChartPoints, strengthLogProgressPercent } from './strengthLogChart';
+import {
+  buildStrengthLogChartRowsWithTrend,
+  strengthLogProgressPercent,
+} from './strengthLogChart';
 import { getApiErrorData, getApiErrorMessage } from '@/utils/apiError';
 import { isRecord } from '@/utils/typeGuards';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
@@ -209,11 +213,23 @@ function StrengthLogChartTooltip({
   label,
 }: {
   active?: boolean;
-  payload?: ReadonlyArray<{ value?: number }>;
+  payload?: ReadonlyArray<{
+    value?: number;
+    dataKey?: string | number;
+    name?: string;
+    color?: string;
+  }>;
   label?: string;
 }) {
   if (!active || !payload?.length) return null;
-  const v = payload[0]?.value;
+  const rows = payload
+    .filter((p) => p.value != null && Number.isFinite(Number(p.value)))
+    .map((p) => ({
+      title: p.name ?? (p.dataKey === 'trend' ? 'Тренд' : p.dataKey === 'kg' ? 'Факт' : String(p.dataKey)),
+      v: Number(p.value),
+      muted: p.dataKey === 'trend',
+    }));
+  if (rows.length === 0) return null;
   return (
     <div
       className="rounded-lg border border-white/12 bg-[#111] px-2.5 py-2 text-xs text-white shadow-xl"
@@ -222,8 +238,67 @@ function StrengthLogChartTooltip({
       {label != null && label !== '' && (
         <div className="mb-1 text-white/50 whitespace-nowrap">{label}</div>
       )}
-      <div className="font-medium tabular-nums whitespace-nowrap text-(--color_primary_light)">
-        {v != null && Number.isFinite(Number(v)) ? `${v} кг` : '—'}
+      <div className="space-y-0.5">
+        {rows.map((r) => (
+          <div
+            key={r.title}
+            className={`font-medium tabular-nums whitespace-nowrap ${
+              r.muted ? 'text-white/55' : 'text-(--color_primary_light)'
+            }`}
+          >
+            {rows.length > 1 ? `${r.title}: ` : ''}
+            {r.v} кг
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StrengthLogChartLegend({ showTrend }: { showTrend: boolean }) {
+  return (
+    <div
+      className="mt-2 rounded-xl border border-(--color_border) bg-(--color_bg_card)/80 px-3 py-2.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]"
+      aria-label="Обозначения графика"
+    >
+      <div
+        className={`grid gap-3 ${showTrend ? 'sm:grid-cols-2 sm:gap-4' : ''}`}
+      >
+        <div className="flex gap-3 min-w-0">
+          <div className="flex shrink-0 flex-col justify-center pt-0.5" aria-hidden>
+            <span className="h-0.5 w-8 rounded-full bg-(--color_primary_light)" />
+          </div>
+          <div className="min-w-0 space-y-0.5">
+            <p className="text-xs font-semibold text-white">Факт</p>
+            <p className="text-[11px] leading-snug text-(--color_text_muted)">
+              По сессиям: 1RM или максимальный вес в подходах.
+            </p>
+          </div>
+        </div>
+        {showTrend ? (
+          <div className="flex gap-3 min-w-0 sm:border-l sm:border-(--color_border) sm:pl-4">
+            <div className="flex shrink-0 flex-col justify-center pt-0.5" aria-hidden>
+              <svg width={32} height={10} viewBox="0 0 32 10" className="text-white/45">
+                <line
+                  x1="0"
+                  y1="5"
+                  x2="32"
+                  y2="5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeDasharray="5 4"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+            <div className="min-w-0 space-y-0.5">
+              <p className="text-xs font-semibold text-white">Тренд</p>
+              <p className="text-[11px] leading-snug text-(--color_text_muted)">
+                Линейная аппроксимация по точкам. «· · ·» — один шаг вперёд по той же прямой.
+              </p>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -233,6 +308,7 @@ function ExerciseCard({
   entry,
   linkedToStandard,
   pinnedOnly,
+  exercisePinned,
   pinsBusy,
   onPin,
   onUnpin,
@@ -242,6 +318,8 @@ function ExerciseCard({
   /** Учёт эталона по standardId, алиасу или привязке к каталогу (важно для закреплённых «сырых» id) */
   linkedToStandard: boolean;
   pinnedOnly: boolean;
+  /** Это упражнение в списке закреплений для текущего типа тренировки — пунктирный прогноз на графике */
+  exercisePinned: boolean;
   pinsBusy: boolean;
   onPin: (exerciseId: string) => void;
   onUnpin: (exerciseId: string) => void;
@@ -259,9 +337,10 @@ function ExerciseCard({
   }, [sessions]);
   const maxSets = Math.max(...sessions.map((s) => s.sets.length), 0);
   const chartData = useMemo(
-    () => buildStrengthLogChartPoints(entry).map((p) => ({ name: p.label, kg: p.value })),
-    [entry],
+    () => buildStrengthLogChartRowsWithTrend(entry, { extrapolateNext: exercisePinned }),
+    [entry, exercisePinned],
   );
+  const showTrendLine = exercisePinned && chartData.some((d) => d.trend != null);
   const progressPct = useMemo(() => strengthLogProgressPercent(entry), [entry]);
 
   const modeBtn = (mode: CardViewMode, icon: ReactNode, title: string) => (
@@ -369,31 +448,47 @@ function ExerciseCard({
             Нет точек для графика (нужен вес в подходах или рассчитанный 1RM)
           </div>
         ) : (
-          <div className="h-44 w-full px-2 pb-3 pt-1">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fill: 'rgba(255,255,255,0.45)', fontSize: 10 }}
-                  interval="preserveStartEnd"
-                />
-                <YAxis
-                  tick={{ fill: 'rgba(255,255,255,0.45)', fontSize: 10 }}
-                  width={36}
-                  domain={['auto', 'auto']}
-                />
-                <Tooltip content={<StrengthLogChartTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.15)' }} />
-                <Line
-                  type="monotone"
-                  dataKey="kg"
-                  name="кг"
-                  stroke="var(--color_primary_light)"
-                  strokeWidth={2}
-                  dot={{ r: 3, fill: 'var(--color_primary_light)' }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="w-full px-3 pb-3 pt-1">
+            <div className="h-44 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fill: 'rgba(255,255,255,0.45)', fontSize: 10 }}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis
+                    tick={{ fill: 'rgba(255,255,255,0.45)', fontSize: 10 }}
+                    width={36}
+                    domain={['auto', 'auto']}
+                  />
+                  <Tooltip content={<StrengthLogChartTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.15)' }} />
+                  <Line
+                    type="monotone"
+                    dataKey="kg"
+                    name="Факт"
+                    stroke="var(--color_primary_light)"
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: 'var(--color_primary_light)' }}
+                    connectNulls={false}
+                  />
+                  {showTrendLine ? (
+                    <Line
+                      type="monotone"
+                      dataKey="trend"
+                      name="Тренд"
+                      stroke="rgba(255,255,255,0.42)"
+                      strokeWidth={1.5}
+                      strokeDasharray="5 4"
+                      dot={false}
+                      connectNulls
+                    />
+                  ) : null}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <StrengthLogChartLegend showTrend={showTrendLine} />
           </div>
         )
       ) : (
@@ -495,11 +590,14 @@ function ExerciseCard({
 
 export default function StrengthLogScreen({
   embedded = false,
-  /** Пакет «ИИ: предложить связи с эталонами» и пояснения к стоимости — вкладка «Эталоны и ИИ» в хабе. */
+  /** Пакет «ИИ: предложить связи с эталонами» (если экран не из хаба с вкладками). */
   showStandardsAiBatch = true,
+  /** Хаб «Сила и прогресс»: вкладка «Эталоны» — список эталонов и ИИ; «Журнал» — карточки с весом. */
+  progressionHubTab,
 }: {
   embedded?: boolean;
   showStandardsAiBatch?: boolean;
+  progressionHubTab?: 'journal' | 'advanced';
 }) {
   const navigate = useNavigate();
   const { balance, setBalance } = useBalance();
@@ -524,6 +622,8 @@ export default function StrengthLogScreen({
   const [aiSuggestSelected, setAiSuggestSelected] = useState<Record<string, boolean>>({});
   const [aiSuggestApplyBusy, setAiSuggestApplyBusy] = useState(false);
   const [aiFeatureEnabled, setAiFeatureEnabled] = useState(false);
+  /** Чтобы не показывать «ИИ недоступен» до первого ответа status(). */
+  const [aiFeatureStatusReady, setAiFeatureStatusReady] = useState(false);
   const [suggestLinksCost, setSuggestLinksCost] = useState(8);
 
   const load = useCallback(() => {
@@ -543,8 +643,14 @@ export default function StrengthLogScreen({
     if (!payload) return;
     aiApi
       .status()
-      .then((r) => setAiFeatureEnabled(r.data.enabled))
-      .catch(() => setAiFeatureEnabled(false));
+      .then((r) => {
+        setAiFeatureEnabled(r.data.enabled);
+        setAiFeatureStatusReady(true);
+      })
+      .catch(() => {
+        setAiFeatureEnabled(false);
+        setAiFeatureStatusReady(true);
+      });
     aiApi
       .getBalance()
       .then((r) => {
@@ -582,6 +688,34 @@ export default function StrengthLogScreen({
       ).length,
     [weightedExerciseOptions, standards, aliases],
   );
+
+  const isStandardsHubTab = progressionHubTab === 'advanced';
+  const showAiSuggestToolbar =
+    progressionHubTab === 'advanced' ||
+    (progressionHubTab === undefined && showStandardsAiBatch);
+
+  const standardsSorted = useMemo(
+    () => [...standards].sort((a, b) => a.displayLabel.localeCompare(b.displayLabel, 'ru')),
+    [standards],
+  );
+
+  const aliasCountByStandardId = useMemo(() => {
+    const m = new Map<number, number>();
+    for (const a of aliases) {
+      m.set(a.standardId, (m.get(a.standardId) ?? 0) + 1);
+    }
+    return m;
+  }, [aliases]);
+
+  /** Любая карточка журнала для эталона — чтобы открыть тот же лист настроек со списка эталонов. */
+  const representativeEntryByStandardId = useMemo(() => {
+    const m = new Map<number, StrengthLogEntry>();
+    for (const e of entries) {
+      const sid = resolveStandardIdForStrengthEntry(e, standards, aliases);
+      if (sid != null && !m.has(sid)) m.set(sid, e);
+    }
+    return m;
+  }, [entries, standards, aliases]);
 
   const exerciseNameById = (id: string) => {
     const fromEntry = entries.find((e) => strengthLogBaseGroupKey(e.exerciseId) === id)?.exerciseName;
@@ -978,37 +1112,144 @@ export default function StrengthLogScreen({
 
         {!loading && payload && (
           <div className="space-y-2 text-xs text-(--color_text_muted)">
-            {pinsForType.length > 0 ? (
-              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                <span className="text-(--color_text_muted)">
-                  Показаны только закреплённые упражнения.
-                </span>
-                <GhostButton
-                  variant="outline-accent"
-                  disabled={pinsBusy}
-                  onClick={() => applyPinsForType([])}
-                  className="w-full shrink-0 sm:w-auto whitespace-nowrap py-2"
-                >
-                  Снять закрепления
-                </GhostButton>
-              </div>
+            {isStandardsHubTab ? (
+              <>
+                <div className={`${cardClass} rounded-xl p-4 space-y-3`}>
+                  <div className="text-sm font-semibold text-white">Список эталонов</div>
+                  <p className="text-xs text-(--color_text_muted) leading-relaxed">
+                    Строка открывает то же окно, что и звёздочка ⭐ на карточке в журнале: название группы,
+                    синонимы и привязка к каталогу.
+                  </p>
+                  {standardsSorted.length === 0 ? (
+                    <p className="text-xs text-(--color_text_secondary) leading-relaxed">
+                      Пока нет эталонов. Перейдите во вкладку «Журнал», откройте упражнение с весом и
+                      нажмите ⭐.
+                    </p>
+                  ) : (
+                    <ul className="rounded-xl border border-(--color_border) divide-y divide-(--color_border)/60 overflow-hidden">
+                      {standardsSorted.map((s) => {
+                        const aliasN = aliasCountByStandardId.get(s.id) ?? 0;
+                        const rep = representativeEntryByStandardId.get(s.id);
+                        return (
+                          <li key={s.id}>
+                            <button
+                              type="button"
+                              disabled={!rep}
+                              onClick={() => rep && openStandardsFor(rep)}
+                              className="w-full flex items-center gap-3 px-3 py-3.5 text-left hover:bg-white/5 active:bg-white/10 transition-colors disabled:opacity-45 disabled:cursor-not-allowed"
+                            >
+                              <span className="flex-1 min-w-0">
+                                <span className="block text-sm font-medium text-white">{s.displayLabel}</span>
+                                <span className="block text-[11px] text-(--color_text_muted) mt-0.5">
+                                  {aliasN > 0 ? `${aliasN} доп. названий` : 'без доп. названий'}
+                                  {s.catalogExerciseId ? ' · каталог' : ''}
+                                  {!rep ? ' · нет карточки в журнале' : ''}
+                                </span>
+                              </span>
+                              {rep ? (
+                                <ChevronRightIcon
+                                  className="w-5 h-5 shrink-0 text-(--color_text_muted)"
+                                  aria-hidden
+                                />
+                              ) : null}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  {standardsSorted.length > 0 && unlinkedTotalCount === 0 && (
+                    <p className="text-[11px] text-(--color_text_muted) leading-snug">
+                      Все варианты из истории уже привязаны к эталонам — запрос ИИ к сопоставлению нечего
+                      предлагать.
+                    </p>
+                  )}
+                  {standardsSorted.length > 0 &&
+                    unlinkedTotalCount > 0 &&
+                    aiFeatureStatusReady &&
+                    !aiFeatureEnabled && (
+                      <p className="text-[11px] text-(--color_text_muted) leading-snug">
+                        Платное сопоставление через ИИ сейчас недоступно — связи можно добавить вручную со
+                        звёздочки на карточке в журнале.
+                      </p>
+                    )}
+                </div>
+                {showAiSuggestToolbar &&
+                  standards.length > 0 &&
+                  unlinkedTotalCount > 0 &&
+                  aiFeatureEnabled && (
+                    <div className="space-y-1.5">
+                      <GhostButton
+                        variant="outline-accent"
+                        disabled={
+                          pinsBusy || (balance !== null && balance < suggestLinksCost)
+                        }
+                        onClick={() => openAiSuggestSheet()}
+                        className="w-full py-2 rounded-xl"
+                      >
+                        ИИ: предложить связи с эталонами
+                      </GhostButton>
+                      <p className="text-[11px] text-white/30 leading-snug px-0.5">
+                        Стоимость: <span className="text-white/50">{suggestLinksCost}₽</span> — списывается
+                        после отправки
+                      </p>
+                      <p className="text-[11px] text-(--color_text_muted) leading-snug px-0.5">
+                        В один запрос для анализа уходит не более {aiSuggestCap} шт.
+                        {unlinkedTotalCount > aiSuggestCap
+                          ? ` Сейчас несвязанных ${unlinkedTotalCount} — в этот запрос попадут первые ${aiSuggestCap} по приоритету сервера (сначала кастомные и нестандартные id).`
+                          : ''}
+                      </p>
+                    </div>
+                  )}
+                <p className="text-[11px] text-(--color_text_muted) leading-relaxed px-0.5">
+                  Графики веса и закрепления — во вкладке «Журнал».
+                </p>
+              </>
             ) : (
               <>
-                <p>
-                  Сейчас отображаются все упражнения, где был указан вес. Закрепите частые — журнал
-                  станет короче.
-                </p>
-                {suggestedPins.length > 0 && (
-                  <GhostButton
-                    variant="accent-soft"
-                    disabled={pinsBusy}
-                    onClick={() => applyPinsForType(suggestedPins)}
-                    className="bg-(--color_primary)/20 border-(--color_primary_light)/30"
-                  >
-                    Закрепить топ‑{suggestedPins.length} по частоте
-                  </GhostButton>
+                {pinsForType.length > 0 ? (
+                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                    <span className="text-(--color_text_muted)">
+                      Показаны только закреплённые упражнения.
+                    </span>
+                    <GhostButton
+                      variant="outline-accent"
+                      disabled={pinsBusy}
+                      onClick={() => applyPinsForType([])}
+                      className="w-full shrink-0 sm:w-auto whitespace-nowrap py-2"
+                    >
+                      Снять закрепления
+                    </GhostButton>
+                  </div>
+                ) : (
+                  <>
+                    <p>
+                      Сейчас отображаются все упражнения, где был указан вес. Закрепите частые — журнал
+                      станет короче.
+                    </p>
+                    {suggestedPins.length > 0 && (
+                      <GhostButton
+                        variant="accent-soft"
+                        disabled={pinsBusy}
+                        onClick={() => applyPinsForType(suggestedPins)}
+                        className="bg-(--color_primary)/20 border-(--color_primary_light)/30"
+                      >
+                        Закрепить топ‑{suggestedPins.length} по частоте
+                      </GhostButton>
+                    )}
+                    {weightedExerciseOptions.length > 0 && (
+                      <GhostButton
+                        variant="solid"
+                        disabled={pinsBusy}
+                        onClick={() => setHistoryOpen(true)}
+                        className="w-full py-2.5 text-(--color_text_secondary) hover:text-white"
+                      >
+                        Выбрать из истории
+                      </GhostButton>
+                    )}
+                  </>
                 )}
-                {weightedExerciseOptions.length > 0 && (
+                {pinsForType.length > 0 && weightedExerciseOptions.length > 0 && (
                   <GhostButton
                     variant="solid"
                     disabled={pinsBusy}
@@ -1018,49 +1259,39 @@ export default function StrengthLogScreen({
                     Выбрать из истории
                   </GhostButton>
                 )}
+                {showAiSuggestToolbar &&
+                  standards.length > 0 &&
+                  unlinkedTotalCount > 0 &&
+                  aiFeatureEnabled && (
+                    <div className="space-y-1.5">
+                      <GhostButton
+                        variant="outline-accent"
+                        disabled={
+                          pinsBusy || (balance !== null && balance < suggestLinksCost)
+                        }
+                        onClick={() => openAiSuggestSheet()}
+                        className="w-full py-2 rounded-xl"
+                      >
+                        ИИ: предложить связи с эталонами
+                      </GhostButton>
+                      <p className="text-[11px] text-white/30 leading-snug px-0.5">
+                        Стоимость: <span className="text-white/50">{suggestLinksCost}₽</span> — списывается
+                        после отправки
+                      </p>
+                      <p className="text-[11px] text-(--color_text_muted) leading-snug px-0.5">
+                        В один запрос для анализа уходит не более {aiSuggestCap} шт.
+                        {unlinkedTotalCount > aiSuggestCap
+                          ? ` Сейчас несвязанных ${unlinkedTotalCount} — в этот запрос попадут первые ${aiSuggestCap} по приоритету сервера (сначала кастомные и нестандартные id).`
+                          : ''}
+                      </p>
+                    </div>
+                  )}
               </>
-            )}
-            {pinsForType.length > 0 && weightedExerciseOptions.length > 0 && (
-              <GhostButton
-                variant="solid"
-                disabled={pinsBusy}
-                onClick={() => setHistoryOpen(true)}
-                className="w-full py-2.5 text-(--color_text_secondary) hover:text-white"
-              >
-                Выбрать из истории
-              </GhostButton>
-            )}
-            {showStandardsAiBatch &&
-              standards.length > 0 &&
-              unlinkedTotalCount > 0 &&
-              aiFeatureEnabled && (
-              <div className="space-y-1.5">
-                <GhostButton
-                  variant="outline-accent"
-                  disabled={
-                    pinsBusy || (balance !== null && balance < suggestLinksCost)
-                  }
-                  onClick={() => openAiSuggestSheet()}
-                  className="w-full py-2 rounded-xl"
-                >
-                  ИИ: предложить связи с эталонами
-                </GhostButton>
-                <p className="text-[11px] text-white/30 leading-snug px-0.5">
-                  Стоимость: <span className="text-white/50">{suggestLinksCost}₽</span> — списывается
-                  после отправки
-                </p>
-                <p className="text-[11px] text-(--color_text_muted) leading-snug px-0.5">
-                  В один запрос для анализа уходит не более {aiSuggestCap} шт.
-                  {unlinkedTotalCount > aiSuggestCap
-                    ? ` Сейчас несвязанных ${unlinkedTotalCount} — в этот запрос попадут первые ${aiSuggestCap} по приоритету сервера (сначала кастомные и нестандартные id).`
-                    : ''}
-                </p>
-              </div>
             )}
           </div>
         )}
 
-        {!loading && payload && entries.length > 0 && (
+        {!isStandardsHubTab && !loading && payload && entries.length > 0 && (
           <div className="grid grid-cols-3 gap-1.5">
             {(['bodybuilding', 'crossfit', 'cardio'] as const).map((t) => (
               <button
@@ -1395,7 +1626,7 @@ export default function StrengthLogScreen({
           onSelect={onCatalogPickedForStandard}
         />
 
-        {entries.length > 4 && (
+        {!isStandardsHubTab && entries.length > 4 && (
           <input
             type="text"
             value={search}
@@ -1405,7 +1636,7 @@ export default function StrengthLogScreen({
           />
         )}
 
-        {filtered.length === 0 && !loading && (
+        {!isStandardsHubTab && filtered.length === 0 && !loading && (
           <div className="text-center py-16 text-(--color_text_muted) text-sm">
             {search.trim()
               ? 'Упражнение не найдено'
@@ -1415,23 +1646,28 @@ export default function StrengthLogScreen({
           </div>
         )}
 
-        <div className="space-y-3">
-          {filtered.map((entry, i) => (
-            <AnimatedBlock key={entry.exerciseId} delay={i * 0.03}>
-              <ExerciseCard
-                entry={entry}
-                linkedToStandard={resolveStandardIdForStrengthEntry(entry, standards, aliases) !== null}
-                pinnedOnly={pinsForType.length > 0}
-                pinsBusy={pinsBusy}
-                onPin={pinExercise}
-                onUnpin={unpinExercise}
-                onOpenStandards={openStandardsFor}
-              />
-            </AnimatedBlock>
-          ))}
-        </div>
+        {!isStandardsHubTab && (
+          <div className="space-y-3">
+            {filtered.map((entry, i) => (
+              <AnimatedBlock key={entry.exerciseId} delay={i * 0.03}>
+                <ExerciseCard
+                  entry={entry}
+                  linkedToStandard={resolveStandardIdForStrengthEntry(entry, standards, aliases) !== null}
+                  pinnedOnly={pinsForType.length > 0}
+                  exercisePinned={pinsForType.some(
+                    (pid) => strengthLogBaseGroupKey(pid) === strengthLogBaseGroupKey(entry.exerciseId),
+                  )}
+                  pinsBusy={pinsBusy}
+                  onPin={pinExercise}
+                  onUnpin={unpinExercise}
+                  onOpenStandards={openStandardsFor}
+                />
+              </AnimatedBlock>
+            ))}
+          </div>
+        )}
 
-        {!loading && pinsForType.length === 0 && suggestedPins.length > 0 && (
+        {!isStandardsHubTab && !loading && pinsForType.length === 0 && suggestedPins.length > 0 && (
           <div className={`${cardClass} rounded-xl p-3 text-xs text-(--color_text_muted)`}>
             <div className="font-medium text-white/90 mb-2">Часто встречаются</div>
             <ul className="space-y-1">

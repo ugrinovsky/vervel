@@ -208,7 +208,7 @@ export default class AthleteController {
 
   /**
    * GET /athlete/periodization
-   * ATL/CTL/TSB по модели PMC (Banister) для самого атлета.
+   * ATL/CTL/TSB (PMC) и ACWR по дневному TL для самого атлета.
    */
   async getMyPeriodization({ auth, response }: HttpContext) {
     const athlete = auth.user!

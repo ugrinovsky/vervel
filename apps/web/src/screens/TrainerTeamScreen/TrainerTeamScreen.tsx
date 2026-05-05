@@ -25,12 +25,19 @@ import {
   Bars3Icon,
 } from '@heroicons/react/24/outline'
 import SectionGroup from '@/components/ui/SectionGroup'
+import { useAuth } from '@/contexts/AuthContext'
+import { useTrainerTeamsFeatureRedirect } from '@/hooks/useTrainerTeamsFeatureRedirect'
 
 type Tab = 'athletes' | 'groups'
 type ViewMode = '2' | '3' | 'list'
 
 export default function TrainerTeamScreen() {
+  useTrainerTeamsFeatureRedirect()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const trainerWorkStyle = user?.clientPreferences?.trainerWorkStyle
+  const showGroupsTab = trainerWorkStyle !== 'individual'
+
   const [tab, setTab] = useState<Tab>('athletes')
   const [loading, setLoading] = useState(true)
   const [athletes, setAthletes] = useState<AthleteListItem[]>([])
@@ -67,6 +74,15 @@ export default function TrainerTeamScreen() {
   }
 
   useEffect(() => { loadData() }, [])
+
+  useEffect(() => {
+    if (trainerWorkStyle === 'groups') setTab('groups')
+    if (trainerWorkStyle === 'individual') setTab('athletes')
+  }, [trainerWorkStyle])
+
+  useEffect(() => {
+    if (!showGroupsTab && tab === 'groups') setTab('athletes')
+  }, [showGroupsTab, tab])
 
   const filteredAthletes = useMemo(() => {
     const q = search.toLowerCase()
@@ -156,22 +172,34 @@ export default function TrainerTeamScreen() {
             <ScreenHeader
               icon="🏋️"
               title="Команда"
-              description="Кто с вами в приложении: атлеты для персональных планов и чатов, группы — для совместных занятий и общего чата с участниками."
+              description={
+                showGroupsTab
+                  ? 'Кто с вами в приложении: атлеты для персональных планов и чатов, группы — для совместных занятий и общего чата с участниками.'
+                  : 'Список атлетов для персональной работы: планы, чаты и назначения. Экран упрощён под формат только 1 на 1; группы в кабинете при этом никуда не делись.'
+              }
               className="!mb-3"
             />
-            <ScreenHint>
-              <span className="text-white font-medium">Атлеты</span> — список людей, которых вы ведёте;{' '}
-              <span className="text-white font-medium">Группы</span> — несколько человек вместе и отдельный чат. Приглашения и переписки завязаны на этих списках.
-            </ScreenHint>
+            {showGroupsTab ? (
+              <ScreenHint>
+                <span className="text-white font-medium">Атлеты</span> — список людей, которых вы ведёте;{' '}
+                <span className="text-white font-medium">Группы</span> — несколько человек вместе и отдельный чат. Приглашения и переписки завязаны на этих списках.
+              </ScreenHint>
+            ) : (
+              <ScreenHint>
+                Секция групп на этом экране скрыта под ваш выбор формата. Если понадобятся группы — они остаются доступны в кабинете.
+              </ScreenHint>
+            )}
           </motion.div>
-          <Tabs
-            tabs={[
-              { id: 'athletes', label: 'Атлеты' },
-              { id: 'groups', label: 'Группы' },
-            ]}
-            active={tab}
-            onChange={setTab}
-          />
+          {showGroupsTab ? (
+            <Tabs
+              tabs={[
+                { id: 'athletes', label: 'Атлеты' },
+                { id: 'groups', label: 'Группы' },
+              ]}
+              active={tab}
+              onChange={setTab}
+            />
+          ) : null}
         </SectionGroup>
       </div>
 

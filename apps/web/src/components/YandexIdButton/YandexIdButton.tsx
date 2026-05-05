@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useId, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { publicApi } from '@/api/http/publicApi';
@@ -43,6 +43,7 @@ function loadScript(): Promise<void> {
 
 export default function YandexIdButton() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const suggestParentId = useId().replace(/:/g, '');
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -103,7 +104,13 @@ export default function YandexIdButton() {
   }, [handleToken]);
 
   useEffect(() => {
-    if (!containerRef.current || !YANDEX_CLIENT_ID) return;
+    if (!YANDEX_CLIENT_ID) return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    let cancelled = false;
+    const containerId = `ya-auth-suggest-${suggestParentId}`;
 
     // Listen for token from popup via BroadcastChannel
     const channel = new BroadcastChannel('ya_oauth');
@@ -112,15 +119,15 @@ export default function YandexIdButton() {
       if (token) handleToken(token);
     };
 
-    const container = containerRef.current;
-    const containerId = 'ya-auth-suggest-container';
     container.id = containerId;
 
     const origin = window.location.origin;
 
     loadScript()
       .then(() => {
-        if (!window.YaAuthSuggest) return;
+        if (cancelled || containerRef.current !== container) return undefined;
+        if (!document.getElementById(containerId)) return undefined;
+        if (!window.YaAuthSuggest) return undefined;
         return window.YaAuthSuggest.init(
           {
             client_id: YANDEX_CLIENT_ID,
@@ -136,24 +143,32 @@ export default function YandexIdButton() {
             buttonTheme: 'dark',
             buttonBorderRadius: '8',
             buttonIcon: 'ya',
-          }
+          },
         );
       })
-      .then((result) => result?.handler())
-      .catch((error) => {
-        if (error?.code === 'in_progress') return;
-        console.error('YaAuthSuggest error:', error);
-        if (error?.type !== 'not_authorized') {
-          toast.error('Ошибка авторизации через Яндекс');
+      .then((result) => {
+        if (cancelled || containerRef.current !== container) return;
+        if (!result) return;
+        if (!document.getElementById(containerId)) return;
+        return result.handler();
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'in_progress') {
+          return;
         }
+        console.error('YaAuthSuggest error:', error);
+        // Не показываем toast: сбой отрисовки виджета (гонка Strict Mode, DOM) ≠ ошибка входа пользователя.
+        // Реальные сбои обмена токена по-прежнему обрабатываются в handleToken.
       });
 
     return () => {
+      cancelled = true;
       channel.close();
       container.innerHTML = '';
       container.removeAttribute('id');
     };
-  }, [handleToken]);
+  }, [handleToken, suggestParentId]);
 
   if (!YANDEX_CLIENT_ID) return null;
 

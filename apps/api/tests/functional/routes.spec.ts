@@ -612,10 +612,17 @@ test.group('Athlete routes: защита', () => {
     response.assertStatus(200)
   })
 
-  test('GET /athlete/periodization возвращает ATL/CTL/TSB данные', async ({ client }) => {
+  test('GET /athlete/periodization возвращает ATL/CTL/TSB и ACWR', async ({ client, assert }) => {
     const user = await athleteUser()
     const response = await client.get('/athlete/periodization').loginAs(user)
     response.assertStatus(200)
+    response.assertBodyContains({ success: true })
+    const body = response.body() as {
+      data?: { acwr?: { current?: unknown; series?: unknown[] } }
+    }
+    assert.isObject(body.data?.acwr)
+    assert.isObject(body.data?.acwr?.current)
+    assert.isArray(body.data?.acwr?.series)
   })
 })
 

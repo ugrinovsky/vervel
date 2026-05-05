@@ -54,10 +54,7 @@ export default function SelectRoleScreen() {
 
       login(response.data.user);
       toast.success('Добро пожаловать в Vervel!');
-      const role = getRole();
-      if (role === 'athlete') navigate('/athlete-onboarding');
-      else if (role === 'trainer') navigate('/trainer-onboarding');
-      else navigate('/trainer-onboarding');
+      navigate('/onboarding');
     } catch {
       toast.error('Ошибка сохранения роли');
     } finally {

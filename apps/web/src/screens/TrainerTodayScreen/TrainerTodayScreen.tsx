@@ -18,6 +18,7 @@ import {
   getTrainerWorkStyleIntent,
 } from '@/util/trainerOnboarding';
 import { getCurrentHour } from '@/utils/date';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 
 function getGreeting(fullName: string | null | undefined) {
   const hour = getCurrentHour();
@@ -42,6 +43,7 @@ import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 export default function TrainerTodayScreen() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const flags = useFeatureFlags();
   const workStyle = user ? getTrainerWorkStyleIntent(user) : null;
   const [overview, setOverview] = useState<TodayOverview | null>(null);
   const [unreadCounts, setUnreadCounts] = useState<UnreadCounts | null>(null);
@@ -78,7 +80,11 @@ export default function TrainerTodayScreen() {
         <ScreenHeader
           icon="☀️"
           title="Сегодня"
-          description="Что происходит сегодня — запланированные тренировки, непрочитанные сообщения и активность атлетов"
+          description={
+            flags.teams
+              ? 'Что происходит сегодня — запланированные тренировки, непрочитанные сообщения и активность атлетов'
+              : 'Что происходит сегодня — запланированные тренировки и быстрый доступ к календарю'
+          }
         />
 
         <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
@@ -101,13 +107,19 @@ export default function TrainerTodayScreen() {
           {workStyle ? (
             <span className="block mb-2">{getTrainerTodayDashboardHint(workStyle)}</span>
           ) : null}
-          Дашборд тренера на текущий день. Красные бейджи — непрочитанные сообщения от атлетов и групп.{' '}
+          Дашборд тренера на текущий день.
+          {flags.teams ? (
+            <>
+              {' '}
+              Красные бейджи — непрочитанные сообщения от атлетов и групп.{' '}
+            </>
+          ) : null}
           <span className="text-white font-medium">Тренировки на сегодня</span> — все запланированные
           занятия; нажмите, чтобы перейти в Календарь.
         </ScreenHint>
 
-        {/* Unread messages banners */}
-        {unreadCounts && (
+        {/* Unread messages banners — только при включённых атлетах и группах */}
+        {flags.teams && unreadCounts && (
           <div className="space-y-3">
             {(() => {
               const groupsWithUnread = unreadCounts.groups.filter((g) => g.unread > 0);
@@ -161,16 +173,23 @@ export default function TrainerTodayScreen() {
           </div>
         )}
 
-        {/* Getting started guide — показываем пока нет атлетов */}
+        {/* Getting started guide — показываем пока нет атлетов (счётчик с бэка; при выключенных командах — другой лид) */}
         {overview && overview.stats.athleteCount === 0 && (
           <AnimatedBlock className="rounded-2xl p-5 bg-(--color_bg_card) border border-amber-500/20">
             <h3 className="text-base font-semibold text-white mb-1">🚀 С чего начать</h3>
             <p className="text-xs text-(--color_text_muted) mb-4">
-              Добавьте атлетов — и всё заработает: статистика, расписание, чаты, аналитика прогресса
+              {flags.teams ? (
+                'Добавьте атлетов — и всё заработает: статистика, расписание, чаты, аналитика прогресса'
+              ) : (
+                'Календарь и шаблоны — без списка атлетов в приложении. Включите «Атлеты и группы» в настройках, когда понадобится ростер и чаты.'
+              )}
             </p>
             <div className="space-y-3">
-              {getTrainerGettingStartedSteps(workStyle).map(({ step, title, desc, to, label }) => (
-                <div key={step} className="flex items-start gap-3">
+              {getTrainerGettingStartedSteps(workStyle, {
+                templates: flags.trainerTemplates,
+                teams: flags.teams,
+              }).map(({ step, title, desc, to, label }) => (
+                <div key={to} className="flex items-start gap-3">
                   <div className="w-7 h-7 rounded-full bg-(--color_primary_light)/30 text-(--color_primary) flex items-center justify-center text-sm font-bold shrink-0">
                     {step}
                   </div>
@@ -194,22 +213,28 @@ export default function TrainerTodayScreen() {
         {overview && (
           <>
             <SectionGroup title="Сводка">
-              <AnimatedBlock className="grid grid-cols-3 gap-3">
+              <AnimatedBlock
+                className={`grid gap-3 ${flags.teams ? 'grid-cols-3' : 'grid-cols-1'}`}
+              >
                 <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
                   <ClockIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
                   <div className="text-2xl font-bold text-white">{overview.stats.todayWorkoutsCount}</div>
                   <div className="text-xs text-(--color_text_muted) mt-1">Тренировок</div>
                 </div>
-                <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
-                  <UsersIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-white">{overview.stats.athleteCount}</div>
-                  <div className="text-xs text-(--color_text_muted) mt-1">Атлетов</div>
-                </div>
-                <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
-                  <UserGroupIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-white">{overview.stats.groupCount}</div>
-                  <div className="text-xs text-(--color_text_muted) mt-1">Групп</div>
-                </div>
+                {flags.teams ? (
+                  <>
+                    <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+                      <UsersIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
+                      <div className="text-2xl font-bold text-white">{overview.stats.athleteCount}</div>
+                      <div className="text-xs text-(--color_text_muted) mt-1">Атлетов</div>
+                    </div>
+                    <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+                      <UserGroupIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
+                      <div className="text-2xl font-bold text-white">{overview.stats.groupCount}</div>
+                      <div className="text-xs text-(--color_text_muted) mt-1">Групп</div>
+                    </div>
+                  </>
+                ) : null}
               </AnimatedBlock>
             </SectionGroup>
 
@@ -286,7 +311,12 @@ export default function TrainerTodayScreen() {
 
         <SectionGroup title="Ещё" showBreakAfter={false}>
           <AnimatedBlock delay={0.2}>
-            <ScreenLinks links={getTrainerQuickLinks(workStyle)} />
+            <ScreenLinks
+              links={getTrainerQuickLinks(workStyle, {
+                templates: flags.trainerTemplates,
+                teams: flags.teams,
+              })}
+            />
           </AnimatedBlock>
         </SectionGroup>
       </div>

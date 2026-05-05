@@ -459,11 +459,12 @@ export default class TrainerController {
 
   /**
    * GET /trainer/athletes/:athleteId/periodization
-   * Расчёт ATL/CTL/TSB по модели PMC (Banister).
+   * Расчёт ATL/CTL/TSB по модели PMC (Banister) и ACWR по дневному TL.
    * - TL  = (intensity×0.7 + min(volume/5000,1)×0.3) × 100
    * - ATL = 7-дн. EWMA  (усталость)
    * - CTL = 42-дн. EWMA (форма)
    * - TSB = CTL − ATL   (свежесть)
+   * - ACWR = сумма TL за 7 дней / (сумма за 28 дней / 4)
    */
   async getAthletePeriodization({ auth, params, response }: HttpContext) {
     const trainer = auth.user!

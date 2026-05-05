@@ -15,7 +15,7 @@ export default function ProgressionHubScreen() {
 
   return (
     <Screen className="progression-hub-screen">
-      <div className="p-4 w-full max-w-lg mx-auto">
+      <div className="p-4 w-full">
         <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
           <div className="flex items-center justify-between">
             <BackButton onClick={() => navigate(-1)} />
@@ -27,22 +27,22 @@ export default function ProgressionHubScreen() {
             description={
               hubTab === 'journal'
                 ? 'Журнал с весом: подходы, график и сводка. Закрепления и тип тренировки — ниже.'
-                : 'Связи упражнений с эталонами и пакетный запрос ИИ — когда нужно навести порядок в названиях.'
+                : 'Список эталонов — общие имена для разных названий одного упражнения. Строка открывает настройки; ИИ — если остались несвязанные названия.'
             }
           />
 
           <Tabs
             tabs={[
               { id: 'journal', label: 'Журнал' },
-              { id: 'advanced', label: 'Эталоны и ИИ' },
+              { id: 'advanced', label: 'Эталоны' },
             ]}
             active={hubTab}
             onChange={(id) => setHubTab(id)}
           />
         </SectionGroup>
 
-        <SectionGroup title={hubTab === 'journal' ? 'Журнал' : 'Эталоны и ИИ'} showBreakAfter={false}>
-          <StrengthLogScreen embedded showStandardsAiBatch={hubTab === 'advanced'} />
+        <SectionGroup title={hubTab === 'journal' ? 'Журнал' : 'Эталоны'} showBreakAfter={false}>
+          <StrengthLogScreen embedded progressionHubTab={hubTab} />
         </SectionGroup>
       </div>
     </Screen>

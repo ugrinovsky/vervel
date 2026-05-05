@@ -34,6 +34,7 @@ import { parseTrainerWorkoutDraft } from '@/util/localStorageWorkoutDraft';
 import { isRecord } from '@/utils/typeGuards';
 import { noPullRefreshProps } from '@/lib/noPullRefresh';
 import SectionGroup from '@/components/ui/SectionGroup';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 
 function isScheduledWorkoutDragPayload(v: unknown): v is ScheduledWorkout {
   if (!isRecord(v)) return false;
@@ -386,6 +387,44 @@ export default function TrainerCalendarScreen() {
   const navigate = useNavigate();
   const today = new Date();
   const { user } = useAuth();
+  const flags = useFeatureFlags();
+  const calendarMoreLinks = useMemo(() => {
+    const links: Array<{
+      emoji: string;
+      bg: string;
+      label: string;
+      sub: string;
+      to: string;
+    }> = [];
+    if (flags.teams) {
+      links.push(
+        {
+          emoji: '🏃',
+          bg: 'bg-emerald-500/20',
+          label: 'Атлеты',
+          sub: 'список атлетов',
+          to: '/trainer/athletes',
+        },
+        {
+          emoji: '👥',
+          bg: 'bg-blue-500/20',
+          label: 'Группы',
+          sub: 'список групп',
+          to: '/trainer/groups',
+        }
+      );
+    }
+    if (flags.trainerTemplates) {
+      links.push({
+        emoji: '📋',
+        bg: 'bg-violet-500/20',
+        label: 'Шаблоны',
+        sub: 'готовые тренировки',
+        to: '/trainer/templates',
+      });
+    }
+    return links;
+  }, [flags.trainerTemplates, flags.teams]);
   const introDraftKey = user ? `trainer_intro_draft_${user.id}` : undefined;
 
   const [day1TipDismissed, setDay1TipDismissed] = useState(() => {
@@ -887,14 +926,7 @@ export default function TrainerCalendarScreen() {
 
         <SectionGroup title="Ещё" className="shrink-0" showBreakAfter={false}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <ScreenLinks
-              className="pb-4"
-              links={[
-                { emoji: '🏃', bg: 'bg-emerald-500/20', label: 'Атлеты',   sub: 'список атлетов',    to: '/trainer/athletes' },
-                { emoji: '👥', bg: 'bg-blue-500/20',    label: 'Группы',   sub: 'список групп',      to: '/trainer/groups' },
-                { emoji: '📋', bg: 'bg-violet-500/20',  label: 'Шаблоны',  sub: 'готовые тренировки', to: '/trainer/templates' },
-              ]}
-            />
+            <ScreenLinks className="pb-4" links={calendarMoreLinks} />
           </motion.div>
         </SectionGroup>
       </div>

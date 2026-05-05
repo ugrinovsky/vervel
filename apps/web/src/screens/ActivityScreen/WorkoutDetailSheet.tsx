@@ -91,15 +91,118 @@ interface FullWorkout {
   rpe?: number;
 }
 
-function isFullWorkoutBody(v: unknown): v is FullWorkout {
-  if (!isRecord(v)) return false;
-  if (typeof v.id !== 'number') return false;
-  if (typeof v.workoutType !== 'string') return false;
-  if (!Array.isArray(v.exercises)) return false;
-  if (!isRecord(v.zonesLoad)) return false;
-  if (typeof v.totalIntensity !== 'number') return false;
-  if (typeof v.totalVolume !== 'number') return false;
-  return true;
+/** DECIMAL из PostgreSQL нередко сериализуется строкой — иначе карточка тренировки отбрасывается целиком. */
+function toFiniteNumber(v: unknown): number | null {
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string' && v.trim() !== '') {
+    const n = Number(v);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+}
+
+function normalizeZonesLoad(v: unknown): Record<string, number> {
+  if (v == null || !isRecord(v)) return {};
+  const out: Record<string, number> = {};
+  for (const [k, val] of Object.entries(v)) {
+    const n = toFiniteNumber(val);
+    out[k] = n === null ? 0 : n;
+  }
+  return out;
+}
+
+function normalizeWorkoutSetFromPayload(st: unknown): WorkoutSet | null {
+  if (!isRecord(st)) return null;
+  if (typeof st.id !== 'string') return null;
+  const out: WorkoutSet = { id: st.id };
+  const reps = toFiniteNumber(st.reps);
+  if (reps !== null) out.reps = reps;
+  const weight = toFiniteNumber(st.weight);
+  if (weight !== null) out.weight = weight;
+  const time = toFiniteNumber(st.time);
+  if (time !== null) out.time = time;
+  const distance = toFiniteNumber(st.distance);
+  if (distance !== null) out.distance = distance;
+  const calories = toFiniteNumber(st.calories);
+  if (calories !== null) out.calories = calories;
+  const rpe = toFiniteNumber(st.rpe);
+  if (rpe !== null) out.rpe = rpe;
+  return out;
+}
+
+function normalizeFullWorkoutExercises(raw: unknown): FullWorkout['exercises'] | null {
+  if (!Array.isArray(raw)) return null;
+  const out: FullWorkout['exercises'] = [];
+  for (const item of raw) {
+    if (!isRecord(item)) return null;
+    if (typeof item.exerciseId !== 'string') return null;
+    if (item.type !== 'strength' && item.type !== 'cardio' && item.type !== 'wod') return null;
+    const ex: FullWorkout['exercises'][number] = {
+      exerciseId: item.exerciseId,
+      type: item.type,
+    };
+    if (typeof item.name === 'string') ex.name = item.name;
+    if (Array.isArray(item.sets)) {
+      const sets: WorkoutSet[] = [];
+      for (const st of item.sets) {
+        const w = normalizeWorkoutSetFromPayload(st);
+        if (w === null) return null;
+        sets.push(w);
+      }
+      ex.sets = sets;
+    }
+    const rounds = toFiniteNumber(item.rounds);
+    if (rounds !== null) ex.rounds = rounds;
+    const duration = toFiniteNumber(item.duration);
+    if (duration !== null) ex.duration = duration;
+    const timeCap = toFiniteNumber(item.timeCap);
+    if (timeCap !== null) ex.timeCap = timeCap;
+    if (typeof item.wodType === 'string') ex.wodType = item.wodType;
+    const exDistance = toFiniteNumber(item.distance);
+    if (exDistance !== null) ex.distance = exDistance;
+    if (typeof item.blockId === 'string') ex.blockId = item.blockId;
+    if (Array.isArray(item.zones)) {
+      if (!item.zones.every((z): z is string => typeof z === 'string')) return null;
+      ex.zones = item.zones;
+    }
+    if (item.bodyweight === true) ex.bodyweight = true;
+    out.push(ex);
+  }
+  return out;
+}
+
+function normalizeFullWorkoutPayload(v: unknown): FullWorkout | null {
+  if (!isRecord(v)) return null;
+  const id =
+    typeof v.id === 'number'
+      ? v.id
+      : typeof v.id === 'string' && Number.isFinite(Number(v.id))
+        ? Number(v.id)
+        : NaN;
+  if (!Number.isFinite(id)) return null;
+  if (typeof v.workoutType !== 'string') return null;
+  if (!Array.isArray(v.exercises)) return null;
+  if (typeof v.date !== 'string') return null;
+  const exercises = normalizeFullWorkoutExercises(v.exercises);
+  if (exercises === null) return null;
+
+  let rpe: number | undefined;
+  if (v.rpe != null) {
+    const r = toFiniteNumber(v.rpe);
+    if (r !== null) rpe = r;
+  }
+
+  return {
+    id,
+    date: v.date,
+    workoutType: v.workoutType,
+    exercises,
+    zonesLoad: normalizeZonesLoad(v.zonesLoad),
+    totalIntensity: toFiniteNumber(v.totalIntensity) ?? 0,
+    totalVolume: toFiniteNumber(v.totalVolume) ?? 0,
+    notes: typeof v.notes === 'string' ? v.notes : undefined,
+    rpe,
+  };
 }
 
 function workoutTypeForApiPayload(w: string): CreateWorkoutDTO['workoutType'] {
@@ -431,24 +534,47 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
   const [parsePreview, setParsePreview] = useState<AiParseWorkoutNotesResponse | null>(null);
 
   useEffect(() => {
-    if (!workout?.id) return;
+    const workoutId = workout?.id;
+    if (workoutId == null) return;
     setFullWorkout(null);
     setIsEditing(false);
     setParsePreview(null);
     setNotesHidden(false);
     setLoading(true);
 
-    Promise.all([workoutsApi.get(workout.id), exercisesApi.list()])
-      .then(([res, list]) => {
-        const fw = res.data;
-        if (!isFullWorkoutBody(fw)) return;
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const res = await workoutsApi.get(workoutId);
+        if (cancelled) return;
+        const fw = normalizeFullWorkoutPayload(res.data);
+        if (!fw) {
+          setFullWorkout(null);
+          return;
+        }
         setFullWorkout(fw);
         setEditExercises(fw.exercises.map((ex) => ({ ...ex, sets: (ex.sets ?? []).map((s) => ({ ...s })) })));
         setRpe(fw.rpe ?? null);
-        setExerciseMap(new Map(list.map((e) => [e.id, { id: e.id, title: e.title }])));
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+
+        try {
+          const list = await exercisesApi.list();
+          if (!cancelled) {
+            setExerciseMap(new Map(list.map((e) => [e.id, { id: e.id, title: e.title }])));
+          }
+        } catch {
+          if (!cancelled) setExerciseMap(new Map());
+        }
+      } catch {
+        if (!cancelled) setFullWorkout(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [workout?.id]);
 
   useLayoutEffect(() => {
@@ -503,8 +629,8 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
     setSavingWeights(true);
     try {
       const res = await workoutsApi.update(fullWorkout.id, buildUpdatePayload({ exercises: editExercises }));
-      const updated = res.data;
-      if (!isFullWorkoutBody(updated)) {
+      const updated = normalizeFullWorkoutPayload(res.data);
+      if (!updated) {
         toast.error('Ошибка сохранения');
         return;
       }
@@ -599,8 +725,8 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
         parsePreview.workoutType,
         parsePreview.exercises
       );
-      const updated = res.data.data;
-      if (!isFullWorkoutBody(updated)) {
+      const updated = normalizeFullWorkoutPayload(res.data.data);
+      if (!updated) {
         toast.error('Ошибка сохранения');
         return;
       }
@@ -659,8 +785,8 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
     setSavingRpe(true);
     try {
       const res = await workoutsApi.update(fullWorkout.id, buildUpdatePayload({ rpe: newRpe }));
-      const updated = res.data;
-      if (!isFullWorkoutBody(updated)) {
+      const updated = normalizeFullWorkoutPayload(res.data);
+      if (!updated) {
         setRpe(fullWorkout.rpe ?? null);
         toast.error('Не удалось сохранить оценку');
         return;

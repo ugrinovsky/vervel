@@ -18,12 +18,16 @@ import AccentButton from '@/components/ui/AccentButton';
 import IconButton from '@/components/ui/IconButton';
 import { cardClass } from '@/components/ui/Card';
 import SectionGroup from '@/components/ui/SectionGroup';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
+import { useTrainerTeamsFeatureRedirect } from '@/hooks/useTrainerTeamsFeatureRedirect';
 
 type Tab = 'members' | 'chat';
 
 export default function TrainerGroupDetailScreen() {
+  useTrainerTeamsFeatureRedirect();
   const { groupId } = useParams<{ groupId: string }>();
   const navigate = useNavigate();
+  const flags = useFeatureFlags();
   const id = Number(groupId);
 
   const [activeTab, setActiveTab] = useState<Tab>('members');
@@ -126,13 +130,23 @@ export default function TrainerGroupDetailScreen() {
               <ChatBubbleLeftIcon className="w-4 h-4" />
               Чат
             </button>
-            <IconButton size="icon" onClick={() => setShowCreateSheet(true)} title="Создать тренировку">
+            <IconButton
+              size="icon"
+              onClick={() => setShowCreateSheet(true)}
+              title="Создать тренировку"
+            >
               <PlusIcon className="w-4 h-4" />
             </IconButton>
-            <IconButton size="icon" onClick={() => navigate(`/groups/${id}/leaderboard`)} title="Лидерборд">
-              <TrophyIcon className="w-4 h-4" />
-            </IconButton>
-            <CallButton groupId={id} />
+            {flags.leaderboard && (
+              <IconButton
+                size="icon"
+                onClick={() => navigate(`/groups/${id}/leaderboard`)}
+                title="Лидерборд"
+              >
+                <TrophyIcon className="w-4 h-4" />
+              </IconButton>
+            )}
+            {flags.videoCalls && <CallButton groupId={id} />}
           </div>
         </SectionGroup>
 
@@ -143,76 +157,78 @@ export default function TrainerGroupDetailScreen() {
               animate={{ opacity: 1, y: 0 }}
               className={`${cardClass} rounded-2xl p-5`}
             >
-            {availableAthletes.length > 0 && (
-              <div className="flex justify-end mb-4">
-                <AccentButton size="sm" onClick={() => setShowAddPicker(!showAddPicker)}>
-                  <PlusIcon className="w-4 h-4" />
-                  Добавить
-                </AccentButton>
-              </div>
-            )}
+              {availableAthletes.length > 0 && (
+                <div className="flex justify-end mb-4">
+                  <AccentButton size="sm" onClick={() => setShowAddPicker(!showAddPicker)}>
+                    <PlusIcon className="w-4 h-4" />
+                    Добавить
+                  </AccentButton>
+                </div>
+              )}
 
-            {/* Add picker */}
-            {showAddPicker && (
-              <div className="mb-4 space-y-1">
-                <p className="text-xs text-(--color_text_muted) mb-2">
-                  Выберите атлета для добавления:
-                </p>
-                {availableAthletes.map((a) => (
-                  <button
-                    key={a.id}
-                    onClick={() => handleAddToGroup(a.id)}
-                    className="w-full flex items-center gap-3 p-2.5 rounded-lg bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors text-left"
-                  >
-                    <span className="text-sm text-white">{a.fullName || a.email}</span>
-                    <span className="text-xs text-(--color_text_muted)">{a.email}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Мини-аватары нагрузки */}
-            {athletes.length > 0 && (
-              <div className="mb-4 p-3 bg-(--color_bg_card_hover) rounded-xl">
-                <p className="text-[10px] text-(--color_text_muted) mb-2 uppercase tracking-wider">
-                  Нагрузка зон мышц
-                </p>
-                <AthleteAvatarsRow athletes={athletes} />
-              </div>
-            )}
-
-            {athletes.length === 0 ? (
-              <p className="text-sm text-(--color_text_muted) text-center py-4">
-                В группе пока нет атлетов
-              </p>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {athletes.map((athlete) => (
-                  <ConfirmDeleteWrapper
-                    key={athlete.id}
-                    onConfirm={() => handleRemoveFromGroup(athlete.id)}
-                    overlayLayout="column"
-                    trigger={<ConfirmDeleteWrapper.Trigger className="absolute top-2 right-2 z-[1]" />}
-                    className="bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors cursor-pointer"
-                  >
-                    <div
-                      className="flex flex-col items-center gap-1.5 p-3"
-                      onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}
+              {/* Add picker */}
+              {showAddPicker && (
+                <div className="mb-4 space-y-1">
+                  <p className="text-xs text-(--color_text_muted) mb-2">
+                    Выберите атлета для добавления:
+                  </p>
+                  {availableAthletes.map((a) => (
+                    <button
+                      key={a.id}
+                      onClick={() => handleAddToGroup(a.id)}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-lg bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors text-left"
                     >
-                      <InlineAthleteAvatar athleteId={athlete.id} size="md" />
-                      <div className="text-center min-w-0 w-full">
-                        <div className="text-xs font-medium text-white truncate">
-                          {athlete.fullName || 'Без имени'}
-                        </div>
-                        <div className="text-[10px] text-(--color_text_muted) truncate">
-                          {athlete.email}
+                      <span className="text-sm text-white">{a.fullName || a.email}</span>
+                      <span className="text-xs text-(--color_text_muted)">{a.email}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Мини-аватары нагрузки */}
+              {athletes.length > 0 && (
+                <div className="mb-4 p-3 bg-(--color_bg_card_hover) rounded-xl">
+                  <p className="text-[10px] text-(--color_text_muted) mb-2 uppercase tracking-wider">
+                    Нагрузка зон мышц
+                  </p>
+                  <AthleteAvatarsRow athletes={athletes} />
+                </div>
+              )}
+
+              {athletes.length === 0 ? (
+                <p className="text-sm text-(--color_text_muted) text-center py-4">
+                  В группе пока нет атлетов
+                </p>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {athletes.map((athlete) => (
+                    <ConfirmDeleteWrapper
+                      key={athlete.id}
+                      onConfirm={() => handleRemoveFromGroup(athlete.id)}
+                      overlayLayout="column"
+                      trigger={
+                        <ConfirmDeleteWrapper.Trigger className="absolute top-2 right-2 z-[1]" />
+                      }
+                      className="bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors cursor-pointer"
+                    >
+                      <div
+                        className="flex flex-col items-center gap-1.5 p-3"
+                        onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}
+                      >
+                        <InlineAthleteAvatar athleteId={athlete.id} size="md" />
+                        <div className="text-center min-w-0 w-full">
+                          <div className="text-xs font-medium text-white truncate">
+                            {athlete.fullName || 'Без имени'}
+                          </div>
+                          <div className="text-[10px] text-(--color_text_muted) truncate">
+                            {athlete.email}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </ConfirmDeleteWrapper>
-                ))}
-              </div>
-            )}
+                    </ConfirmDeleteWrapper>
+                  ))}
+                </div>
+              )}
             </motion.div>
           </SectionGroup>
         )}
@@ -231,7 +247,6 @@ export default function TrainerGroupDetailScreen() {
             onCancel={() => setShowCreateSheet(false)}
           />
         </BottomSheet>
-
       </div>
     </Screen>
   );

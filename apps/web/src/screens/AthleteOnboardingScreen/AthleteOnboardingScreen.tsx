@@ -21,6 +21,9 @@ import type { WorkoutFormData } from '@/components/WorkoutFormBase/WorkoutFormBa
 import OnboardingPwaPushSection from '@/components/OnboardingPwaPushSection/OnboardingPwaPushSection';
 import { profileApi } from '@/api/profile';
 import { parseStoredAuthUserJson } from '@/util/parseStoredAuthUser';
+import { workoutTypeForAthletePrimaryGoal } from '@/util/athletePrimaryGoalWorkoutType';
+import { DEFAULT_WORKOUT_TYPE } from '@/constants/workoutTypes';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 
 type Step = 'context' | 'coach_connect' | 'workout' | 'done';
 
@@ -48,6 +51,7 @@ export default function AthleteOnboardingScreen(): JSX.Element {
   const navigate = useNavigate();
   const { user, updateUser } = useAuth();
   const { activeMode } = useActiveMode();
+  const { teams } = useFeatureFlags();
   const [step, setStep] = useState<Step>('context');
   const [coachContext, setCoachContext] = useState<'solo' | 'with_coach' | null>(null);
   /** workout: сначала способ ввода, потом форма */
@@ -63,6 +67,11 @@ export default function AthleteOnboardingScreen(): JSX.Element {
 
   const showCoachConnect = coachContext === 'with_coach';
   const { current: progress, total: totalSteps } = progressForStep(step, showCoachConnect);
+  const athletePrimaryGoal = user?.clientPreferences?.athletePrimaryGoal;
+  const legacyOnboardingWorkoutInitialType =
+    athletePrimaryGoal && athletePrimaryGoal !== 'general'
+      ? workoutTypeForAthletePrimaryGoal(athletePrimaryGoal)
+      : DEFAULT_WORKOUT_TYPE;
 
   const handleSkip = () => {
     if (!user) return;
@@ -244,16 +253,25 @@ export default function AthleteOnboardingScreen(): JSX.Element {
                     <span className="text-white/90 font-medium">Ссылка</span> — тренер пришлёт приглашение,
                     вы откроете и примете.
                   </li>
-                  <li>
-                    <span className="text-white/90 font-medium">QR</span> — покажите код из{' '}
-                    <span className="text-white/90">Профиля</span>, тренер отсканирует при добавлении атлета.
-                  </li>
+                  {teams && (
+                    <li>
+                      <span className="text-white/90 font-medium">QR</span> — покажите код из{' '}
+                      <span className="text-white/90">Профиля</span>, тренер отсканирует при добавлении атлета.
+                    </li>
+                  )}
                 </ul>
-                <p className="text-xs border-t border-white/10 pt-3">
-                  После связи тренер и чаты появятся в{' '}
-                  <span className="text-white font-medium">«Команда»</span>. Подробности снова покажем там,
-                  если вы ещё не в команде.
-                </p>
+                {teams ? (
+                  <p className="text-xs border-t border-white/10 pt-3">
+                    После связи тренер и чаты появятся в{' '}
+                    <span className="text-white font-medium">«Команда»</span>. Подробности снова покажем там,
+                    если вы ещё не в команде.
+                  </p>
+                ) : (
+                  <p className="text-xs border-t border-white/10 pt-3">
+                    Передайте тренеру email — дальнейшие шаги по договорённости. Раздел «Команда» и QR в
+                    профиле можно включить в настройках, если понадобятся.
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex gap-2 shrink-0 pt-2">
@@ -357,6 +375,8 @@ export default function AthleteOnboardingScreen(): JSX.Element {
             <div className="min-w-0 w-full">
               <WorkoutFormBase
                 lightOnboarding
+                athletePrimaryGoal={athletePrimaryGoal}
+                initialType={legacyOnboardingWorkoutInitialType}
                 hideAiAssist={workoutInputMode === 'manual'}
                 notesLabel="Заметки (по желанию)"
                 notesPlaceholder="Как прошла сессия…"
