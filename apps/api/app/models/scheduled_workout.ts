@@ -6,6 +6,7 @@ import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
 import WorkoutTemplate from './workout_template.js'
 import type { ExerciseData } from './workout_template.js'
+import type { ScheduledWorkoutJsonType } from '#utils/scheduled_workout_types'
 
 export type WorkoutStatus = 'scheduled' | 'completed' | 'cancelled'
 
@@ -16,7 +17,7 @@ export interface AssignedTo {
 }
 
 export interface WorkoutData {
-  type: 'crossfit' | 'bodybuilding' | 'cardio'
+  type: ScheduledWorkoutJsonType
   exercises: ExerciseData[]
   duration?: number
   notes?: string

@@ -6,6 +6,8 @@ export const WORKOUT_TYPE_CONFIG: Record<string, string> = {
   crossfit:     'Кроссфит',
   bodybuilding: 'Силовая',
   cardio:       'Кардио',
+  intro:        'Вводная',
+  rest_day:     'Выходной',
 };
 
 // ── CrossFit WOD types ───────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
@@ -27,10 +27,21 @@ function getGreeting(fullName: string | null | undefined) {
   return firstName ? `${base}, ${firstName}` : base;
 }
 
-function getTrainerSubtitle(todayCount: number) {
+function getTrainerSubtitle(todayCount: number, hasRestDayToday: boolean) {
+  if (hasRestDayToday && todayCount === 0) {
+    return 'Сегодня у вас выходной в календаре — отдыхайте.';
+  }
   if (todayCount === 0) return 'Тренировок сегодня нет — можно выдохнуть.';
   if (todayCount === 1) return '1 тренировка запланирована на сегодня.';
   return `${todayCount} тренировки запланированы на сегодня.`;
+}
+
+function getTrainerTodayHeroEmoji(todayCount: number, hasRestDayToday: boolean) {
+  if (hasRestDayToday && todayCount === 0) return '🛋️';
+  const hour = getCurrentHour();
+  if (hour < 12) return '☀️';
+  if (hour < 18) return '🌤️';
+  return '🌙';
 }
 import {
   ClockIcon,
@@ -74,6 +85,20 @@ export default function TrainerTodayScreen() {
     return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const todaySessionWorkouts = useMemo(
+    () => overview?.todayWorkouts.filter((w) => w.workoutData.type !== 'rest_day') ?? [],
+    [overview]
+  );
+
+  /** Выходной: флаг с API или запись rest_day в ответе (на случай рассинхрона счётчиков). */
+  const hasRestDayToday = useMemo(() => {
+    if (!overview) return false;
+    if (overview.stats.hasRestDayToday === true) return true;
+    return overview.todayWorkouts.some((w) => w.workoutData.type === 'rest_day');
+  }, [overview]);
+
+  const todaySessionCount = todaySessionWorkouts.length;
+
   return (
     <Screen loading={loading} className="trainer-today-screen">
       <div className="p-4 w-full mx-auto">
@@ -92,12 +117,14 @@ export default function TrainerTodayScreen() {
         >
           <div className="flex items-center gap-3">
             <div className="text-2xl">
-              {getCurrentHour() < 12 ? '☀️' : getCurrentHour() < 18 ? '🌤️' : '🌙'}
+              {overview
+                ? getTrainerTodayHeroEmoji(todaySessionCount, hasRestDayToday)
+                : getTrainerTodayHeroEmoji(0, false)}
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-base font-bold text-(--color_text_primary)">{getGreeting(user?.fullName)}</div>
               <div className="text-xs text-(--color_text_secondary) mt-0.5 min-h-[1rem]">
-                {overview ? getTrainerSubtitle(overview.stats.todayWorkoutsCount) : ''}
+                {overview ? getTrainerSubtitle(todaySessionCount, hasRestDayToday) : ''}
               </div>
             </div>
           </div>
@@ -116,6 +143,13 @@ export default function TrainerTodayScreen() {
           ) : null}
           <span className="text-white font-medium">Тренировки на сегодня</span> — все запланированные
           занятия; нажмите, чтобы перейти в Календарь.
+          {flags.teams ? (
+            <>
+              {' '}
+              В блоке <span className="text-white font-medium">Сводка</span> плитки ведут в календарь,
+              список атлетов и список групп.
+            </>
+          ) : null}
         </ScreenHint>
 
         {/* Unread messages banners — только при включённых атлетах и группах */}
@@ -216,23 +250,38 @@ export default function TrainerTodayScreen() {
               <AnimatedBlock
                 className={`grid gap-3 ${flags.teams ? 'grid-cols-3' : 'grid-cols-1'}`}
               >
-                <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+                <button
+                  type="button"
+                  aria-label="Открыть календарь тренера"
+                  onClick={() => navigate('/trainer/calendar')}
+                  className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center hover:border-(--color_primary_light)/50 hover:bg-(--color_bg_card_hover) transition-colors"
+                >
                   <ClockIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-white">{overview.stats.todayWorkoutsCount}</div>
+                  <div className="text-2xl font-bold text-white">{todaySessionCount}</div>
                   <div className="text-xs text-(--color_text_muted) mt-1">Тренировок</div>
-                </div>
+                </button>
                 {flags.teams ? (
                   <>
-                    <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+                    <button
+                      type="button"
+                      aria-label="Список атлетов"
+                      onClick={() => navigate('/trainer/athletes')}
+                      className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center hover:border-(--color_primary_light)/50 hover:bg-(--color_bg_card_hover) transition-colors"
+                    >
                       <UsersIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
                       <div className="text-2xl font-bold text-white">{overview.stats.athleteCount}</div>
                       <div className="text-xs text-(--color_text_muted) mt-1">Атлетов</div>
-                    </div>
-                    <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Список групп"
+                      onClick={() => navigate('/trainer/groups')}
+                      className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center hover:border-(--color_primary_light)/50 hover:bg-(--color_bg_card_hover) transition-colors"
+                    >
                       <UserGroupIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
                       <div className="text-2xl font-bold text-white">{overview.stats.groupCount}</div>
                       <div className="text-xs text-(--color_text_muted) mt-1">Групп</div>
-                    </div>
+                    </button>
                   </>
                 ) : null}
               </AnimatedBlock>
@@ -243,16 +292,20 @@ export default function TrainerTodayScreen() {
                 delay={0.1}
                 className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
               >
-                {overview.todayWorkouts.length === 0 ? (
+                {todaySessionWorkouts.length === 0 ? (
                   <div className="text-center py-8">
-                    <div className="text-4xl mb-2">🎉</div>
+                    <div className="text-4xl mb-2">
+                      {hasRestDayToday ? '🛋️' : '🎉'}
+                    </div>
                     <p className="text-sm text-(--color_text_muted)">
-                      Сегодня нет запланированных тренировок
+                      {hasRestDayToday
+                        ? 'Выходной в календаре — других занятий на сегодня нет.'
+                        : 'Сегодня нет запланированных тренировок'}
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {overview.todayWorkouts.map((workout) => (
+                    {todaySessionWorkouts.map((workout) => (
                       <button
                         key={workout.id}
                         onClick={() => navigate('/trainer/calendar')}

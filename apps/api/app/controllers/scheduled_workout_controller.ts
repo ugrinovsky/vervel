@@ -1,10 +1,12 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
 import ScheduledWorkout from '#models/scheduled_workout'
+import { isScheduledRestDay } from '#utils/scheduled_workout_entry'
 import Workout from '#models/workout'
 import { JobQueueService } from '#services/JobQueueService'
-import type { AssignedToItem, ScheduledWorkoutData } from '#services/ScheduledWorkoutFanoutService'
+import type { AssignedToItem } from '#services/ScheduledWorkoutFanoutService'
 import { parseDateRange } from '#utils/date'
+import { isScheduledWorkoutCalendarPayload } from '#utils/scheduled_workout_types'
 import { isRecord } from '#utils/type_guards'
 
 function isAssignedToItem(v: unknown): v is AssignedToItem {
@@ -21,13 +23,6 @@ function isAssignedToItem(v: unknown): v is AssignedToItem {
 function parseAssignedTo(v: unknown): AssignedToItem[] {
   if (!Array.isArray(v)) return []
   return v.filter(isAssignedToItem)
-}
-
-function isScheduledWorkoutData(v: unknown): v is ScheduledWorkoutData {
-  if (!isRecord(v)) return false
-  if (v.type !== 'crossfit' && v.type !== 'bodybuilding' && v.type !== 'cardio') return false
-  if (!Array.isArray(v.exercises)) return false
-  return true
 }
 
 export default class ScheduledWorkoutController {
@@ -76,9 +71,11 @@ export default class ScheduledWorkoutController {
       .where('status', 'scheduled')
       .orderBy('scheduledDate', 'asc')
 
+    const sessions = workouts.filter((w) => !isScheduledRestDay(w))
+
     return response.ok({
       success: true,
-      data: workouts.map((w) => ({
+      data: sessions.map((w) => ({
         id: w.id,
         scheduledDate: w.scheduledDate,
         workoutData: w.workoutData,
@@ -108,13 +105,25 @@ export default class ScheduledWorkoutController {
         message: 'scheduledDate и workoutData обязательны',
       })
     }
-    if (!isScheduledWorkoutData(workoutData)) {
+    if (!isScheduledWorkoutCalendarPayload(workoutData)) {
       return response.badRequest({ message: 'Некорректный workoutData' })
     }
 
     // Client sends wall-clock local datetime without timezone suffix (e.g. "2026-04-07T15:00:00").
     // Parse it as UTC to preserve the same wall-clock time end-to-end.
     const parsedDate = DateTime.fromISO(scheduledDate, { zone: 'utc' })
+
+    if (workoutData.type === 'rest_day') {
+      const dayStart = parsedDate.startOf('day')
+      const dayEnd = dayStart.plus({ days: 1 })
+      const sameDay = await ScheduledWorkout.query()
+        .where('trainerId', trainer.id)
+        .whereBetween('scheduledDate', [dayStart.toJSDate(), dayEnd.toJSDate()])
+        .where('status', 'scheduled')
+      for (const row of sameDay) {
+        if (isScheduledRestDay(row)) await row.delete()
+      }
+    }
 
     const workout = await ScheduledWorkout.create({
       trainerId: trainer.id,
@@ -177,7 +186,7 @@ export default class ScheduledWorkoutController {
       workout.scheduledDate = DateTime.fromISO(scheduledDate, { zone: 'utc' })
     }
     if (workoutData) {
-      if (!isScheduledWorkoutData(workoutData)) {
+      if (!isScheduledWorkoutCalendarPayload(workoutData)) {
         return response.badRequest({ message: 'Некорректный workoutData' })
       }
       workout.workoutData = workoutData

@@ -10,6 +10,7 @@ import Workout from '#models/workout'
 import TrainerAthlete from '#models/trainer_athlete'
 import TrainerGroup from '#models/trainer_group'
 import ScheduledWorkout from '#models/scheduled_workout'
+import { isScheduledRestDay } from '#utils/scheduled_workout_entry'
 import { WorkoutCalculator } from '#services/WorkoutCalculator'
 import {
   createGroupValidator,
@@ -62,12 +63,15 @@ export default class TrainerController {
     const today = DateTime.now().startOf('day')
     const tomorrow = today.plus({ days: 1 })
 
-    // Today's scheduled workouts
-    const todayWorkouts = await ScheduledWorkout.query()
+    // Today's scheduled items (sessions + rest_day marker in calendar)
+    const todayItems = await ScheduledWorkout.query()
       .where('trainerId', trainer.id)
       .whereBetween('scheduledDate', [today.toJSDate(), tomorrow.toJSDate()])
       .where('status', 'scheduled')
       .orderBy('scheduledDate', 'asc')
+
+    const hasRestDayToday = todayItems.some((w) => isScheduledRestDay(w))
+    const todayWorkouts = todayItems.filter((w) => !isScheduledRestDay(w))
 
     // Total stats
     const athleteCount = await TrainerAthlete.query()
@@ -91,6 +95,7 @@ export default class TrainerController {
           athleteCount: Number(athleteCount[0].$extras.total),
           groupCount: Number(groupCount[0].$extras.total),
           todayWorkoutsCount: todayWorkouts.length,
+          hasRestDayToday,
         },
       },
     })

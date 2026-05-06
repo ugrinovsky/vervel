@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { format, startOfMonth, isSameDay, isToday, getDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CalendarDaysIcon, ScaleIcon, StarIcon } from '@heroicons/react/24/outline';
+import { CalendarDaysIcon, ScaleIcon, StarIcon, MoonIcon } from '@heroicons/react/24/outline';
 
 export type LoadType = 'none' | 'low' | 'medium' | 'high';
 
@@ -22,6 +22,7 @@ export interface DayData {
 export interface TrainerDayData {
   date: Date;
   count: number;
+  isRestDay?: boolean;
 }
 
 type BaseProps = {
@@ -67,13 +68,7 @@ function countToLoad(count: number): LoadType {
   return 'high';
 }
 
-function StrikethroughMiniIcon({
-  kind,
-  title,
-}: {
-  kind: 'weight' | 'rpe';
-  title: string;
-}) {
+function StrikethroughMiniIcon({ kind, title }: { kind: 'weight' | 'rpe'; title: string }) {
   const Icon = kind === 'weight' ? ScaleIcon : StarIcon;
   const color = kind === 'weight' ? 'text-amber-200/90' : 'text-sky-200/90';
   return (
@@ -84,6 +79,69 @@ function StrikethroughMiniIcon({
         aria-hidden
       />
     </span>
+  );
+}
+
+function TrainerDayCell({
+  day,
+  isActive,
+  onSelect,
+}: {
+  day: TrainerDayData;
+  isActive: boolean;
+  onSelect: () => void;
+}) {
+  const isCurrentDay = isToday(day.date);
+  const isRest = day.isRestDay === true;
+  const load = isRest ? 'none' : countToLoad(day.count);
+  const hasWorkouts = !isRest && day.count > 0;
+
+  const ringClass = isActive
+    ? isRest
+      ? 'ring-2 ring-slate-400 ring-offset-2 ring-offset-gray-900 scale-105'
+      : 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-gray-900 scale-105'
+    : [
+        'hover:opacity-90 hover:scale-105',
+        isCurrentDay ? 'ring-1 ring-white/40' : '',
+        !hasWorkouts && !isRest ? 'hover:bg-(--color_bg_card_hover)' : '',
+      ].join(' ');
+
+  const bgClass = isRest ? 'bg-slate-700/60 ring-1 ring-inset ring-slate-500/40' : loadColors[load];
+  const title = `${format(day.date, 'd MMMM yyyy', { locale: ru })}${isRest ? ' — выходной' : day.count > 0 ? ` — ${day.count} тренировок` : ''}`;
+
+  return (
+    <button
+      onClick={onSelect}
+      className={`relative h-12 rounded-lg transition-all duration-200 flex flex-col items-center justify-center gap-0.5 ${bgClass} ${ringClass}`}
+      title={title}
+    >
+      {isRest ? (
+        <>
+          <MoonIcon className="w-3.5 h-3.5 text-slate-400" />
+          <span className="text-[10px] leading-none text-slate-500 font-semibold">
+            {format(day.date, 'd')}
+          </span>
+        </>
+      ) : (
+        <>
+          <span
+            className={`text-sm font-bold leading-none ${hasWorkouts ? 'text-white' : 'text-(--color_text_muted)'} ${isCurrentDay ? 'text-emerald-300!' : ''}`}
+          >
+            {format(day.date, 'd')}
+          </span>
+          {hasWorkouts && (
+            <span className="text-[10px] leading-none text-white/80 font-semibold">
+              {day.count}
+            </span>
+          )}
+        </>
+      )}
+      {isCurrentDay && (
+        <div
+          className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${isRest ? 'bg-slate-400' : 'bg-emerald-400'}`}
+        />
+      )}
+    </button>
   );
 }
 
@@ -176,37 +234,14 @@ export default function Calendar(props: CalendarProps) {
           ))}
 
           {props.mode === 'count'
-            ? props.days.map((day, i) => {
-                const isActive = selectedDate && isSameDay(day.date, selectedDate);
-                const isCurrentDay = isToday(day.date);
-                const load = countToLoad(day.count);
-                const hasWorkouts = day.count > 0;
-                return (
-                  <button
-                    key={i}
-                    onClick={() => props.onSelect(day)}
-                    className={`
-                      relative h-12 rounded-lg transition-all duration-200
-                      flex flex-col items-center justify-center gap-0.5
-                      ${loadColors[load]}
-                      ${isActive ? 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-gray-900 scale-105' : 'hover:opacity-90 hover:scale-105'}
-                      ${isCurrentDay && !isActive ? 'ring-1 ring-white/40' : ''}
-                      ${!hasWorkouts ? 'hover:bg-(--color_bg_card_hover)' : ''}
-                    `}
-                    title={`${format(day.date, 'd MMMM yyyy', { locale: ru })}${day.count > 0 ? ` — ${day.count} тренировок` : ''}`}
-                  >
-                    <span className={`text-sm font-bold leading-none ${hasWorkouts ? 'text-white' : 'text-(--color_text_muted)'} ${isCurrentDay ? '!text-emerald-300' : ''}`}>
-                      {format(day.date, 'd')}
-                    </span>
-                    {hasWorkouts && (
-                      <span className="text-[10px] leading-none text-white/80 font-semibold">{day.count}</span>
-                    )}
-                    {isCurrentDay && (
-                      <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full" />
-                    )}
-                  </button>
-                );
-              })
+            ? props.days.map((day, i) => (
+                <TrainerDayCell
+                  key={i}
+                  day={day}
+                  isActive={Boolean(selectedDate && isSameDay(day.date, selectedDate))}
+                  onSelect={() => props.onSelect(day)}
+                />
+              ))
             : props.days.map((day, i) => {
                 const isActive = selectedDate && isSameDay(day.date, selectedDate);
                 const isCurrentDay = isToday(day.date);
@@ -255,15 +290,20 @@ export default function Calendar(props: CalendarProps) {
                       <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full" />
                     )}
                     {day.fromTrainer && !hideTrainer && (
-                      <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-violet-400 rounded-full border border-gray-900" title="Назначено тренером" />
+                      <div
+                        className="absolute -bottom-1 -right-1 w-2 h-2 bg-violet-400 rounded-full border border-gray-900"
+                        title="Назначено тренером"
+                      />
                     )}
                     {day.hasDraft && (
-                      <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-amber-400 rounded-full border border-gray-900" title="Есть черновик" />
+                      <div
+                        className="absolute -bottom-1 -left-1 w-2 h-2 bg-amber-400 rounded-full border border-gray-900"
+                        title="Есть черновик"
+                      />
                     )}
                   </button>
                 );
-              })
-          }
+              })}
         </motion.div>
       </AnimatePresence>
 
@@ -276,9 +316,15 @@ export default function Calendar(props: CalendarProps) {
               {(['low', 'medium', 'high'] as const).map((load, i) => (
                 <div key={load} className="flex items-center gap-2">
                   <div className={`w-3 h-3 rounded ${loadColors[load]}`} />
-                  <span className="text-xs text-(--color_text_secondary)">{['1', '2', '3+'][i]}</span>
+                  <span className="text-xs text-(--color_text_secondary)">
+                    {['1', '2', '3+'][i]}
+                  </span>
                 </div>
               ))}
+              <div className="flex items-center gap-2">
+                <MoonIcon className="w-3 h-3 text-slate-400" />
+                <span className="text-xs text-(--color_text_secondary)">Выходной</span>
+              </div>
             </div>
           </div>
         ) : (
@@ -288,7 +334,9 @@ export default function Calendar(props: CalendarProps) {
               {(['low', 'medium', 'high'] as const).map((load, i) => (
                 <div key={load} className="flex items-center gap-2">
                   <div className={`w-3 h-3 rounded ${loadColors[load]}`} />
-                  <span className="text-xs text-(--color_text_secondary)">{['Низкая', 'Средняя', 'Высокая'][i]}</span>
+                  <span className="text-xs text-(--color_text_secondary)">
+                    {['Низкая', 'Средняя', 'Высокая'][i]}
+                  </span>
                 </div>
               ))}
               {!props.hideTrainerBadge && (

@@ -36,7 +36,8 @@ export default function TrainerTeamScreen() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const trainerWorkStyle = user?.clientPreferences?.trainerWorkStyle
-  const showGroupsTab = trainerWorkStyle !== 'individual'
+  /** Упор на 1:1 влияет только на подсказки и вкладку по умолчанию — группы всё равно доступны. */
+  const prefersIndividual = trainerWorkStyle === 'individual'
 
   const [tab, setTab] = useState<Tab>('athletes')
   const [loading, setLoading] = useState(true)
@@ -79,10 +80,6 @@ export default function TrainerTeamScreen() {
     if (trainerWorkStyle === 'groups') setTab('groups')
     if (trainerWorkStyle === 'individual') setTab('athletes')
   }, [trainerWorkStyle])
-
-  useEffect(() => {
-    if (!showGroupsTab && tab === 'groups') setTab('athletes')
-  }, [showGroupsTab, tab])
 
   const filteredAthletes = useMemo(() => {
     const q = search.toLowerCase()
@@ -173,33 +170,30 @@ export default function TrainerTeamScreen() {
               icon="🏋️"
               title="Команда"
               description={
-                showGroupsTab
-                  ? 'Кто с вами в приложении: атлеты для персональных планов и чатов, группы — для совместных занятий и общего чата с участниками.'
-                  : 'Список атлетов для персональной работы: планы, чаты и назначения. Экран упрощён под формат только 1 на 1; группы в кабинете при этом никуда не делись.'
+                prefersIndividual
+                  ? 'Атлеты — персональные планы и чаты. Группы — совместные занятия и общий чат; переключатель вкладок ниже.'
+                  : 'Кто с вами в приложении: атлеты для персональных планов и чатов, группы — для совместных занятий и общего чата с участниками.'
               }
               className="!mb-3"
             />
-            {showGroupsTab ? (
-              <ScreenHint>
-                <span className="text-white font-medium">Атлеты</span> — список людей, которых вы ведёте;{' '}
-                <span className="text-white font-medium">Группы</span> — несколько человек вместе и отдельный чат. Приглашения и переписки завязаны на этих списках.
-              </ScreenHint>
-            ) : (
-              <ScreenHint>
-                Секция групп на этом экране скрыта под ваш выбор формата. Если понадобятся группы — они остаются доступны в кабинете.
-              </ScreenHint>
-            )}
+            <ScreenHint>
+              <span className="text-white font-medium">Атлеты</span> — список людей, которых вы ведёте;{' '}
+              <span className="text-white font-medium">Группы</span> — несколько человек вместе и отдельный чат. Приглашения и переписки завязаны на этих списках.
+              {prefersIndividual ? (
+                <span className="block mt-2 text-(--color_text_muted)">
+                  В настройках указан формат «персональная работа» — открывается вкладка «Атлеты», но группы здесь же, если они вам нужны.
+                </span>
+              ) : null}
+            </ScreenHint>
           </motion.div>
-          {showGroupsTab ? (
-            <Tabs
-              tabs={[
-                { id: 'athletes', label: 'Атлеты' },
-                { id: 'groups', label: 'Группы' },
-              ]}
-              active={tab}
-              onChange={setTab}
-            />
-          ) : null}
+          <Tabs
+            tabs={[
+              { id: 'athletes', label: 'Атлеты' },
+              { id: 'groups', label: 'Группы' },
+            ]}
+            active={tab}
+            onChange={setTab}
+          />
         </SectionGroup>
       </div>
 

@@ -516,11 +516,14 @@ Debug вне production; `report` не логирует WARN для `E_ROW_NOT_F
 | Файл | Назначение |
 |------|------------|
 | `apps/api/Dockerfile` | `node:24` + `postgresql-client`; `npm install`; entrypoint `docker-entrypoint.sh` |
-| `apps/api/docker-entrypoint.sh` | `npm install` → ожидание `pg_isready` → `node ace migration:run --force` → если нет таблицы `exercises` → `db:seed` → `node ace serve --watch` |
+| `apps/api/docker-entrypoint.sh` | `npm install` → ожидание `pg_isready` → `node ace migration:run --force` → если нет таблицы `exercises` → `db:seed` → запуск сервера (`node ace serve` в production; `node ace serve --watch` в development) |
+| `apps/api/start/jobs.ts` | Preload воркера очереди `jobs` (включается через `JOBS_WORKER_ENABLED`), fail-safe проверка доступности БД перед стартом polling-loop |
 | `apps/web/Dockerfile` | Многостадийная: builder `npm run build` → **nginx:alpine**, копия `dist`, конфиг `nginx.conf` |
 | `apps/web/Dockerfile.dev` | `npm run dev` на 5173 (для `docker-compose.dev.yml`) |
 | `docker-compose.yml` | **postgres:16**, **api** (монтирование кода + volume `node_modules_api`), **web** (прод-сборка → порт 5173→80), **livekit** с `livekit.yaml` |
 | `docker-compose.dev.yml` | Только **web** с `Dockerfile.dev`, hot reload, порт **5174→5173**, volume `node_modules_web` |
+
+**Операционная заметка (важно):** фоновые задачи (`jobs` worker) и миграции сделали деплой более чувствительным к корректному режиму запуска. В production нельзя запускать API в `--watch` режиме; обязательно применять миграции (включая таблицу `jobs`) и явно включать worker только при готовой БД/схеме. См. `ТД.md` §12 и re-audit.
 
 ### Nginx (образ web)
 

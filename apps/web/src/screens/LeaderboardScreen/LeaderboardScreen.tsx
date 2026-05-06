@@ -209,7 +209,7 @@ export default function LeaderboardScreen() {
 
   return (
     <Screen loading={loading} className="leaderboard-screen">
-      <div className="p-4 w-full max-w-lg mx-auto">
+      <div className="p-4 w-full">
         <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
           <div className="flex items-center justify-between">
             <BackButton onClick={() => navigate(-1)} />

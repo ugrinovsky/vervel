@@ -87,7 +87,7 @@ export interface ExerciseData {
 }
 
 export interface WorkoutData {
-  type: 'crossfit' | 'bodybuilding' | 'cardio' | 'intro';
+  type: 'crossfit' | 'bodybuilding' | 'cardio' | 'intro' | 'rest_day';
   exercises: ExerciseData[];
   duration?: number;
   notes?: string;
@@ -140,6 +140,8 @@ export interface TodayOverview {
     athleteCount: number;
     groupCount: number;
     todayWorkoutsCount: number;
+    /** В календаре на сегодня отмечен личный выходной (rest_day), не считается тренировкой */
+    hasRestDayToday?: boolean;
   };
 }
 

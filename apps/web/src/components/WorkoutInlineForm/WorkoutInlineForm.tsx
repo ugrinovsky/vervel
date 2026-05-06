@@ -19,6 +19,15 @@ import Tabs from '@/components/ui/Tabs';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
+import type { WorkoutType } from '@/components/WorkoutTypeTabs';
+
+/** Типы, которые умеет редактировать WorkoutFormBase (не intro / rest_day). */
+function initialWorkoutTypeForForm(edit: ScheduledWorkout | undefined): WorkoutType | undefined {
+  if (!edit) return undefined;
+  const t = edit.workoutData.type;
+  if (t === 'crossfit' || t === 'bodybuilding' || t === 'cardio') return t;
+  return undefined;
+}
 
 function buildWorkoutPreviewMessage(
   date: Date,
@@ -100,7 +109,6 @@ export default function WorkoutInlineForm({
 
   useEffect(() => {
     if (!showAssigneePicker) return;
-    if (initialGroups && initialAthletes) return;
     const load = async () => {
       try {
         setLoadingAssignees(true);
@@ -114,7 +122,7 @@ export default function WorkoutInlineForm({
       finally { setLoadingAssignees(false); }
     };
     load();
-  }, [showAssigneePicker, initialGroups, initialAthletes]);
+  }, [showAssigneePicker]);
 
   // ── Assignee helpers ──────────────────────────────────────────────
 
@@ -358,7 +366,7 @@ export default function WorkoutInlineForm({
     <WorkoutFormBase
       initialDate={initialDate}
       initialTime={initialTime}
-      initialType={editWorkout?.workoutData.type !== 'intro' ? editWorkout?.workoutData.type : undefined}
+      initialType={initialWorkoutTypeForForm(editWorkout)}
       initialNotes={editWorkout?.notes ?? ''}
       initialExercises={editWorkout?.workoutData.exercises ?? []}
       storageKey={storageKey}

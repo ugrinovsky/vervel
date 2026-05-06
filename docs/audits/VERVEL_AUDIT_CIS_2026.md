@@ -19,10 +19,10 @@
 
 ### Что ограничивает масштабирование
 - Frontend в основном CSR (без SSR/SSG) -> ограничение SEO.
-- Почти нет route-level code splitting -> риск тяжелого initial bundle.
+- Route-level code splitting изначально отсутствовал (риск тяжелого initial bundle), но **частично закрыт** в ходе работ (см. `VERVEL_WEB_PERF_BUDGET.md` и re-audit).
 - В API есть потенциальные N+1 и CPU-heavy сценарии в части аналитики/чатов.
 - Недостаточно унифицированы timeout/retry/circuit-breaker для внешних API.
-- Нет durable очередей для критичных фоновых операций.
+- Durable очереди изначально отсутствовали, но **базовый механизм внедрён** (DB-backed очередь `jobs` + worker; требует prod-конфига).
 
 ## 2) Инфраструктура и СНГ: риски эксплуатации
 
@@ -95,4 +95,6 @@
 **План работы по спринтам (фиксация условий 7,5/10):** [VERVEL_SPRINT_PLAN_AUDIT_7_5.md](./VERVEL_SPRINT_PLAN_AUDIT_7_5.md).
 
 **Повторный аудит прогресса (по спринтам 1–5):** [VERVEL_REAUDIT_PROGRESS_2026_05_06.md](./VERVEL_REAUDIT_PROGRESS_2026_05_06.md).
+
+**Важно (production preconditions):** после внедрения очередей/воркера и усиления безопасности, корректность работы в production стала зависеть от дисциплины деплоя: `NODE_ENV=production`, миграции (включая таблицу `jobs`), и корректное включение worker-а. Короткий checklist: `ТД.md` (§12).
 
