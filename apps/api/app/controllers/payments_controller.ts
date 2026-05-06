@@ -1,7 +1,9 @@
 import type { HttpContext } from '@adonisjs/core/http'
+import crypto from 'node:crypto'
 import vine from '@vinejs/vine'
 import db from '@adonisjs/lucid/services/db'
 import logger from '@adonisjs/core/services/logger'
+import limiter from '@adonisjs/limiter/services/main'
 import env from '#start/env'
 import User from '#models/user'
 import { isRecord } from '#utils/type_guards'
@@ -48,6 +50,60 @@ const topupValidator = vine.compile(
 
 function isYookassaIp(ip: string): boolean {
   return YOOKASSA_IP_RANGES.some((range) => ip.startsWith(range))
+}
+
+function parseAmountValue(v: unknown): number | null {
+  if (typeof v !== 'string') return null
+  const n = Number(v)
+  if (!Number.isFinite(n) || n <= 0) return null
+  return Math.round(n * 100) / 100
+}
+
+type YookassaPaymentDetails = {
+  id: string
+  status: string
+  amount: { value: string; currency: string } | null
+  metadata: { user_id?: string } | null
+}
+
+function parseYookassaPaymentDetails(raw: unknown): YookassaPaymentDetails {
+  if (!isRecord(raw)) throw new Error('Invalid YooKassa payment details')
+  const amount = isRecord(raw.amount) ? raw.amount : null
+  const metadata = isRecord(raw.metadata) ? raw.metadata : null
+  return {
+    id: typeof raw.id === 'string' ? raw.id : '',
+    status: typeof raw.status === 'string' ? raw.status : '',
+    amount:
+      amount && typeof amount.value === 'string' && typeof amount.currency === 'string'
+        ? { value: amount.value, currency: amount.currency }
+        : null,
+    metadata: metadata ? metadata : null,
+  }
+}
+
+async function fetchPaymentDetailsFromYookassa(
+  paymentId: string
+): Promise<YookassaPaymentDetails | null> {
+  const shopId = env.get('YOOKASSA_SHOP_ID')
+  const secretKey = env.get('YOOKASSA_SECRET_KEY')
+  if (!shopId || !secretKey) return null
+
+  const url = `${YOOKASSA_API}/${encodeURIComponent(paymentId)}`
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Basic ${btoa(`${shopId}:${secretKey}`)}`,
+    },
+  })
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    logger.error(
+      { status: res.status, body: text.length > 500 ? `${text.slice(0, 500)}…` : text },
+      'yookassa: fetch payment failed'
+    )
+    return null
+  }
+  return parseYookassaPaymentDetails(await res.json())
 }
 
 export default class PaymentsController {
@@ -127,10 +183,17 @@ export default class PaymentsController {
    * Проверяет IP, начисляет баланс при payment.succeeded.
    */
   async webhook({ request, response }: HttpContext) {
+    // Basic load protection. Not a security boundary (security is: IP allowlist + verify via API).
+    const ip = request.ip()
+    const webhookLimit = limiter.use({ requests: 600, duration: '5 mins', blockDuration: '5 mins' })
+    const limRes = await webhookLimit.attempt(`yookassa_webhook_ip_${ip}`, async () => true)
+    if (limRes === null) {
+      return response.tooManyRequests({ message: 'Too many requests' })
+    }
+
     const skipIpCheck = env.get('YOOKASSA_SKIP_IP_CHECK', 'false') === 'true'
 
     if (!skipIpCheck) {
-      const ip = request.ip()
       if (!isYookassaIp(ip)) {
         logger.warn({ ip }, 'yookassa: webhook from unknown ip')
         return response.forbidden({ message: 'Forbidden' })
@@ -163,48 +226,94 @@ export default class PaymentsController {
         .first()
 
       if (!paymentRow) {
-        // Unknown payment — log and ignore
         logger.warn({ yookassaPaymentId }, 'yookassa: webhook for unknown payment')
         return response.ok({})
       }
-
-      // Idempotency: already processed
       if (paymentRow.status === 'succeeded') {
         return response.ok({})
       }
 
-      const amount = Number(paymentRow.amount)
-      const userId = paymentRow.user_id
+      const expectedAmount = Math.round(Number(paymentRow.amount) * 100) / 100
+      const expectedUserId = Number(paymentRow.user_id)
+
+      const verifyApi = env.get('YOOKASSA_VERIFY_API', 'true') !== 'false'
+      if (verifyApi) {
+        const details = await fetchPaymentDetailsFromYookassa(yookassaPaymentId)
+        if (!details || details.id !== yookassaPaymentId) {
+          logger.warn({ yookassaPaymentId }, 'yookassa: cannot verify payment via api')
+          return response.ok({})
+        }
+        if (details.status !== 'succeeded') {
+          logger.warn(
+            { yookassaPaymentId, status: details.status },
+            'yookassa: payment not succeeded'
+          )
+          return response.ok({})
+        }
+        const amountFromApi = parseAmountValue(details.amount?.value)
+        if (amountFromApi === null || amountFromApi !== expectedAmount) {
+          logger.warn(
+            { yookassaPaymentId, amountFromApi, expectedAmount },
+            'yookassa: amount mismatch (api)'
+          )
+          return response.ok({})
+        }
+        const userIdFromApi = Number(details.metadata?.user_id ?? Number.NaN)
+        if (!Number.isFinite(userIdFromApi) || userIdFromApi !== expectedUserId) {
+          logger.warn(
+            { yookassaPaymentId, userIdFromApi, expectedUserId },
+            'yookassa: metadata user mismatch (api)'
+          )
+          return response.ok({})
+        }
+      }
 
       await db.transaction(async (trx) => {
-        // Mark payment as succeeded
+        const locked = await trx
+          .from('payments')
+          .where('yookassa_payment_id', yookassaPaymentId)
+          .forUpdate()
+          .first()
+        if (!locked) return
+        if (locked.status === 'succeeded') return
+
         await trx
           .from('payments')
           .where('yookassa_payment_id', yookassaPaymentId)
           .update({ status: 'succeeded', updated_at: new Date() })
 
-        // Credit user balance
-        const user = await User.query({ client: trx }).where('id', userId).forUpdate().firstOrFail()
+        const user = await User.query({ client: trx })
+          .where('id', expectedUserId)
+          .forUpdate()
+          .firstOrFail()
 
-        user.balance = Math.round((user.balance + amount) * 100) / 100
+        user.balance = Math.round((user.balance + expectedAmount) * 100) / 100
         user.useTransaction(trx)
         await user.save()
 
-        // Record in balance_transactions
         await trx.table('balance_transactions').insert({
-          user_id: userId,
-          amount: amount,
+          user_id: expectedUserId,
+          amount: expectedAmount,
           balance_after: user.balance,
           type: 'topup',
-          description: `Пополнение через ЮКасса (${amount}₽)`,
+          description: `Пополнение через ЮКасса (${expectedAmount}₽)`,
           created_at: new Date(),
         })
       })
     } else if (event === 'payment.canceled') {
-      await db
-        .from('payments')
-        .where('yookassa_payment_id', yookassaPaymentId)
-        .update({ status: 'canceled', updated_at: new Date() })
+      await db.transaction(async (trx) => {
+        const paymentRow = await trx
+          .from('payments')
+          .where('yookassa_payment_id', yookassaPaymentId)
+          .forUpdate()
+          .first()
+        if (!paymentRow) return
+        if (paymentRow.status === 'succeeded') return
+        await trx
+          .from('payments')
+          .where('yookassa_payment_id', yookassaPaymentId)
+          .update({ status: 'canceled', updated_at: new Date() })
+      })
     }
 
     return response.ok({})

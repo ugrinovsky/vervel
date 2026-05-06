@@ -88,6 +88,11 @@ export default await Env.create(new URL('../', import.meta.url), {
   YOOKASSA_SECRET_KEY: Env.schema.string.optional(),
   // Set to "true" to skip IP whitelist check in local development
   YOOKASSA_SKIP_IP_CHECK: Env.schema.string.optional(),
+  /**
+   * Set to "false" to skip verifying payment status via YooKassa API in webhook handler.
+   * Default: enabled (recommended).
+   */
+  YOOKASSA_VERIFY_API: Env.schema.string.optional(),
   // Base URL of the app — used as return_url after payment
   APP_URL: Env.schema.string.optional(),
 
