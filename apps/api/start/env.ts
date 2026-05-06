@@ -113,7 +113,7 @@ export default await Env.create(new URL('../', import.meta.url), {
   /*
   |----------------------------------------------------------
   | CORS — comma-separated list of allowed browser Origins (e.g. https://vervel.ru)
-  | Empty / unset → reflect any origin (dev-friendly; set in production).
+  | Empty / unset → in development: allow any origin; in production: block browser CORS (origin=false).
   |----------------------------------------------------------
   */
   CORS_ALLOWED_ORIGINS: Env.schema.string.optional(),

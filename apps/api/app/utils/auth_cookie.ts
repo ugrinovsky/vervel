@@ -3,7 +3,7 @@ import env from '#start/env'
 
 const COOKIE_TTL = 60 * 60 * 24 * 30 // 30 days
 
-function cookieFlags() {
+export function authCookieFlags() {
   const useNone = env.get('AUTH_COOKIE_SAME_SITE') === 'none'
   return {
     secure: useNone || process.env.NODE_ENV === 'production',
@@ -12,7 +12,7 @@ function cookieFlags() {
 }
 
 export function setAuthTokenCookie(response: HttpContext['response'], tokenValue: string) {
-  const { secure, sameSite } = cookieFlags()
+  const { secure, sameSite } = authCookieFlags()
   response.cookie('auth_token', tokenValue, {
     httpOnly: true,
     secure,
@@ -23,6 +23,6 @@ export function setAuthTokenCookie(response: HttpContext['response'], tokenValue
 }
 
 export function clearAuthTokenCookie(response: HttpContext['response']) {
-  const { secure, sameSite } = cookieFlags()
+  const { secure, sameSite } = authCookieFlags()
   response.clearCookie('auth_token', { path: '/', secure, sameSite })
 }

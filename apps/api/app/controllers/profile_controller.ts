@@ -6,11 +6,13 @@ import Workout from '#models/workout'
 import UserMeasurement from '#models/user_measurement'
 import hash from '@adonisjs/core/services/hash'
 import { HttpContext } from '@adonisjs/core/http'
+import db from '@adonisjs/lucid/services/db'
 import { StreakService } from '#services/StreakService'
 import { computeLevel } from '#services/xp_logic'
 import User from '#models/user'
 import { mergeClientPreferences, patchClientPreferencesFromBody } from '#utils/client_preferences'
 import { isTrustedVkPhotoUrl } from '#utils/trusted_vk_photo_url'
+import { setAuthTokenCookie } from '#utils/auth_cookie'
 
 export default class ProfileController {
   async getProfile({ auth, response }: HttpContext) {
@@ -419,6 +421,11 @@ export default class ProfileController {
 
       user.password = newPassword
       await user.save()
+
+      // Revoke all existing tokens (including possibly leaked ones) and issue a fresh one.
+      await db.from('auth_access_tokens').where('tokenable_id', user.id).delete()
+      const token = await User.accessTokens.create(user)
+      setAuthTokenCookie(response, token.value!.release())
 
       return response.json({
         success: true,

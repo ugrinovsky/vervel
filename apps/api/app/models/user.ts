@@ -129,5 +129,12 @@ export default class User extends compose(BaseModel, AuthFinder) {
     return this.role === 'athlete' || this.role === 'both'
   }
 
-  static accessTokens = DbAccessTokensProvider.forModel(User)
+  /**
+   * Default access token TTL.
+   * Keep in sync with API cookie TTL (`auth_token`) to avoid confusing “cookie valid, token expired”
+   * or vice versa.
+   */
+  static accessTokens = DbAccessTokensProvider.forModel(User, {
+    expiresIn: '30 days',
+  })
 }

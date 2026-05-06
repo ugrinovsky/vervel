@@ -860,9 +860,9 @@ test.group('OAuth: защита и базовая логика', () => {
     response.assertStatus(400)
   })
 
-  test('POST /oauth/set-role без параметров → 400', async ({ client }) => {
+  test('POST /oauth/set-role без авторизации → 401', async ({ client }) => {
     const response = await client.post('/oauth/set-role').json({})
-    response.assertStatus(400)
+    response.assertStatus(401)
   })
 
   test('POST /oauth/vk/mini-app-login без launchParams → 400', async ({ client }) => {

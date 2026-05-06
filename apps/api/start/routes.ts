@@ -27,7 +27,7 @@ router.post('/payments/webhook', '#controllers/payments_controller.webhook')
 // OAuth routes
 router.get('/oauth/:provider/redirect', [OAuthController, 'redirect'])
 router.get('/oauth/:provider/callback', [OAuthController, 'callback'])
-router.post('/oauth/set-role', [OAuthController, 'setRole'])
+router.post('/oauth/set-role', [OAuthController, 'setRole']).use(middleware.auth())
 router.post('/oauth/vk/sdk-login', [OAuthController, 'vkSdkLogin'])
 router.post('/oauth/vk/mini-app-login', [OAuthController, 'vkMiniAppLogin'])
 router.post('/oauth/yandex/sdk-login', [OAuthController, 'yandexSdkLogin'])
