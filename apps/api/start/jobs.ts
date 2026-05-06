@@ -2,6 +2,7 @@ import env from '#start/env'
 import logger from '@adonisjs/core/services/logger'
 import { JobWorkerService } from '#services/JobWorkerService'
 import db from '@adonisjs/lucid/services/db'
+import { isRecord } from '#utils/type_guards'
 
 const enabled = env.get('JOBS_WORKER_ENABLED', 'false') === 'true'
 
@@ -14,10 +15,11 @@ if (!enabled) {
   const intervalMs = Number(env.get('JOBS_POLL_INTERVAL_MS', '2000'))
   const pollMs = Number.isFinite(intervalMs) ? Math.max(250, intervalMs) : 2000
 
-  const extractErr = (err: unknown) =>
-    err && typeof err === 'object' && 'message' in err
-      ? String((err as { message: unknown }).message)
-      : String(err)
+  const extractErr = (err: unknown) => {
+    if (err instanceof Error) return err.message
+    if (isRecord(err) && 'message' in err) return String(err.message)
+    return String(err)
+  }
 
   ;(async () => {
     try {
