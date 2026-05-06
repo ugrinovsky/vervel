@@ -85,6 +85,13 @@
 | Миграция | Минимум один класс критичных операций переведён с «fire-and-forget» на очередь |
 | Наблюдаемость | Метрики/алерты на рост failed jobs |
 
+**Сделано (май 2026, зафиксировано в коде):**
+- DB-backed очередь `jobs` (PostgreSQL): `queued/processing/succeeded/failed`, `run_at`, `attempts`, `locked_by`, `last_error`.
+- Worker-процесс (poll) с `FOR UPDATE SKIP LOCKED` и retry/backoff, включается env-флагом.
+- Переведены на durable jobs:
+  - отправка web-push (все `push:*` события),
+  - fan-out плановых тренировок: создание/синхронизация `Workout` для назначенных атлетов + пуши.
+
 ---
 
 ## Спринт 5 — Производительность фронта и SEO-риск

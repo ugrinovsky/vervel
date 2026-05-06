@@ -117,6 +117,14 @@ export default await Env.create(new URL('../', import.meta.url), {
 
   /*
   |----------------------------------------------------------
+  | Durable jobs worker (DB-backed queue)
+  |----------------------------------------------------------
+  */
+  JOBS_WORKER_ENABLED: Env.schema.string.optional(),
+  JOBS_POLL_INTERVAL_MS: Env.schema.string.optional(),
+
+  /*
+  |----------------------------------------------------------
   | CORS — comma-separated list of allowed browser Origins (e.g. https://vervel.ru)
   | Empty / unset → in development: allow any origin; in production: block browser CORS (origin=false).
   |----------------------------------------------------------

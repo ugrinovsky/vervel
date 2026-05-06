@@ -1,80 +1,33 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
-import logger from '@adonisjs/core/services/logger'
-import db from '@adonisjs/lucid/services/db'
-import emitter from '@adonisjs/core/services/emitter'
 import ScheduledWorkout from '#models/scheduled_workout'
 import Workout from '#models/workout'
-import { WorkoutCalculator } from '#services/WorkoutCalculator'
-import { toWorkoutExercises, type ExerciseData } from '#services/WorkoutConverter'
+import { JobQueueService } from '#services/JobQueueService'
+import type { AssignedToItem, ScheduledWorkoutData } from '#services/ScheduledWorkoutFanoutService'
 import { parseDateRange } from '#utils/date'
+import { isRecord } from '#utils/type_guards'
 
-/**
- * Resolve assignedTo list to a flat array of athlete user IDs.
- */
-async function resolveAthleteIds(
-  assignedTo: { type: 'group' | 'athlete'; id: number }[]
-): Promise<number[]> {
-  const ids = new Set<number>()
-  for (const a of assignedTo) {
-    if (a.type === 'athlete') {
-      ids.add(a.id)
-    } else {
-      const rows = await db.from('group_athletes').where('group_id', a.id)
-      for (const r of rows) ids.add(r.athlete_id)
-    }
-  }
-  return [...ids]
+function isAssignedToItem(v: unknown): v is AssignedToItem {
+  return (
+    isRecord(v) &&
+    (v.type === 'group' || v.type === 'athlete') &&
+    typeof v.id === 'number' &&
+    Number.isFinite(v.id) &&
+    typeof v.name === 'string' &&
+    v.name.trim().length > 0
+  )
 }
 
-/**
- * Create Workout entries for all assigned athletes.
- */
-async function createAthleteWorkouts(
-  scheduledWorkoutId: number,
-  scheduledDate: DateTime,
-  workoutData: {
-    type: 'crossfit' | 'bodybuilding' | 'cardio'
-    exercises: ExerciseData[]
-    notes?: string
-  },
-  assignedTo: { type: 'group' | 'athlete'; id: number }[]
-): Promise<void> {
-  const athleteIds = await resolveAthleteIds(assignedTo)
-  if (athleteIds.length === 0) return
+function parseAssignedTo(v: unknown): AssignedToItem[] {
+  if (!Array.isArray(v)) return []
+  return v.filter(isAssignedToItem)
+}
 
-  const workoutExercises = toWorkoutExercises(workoutData.exercises, workoutData.type)
-
-  let calculated = {
-    zonesLoad: {} as Record<string, number>,
-    zonesLoadAbs: {} as Record<string, number>,
-    totalIntensity: 0,
-    totalVolume: 0,
-  }
-  if (workoutExercises.length > 0) {
-    try {
-      calculated = await WorkoutCalculator.calculateZoneLoads(workoutExercises, workoutData.type)
-    } catch (err) {
-      logger.warn({ err }, 'scheduled_workout:calculateZoneLoads failed — using empty zones')
-    }
-  }
-
-  await Promise.all(
-    athleteIds.map((athleteId) =>
-      Workout.create({
-        userId: athleteId,
-        date: scheduledDate,
-        workoutType: workoutData.type,
-        exercises: workoutExercises,
-        notes: workoutData.notes || '',
-        zonesLoad: calculated.zonesLoad,
-        zonesLoadAbs: calculated.zonesLoadAbs,
-        totalIntensity: calculated.totalIntensity,
-        totalVolume: calculated.totalVolume,
-        scheduledWorkoutId,
-      })
-    )
-  )
+function isScheduledWorkoutData(v: unknown): v is ScheduledWorkoutData {
+  if (!isRecord(v)) return false
+  if (v.type !== 'crossfit' && v.type !== 'bodybuilding' && v.type !== 'cardio') return false
+  if (!Array.isArray(v.exercises)) return false
+  return true
 }
 
 export default class ScheduledWorkoutController {
@@ -155,6 +108,9 @@ export default class ScheduledWorkoutController {
         message: 'scheduledDate и workoutData обязательны',
       })
     }
+    if (!isScheduledWorkoutData(workoutData)) {
+      return response.badRequest({ message: 'Некорректный workoutData' })
+    }
 
     // Client sends wall-clock local datetime without timezone suffix (e.g. "2026-04-07T15:00:00").
     // Parse it as UTC to preserve the same wall-clock time end-to-end.
@@ -164,26 +120,19 @@ export default class ScheduledWorkoutController {
       trainerId: trainer.id,
       scheduledDate: parsedDate,
       workoutData,
-      assignedTo: assignedTo || [],
+      assignedTo: parseAssignedTo(assignedTo),
       status: 'scheduled',
       notes: notes || null,
       templateId: templateId || null,
     })
 
-    // Create Workout entries for each assigned athlete + send push notifications
-    if (Array.isArray(assignedTo) && assignedTo.length > 0) {
-      await createAthleteWorkouts(workout.id, parsedDate, workoutData, assignedTo).catch(() => {})
-      resolveAthleteIds(assignedTo)
-        .then((athleteIds) => {
-          if (athleteIds.length > 0) {
-            emitter.emit('push:workout_scheduled', {
-              athleteIds,
-              scheduledDate: parsedDate.toFormat('d MMM', { locale: 'ru' }),
-              trainerName: trainer.fullName ?? trainer.email,
-            })
-          }
-        })
-        .catch(() => {})
+    // Durable fan-out: create/sync athlete Workouts + send push notifications via jobs.
+    if (workout.assignedTo.length > 0) {
+      await JobQueueService.enqueue({
+        type: 'scheduled_workout_fanout',
+        payload: { scheduledWorkoutId: workout.id },
+        maxAttempts: 10,
+      })
     }
 
     return response.created({
@@ -227,21 +176,31 @@ export default class ScheduledWorkoutController {
       // Preserve wall-clock time (see create()).
       workout.scheduledDate = DateTime.fromISO(scheduledDate, { zone: 'utc' })
     }
-    if (workoutData) workout.workoutData = workoutData
-    if (assignedTo) workout.assignedTo = assignedTo
+    if (workoutData) {
+      if (!isScheduledWorkoutData(workoutData)) {
+        return response.badRequest({ message: 'Некорректный workoutData' })
+      }
+      workout.workoutData = workoutData
+    }
+    if (assignedTo !== undefined) {
+      workout.assignedTo = parseAssignedTo(assignedTo)
+    }
     if (status) workout.status = status
     if (notes !== undefined) workout.notes = notes
 
     await workout.save()
 
-    // Sync: delete old athlete workouts and recreate them
-    const newData = workoutData ?? workout.workoutData
-    const newAssignedTo = assignedTo ?? workout.assignedTo
+    // Durable sync of athlete workouts
+    const newAssignedTo = workout.assignedTo as AssignedToItem[]
     if (newAssignedTo.length > 0) {
+      await JobQueueService.enqueue({
+        type: 'scheduled_workout_fanout',
+        payload: { scheduledWorkoutId: workout.id },
+        maxAttempts: 10,
+      })
+    } else {
+      // Keep DB consistent: if assignments removed, delete child workouts synchronously.
       await Workout.query().where('scheduledWorkoutId', workout.id).delete()
-      await createAthleteWorkouts(workout.id, workout.scheduledDate, newData, newAssignedTo).catch(
-        () => {}
-      )
     }
 
     return response.ok({
