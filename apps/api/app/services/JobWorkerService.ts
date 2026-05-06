@@ -139,9 +139,7 @@ export class JobWorkerService {
       return 1
     } catch (err: unknown) {
       const message =
-        err && typeof err === 'object' && 'message' in err
-          ? String((err as { message: unknown }).message)
-          : String(err)
+        err && typeof err === 'object' && 'message' in err ? String(err.message) : String(err)
       logger.error({ jobId, type, err: message }, 'jobs: execution failed')
 
       const attempts = Number(job.attempts ?? 0) + 1

@@ -18,9 +18,7 @@ if (!enabled) {
   setInterval(() => {
     worker.runOnce().catch((err: unknown) => {
       const message =
-        err && typeof err === 'object' && 'message' in err
-          ? String((err as { message: unknown }).message)
-          : String(err)
+        err && typeof err === 'object' && 'message' in err ? String(err.message) : String(err)
       logger.error({ err: message }, 'jobs: worker loop error')
     })
   }, pollMs)
