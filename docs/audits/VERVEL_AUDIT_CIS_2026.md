@@ -94,3 +94,5 @@
 
 **План работы по спринтам (фиксация условий 7,5/10):** [VERVEL_SPRINT_PLAN_AUDIT_7_5.md](./VERVEL_SPRINT_PLAN_AUDIT_7_5.md).
 
+**Повторный аудит прогресса (по спринтам 1–5):** [VERVEL_REAUDIT_PROGRESS_2026_05_06.md](./VERVEL_REAUDIT_PROGRESS_2026_05_06.md).
+
