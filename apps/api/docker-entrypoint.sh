@@ -20,4 +20,8 @@ if [ "$EXISTS" != "1" ]; then
 fi
 
 echo "Starting Adonis server..."
-node ace serve --watch
+if [ "$NODE_ENV" = "production" ]; then
+  node ace serve
+else
+  node ace serve --watch
+fi
