@@ -1,18 +1,5 @@
-import ActivityScreen from '@/screens/ActivityScreen/ActivityScreen';
-import AnalyticsScreen from '@/screens/AnalyticsScreen/AnalyticsScreen';
-import AvatarScreen from '@/screens/AvatarScreen/AvatarScreen';
-import ProfileScreen from '@/screens/ProfileScreen/ProfileScreen';
-import WorkoutForm from '@/screens/WorkoutForm/WorkoutForm';
-import StreakScreen from '@/screens/StreakScreen/StreakScreen';
-import TrainerTodayScreen from '@/screens/TrainerTodayScreen/TrainerTodayScreen';
-import TrainerGroupsListScreen from '@/screens/TrainerGroupsListScreen/TrainerGroupsListScreen';
-import TrainerAthletesListScreen from '@/screens/TrainerAthletesListScreen/TrainerAthletesListScreen';
-import TrainerCalendarScreen from '@/screens/TrainerCalendarScreen/TrainerCalendarScreen';
-import TrainerTemplatesScreen from '@/screens/TrainerTemplatesScreen/TrainerTemplatesScreen';
-import TrainerExerciseLibraryScreen from '@/screens/TrainerExerciseLibraryScreen/TrainerExerciseLibraryScreen';
-import AthleteMyTeamScreen from '@/screens/AthleteMyTeamScreen/AthleteMyTeamScreen';
-import DialogsScreen from '@/screens/DialogsScreen/DialogsScreen';
-import TrainerTeamScreen from '@/screens/TrainerTeamScreen/TrainerTeamScreen';
+import RouteLoading from '@/components/ui/RouteLoading';
+import { lazy, Suspense } from 'react';
 import type { ComponentType, ReactNode, SVGProps } from 'react';
 import {
   ChartBarIcon,
@@ -28,6 +15,38 @@ import {
   TrophyIcon,
   ChatBubbleLeftRightIcon,
 } from '@heroicons/react/24/outline';
+
+const ActivityScreen = lazy(() => import('@/screens/ActivityScreen/ActivityScreen'));
+const AnalyticsScreen = lazy(() => import('@/screens/AnalyticsScreen/AnalyticsScreen'));
+const AvatarScreen = lazy(() => import('@/screens/AvatarScreen/AvatarScreen'));
+const ProfileScreen = lazy(() => import('@/screens/ProfileScreen/ProfileScreen'));
+const WorkoutForm = lazy(() => import('@/screens/WorkoutForm/WorkoutForm'));
+const StreakScreen = lazy(() => import('@/screens/StreakScreen/StreakScreen'));
+const TrainerTodayScreen = lazy(() => import('@/screens/TrainerTodayScreen/TrainerTodayScreen'));
+const TrainerGroupsListScreen = lazy(
+  () => import('@/screens/TrainerGroupsListScreen/TrainerGroupsListScreen')
+);
+const TrainerAthletesListScreen = lazy(
+  () => import('@/screens/TrainerAthletesListScreen/TrainerAthletesListScreen')
+);
+const TrainerCalendarScreen = lazy(
+  () => import('@/screens/TrainerCalendarScreen/TrainerCalendarScreen')
+);
+const TrainerTemplatesScreen = lazy(
+  () => import('@/screens/TrainerTemplatesScreen/TrainerTemplatesScreen')
+);
+const TrainerExerciseLibraryScreen = lazy(
+  () => import('@/screens/TrainerExerciseLibraryScreen/TrainerExerciseLibraryScreen')
+);
+const AthleteMyTeamScreen = lazy(
+  () => import('@/screens/AthleteMyTeamScreen/AthleteMyTeamScreen')
+);
+const DialogsScreen = lazy(() => import('@/screens/DialogsScreen/DialogsScreen'));
+const TrainerTeamScreen = lazy(() => import('@/screens/TrainerTeamScreen/TrainerTeamScreen'));
+
+function withRouteSuspense(node: ReactNode) {
+  return <Suspense fallback={<RouteLoading />}>{node}</Suspense>;
+}
 
 export type RouteNavIcon = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -48,56 +67,56 @@ export const athleteRoutes: RouteItem[] = [
     path: '/dialogs',
     label: 'Диалоги',
     icon: ChatBubbleLeftRightIcon,
-    element: <DialogsScreen />,
+    element: withRouteSuspense(<DialogsScreen />),
     toolbarPosition: 'left',
   },
   {
     path: '/analytics',
     label: 'Аналитика',
     icon: ChartBarIcon,
-    element: <AnalyticsScreen />,
+    element: withRouteSuspense(<AnalyticsScreen />),
     toolbarPosition: 'left',
   },
   {
     path: '/calendar',
     label: 'Календарь',
     icon: CalendarIcon,
-    element: <ActivityScreen />,
+    element: withRouteSuspense(<ActivityScreen />),
     toolbarPosition: 'left',
   },
   {
     path: '/home',
     label: 'Avatar',
     icon: UserIcon,
-    element: <AvatarScreen />,
+    element: withRouteSuspense(<AvatarScreen />),
     toolbarPosition: 'center',
   },
   {
     path: '/streak',
     label: 'Ачивки',
     icon: TrophyIcon,
-    element: <StreakScreen />,
+    element: withRouteSuspense(<StreakScreen />),
     // убрана из тулбара — доступна из профиля
   },
   {
     path: '/my-team',
     label: 'Команда',
     icon: UserGroupIcon,
-    element: <AthleteMyTeamScreen />,
+    element: withRouteSuspense(<AthleteMyTeamScreen />),
     toolbarPosition: 'right',
   },
   {
     path: '/profile',
     label: 'Профиль',
     icon: Cog6ToothIcon,
-    element: <ProfileScreen />,
+    element: withRouteSuspense(<ProfileScreen />),
     toolbarPosition: 'right',
   },
   {
     path: '/workouts/new',
     label: 'Добавить',
     icon: PlusIcon,
-    element: <WorkoutForm />,
+    element: withRouteSuspense(<WorkoutForm />),
     toolbarPosition: 'right',
     isButton: true,
     accent: true,
@@ -110,63 +129,63 @@ export const trainerRoutes: RouteItem[] = [
     path: '/dialogs',
     label: 'Диалоги',
     icon: ChatBubbleLeftRightIcon,
-    element: <DialogsScreen />,
+    element: withRouteSuspense(<DialogsScreen />),
     toolbarPosition: 'left',
   },
   {
     path: '/trainer',
     label: 'Сегодня',
     icon: ClockIcon,
-    element: <TrainerTodayScreen />,
+    element: withRouteSuspense(<TrainerTodayScreen />),
     toolbarPosition: 'left',
   },
   {
     path: '/trainer/groups',
     label: 'Группы',
     icon: UserGroupIcon,
-    element: <TrainerGroupsListScreen />,
+    element: withRouteSuspense(<TrainerGroupsListScreen />),
     // убрана из тулбара — доступна из TrainerTeamScreen
   },
   {
     path: '/trainer/athletes',
     label: 'Атлеты',
     icon: UsersIcon,
-    element: <TrainerAthletesListScreen />,
+    element: withRouteSuspense(<TrainerAthletesListScreen />),
     // убрана из тулбара — доступна из TrainerTeamScreen
   },
   {
     path: '/trainer/team',
     label: 'Команда',
     icon: UsersIcon,
-    element: <TrainerTeamScreen />,
+    element: withRouteSuspense(<TrainerTeamScreen />),
     toolbarPosition: 'left',
   },
   {
     path: '/trainer/templates',
     label: 'Шаблоны',
     icon: RectangleStackIcon,
-    element: <TrainerTemplatesScreen />,
+    element: withRouteSuspense(<TrainerTemplatesScreen />),
     toolbarPosition: 'right',
   },
   {
     path: '/trainer/calendar',
     label: 'Календарь',
     icon: CalendarIcon,
-    element: <TrainerCalendarScreen />,
+    element: withRouteSuspense(<TrainerCalendarScreen />),
     toolbarPosition: 'right',
   },
   {
     path: '/trainer/library',
     label: 'Упражнения',
     icon: BookOpenIcon,
-    element: <TrainerExerciseLibraryScreen />,
+    element: withRouteSuspense(<TrainerExerciseLibraryScreen />),
     toolbarPosition: 'right',
   },
   {
     path: '/profile',
     label: 'Профиль',
     icon: Cog6ToothIcon,
-    element: <ProfileScreen />,
+    element: withRouteSuspense(<ProfileScreen />),
     toolbarPosition: 'right',
   },
 ];

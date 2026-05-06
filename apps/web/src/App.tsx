@@ -1,23 +1,34 @@
-import { JSX, type ReactNode } from 'react';
+import { JSX, Suspense, lazy, type ReactNode } from 'react';
 import Navigation from '@/components/Navigation/Navigation';
 import { Routes, Route, Navigate, useLocation } from 'react-router';
 import { routes } from '@/constants/routes';
 import { Toaster } from 'react-hot-toast';
-import LoginScreen from '@/screens/LoginScreen/LoginScreen';
-import RegisterScreen from '@/screens/RegisterScreen/RegisterScreen';
-import OAuthCallbackScreen from '@/screens/OAuthCallbackScreen/OAuthCallbackScreen';
-import SelectRoleScreen from '@/screens/SelectRoleScreen/SelectRoleScreen';
-import TrainerAthleteDetailScreen from '@/screens/TrainerAthleteDetailScreen/TrainerAthleteDetailScreen';
-import TrainerGroupDetailScreen from '@/screens/TrainerGroupDetailScreen/TrainerGroupDetailScreen';
-import TrainerPersonalScreen from '@/screens/TrainerPersonalScreen/TrainerPersonalScreen';
-import TrainerPublicProfileScreen from '@/screens/TrainerPublicProfileScreen/TrainerPublicProfileScreen';
-import LeaderboardScreen from '@/screens/LeaderboardScreen/LeaderboardScreen';
-import ProgressionHubScreen from '@/screens/ProgressionHubScreen/ProgressionHubScreen';
-import InviteScreen from '@/screens/InviteScreen/InviteScreen';
-import DocsScreen from '@/screens/DocsScreen/DocsScreen';
+import RouteLoading from '@/components/ui/RouteLoading';
 import AvatarScreen from '@/screens/AvatarScreen/AvatarScreen';
-import LandingScreen from '@/screens/LandingScreen/LandingScreen';
-import OnboardingScreen from '@/screens/OnboardingScreen/OnboardingScreen';
+const LoginScreen = lazy(() => import('@/screens/LoginScreen/LoginScreen'));
+const RegisterScreen = lazy(() => import('@/screens/RegisterScreen/RegisterScreen'));
+const OAuthCallbackScreen = lazy(() => import('@/screens/OAuthCallbackScreen/OAuthCallbackScreen'));
+const SelectRoleScreen = lazy(() => import('@/screens/SelectRoleScreen/SelectRoleScreen'));
+const TrainerAthleteDetailScreen = lazy(
+  () => import('@/screens/TrainerAthleteDetailScreen/TrainerAthleteDetailScreen')
+);
+const TrainerGroupDetailScreen = lazy(
+  () => import('@/screens/TrainerGroupDetailScreen/TrainerGroupDetailScreen')
+);
+const TrainerPersonalScreen = lazy(
+  () => import('@/screens/TrainerPersonalScreen/TrainerPersonalScreen')
+);
+const TrainerPublicProfileScreen = lazy(
+  () => import('@/screens/TrainerPublicProfileScreen/TrainerPublicProfileScreen')
+);
+const LeaderboardScreen = lazy(() => import('@/screens/LeaderboardScreen/LeaderboardScreen'));
+const ProgressionHubScreen = lazy(
+  () => import('@/screens/ProgressionHubScreen/ProgressionHubScreen')
+);
+const InviteScreen = lazy(() => import('@/screens/InviteScreen/InviteScreen'));
+const DocsScreen = lazy(() => import('@/screens/DocsScreen/DocsScreen'));
+const LandingScreen = lazy(() => import('@/screens/LandingScreen/LandingScreen'));
+const OnboardingScreen = lazy(() => import('@/screens/OnboardingScreen/OnboardingScreen'));
 import { shouldShowOnboarding } from '@/util/shouldShowOnboarding';
 import { AuthProvider, useAuth, useActiveMode } from '@/contexts/AuthContext';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
@@ -95,17 +106,80 @@ function AppContent(): JSX.Element {
         }}
       />
       <Routes>
-        <Route path="/login" element={<LoginScreen />} />
-        <Route path="/register" element={<RegisterScreen />} />
-        <Route path="/auth/callback" element={<OAuthCallbackScreen />} />
-        <Route path="/select-role" element={<SelectRoleScreen />} />
+        <Route
+          path="/login"
+          element={
+            <Suspense fallback={<RouteLoading />}>
+              <LoginScreen />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <Suspense fallback={<RouteLoading />}>
+              <RegisterScreen />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/auth/callback"
+          element={
+            <Suspense fallback={<RouteLoading />}>
+              <OAuthCallbackScreen />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/select-role"
+          element={
+            <Suspense fallback={<RouteLoading />}>
+              <SelectRoleScreen />
+            </Suspense>
+          }
+        />
         {/* Public invite route — handles auth state internally */}
-        <Route path="/invite/:token" element={<InviteScreen />} />
+        <Route
+          path="/invite/:token"
+          element={
+            <Suspense fallback={<RouteLoading />}>
+              <InviteScreen />
+            </Suspense>
+          }
+        />
         {/* Public legal docs */}
-        <Route path="/docs/privacy" element={<DocsScreen />} />
-        <Route path="/docs/offer" element={<DocsScreen />} />
-        <Route path="/docs/seller" element={<DocsScreen />} />
-        <Route path="/" element={<LandingScreen />} />
+        <Route
+          path="/docs/privacy"
+          element={
+            <Suspense fallback={<RouteLoading />}>
+              <DocsScreen />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/docs/offer"
+          element={
+            <Suspense fallback={<RouteLoading />}>
+              <DocsScreen />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/docs/seller"
+          element={
+            <Suspense fallback={<RouteLoading />}>
+              <DocsScreen />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/"
+          element={
+            <Suspense fallback={<RouteLoading />}>
+              <LandingScreen />
+            </Suspense>
+          }
+        />
         <Route
           path="/home"
           element={
