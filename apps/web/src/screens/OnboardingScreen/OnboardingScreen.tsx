@@ -12,6 +12,7 @@ import WorkoutFormBase, {
 import AthleteQrCode from '@/components/AthleteQrCode/AthleteQrCode';
 import OnboardingPwaPushSection from '@/components/OnboardingPwaPushSection/OnboardingPwaPushSection';
 import Switch from '@/components/ui/Switch';
+import UiModeCard from '@/components/ui/UiModeCard';
 import { useAuth, useActiveMode } from '@/contexts/AuthContext';
 import { workoutsApi } from '@/api/workouts';
 import { profileApi } from '@/api/profile';
@@ -179,6 +180,14 @@ export default function OnboardingScreen(): JSX.Element {
   const [athleteDoneSubtitleOverride, setAthleteDoneSubtitleOverride] = useState<string | undefined>(
     undefined
   );
+  /** Для атлета: куда вести основной CTA на финале (solo → календарь, coach/team → команда). */
+  const [athleteDonePrimaryCta, setAthleteDonePrimaryCta] = useState<
+    | {
+        label: string;
+        to: '/calendar' | '/my-team' | '/home';
+      }
+    | undefined
+  >(undefined);
 
   // Redirect if onboarding already done
   useEffect(() => {
@@ -354,6 +363,7 @@ export default function OnboardingScreen(): JSX.Element {
       setAthleteDoneSubtitleOverride(
         'Первую тренировку можно занести из календаря, когда будет удобно.'
       );
+      setAthleteDonePrimaryCta({ label: 'Перейти в календарь', to: '/calendar' });
       setWorkoutInputMode(null);
       setStep('done');
     } catch {
@@ -496,6 +506,10 @@ export default function OnboardingScreen(): JSX.Element {
           <AthleteTeamActionStep
             onNext={async () => {
               await markComplete();
+              setAthleteDoneSubtitleOverride(
+                'Раздел «Моя команда» откроется, когда тренер добавит тебя или пришлёт инвайт.'
+              );
+              setAthleteDonePrimaryCta({ label: 'Перейти в «Моя команда»', to: '/my-team' });
               setStep('done');
             }}
             onBack={() => setStep('mode')}
@@ -526,6 +540,7 @@ export default function OnboardingScreen(): JSX.Element {
             isTrainerPath={isTrainerPath}
             navigate={navigate}
             athleteSubtitle={athleteDoneSubtitleOverride}
+            athletePrimaryCta={athleteDonePrimaryCta}
           />
         )}
       </motion.div>
@@ -857,64 +872,9 @@ function ModeStep({
         description="Управляет тем, какие разделы и функции видны в приложении. Можно изменить в любой момент."
       />
       <div className="grid gap-3 mb-4">
-        {/* Starter */}
-        <button
-          type="button"
-          onClick={() => onSelect('starter')}
-          className="rounded-2xl border border-(--color_border) bg-(--color_bg_card) p-4 text-left hover:border-emerald-500/40 transition-colors"
-        >
-          <div className="text-2xl mb-1">🌱</div>
-          <div className="font-semibold text-white">С нуля</div>
-          <div className="text-xs text-(--color_text_muted) mt-1">
-            Только самое главное — дневник, календарь, нагрузка. Остальное добавишь когда
-            понадобится.
-          </div>
-        </button>
-
-        {/* Pro */}
-        <button
-          type="button"
-          onClick={() => onSelect('pro')}
-          className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-left hover:bg-emerald-500/15 transition-colors"
-        >
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-2xl">⚡</span>
-            <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-400">
-              Рекомендуем
-            </span>
-          </div>
-          <div className="font-semibold text-white">В деле</div>
-          <div className="text-xs text-(--color_text_muted) mt-1">
-            Аналитика, AI, прогрессия, команды и диалоги — полный функционал без перегруза.
-          </div>
-        </button>
-
-        {/* Unleash — the fire button */}
-        <motion.button
-          type="button"
-          onClick={() => onSelect('unleash')}
-          className="rounded-2xl border-2 border-orange-500 p-4 text-left relative overflow-hidden"
-          style={{
-            background: 'linear-gradient(135deg, rgba(234,88,12,0.25), rgba(239,68,68,0.15))',
-          }}
-          animate={{
-            boxShadow: [
-              '0 0 16px rgba(249,115,22,0.3)',
-              '0 0 32px rgba(239,68,68,0.55)',
-              '0 0 16px rgba(249,115,22,0.3)',
-            ],
-          }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          <div className="text-2xl mb-1">🔥</div>
-          <div className="font-black text-white text-lg tracking-tight">МНЕ НУЖНО ВСЁ</div>
-          <div className="text-xs text-orange-200/80 mt-1">
-            Весь функционал сразу. Без обучения. Периодизация, видеозвонки, всё включено.
-          </div>
-          <div className="absolute top-2 right-3 text-[10px] font-bold text-orange-400/80 uppercase tracking-widest">
-            UNLEASH
-          </div>
-        </motion.button>
+        <UiModeCard mode="starter" ctx="athlete" onClick={() => onSelect('starter')} />
+        <UiModeCard mode="pro" ctx="athlete" onClick={() => onSelect('pro')} />
+        <UiModeCard mode="unleash" ctx="athlete" onClick={() => onSelect('unleash')} />
       </div>
       <GhostButton variant="solid" className="w-full" onClick={onBack}>
         Назад
@@ -940,62 +900,9 @@ function TrainerCabinetModeStep({
         description="Сколько возможностей включить сразу: AI, аналитика, работа с командой, чаты. Потом всё это можно поменять в профиле."
       />
       <div className="grid gap-3 mb-4">
-        <button
-          type="button"
-          onClick={() => onSelect('starter')}
-          className="rounded-2xl border border-(--color_border) bg-(--color_bg_card) p-4 text-left hover:border-emerald-500/40 transition-colors"
-        >
-          <div className="text-2xl mb-1">🌱</div>
-          <div className="font-semibold text-white">Минимум</div>
-          <div className="text-xs text-(--color_text_muted) mt-1">
-            Календарь и назначения без лишнего: без AI, аналитики и работы с командой на старте — меньше
-            отвлечений, пока осваиваетесь.
-          </div>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onSelect('pro')}
-          className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-left hover:bg-emerald-500/15 transition-colors"
-        >
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-2xl">⚡</span>
-            <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-400">
-              Рекомендуем
-            </span>
-          </div>
-          <div className="font-semibold text-white">Рабочий набор</div>
-          <div className="text-xs text-(--color_text_muted) mt-1">
-            AI, аналитика, прогрессия, команда и диалоги — нормальный режим для ведения клиентов.
-          </div>
-        </button>
-
-        <motion.button
-          type="button"
-          onClick={() => onSelect('unleash')}
-          className="rounded-2xl border-2 border-orange-500 p-4 text-left relative overflow-hidden"
-          style={{
-            background: 'linear-gradient(135deg, rgba(234,88,12,0.25), rgba(239,68,68,0.15))',
-          }}
-          animate={{
-            boxShadow: [
-              '0 0 16px rgba(249,115,22,0.3)',
-              '0 0 32px rgba(239,68,68,0.55)',
-              '0 0 16px rgba(249,115,22,0.3)',
-            ],
-          }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-        >
-          <div className="text-2xl mb-1">🔥</div>
-          <div className="font-black text-white text-lg tracking-tight">Всё включить</div>
-          <div className="text-xs text-orange-200/80 mt-1">
-            Периодизация, видеозвонки и остальные флаги — если уже знаете, что всем этим будете
-            пользоваться.
-          </div>
-          <div className="absolute top-2 right-3 text-[10px] font-bold text-orange-400/80 uppercase tracking-widest">
-            MAX
-          </div>
-        </motion.button>
+        <UiModeCard mode="starter" ctx="trainer" onClick={() => onSelect('starter')} />
+        <UiModeCard mode="pro" ctx="trainer" onClick={() => onSelect('pro')} />
+        <UiModeCard mode="unleash" ctx="trainer" onClick={() => onSelect('unleash')} />
       </div>
       <GhostButton variant="solid" className="w-full" onClick={onBack}>
         Назад
@@ -1233,7 +1140,7 @@ function AthleteTeamActionStep({
         <ScreenHeader
           icon="🎉"
           title="Всё настроено!"
-          description="Раздел «Команда» открыт — можно найти тренера или дождаться инвайта. Первую тренировку добавишь из календаря."
+          description="Теперь можно связаться с тренером: дождаться инвайта или принять приглашение, когда оно придёт."
         />
         <FeatureSpoiler
           open={spoilerOpen}
@@ -1247,7 +1154,7 @@ function AthleteTeamActionStep({
           Назад
         </GhostButton>
         <AccentButton className="flex-1 font-semibold" onClick={() => void onNext()}>
-          Перейти в Команда
+          Перейти в «Моя команда»
         </AccentButton>
       </div>
     </>
@@ -1344,12 +1251,16 @@ function DoneStep({
   isTrainerPath,
   navigate,
   athleteSubtitle,
+  athletePrimaryCta,
 }: {
   isTrainerPath: boolean;
   navigate: ReturnType<typeof useNavigate>;
   /** Для атлета: свой текст под заголовком (иначе дефолт про тренировку в календаре). */
   athleteSubtitle?: string;
+  /** Для атлета: основной CTA на финале (если не задан — календарь). */
+  athletePrimaryCta?: { label: string; to: '/calendar' | '/my-team' | '/home' };
 }) {
+  const athleteCta = athletePrimaryCta ?? { label: 'Перейти в календарь', to: '/calendar' as const };
   return (
     <div className="flex flex-col py-4">
       <div className="text-center shrink-0">
@@ -1367,7 +1278,8 @@ function DoneStep({
         <p className="text-sm text-(--color_text_muted) mb-4 max-w-sm mx-auto">
           {isTrainerPath
             ? 'Дальше — добавить атлетов и первые назначения.'
-            : athleteSubtitle ?? 'Тренировка в календаре. Продолжаем!'}
+            : athleteSubtitle ??
+              'Дальше можно добавить первую тренировку, когда будет удобно — из календаря.'}
         </p>
       </div>
 
@@ -1376,9 +1288,13 @@ function DoneStep({
       <div className="shrink-0 w-full max-w-md mx-auto space-y-2">
         <AccentButton
           className="w-full font-semibold py-3"
-          onClick={() => navigate(isTrainerPath ? '/trainer' : '/calendar', { replace: true })}
+          onClick={() =>
+            navigate(isTrainerPath ? '/trainer' : athleteCta.to, {
+              replace: true,
+            })
+          }
         >
-          {isTrainerPath ? 'Перейти на «Сегодня»' : 'Перейти в календарь'}
+          {isTrainerPath ? 'Перейти на «Сегодня»' : athleteCta.label}
         </AccentButton>
         {isTrainerPath && (
           <button

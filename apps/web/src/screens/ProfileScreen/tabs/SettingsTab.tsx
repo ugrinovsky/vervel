@@ -7,6 +7,7 @@ import {
   type FeatureFlags,
 } from '@/hooks/useFeatureFlags';
 import type { ClientPreferences } from '@/types/clientPreferences';
+import { UI_MODE_ORDER, uiModeDescription, uiModeLabel } from '@/util/uiModeCopy';
 import { useNavigate } from 'react-router';
 import AnimatedBlock from '@/components/ui/AnimatedBlock';
 import toast from 'react-hot-toast';
@@ -763,41 +764,6 @@ function firstBlockedAncestorKey(item: FeatItemConfig, flags: FeatureFlags): Fea
   return null;
 }
 
-const MODE_LABELS: Record<NonNullable<ClientPreferences['uiMode']>, string> = {
-  starter: '🌱 С нуля',
-  pro: '⚡ В деле',
-  unleash: '🔥 МНЕ НУЖНО ВСЁ',
-};
-
-const UI_MODE_ORDER = ['starter', 'pro', 'unleash'] as const satisfies readonly NonNullable<
-  ClientPreferences['uiMode']
->[];
-
-/** Кратко совпадает с пресетом MODE_FLAGS — мелкий текст под кнопкой режима */
-function uiModeDescription(
-  mode: NonNullable<ClientPreferences['uiMode']>,
-  isTrainer: boolean
-): string {
-  if (isTrainer) {
-    switch (mode) {
-      case 'starter':
-        return 'Календарь, шаблоны и каталог. Серии и карта нагрузки. Без ИИ, ростера (атлеты/группы), чатов и лидерборда.';
-      case 'pro':
-        return 'ИИ, атлеты и группы, чаты, лидерборд, шаблоны и каталог. Без сложной аналитики (ATL/CTL, ACWR) и видеозвонков.';
-      case 'unleash':
-        return 'Все переключатели включены, в том числе сложная аналитика у атлета и видеозвонки.';
-    }
-  }
-  switch (mode) {
-    case 'starter':
-      return 'Календарь, серии, карта нагрузки. Без ИИ, аналитики, прогрессии, команды и чатов.';
-    case 'pro':
-      return 'ИИ, аналитика, сила и прогрессия, команда, чаты, лидерборд. Без сложной аналитики и видеозвонков.';
-    case 'unleash':
-      return 'Всё включено: сложная аналитика (ATL/CTL/TSB, ACWR) и видеозвонки.';
-  }
-}
-
 function FeatureSettingsSection({
   user,
   updateUser,
@@ -843,7 +809,7 @@ function FeatureSettingsSection({
       try {
         const prefs = await applyUiMode(mode);
         updateUser({ ...user, clientPreferences: prefs });
-        toast.success(`Режим «${MODE_LABELS[mode]}» применён`);
+        toast.success(`Режим «${uiModeLabel(mode, isTrainer ? 'trainer' : 'athlete')}» применён`);
       } catch {
         toast.error('Не удалось применить режим');
       } finally {
@@ -871,7 +837,7 @@ function FeatureSettingsSection({
       <div className="bg-(--color_bg_card) rounded-2xl border border-(--color_border) p-4 mb-3">
         <p className="text-sm font-semibold text-white mb-1">Режим интерфейса</p>
         <p className="text-xs text-(--color_text_muted) mb-3">
-          {currentMode ? MODE_LABELS[currentMode] : 'Не выбран'}
+          {currentMode ? uiModeLabel(currentMode, isTrainer ? 'trainer' : 'athlete') : 'Не выбран'}
           {isDiverged && <span className="ml-2 text-orange-400/80">· изменён вручную</span>}
         </p>
         <div className="grid gap-2">
@@ -894,9 +860,11 @@ function FeatureSettingsSection({
                 }`}
               >
                 <div className="min-w-0 flex-1">
-                  <span className="block font-medium">{MODE_LABELS[mode]}</span>
+                  <span className="block font-medium">
+                    {uiModeLabel(mode, isTrainer ? 'trainer' : 'athlete')}
+                  </span>
                   <p className="mt-1 text-[11px] leading-snug text-(--color_text_muted)">
-                    {uiModeDescription(mode, isTrainer)}
+                    {uiModeDescription(mode, isTrainer ? 'trainer' : 'athlete')}
                   </p>
                 </div>
                 <div className="shrink-0 pt-0.5 text-right">
@@ -914,8 +882,8 @@ function FeatureSettingsSection({
         {confirmMode && (
           <div className="mt-3 p-3 rounded-xl bg-white/5 border border-white/10 text-sm">
             <p className="text-white mb-2">
-              Применить режим «{MODE_LABELS[confirmMode]}»? Все флаги функций будут сброшены к
-              настройкам этого режима.
+              Применить режим «{uiModeLabel(confirmMode, isTrainer ? 'trainer' : 'athlete')}»? Все
+              флаги функций будут сброшены к настройкам этого режима.
             </p>
             <div className="flex gap-2">
               <button
