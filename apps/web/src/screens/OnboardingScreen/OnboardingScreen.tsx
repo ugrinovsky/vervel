@@ -507,9 +507,9 @@ export default function OnboardingScreen(): JSX.Element {
             onNext={async () => {
               await markComplete();
               setAthleteDoneSubtitleOverride(
-                'Раздел «Моя команда» откроется, когда тренер добавит тебя или пришлёт инвайт.'
+                'Когда тренер добавит тебя или пришлёт инвайт — появятся «Команда» и чаты.'
               );
-              setAthleteDonePrimaryCta({ label: 'Перейти в «Моя команда»', to: '/my-team' });
+              setAthleteDonePrimaryCta({ label: 'На главную', to: '/home' });
               setStep('done');
             }}
             onBack={() => setStep('mode')}
@@ -1154,7 +1154,7 @@ function AthleteTeamActionStep({
           Назад
         </GhostButton>
         <AccentButton className="flex-1 font-semibold" onClick={() => void onNext()}>
-          Перейти в «Моя команда»
+          Готово
         </AccentButton>
       </div>
     </>
@@ -1264,14 +1264,18 @@ function DoneStep({
   return (
     <div className="flex flex-col py-4">
       <div className="text-center shrink-0">
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          className="text-5xl mb-3"
-        >
-          🚀
-        </motion.div>
+        {isTrainerPath ? (
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 38, bounce: 0 }}
+            className="text-5xl mb-3"
+          >
+            🚀
+          </motion.div>
+        ) : (
+          <div className="text-5xl mb-3">✅</div>
+        )}
         <h2 className="text-xl font-bold text-white mb-2">
           {isTrainerPath ? 'Кабинет готов к работе' : 'Отличное начало'}
         </h2>
