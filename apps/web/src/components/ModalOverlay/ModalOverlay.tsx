@@ -38,7 +38,7 @@ export default function ModalOverlay({
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               onClick={(e) => e.stopPropagation()}
-              className="modal-fullscreen-panel absolute max-w-[798px] w-[calc(100%-2rem)] left-1/2 -translate-x-1/2 top-4 bottom-24 rounded-2xl border border-(--color_border) flex flex-col overflow-hidden backdrop-blur-md"
+              className="modal-fullscreen-panel absolute max-w-[798px] w-[calc(100%-2rem)] left-1/2 -translate-x-1/2 rounded-2xl border border-(--color_border) flex flex-col overflow-hidden backdrop-blur-md top-[calc(env(safe-area-inset-top,0px)+1rem)] bottom-[calc(env(safe-area-inset-bottom,0px)+6rem)]"
             >
               {children}
             </motion.div>
