@@ -16,6 +16,7 @@ import UiModeCard from '@/components/ui/UiModeCard';
 import { useAuth, useActiveMode } from '@/contexts/AuthContext';
 import { workoutsApi } from '@/api/workouts';
 import { profileApi } from '@/api/profile';
+import { athleteApi } from '@/api/athlete';
 import { toApiDateTime } from '@/utils/date';
 import { exerciseDataToWorkoutExercise } from '@/util/workoutExerciseConversions';
 import { checkForNewAchievements } from '@/hooks/useAchievementToast';
@@ -506,10 +507,28 @@ export default function OnboardingScreen(): JSX.Element {
           <AthleteTeamActionStep
             onNext={async () => {
               await markComplete();
-              setAthleteDoneSubtitleOverride(
-                'Когда тренер добавит тебя или пришлёт инвайт — появятся «Команда» и чаты.'
-              );
-              setAthleteDonePrimaryCta({ label: 'На главную', to: '/home' });
+              try {
+                const [groupsRes, trainersRes] = await Promise.all([
+                  athleteApi.getMyGroups(),
+                  athleteApi.getMyTrainers(),
+                ]);
+                const hasTeam =
+                  (groupsRes.data.data?.length ?? 0) > 0 || (trainersRes.data.data?.length ?? 0) > 0;
+                if (hasTeam) {
+                  setAthleteDoneSubtitleOverride('Команда уже подключена — откроем её.');
+                  setAthleteDonePrimaryCta({ label: 'Открыть «Команда»', to: '/my-team' });
+                } else {
+                  setAthleteDoneSubtitleOverride(
+                    'Когда тренер добавит тебя или пришлёт инвайт — появятся «Команда» и чаты.'
+                  );
+                  setAthleteDonePrimaryCta({ label: 'На главную', to: '/home' });
+                }
+              } catch {
+                setAthleteDoneSubtitleOverride(
+                  'Когда тренер добавит тебя или пришлёт инвайт — появятся «Команда» и чаты.'
+                );
+                setAthleteDonePrimaryCta({ label: 'На главную', to: '/home' });
+              }
               setStep('done');
             }}
             onBack={() => setStep('mode')}
