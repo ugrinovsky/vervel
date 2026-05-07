@@ -123,7 +123,8 @@ export class JobWorkerService {
         if (!isRecord(payload) || typeof payload.scheduledWorkoutId !== 'number') {
           throw new Error('Invalid scheduled_workout_fanout payload')
         }
-        await this.handleScheduledWorkoutFanout(payload.scheduledWorkoutId)
+        const mode = payload.mode === 'update' ? 'update' : 'create'
+        await this.handleScheduledWorkoutFanout(payload.scheduledWorkoutId, mode)
       } else {
         throw new Error(`Unknown job type: ${type}`)
       }
@@ -220,7 +221,10 @@ export class JobWorkerService {
     }
   }
 
-  private async handleScheduledWorkoutFanout(scheduledWorkoutId: number) {
+  private async handleScheduledWorkoutFanout(
+    scheduledWorkoutId: number,
+    mode: 'create' | 'update' = 'create'
+  ) {
     const scheduled = await ScheduledWorkout.find(scheduledWorkoutId)
     if (!scheduled) return
 
@@ -233,6 +237,7 @@ export class JobWorkerService {
       scheduledDate: scheduled.scheduledDate,
       workoutData: scheduled.workoutData,
       assignedTo: parseAssignedTo(scheduled.assignedTo),
+      mode,
     })
 
     if (athleteIds.length === 0) return

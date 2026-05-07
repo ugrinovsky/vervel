@@ -143,6 +143,13 @@ export default class Workout extends compose(BaseModel, SoftDeletes) {
   @column()
   declare scheduledWorkoutId: number | null
 
+  /**
+   * True when the athlete has manually edited this workout after it was assigned by a trainer.
+   * Fanout will skip detached workouts so trainer edits don't overwrite athlete's version.
+   */
+  @column()
+  declare isDetached: boolean
+
   @belongsTo(() => User)
   declare user: BelongsTo<typeof User>
 }

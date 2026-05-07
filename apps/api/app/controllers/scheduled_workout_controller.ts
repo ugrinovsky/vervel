@@ -139,7 +139,7 @@ export default class ScheduledWorkoutController {
     if (workout.assignedTo.length > 0) {
       await JobQueueService.enqueue({
         type: 'scheduled_workout_fanout',
-        payload: { scheduledWorkoutId: workout.id },
+        payload: { scheduledWorkoutId: workout.id, mode: 'create' },
         maxAttempts: 10,
       })
     }
@@ -204,7 +204,7 @@ export default class ScheduledWorkoutController {
     if (newAssignedTo.length > 0) {
       await JobQueueService.enqueue({
         type: 'scheduled_workout_fanout',
-        payload: { scheduledWorkoutId: workout.id },
+        payload: { scheduledWorkoutId: workout.id, mode: 'update' },
         maxAttempts: 10,
       })
     } else {
@@ -222,6 +222,48 @@ export default class ScheduledWorkoutController {
         status: workout.status,
         notes: workout.notes,
       },
+    })
+  }
+
+  /**
+   * Get athlete results for a specific scheduled workout (trainer only)
+   * GET /trainer/scheduled-workouts/:id/results
+   *
+   * Returns all Workout rows linked via scheduledWorkoutId that belong to
+   * athletes of this trainer. Includes isDetached flag so the trainer can see
+   * who customised their plan.
+   */
+  async results({ auth, params, response }: HttpContext) {
+    const trainer = auth.user!
+
+    const scheduledWorkout = await ScheduledWorkout.query()
+      .where('id', params.id)
+      .where('trainerId', trainer.id)
+      .first()
+
+    if (!scheduledWorkout) {
+      return response.notFound({ message: 'Тренировка не найдена' })
+    }
+
+    const athleteWorkouts = await Workout.query()
+      .where('scheduledWorkoutId', scheduledWorkout.id)
+      .orderBy('userId', 'asc')
+
+    return response.ok({
+      success: true,
+      data: athleteWorkouts.map((w) => ({
+        id: w.id,
+        athleteId: w.userId,
+        date: w.date,
+        workoutType: w.workoutType,
+        exercises: w.exercises,
+        notes: w.notes,
+        rpe: w.rpe,
+        totalVolume: w.totalVolume,
+        totalIntensity: w.totalIntensity,
+        isDetached: w.isDetached,
+        scheduledWorkoutId: w.scheduledWorkoutId,
+      })),
     })
   }
 

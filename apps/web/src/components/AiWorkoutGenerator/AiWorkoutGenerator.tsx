@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SparklesIcon } from '@heroicons/react/24/outline';
 import { getApiErrorData, getApiErrorMessage } from '@/utils/apiError';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,8 +6,9 @@ import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import AiLoadingView from '@/components/ui/AiLoadingView';
 import { aiApi, type AiWorkoutResult } from '@/api/ai';
 import { useAiBalance } from '@/hooks/useAiBalance';
+import AiSheetHeader from '@/components/ui/AiSheetHeader';
+import AiCostNotice from '@/components/ui/AiCostNotice';
 
-const COST_GENERATE = 10;
 const MAX_PROMPT_LENGTH = 600;
 
 interface Props {
@@ -32,12 +33,24 @@ const LOADING_STEPS = [
 
 
 export default function AiWorkoutGenerator({ onResult, triggerClassName, triggerContent }: Props) {
-  const { balance, setBalance, hasEnoughBalance } = useAiBalance(COST_GENERATE);
+  const [cost, setCost] = useState(10);
+  const { balance, setBalance, hasEnoughBalance } = useAiBalance(cost);
 
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    aiApi
+      .getBalance()
+      .then((r) => {
+        if (typeof r.data.costs?.generate === 'number') setCost(r.data.costs.generate);
+        setBalance(r.data.balance);
+      })
+      .catch(() => {});
+  }, [open, setBalance]);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
@@ -67,17 +80,12 @@ export default function AiWorkoutGenerator({ onResult, triggerClassName, trigger
   };
 
   const sheetHeader = (
-    <div className="flex items-center gap-2">
-      <div className="w-8 h-8 flex items-center justify-center rounded-full bg-emerald-500/20">
-        <SparklesIcon className="w-4 h-4 text-emerald-400" />
-      </div>
-      <span className="text-lg font-bold text-white">ИИ-генерация</span>
-      {balance !== null && (
-        <span className={`ml-1 text-xs px-2 py-0.5 rounded-full ${hasEnoughBalance ? 'bg-white/10 text-white/50' : 'bg-red-500/20 text-red-400'}`}>
-          баланс: {balance}₽
-        </span>
-      )}
-    </div>
+    <AiSheetHeader
+      icon={<SparklesIcon className="w-4 h-4 text-emerald-400" />}
+      title="ИИ-генерация"
+      balance={balance}
+      hasEnoughBalance={hasEnoughBalance}
+    />
   );
 
   return (
@@ -110,10 +118,13 @@ export default function AiWorkoutGenerator({ onResult, triggerClassName, trigger
               <p className="text-sm text-(--color_text_muted)">
                 Опишите тренировку — ИИ подберёт упражнения, подходы и веса.
               </p>
-              <p className="text-xs text-white/45 leading-relaxed rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-                <span className="text-white/70">{COST_GENERATE}₽</span> — списываются с баланса сразу при запуске
-                запроса к ИИ (до ответа). При сбое сервиса возврат не выполняется автоматически.
-              </p>
+              <AiCostNotice cost={cost} actionLabel="генерация" />
+
+              {(error || (balance !== null && balance < cost)) && (
+                <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
+                  {error ?? `Недостаточно средств. Нужно ${cost}₽, баланс ${balance}₽ — пополните в Профиле.`}
+                </p>
+              )}
 
               <div className="relative">
                 <textarea
@@ -147,13 +158,6 @@ export default function AiWorkoutGenerator({ onResult, triggerClassName, trigger
                 </div>
               </div>
 
-              {(error || (balance !== null && balance < COST_GENERATE)) && (
-                <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
-                  {error ??
-                    `Недостаточно средств. Нужно ${COST_GENERATE}₽, баланс ${balance}₽ — пополните в Профиле.`}
-                </p>
-              )}
-
               <button
                 type="button"
                 onClick={handleGenerate}
@@ -161,7 +165,7 @@ export default function AiWorkoutGenerator({ onResult, triggerClassName, trigger
                 className="w-full py-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <SparklesIcon className="w-4 h-4" />
-                Сгенерировать {COST_GENERATE}₽
+                Сгенерировать {cost}₽
               </button>
             </motion.div>
           )}

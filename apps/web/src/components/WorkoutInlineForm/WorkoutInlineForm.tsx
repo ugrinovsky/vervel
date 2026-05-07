@@ -21,12 +21,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
 
+function isEditableWorkoutType(t: WorkoutData['type']): t is WorkoutType {
+  return t === 'crossfit' || t === 'bodybuilding' || t === 'cardio';
+}
+
 /** Типы, которые умеет редактировать WorkoutFormBase (не intro / rest_day). */
 function initialWorkoutTypeForForm(edit: ScheduledWorkout | undefined): WorkoutType | undefined {
   if (!edit) return undefined;
-  const t = edit.workoutData.type;
-  if (t === 'crossfit' || t === 'bodybuilding' || t === 'cardio') return t;
-  return undefined;
+  return isEditableWorkoutType(edit.workoutData.type) ? edit.workoutData.type : undefined;
 }
 
 function buildWorkoutPreviewMessage(

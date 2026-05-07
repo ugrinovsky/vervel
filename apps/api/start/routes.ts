@@ -263,6 +263,10 @@ router
     router.post('scheduled-workouts', '#controllers/scheduled_workout_controller.create')
     router.put('scheduled-workouts/:id', '#controllers/scheduled_workout_controller.update')
     router.delete('scheduled-workouts/:id', '#controllers/scheduled_workout_controller.delete')
+    router.get(
+      'scheduled-workouts/:id/results',
+      '#controllers/scheduled_workout_controller.results'
+    )
 
     // Workout templates
     router.get('workout-templates', '#controllers/workout_template_controller.list')

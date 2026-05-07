@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { getApiErrorMessage } from '@/utils/apiError';
 import { DocumentTextIcon, SparklesIcon } from '@heroicons/react/24/outline';
@@ -6,6 +6,9 @@ import { aiApi, type AiTextParseUiPayload } from '@/api/ai';
 import AccentButton from '@/components/ui/AccentButton';
 import AiLoadingView from '@/components/ui/AiLoadingView';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useAiBalance } from '@/hooks/useAiBalance';
+import AiSheetHeader from '@/components/ui/AiSheetHeader';
+import AiCostNotice from '@/components/ui/AiCostNotice';
 
 interface Props {
   onResult: (payload: AiTextParseUiPayload) => void;
@@ -14,6 +17,9 @@ interface Props {
 }
 
 export default function AiWorkoutTextParser({ onResult, triggerClassName, triggerContent }: Props) {
+  const [cost, setCost] = useState(10);
+  const { balance, setBalance, hasEnoughBalance } = useAiBalance(cost);
+
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -24,17 +30,27 @@ export default function AiWorkoutTextParser({ onResult, triggerClassName, trigge
     []
   );
 
-  const header = useMemo(
-    () => (
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 flex items-center justify-center rounded-full bg-emerald-500/20">
-          <DocumentTextIcon className="w-4 h-4 text-emerald-400" />
-        </div>
-        <span className="text-lg font-bold text-white">Разбор текста</span>
-      </div>
-    ),
-    []
-  );
+  const header = useMemo(() => {
+    return (
+      <AiSheetHeader
+        icon={<DocumentTextIcon className="w-4 h-4 text-emerald-400" />}
+        title="Разбор текста"
+        balance={balance}
+        hasEnoughBalance={hasEnoughBalance}
+      />
+    );
+  }, [balance, hasEnoughBalance]);
+
+  useEffect(() => {
+    if (!open) return;
+    aiApi
+      .getBalance()
+      .then((r) => {
+        if (typeof r.data.costs?.parseNotes === 'number') setCost(r.data.costs.parseNotes);
+        setBalance(r.data.balance);
+      })
+      .catch(() => {});
+  }, [open, setBalance]);
 
   const close = () => {
     if (busy) return;
@@ -50,6 +66,7 @@ export default function AiWorkoutTextParser({ onResult, triggerClassName, trigge
     setError(null);
     try {
       const res = await aiApi.parseNotesText(notes);
+      if (typeof res.data.balance === 'number') setBalance(res.data.balance);
       const parsed = res.data.exercises ?? [];
       if (parsed.length === 0) {
         setError(
@@ -92,6 +109,7 @@ export default function AiWorkoutTextParser({ onResult, triggerClassName, trigge
                 ИИ распознает по тексту
               </span>
             </span>
+            <span className="text-xs text-white/40 shrink-0">{cost}₽</span>
             <span className="text-emerald-400/60 text-base shrink-0">→</span>
           </>
         )}
@@ -112,6 +130,14 @@ export default function AiWorkoutTextParser({ onResult, triggerClassName, trigge
               <p className="text-sm text-(--color_text_muted)">
                 Вставьте программу тренировки — ИИ распарсит упражнения, подходы и веса.
               </p>
+
+              <AiCostNotice cost={cost} actionLabel="разбор текста" />
+
+              {balance !== null && balance < cost && (
+                <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
+                  Недостаточно средств. Нужно {cost}₽, баланс {balance}₽ — пополните в Профиле.
+                </p>
+              )}
 
               <div className="relative">
                 <textarea
@@ -135,11 +161,11 @@ export default function AiWorkoutTextParser({ onResult, triggerClassName, trigge
               <AccentButton
                 type="button"
                 onClick={() => void run()}
-                disabled={text.trim().length < 5}
+                disabled={text.trim().length < 5 || !hasEnoughBalance}
                 className="gap-2 !bg-emerald-600 hover:!bg-emerald-500"
               >
                 <SparklesIcon className="w-4 h-4" />
-                Распарсить текст
+                Распарсить текст {cost}₽
               </AccentButton>
             </motion.div>
           )}

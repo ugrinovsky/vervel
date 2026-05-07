@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CameraIcon, SparklesIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { getApiErrorData, getApiErrorMessage } from '@/utils/apiError';
@@ -6,8 +6,9 @@ import AiLoadingView from '@/components/ui/AiLoadingView';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { aiApi, type AiRecognizedWorkoutResult } from '@/api/ai';
 import { useAiBalance } from '@/hooks/useAiBalance';
+import AiSheetHeader from '@/components/ui/AiSheetHeader';
+import AiCostNotice from '@/components/ui/AiCostNotice';
 
-const COST_RECOGNIZE = 10;
 const MAX_FILE_SIZE_MB = 20;
 const ALLOWED_TYPES = [
   'image/jpeg',
@@ -59,7 +60,8 @@ const LOADING_STEPS = [
 ];
 
 export default function AiWorkoutRecognizer({ onResult, triggerClassName, triggerContent }: Props) {
-  const { balance, setBalance, hasEnoughBalance } = useAiBalance(COST_RECOGNIZE);
+  const [cost, setCost] = useState(10);
+  const { balance, setBalance, hasEnoughBalance } = useAiBalance(cost);
 
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -67,6 +69,17 @@ export default function AiWorkoutRecognizer({ onResult, triggerClassName, trigge
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    aiApi
+      .getBalance()
+      .then((r) => {
+        if (typeof r.data.costs?.recognize === 'number') setCost(r.data.costs.recognize);
+        setBalance(r.data.balance);
+      })
+      .catch(() => {});
+  }, [open, setBalance]);
 
   const clearFile = () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -128,19 +141,12 @@ export default function AiWorkoutRecognizer({ onResult, triggerClassName, trigge
   };
 
   const sheetHeader = (
-    <div className="flex items-center gap-2">
-      <div className="w-8 h-8 flex items-center justify-center rounded-full bg-emerald-500/20">
-        <CameraIcon className="w-4 h-4 text-emerald-400" />
-      </div>
-      <span className="text-lg font-bold text-white">ИИ-распознавание</span>
-      {balance !== null && (
-        <span
-          className={`ml-1 text-xs px-2 py-0.5 rounded-full ${hasEnoughBalance ? 'bg-white/10 text-white/50' : 'bg-red-500/20 text-red-400'}`}
-        >
-          баланс: {balance}₽
-        </span>
-      )}
-    </div>
+    <AiSheetHeader
+      icon={<CameraIcon className="w-4 h-4 text-emerald-400" />}
+      title="ИИ-распознавание"
+      balance={balance}
+      hasEnoughBalance={hasEnoughBalance}
+    />
   );
 
   return (
@@ -155,7 +161,7 @@ export default function AiWorkoutRecognizer({ onResult, triggerClassName, trigge
             <SparklesIcon className="w-4 h-4" />
             Распознать по фото
             <span className="text-white/30">·</span>
-            <span className="text-white/40">{COST_RECOGNIZE}₽</span>
+            <span className="text-white/40">{cost}₽</span>
           </>
         )}
       </button>
@@ -180,6 +186,14 @@ export default function AiWorkoutRecognizer({ onResult, triggerClassName, trigge
               <p className="text-sm text-(--color_text_muted)">
                 По фото ИИ распознает упражнения автоматически.
               </p>
+
+              <AiCostNotice cost={cost} actionLabel="распознавание" />
+
+              {(error || (balance !== null && balance < cost)) && (
+                <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
+                  {error ?? `Недостаточно средств. Нужно ${cost}₽, баланс ${balance}₽ — пополните в Профиле.`}
+                </p>
+              )}
 
               <button
                 type="button"
@@ -220,18 +234,6 @@ export default function AiWorkoutRecognizer({ onResult, triggerClassName, trigge
                 }}
               />
 
-              <p className="text-xs text-white/45 leading-relaxed rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-                <span className="text-white/70">{COST_RECOGNIZE}₽</span> — списываются с баланса сразу при запуске
-                распознавания (до ответа ИИ). При сбое сервиса возврат не выполняется автоматически.
-              </p>
-
-              {(error || (balance !== null && balance < COST_RECOGNIZE)) && (
-                <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
-                  {error ??
-                    `Недостаточно средств. Нужно ${COST_RECOGNIZE}₽, баланс ${balance}₽ — пополните в Профиле.`}
-                </p>
-              )}
-
               <button
                 type="button"
                 onClick={handleRecognize}
@@ -239,7 +241,7 @@ export default function AiWorkoutRecognizer({ onResult, triggerClassName, trigge
                 className="w-full py-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <SparklesIcon className="w-4 h-4" />
-                Распознать {COST_RECOGNIZE}₽
+                Распознать {cost}₽
               </button>
             </motion.div>
           )}

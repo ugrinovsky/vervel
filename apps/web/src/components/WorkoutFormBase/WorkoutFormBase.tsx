@@ -540,7 +540,6 @@ export default function WorkoutFormBase({
         }
       />
       <AiWorkoutGenerator onResult={handleAiGeneratedResult} />
-      <span className="text-xs text-white/40 self-center">· 10₽</span>
     </div>
   ) : null;
 
@@ -852,7 +851,20 @@ export default function WorkoutFormBase({
                   }
                 />
 
-                <AiWorkoutTextParser onResult={handleAiTextParsed} />
+                <AiWorkoutTextParser
+                  onResult={handleAiTextParsed}
+                  triggerClassName="w-full flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-left hover:bg-emerald-500/15 transition-colors"
+                  triggerContent={
+                    <>
+                      <span className="text-xl shrink-0">📝</span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-sm font-medium text-white">Распознать по тексту</span>
+                        <span className="block text-xs text-(--color_text_muted)">ИИ распознает по тексту</span>
+                      </span>
+                      <span className="text-emerald-400/60 text-base shrink-0">→</span>
+                    </>
+                  }
+                />
 
                 <AiWorkoutGenerator
                   onResult={handleAiGeneratedResult}

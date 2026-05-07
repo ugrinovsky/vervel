@@ -113,6 +113,8 @@ export default class WorkoutsController {
       zonesLoadAbs: calculated.zonesLoadAbs,
       totalIntensity: calculated.totalIntensity,
       totalVolume: calculated.totalVolume,
+      // Mark as detached so future trainer edits don't overwrite athlete's version
+      isDetached: workout.scheduledWorkoutId !== null ? true : workout.isDetached,
     })
 
     await workout.save()
