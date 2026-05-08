@@ -21,6 +21,10 @@ export type ClientPreferences = {
   /** Active UI mode set during onboarding step 3 */
   uiMode?: 'starter' | 'pro' | 'unleash'
 
+  // ─── Copilot / planning ───────────────────────────────────────────────────
+  /** Preferred training frequency per week (1..5). */
+  workoutFrequency?: number
+
   // ─── Feature flags (source of truth — batch-set by mode or toggled manually) ──
   featAi?: boolean
   featAnalytics?: boolean

@@ -60,7 +60,7 @@ export class CopilotInsightsService {
 
     const overloadedZones = computeOverloadedZones(
       windowWorkouts.map((w) => ({
-        zonesLoadAbs: w.zonesLoadAbs as Record<string, number> | null,
+        zonesLoadAbs: w.zonesLoadAbs,
       }))
     )
 

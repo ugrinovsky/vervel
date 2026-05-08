@@ -58,7 +58,7 @@ export default class AthleteCopilotController {
     }
 
     // Частота тренировок из настроек
-    const prefs = athlete.clientPreferences as Record<string, unknown> | null
+    const prefs = athlete.clientPreferences
     const workoutFrequency = Math.min(Math.max(Number(prefs?.workoutFrequency ?? 3), 1), 5)
 
     // Строим план
@@ -146,7 +146,7 @@ export default class AthleteCopilotController {
         .startOf('week')
         .toISODate()!
 
-      const prefs = athlete.clientPreferences as Record<string, unknown> | null
+      const prefs = athlete.clientPreferences
       const workoutFrequency = Math.min(Math.max(Number(prefs?.workoutFrequency ?? 3), 1), 5)
 
       const plan = await AthleteCopilotPlanService.build({
