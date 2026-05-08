@@ -15,6 +15,8 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAthleteWorkoutDraftLocal } from '@/hooks/useAthleteWorkoutDraftLocal';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import WeeklyPlanSheet from '@/components/athlete/WeeklyPlanSheet';
+import { athleteCopilotApi, type CopilotWeekItem } from '@/api/workouts';
 
 export default function ActivityScreen() {
   const navigate = useNavigate();
@@ -42,9 +44,21 @@ export default function ActivityScreen() {
     refetch,
   } = useActivityData(draftDateKey);
 
+  const [weekItems, setWeekItems] = useState<CopilotWeekItem[]>([]);
+
+  useEffect(() => {
+    athleteCopilotApi
+      .getWeek()
+      .then((res) => {
+        setWeekItems(res.data.data.weekItems);
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     const st = location.state;
-    if (st === null || typeof st !== 'object' || Array.isArray(st) || st.savedWorkout !== true) return;
+    if (st === null || typeof st !== 'object' || Array.isArray(st) || st.savedWorkout !== true)
+      return;
     setSavedWorkoutBanner(true);
     const dateKey = 'date' in st && typeof st.date === 'string' ? st.date : undefined;
     navigate(location.pathname, { replace: true, state: dateKey ? { date: dateKey } : null });
@@ -92,7 +106,11 @@ export default function ActivityScreen() {
                         : 'Кардио'}
                   </p>
                 </div>
-                <AccentButton size="sm" onClick={() => navigate('/workouts/new')} className="shrink-0">
+                <AccentButton
+                  size="sm"
+                  onClick={() => navigate('/workouts/new')}
+                  className="shrink-0"
+                >
                   Продолжить
                 </AccentButton>
               </motion.div>
@@ -105,7 +123,9 @@ export default function ActivityScreen() {
               >
                 <div>
                   <p className="text-sm font-semibold text-emerald-200">Тренировка сохранена</p>
-                  <p className="text-xs text-white/70 mt-0.5">Когда появятся данные, день будет подсвечен в календаре.</p>
+                  <p className="text-xs text-white/70 mt-0.5">
+                    Когда появятся данные, день будет подсвечен в календаре.
+                  </p>
                 </div>
                 <AccentButton
                   size="sm"
@@ -120,7 +140,8 @@ export default function ActivityScreen() {
                 {pushSupported && pushPermission === 'default' && (
                   <div className="pt-2 border-t border-emerald-500/25">
                     <p className="text-xs text-white/65 mb-2">
-                      Можно включить напоминания в браузере — так проще не пропустить следующую тренировку.
+                      Можно включить напоминания в браузере — так проще не пропустить следующую
+                      тренировку.
                     </p>
                     <AccentButton
                       size="sm"
@@ -142,47 +163,48 @@ export default function ActivityScreen() {
               animate={{ opacity: 1, y: 0 }}
               className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) space-y-4"
             >
-            <div className="text-center">
-              <div className="text-4xl mb-2">📅</div>
-              <h3 className="font-semibold text-white mb-1">Ещё нет тренировок</h3>
-              <p className="text-sm text-(--color_text_muted)">
-                Залогируйте первую тренировку — и здесь появится ваш персональный календарь нагрузок
-              </p>
-            </div>
-            <div className="space-y-3">
-              {[
-                {
-                  emoji: '1️⃣',
-                  title: 'Добавьте тренировку',
-                  desc: 'Вручную или через ИИ-распознавание по фото/описанию',
-                  action: () => navigate('/workouts/new'),
-                  label: 'Добавить',
-                },
-                {
-                  emoji: '2️⃣',
-                  title: 'Выберите день на календаре',
-                  desc: 'Нажмите на любой день — откроются детали и список упражнений',
-                },
-                {
-                  emoji: '3️⃣',
-                  title: 'Следите за нагрузкой',
-                  desc: 'Зелёный цвет = нагрузка в этот день. Чем насыщеннее — тем выше интенсивность',
-                },
-              ].map(({ emoji, title, desc, action, label }) => (
-                <div key={title} className="flex items-start gap-3">
-                  <span className="text-xl shrink-0">{emoji}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-white">{title}</div>
-                    <div className="text-xs text-(--color_text_muted) mt-0.5">{desc}</div>
+              <div className="text-center">
+                <div className="text-4xl mb-2">📅</div>
+                <h3 className="font-semibold text-white mb-1">Ещё нет тренировок</h3>
+                <p className="text-sm text-(--color_text_muted)">
+                  Залогируйте первую тренировку — и здесь появится ваш персональный календарь
+                  нагрузок
+                </p>
+              </div>
+              <div className="space-y-3">
+                {[
+                  {
+                    emoji: '1️⃣',
+                    title: 'Добавьте тренировку',
+                    desc: 'Вручную или через ИИ-распознавание по фото/описанию',
+                    action: () => navigate('/workouts/new'),
+                    label: 'Добавить',
+                  },
+                  {
+                    emoji: '2️⃣',
+                    title: 'Выберите день на календаре',
+                    desc: 'Нажмите на любой день — откроются детали и список упражнений',
+                  },
+                  {
+                    emoji: '3️⃣',
+                    title: 'Следите за нагрузкой',
+                    desc: 'Зелёный цвет = нагрузка в этот день. Чем насыщеннее — тем выше интенсивность',
+                  },
+                ].map(({ emoji, title, desc, action, label }) => (
+                  <div key={title} className="flex items-start gap-3">
+                    <span className="text-xl shrink-0">{emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-white">{title}</div>
+                      <div className="text-xs text-(--color_text_muted) mt-0.5">{desc}</div>
+                    </div>
+                    {action && (
+                      <AccentButton size="sm" onClick={action} className="shrink-0 text-xs">
+                        {label}
+                      </AccentButton>
+                    )}
                   </div>
-                  {action && (
-                    <AccentButton size="sm" onClick={action} className="shrink-0 text-xs">
-                      {label}
-                    </AccentButton>
-                  )}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
             </motion.div>
           </SectionGroup>
         </div>
@@ -225,7 +247,8 @@ export default function ActivityScreen() {
               {pushSupported && pushPermission === 'default' && (
                 <div className="pt-2 border-t border-emerald-500/25">
                   <p className="text-xs text-white/65 mb-2">
-                    Можно включить напоминания в браузере — так проще не пропустить следующую тренировку.
+                    Можно включить напоминания в браузере — так проще не пропустить следующую
+                    тренировку.
                   </p>
                   <AccentButton
                     size="sm"
@@ -242,9 +265,10 @@ export default function ActivityScreen() {
 
           <ScreenHint>
             Нажмите на день — откроются детали тренировок.{' '}
-            <span className="text-white font-medium">Насыщенность цвета</span> отражает интенсивность нагрузки.
-            Нет цвета — день без тренировок. В ячейке перечёркнутые весы или звезда — в этот день не хватает весов в
-            подходах или оценки нагрузки (см. легенду под календарём).
+            <span className="text-white font-medium">Насыщенность цвета</span> отражает
+            интенсивность нагрузки. Нет цвета — день без тренировок. В ячейке перечёркнутые весы или
+            звезда — в этот день не хватает весов в подходах или оценки нагрузки (см. легенду под
+            календарём).
           </ScreenHint>
 
           {draft && (
@@ -256,15 +280,30 @@ export default function ActivityScreen() {
               <div className="min-w-0">
                 <p className="text-sm font-medium text-amber-300">Незаконченная тренировка</p>
                 <p className="text-xs text-amber-400/70 mt-0.5 truncate">
-                  {draft.exercises.length} упр. · {draft.workoutType === 'bodybuilding' ? 'Силовая' : draft.workoutType === 'crossfit' ? 'CrossFit' : 'Кардио'}
+                  {draft.exercises.length} упр. ·{' '}
+                  {draft.workoutType === 'bodybuilding'
+                    ? 'Силовая'
+                    : draft.workoutType === 'crossfit'
+                      ? 'CrossFit'
+                      : 'Кардио'}
                 </p>
               </div>
-              <AccentButton size="sm" onClick={() => navigate('/workouts/new')} className="shrink-0">
+              <AccentButton
+                size="sm"
+                onClick={() => navigate('/workouts/new')}
+                className="shrink-0"
+              >
                 Продолжить
               </AccentButton>
             </motion.div>
           )}
         </SectionGroup>
+
+        {weekItems.length > 0 && (
+          <SectionGroup title="Эта неделя" showBreakAfter={false}>
+            <WeeklyPlanSheet items={weekItems} />
+          </SectionGroup>
+        )}
 
         <SectionGroup title="Календарь">
           <motion.div
@@ -294,7 +333,13 @@ export default function ActivityScreen() {
               transition={{ duration: 0.2 }}
             >
               <SectionGroup title="День">
-                <DayDetails date={selectedDate} workouts={dayWorkouts} onDeleted={refetch} onRefresh={refetch} draft={draft} />
+                <DayDetails
+                  date={selectedDate}
+                  workouts={dayWorkouts}
+                  onDeleted={refetch}
+                  onRefresh={refetch}
+                  draft={draft}
+                />
               </SectionGroup>
             </motion.div>
           )}

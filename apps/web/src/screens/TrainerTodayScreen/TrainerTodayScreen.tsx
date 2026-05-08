@@ -50,6 +50,7 @@ import {
   ChatBubbleLeftEllipsisIcon,
 } from '@heroicons/react/24/outline';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
+import CopilotAthleteList from '@/components/trainer/CopilotAthleteList';
 
 export default function TrainerTodayScreen() {
   const navigate = useNavigate();
@@ -113,135 +114,131 @@ export default function TrainerTodayScreen() {
         />
 
         <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
-        <AnimatedBlock className="w-full rounded-2xl p-4 border border-(--color_primary_light)/30 bg-(--color_primary_light)/10"
-        >
-          <div className="flex items-center gap-3">
-            <div className="text-2xl">
-              {overview
-                ? getTrainerTodayHeroEmoji(todaySessionCount, hasRestDayToday)
-                : getTrainerTodayHeroEmoji(0, false)}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-base font-bold text-(--color_text_primary)">{getGreeting(user?.fullName)}</div>
-              <div className="text-xs text-(--color_text_secondary) mt-0.5 min-h-[1rem]">
-                {overview ? getTrainerSubtitle(todaySessionCount, hasRestDayToday) : ''}
+          <AnimatedBlock className="w-full rounded-2xl p-4 border border-(--color_primary_light)/30 bg-(--color_primary_light)/10">
+            <div className="flex items-center gap-3">
+              <div className="text-2xl">
+                {overview
+                  ? getTrainerTodayHeroEmoji(todaySessionCount, hasRestDayToday)
+                  : getTrainerTodayHeroEmoji(0, false)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-base font-bold text-(--color_text_primary)">
+                  {getGreeting(user?.fullName)}
+                </div>
+                <div className="text-xs text-(--color_text_secondary) mt-0.5 min-h-4">
+                  {overview ? getTrainerSubtitle(todaySessionCount, hasRestDayToday) : ''}
+                </div>
               </div>
             </div>
-          </div>
-        </AnimatedBlock>
-
-        <ScreenHint>
-          {workStyle ? (
-            <span className="block mb-2">{getTrainerTodayDashboardHint(workStyle)}</span>
-          ) : null}
-          Дашборд тренера на текущий день.
-          {flags.teams ? (
-            <>
-              {' '}
-              Красные бейджи — непрочитанные сообщения от атлетов и групп.{' '}
-            </>
-          ) : null}
-          <span className="text-white font-medium">Тренировки на сегодня</span> — все запланированные
-          занятия; нажмите, чтобы перейти в Календарь.
-          {flags.teams ? (
-            <>
-              {' '}
-              В блоке <span className="text-white font-medium">Сводка</span> плитки ведут в календарь,
-              список атлетов и список групп.
-            </>
-          ) : null}
-        </ScreenHint>
-
-        {/* Unread messages banners — только при включённых атлетах и группах */}
-        {flags.teams && unreadCounts && (
-          <div className="space-y-3">
-            {(() => {
-              const groupsWithUnread = unreadCounts.groups.filter((g) => g.unread > 0);
-              const groupsTotal = groupsWithUnread.reduce((s, g) => s + g.unread, 0);
-              if (groupsTotal === 0) return null;
-              return (
-                <motion.button
-                  key="groups-unread"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  onClick={() => navigate('/trainer/groups')}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
-                >
-                  <ChatBubbleLeftEllipsisIcon className="w-6 h-6 text-(--color_primary_icon) shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-white">Группы</div>
-                    <div className="text-xs text-(--color_text_muted)">
-                      {groupsWithUnread.length} {groupsWithUnread.length === 1 ? 'группа' : 'групп'}{' '}
-                      с непрочитанными
-                    </div>
-                  </div>
-                  <Badge count={groupsTotal} size="md" />
-                </motion.button>
-              );
-            })()}
-            {(() => {
-              const athletesWithUnread = unreadCounts.athletes.filter((a) => a.unread > 0);
-              const athletesTotal = athletesWithUnread.reduce((s, a) => s + a.unread, 0);
-              if (athletesTotal === 0) return null;
-              return (
-                <motion.button
-                  key="athletes-unread"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.05 }}
-                  onClick={() => navigate('/trainer/athletes')}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
-                >
-                  <ChatBubbleLeftEllipsisIcon className="w-6 h-6 text-(--color_primary_icon) shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-white">Персоналки</div>
-                    <div className="text-xs text-(--color_text_muted)">
-                      {athletesWithUnread.length}{' '}
-                      {athletesWithUnread.length === 1 ? 'атлет' : 'атлетов'} с непрочитанными
-                    </div>
-                  </div>
-                  <Badge count={athletesTotal} size="md" />
-                </motion.button>
-              );
-            })()}
-          </div>
-        )}
-
-        {/* Getting started guide — показываем пока нет атлетов (счётчик с бэка; при выключенных командах — другой лид) */}
-        {overview && overview.stats.athleteCount === 0 && (
-          <AnimatedBlock className="rounded-2xl p-5 bg-(--color_bg_card) border border-amber-500/20">
-            <h3 className="text-base font-semibold text-white mb-1">🚀 С чего начать</h3>
-            <p className="text-xs text-(--color_text_muted) mb-4">
-              {flags.teams ? (
-                'Добавьте атлетов — и всё заработает: статистика, расписание, чаты, аналитика прогресса'
-              ) : (
-                'Календарь и шаблоны — без списка атлетов в приложении. Включите «Атлеты и группы» в настройках, когда понадобится ростер и чаты.'
-              )}
-            </p>
-            <div className="space-y-3">
-              {getTrainerGettingStartedSteps(workStyle, {
-                templates: flags.trainerTemplates,
-                teams: flags.teams,
-              }).map(({ step, title, desc, to, label }) => (
-                <div key={to} className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-full bg-(--color_primary_light)/30 text-(--color_primary) flex items-center justify-center text-sm font-bold shrink-0">
-                    {step}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-white">{title}</div>
-                    <div className="text-xs text-(--color_text_muted) mt-0.5">{desc}</div>
-                  </div>
-                  <button
-                    onClick={() => navigate(to)}
-                    className="shrink-0 text-xs px-3 py-1.5 rounded-lg bg-(--color_primary_light)/20 text-(--color_primary) font-medium hover:bg-(--color_primary_light)/30 transition-colors"
-                  >
-                    {label}
-                  </button>
-                </div>
-              ))}
-            </div>
           </AnimatedBlock>
-        )}
+
+          <ScreenHint>
+            {workStyle ? (
+              <span className="block mb-2">{getTrainerTodayDashboardHint(workStyle)}</span>
+            ) : null}
+            Дашборд тренера на текущий день.
+            {flags.teams ? (
+              <> Красные бейджи — непрочитанные сообщения от атлетов и групп. </>
+            ) : null}
+            <span className="text-white font-medium">Тренировки на сегодня</span> — все
+            запланированные занятия; нажмите, чтобы перейти в Календарь.
+            {flags.teams ? (
+              <>
+                {' '}
+                В блоке <span className="text-white font-medium">Сводка</span> плитки ведут в
+                календарь, список атлетов и список групп.
+              </>
+            ) : null}
+          </ScreenHint>
+
+          {/* Unread messages banners — только при включённых атлетах и группах */}
+          {flags.teams && unreadCounts && (
+            <div className="space-y-3">
+              {(() => {
+                const groupsWithUnread = unreadCounts.groups.filter((g) => g.unread > 0);
+                const groupsTotal = groupsWithUnread.reduce((s, g) => s + g.unread, 0);
+                if (groupsTotal === 0) return null;
+                return (
+                  <motion.button
+                    key="groups-unread"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onClick={() => navigate('/trainer/groups')}
+                    className="w-full flex items-center gap-3 p-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
+                  >
+                    <ChatBubbleLeftEllipsisIcon className="w-6 h-6 text-(--color_primary_icon) shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-white">Группы</div>
+                      <div className="text-xs text-(--color_text_muted)">
+                        {groupsWithUnread.length}{' '}
+                        {groupsWithUnread.length === 1 ? 'группа' : 'групп'} с непрочитанными
+                      </div>
+                    </div>
+                    <Badge count={groupsTotal} size="md" />
+                  </motion.button>
+                );
+              })()}
+              {(() => {
+                const athletesWithUnread = unreadCounts.athletes.filter((a) => a.unread > 0);
+                const athletesTotal = athletesWithUnread.reduce((s, a) => s + a.unread, 0);
+                if (athletesTotal === 0) return null;
+                return (
+                  <motion.button
+                    key="athletes-unread"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.05 }}
+                    onClick={() => navigate('/trainer/athletes')}
+                    className="w-full flex items-center gap-3 p-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
+                  >
+                    <ChatBubbleLeftEllipsisIcon className="w-6 h-6 text-(--color_primary_icon) shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-white">Персоналки</div>
+                      <div className="text-xs text-(--color_text_muted)">
+                        {athletesWithUnread.length}{' '}
+                        {athletesWithUnread.length === 1 ? 'атлет' : 'атлетов'} с непрочитанными
+                      </div>
+                    </div>
+                    <Badge count={athletesTotal} size="md" />
+                  </motion.button>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* Getting started guide — показываем пока нет атлетов (счётчик с бэка; при выключенных командах — другой лид) */}
+          {overview && overview.stats.athleteCount === 0 && (
+            <AnimatedBlock className="rounded-2xl p-5 bg-(--color_bg_card) border border-amber-500/20">
+              <h3 className="text-base font-semibold text-white mb-1">🚀 С чего начать</h3>
+              <p className="text-xs text-(--color_text_muted) mb-4">
+                {flags.teams
+                  ? 'Добавьте атлетов — и всё заработает: статистика, расписание, чаты, аналитика прогресса'
+                  : 'Календарь и шаблоны — без списка атлетов в приложении. Включите «Атлеты и группы» в настройках, когда понадобится ростер и чаты.'}
+              </p>
+              <div className="space-y-3">
+                {getTrainerGettingStartedSteps(workStyle, {
+                  templates: flags.trainerTemplates,
+                  teams: flags.teams,
+                }).map(({ step, title, desc, to, label }) => (
+                  <div key={to} className="flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-full bg-(--color_primary_light)/30 text-(--color_primary) flex items-center justify-center text-sm font-bold shrink-0">
+                      {step}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-white">{title}</div>
+                      <div className="text-xs text-(--color_text_muted) mt-0.5">{desc}</div>
+                    </div>
+                    <button
+                      onClick={() => navigate(to)}
+                      className="shrink-0 text-xs px-3 py-1.5 rounded-lg bg-(--color_primary_light)/20 text-(--color_primary) font-medium hover:bg-(--color_primary_light)/30 transition-colors"
+                    >
+                      {label}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </AnimatedBlock>
+          )}
         </SectionGroup>
 
         {overview && (
@@ -269,7 +266,9 @@ export default function TrainerTodayScreen() {
                       className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center hover:border-(--color_primary_light)/50 hover:bg-(--color_bg_card_hover) transition-colors"
                     >
                       <UsersIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
-                      <div className="text-2xl font-bold text-white">{overview.stats.athleteCount}</div>
+                      <div className="text-2xl font-bold text-white">
+                        {overview.stats.athleteCount}
+                      </div>
                       <div className="text-xs text-(--color_text_muted) mt-1">Атлетов</div>
                     </button>
                     <button
@@ -279,7 +278,9 @@ export default function TrainerTodayScreen() {
                       className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center hover:border-(--color_primary_light)/50 hover:bg-(--color_bg_card_hover) transition-colors"
                     >
                       <UserGroupIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
-                      <div className="text-2xl font-bold text-white">{overview.stats.groupCount}</div>
+                      <div className="text-2xl font-bold text-white">
+                        {overview.stats.groupCount}
+                      </div>
                       <div className="text-xs text-(--color_text_muted) mt-1">Групп</div>
                     </button>
                   </>
@@ -294,9 +295,7 @@ export default function TrainerTodayScreen() {
               >
                 {todaySessionWorkouts.length === 0 ? (
                   <div className="text-center py-8">
-                    <div className="text-4xl mb-2">
-                      {hasRestDayToday ? '🛋️' : '🎉'}
-                    </div>
+                    <div className="text-4xl mb-2">{hasRestDayToday ? '🛋️' : '🎉'}</div>
                     <p className="text-sm text-(--color_text_muted)">
                       {hasRestDayToday
                         ? 'Выходной в календаре — других занятий на сегодня нет.'
@@ -319,12 +318,15 @@ export default function TrainerTodayScreen() {
                             </span>
                           </div>
                           <span className="text-xs px-2 py-1 rounded-full bg-(--color_primary_light) text-white">
-                            {WORKOUT_TYPE_CONFIG[workout.workoutData.type] ?? workout.workoutData.type}
+                            {WORKOUT_TYPE_CONFIG[workout.workoutData.type] ??
+                              workout.workoutData.type}
                           </span>
                         </div>
 
                         <div className="mb-2">
-                          <div className="text-xs text-(--color_text_muted) mb-1">Назначено для:</div>
+                          <div className="text-xs text-(--color_text_muted) mb-1">
+                            Назначено для:
+                          </div>
                           <div className="flex flex-wrap gap-1">
                             {workout.assignedTo.map((assigned) => (
                               <span
@@ -345,14 +347,17 @@ export default function TrainerTodayScreen() {
                           </div>
                         </div>
 
-                        {workout.workoutData.exercises && workout.workoutData.exercises.length > 0 && (
-                          <div>
-                            <div className="text-xs text-(--color_text_muted) mb-1">Упражнения:</div>
-                            <div className="text-xs text-white">
-                              {workout.workoutData.exercises.map((ex) => ex.name).join(', ')}
+                        {workout.workoutData.exercises &&
+                          workout.workoutData.exercises.length > 0 && (
+                            <div>
+                              <div className="text-xs text-(--color_text_muted) mb-1">
+                                Упражнения:
+                              </div>
+                              <div className="text-xs text-white">
+                                {workout.workoutData.exercises.map((ex) => ex.name).join(', ')}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
                       </button>
                     ))}
                   </div>
@@ -360,6 +365,18 @@ export default function TrainerTodayScreen() {
               </AnimatedBlock>
             </SectionGroup>
           </>
+        )}
+
+        {/* Copilot — только если есть хотя бы 1 атлет и включены команды */}
+        {flags.teams && overview && overview.stats.athleteCount > 0 && (
+          <SectionGroup title="Ассистент">
+            <AnimatedBlock
+              delay={0.15}
+              className="bg-(--color_bg_card) rounded-2xl p-4 border border-(--color_border)"
+            >
+              <CopilotAthleteList onAnyCommitted={loadData} />
+            </AnimatedBlock>
+          </SectionGroup>
         )}
 
         <SectionGroup title="Ещё" showBreakAfter={false}>

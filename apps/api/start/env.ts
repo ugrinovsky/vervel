@@ -72,6 +72,7 @@ export default await Env.create(new URL('../', import.meta.url), {
   */
   AI_COST_GENERATE: Env.schema.string.optional(), // default 10
   AI_COST_RECOGNIZE: Env.schema.string.optional(), // default 9
+  AI_COST_COPILOT: Env.schema.string.optional(), // default 8 — фикс. стоимость за вызов Trainer Copilot
   AI_WELCOME_BONUS: Env.schema.string.optional(), // default 50
   // Token-based chat billing
   AI_CHAT_INPUT_RATE: Env.schema.string.optional(), // ₽ per 1000 input tokens, default 0.20

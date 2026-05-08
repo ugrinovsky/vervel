@@ -49,17 +49,20 @@ function WorkoutTile({
   isUpcoming,
   onClick,
   onDelete,
+  onSkip,
 }: {
   workout: WorkoutTimelineEntry;
   isUpcoming: boolean;
   onClick: () => void;
   onDelete?: () => Promise<void>;
+  onSkip?: () => Promise<void>;
 }) {
   const hasVolume = (workout.volume ?? 0) > 0;
   const volumeKg = workout.volume ?? 0;
   const volumeLabel = formatVolume(volumeKg);
   const timeLabel = extractTime(workout.date);
   const fromTrainer = workout.scheduledWorkoutId != null;
+  const noExercises = (workout.exercisesCount ?? workout.exercises?.length ?? -1) === 0;
 
   const openButton = (
     <button
@@ -74,7 +77,9 @@ function WorkoutTile({
               {getWorkoutTypeLabel(workout.type ?? 'unknown')}
             </span>
             {timeLabel && (
-              <span className="text-xs text-(--color_text_muted) tabular-nums shrink-0">{timeLabel}</span>
+              <span className="text-xs text-(--color_text_muted) tabular-nums shrink-0">
+                {timeLabel}
+              </span>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-1.5 mt-2">
@@ -90,6 +95,11 @@ function WorkoutTile({
             {fromTrainer && (
               <span className="text-xs px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30 font-medium">
                 от тренера
+              </span>
+            )}
+            {noExercises && (
+              <span className="text-xs px-1.5 py-0.5 bg-white/5 text-white/40 rounded-full border border-white/10 font-medium">
+                без упражнений
               </span>
             )}
           </div>
@@ -122,7 +132,11 @@ function WorkoutTile({
   const body = (
     <div className="flex w-full min-w-0 items-stretch">
       {openButton}
-      {onDelete ? (
+      {onSkip ? (
+        <div className="shrink-0 flex items-start border-l border-white/10 py-3 px-2">
+          <ConfirmDeleteWrapper.Trigger title="Не состоялась" />
+        </div>
+      ) : onDelete ? (
         <div className="shrink-0 flex items-start border-l border-white/10 py-3 px-2">
           <ConfirmDeleteWrapper.Trigger title="Удалить тренировку" />
         </div>
@@ -130,11 +144,23 @@ function WorkoutTile({
     </div>
   );
 
+  if (onSkip) {
+    return (
+      <ConfirmDeleteWrapper
+        onConfirm={onSkip}
+        label="Не состоялась?"
+        normalBorder="border-(--color_border)"
+        className="w-full transition-colors bg-(--color_bg_card) hover:border-(--color_primary_light)/30"
+      >
+        {body}
+      </ConfirmDeleteWrapper>
+    );
+  }
+
   if (onDelete) {
     return (
       <ConfirmDeleteWrapper
         onConfirm={onDelete}
-
         normalBorder={isUpcoming ? 'border-(--color_primary_light)/40' : 'border-(--color_border)'}
         className={`w-full transition-colors bg-(--color_bg_card) ${
           isUpcoming
@@ -172,16 +198,24 @@ function SectionDivider({ label }: { label: string }) {
   );
 }
 
-export default function DayDetails({ date, workouts, onDeleted, onRefresh, readOnly = false, draft }: DayDetailsProps) {
+export default function DayDetails({
+  date,
+  workouts,
+  onDeleted,
+  onRefresh,
+  readOnly = false,
+  draft,
+}: DayDetailsProps) {
   const [activeWorkout, setActiveWorkout] = useState<WorkoutTimelineEntry | null>(null);
   const [localIntensities, setLocalIntensities] = useState<Record<number, number>>({});
   const navigate = useNavigate();
   const hasWorkouts = workouts.length > 0;
   const hasAnyDataIssues = workouts.some((w) => w.hasMissingWeights || w.hasMissingRpe);
 
-  const draftForThisDay = draft && draft.date
-    ? format(new Date(draft.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
-    : false;
+  const draftForThisDay =
+    draft && draft.date
+      ? format(new Date(draft.date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+      : false;
 
   const now = new Date();
   const past = workouts.filter((w) => parseApiDateTime(w.date) < now);
@@ -203,15 +237,32 @@ export default function DayDetails({ date, workouts, onDeleted, onRefresh, readO
     }
   };
 
+  const handleSkip = async (workout: WorkoutTimelineEntry) => {
+    if (!workout.id) return;
+    try {
+      await workoutsApi.skip(workout.id);
+      toast.success('Отмечено как пропущенная');
+      onDeleted();
+    } catch {
+      toast.error('Ошибка');
+    }
+  };
+
   const renderTile = (w: WorkoutTimelineEntry, i: number, isUpcoming: boolean) => {
     const canDelete = !w.scheduledWorkoutId && !!w.id;
+    const canSkip = !!w.scheduledWorkoutId && !!w.id && !isUpcoming;
     return (
       <WorkoutTile
         key={i}
-        workout={w.id && localIntensities[w.id] !== undefined ? { ...w, intensity: localIntensities[w.id] } : w}
+        workout={
+          w.id && localIntensities[w.id] !== undefined
+            ? { ...w, intensity: localIntensities[w.id] }
+            : w
+        }
         isUpcoming={isUpcoming}
         onClick={() => setActiveWorkout(w)}
         onDelete={canDelete ? () => handleDelete(w) : undefined}
+        onSkip={canSkip ? () => handleSkip(w) : undefined}
       />
     );
   };
@@ -239,7 +290,8 @@ export default function DayDetails({ date, workouts, onDeleted, onRefresh, readO
             )}
             {hasWorkouts && hasAnyDataIssues && (
               <p className="text-xs text-(--color_text_muted) mt-1.5 leading-snug">
-                Есть записи без весов или без оценки нагрузки — смотрите подсказки на карточках ниже.
+                Есть записи без весов или без оценки нагрузки — смотрите подсказки на карточках
+                ниже.
               </p>
             )}
           </div>
@@ -255,7 +307,11 @@ export default function DayDetails({ date, workouts, onDeleted, onRefresh, readO
                     Черновик
                   </span>
                   <span className="text-sm font-semibold text-white truncate">
-                    {draft.workoutType === 'bodybuilding' ? 'Силовая' : draft.workoutType === 'crossfit' ? 'CrossFit' : 'Кардио'}
+                    {draft.workoutType === 'bodybuilding'
+                      ? 'Силовая'
+                      : draft.workoutType === 'crossfit'
+                        ? 'CrossFit'
+                        : 'Кардио'}
                   </span>
                 </div>
                 <span className="text-xs text-amber-400/70 shrink-0">

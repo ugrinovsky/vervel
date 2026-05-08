@@ -8,7 +8,7 @@ import TrainerAthlete from '#models/trainer_athlete'
 import AchievementService from '#services/AchievementService'
 import DialogService from '#services/DialogService'
 import KlipyService from '#services/KlipyService'
-import { resolveAfterId, formatSseEvent } from '#services/chat_stream_logic'
+import { resolveAfterId, formatSseEvent, createSafeSseWriter } from '#services/chat_stream_logic'
 import {
   KLIPY_MESSAGE_PREFIX,
   parseKlipyMessageContent,
@@ -492,12 +492,15 @@ export default class ChatController {
     raw.setHeader('X-Accel-Buffering', 'no')
     raw.flushHeaders()
 
-    let closed = false
+    const cleanupOnce = () => {
+      emitter.off('chat:new_message', onNewMessage)
+      clearInterval(ping)
+    }
+
+    const writer = createSafeSseWriter(raw, cleanupOnce)
 
     const sendEvent = (id: number, data: object) => {
-      if (!closed && !raw.writableEnded) {
-        raw.write(formatSseEvent(id, data))
-      }
+      writer.safeWrite(formatSseEvent(id, data))
     }
 
     // Initial catch-up: deliver messages sent since latestId (e.g. after reconnect)
@@ -547,16 +550,19 @@ export default class ChatController {
 
     // Keepalive comment every 25s to prevent proxy timeouts
     const ping = setInterval(() => {
-      if (!closed && !raw.writableEnded) raw.write(': ping\n\n')
+      writer.safeWrite(': ping\n\n')
     }, 25000)
 
     return new Promise<void>((resolve) => {
-      request.request.on('close', () => {
-        closed = true
-        emitter.off('chat:new_message', onNewMessage)
-        clearInterval(ping)
+      const done = () => {
+        writer.close()
         resolve()
-      })
+      }
+
+      request.request.once('aborted', done)
+      request.request.once('close', done)
+      raw.once('close', done)
+      raw.once('error', done)
     })
   }
 

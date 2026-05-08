@@ -61,9 +61,18 @@ router
     router.get('workouts/draft', '#controllers/workouts_controller.getDraft')
     router.put('workouts/draft', '#controllers/workouts_controller.saveDraft')
     router.delete('workouts/draft', '#controllers/workouts_controller.clearDraft')
+    router.patch('workouts/:id/skip', '#controllers/workouts_controller.skip')
     router.resource('workouts', WorkoutsController).apiOnly()
 
     router.get('avatar/stats', '#controllers/avatars_controller.getZoneIntensities')
+
+    // Athlete Copilot
+    router.get('athlete/copilot/week', '#controllers/athlete_copilot_controller.week')
+    router.post('athlete/copilot/start', '#controllers/athlete_copilot_controller.start')
+    router.post(
+      'athlete/copilot/send-to-coach',
+      '#controllers/athlete_copilot_controller.sendToCoach'
+    )
 
     router.get('profile', '#controllers/profile_controller.getProfile')
     router.put('profile', '#controllers/profile_controller.updateProfile')
@@ -278,6 +287,12 @@ router
     router.post('calls', '#controllers/video_calls_controller.create')
     router.post('calls/:callId/end', '#controllers/video_calls_controller.end')
     router.get('calls', '#controllers/video_calls_controller.trainerHistory')
+
+    // Trainer Copilot
+    router.get('copilot/priority-list', '#controllers/trainer_copilot_controller.priorityList')
+    router.post('copilot/draft', '#controllers/trainer_copilot_controller.draft')
+    router.post('copilot/send-message', '#controllers/trainer_copilot_controller.sendMessage')
+    router.delete('copilot/week-plan', '#controllers/trainer_copilot_controller.cancelWeekPlan')
   })
   .prefix('trainer')
   .use([middleware.auth(), middleware.trainer()])

@@ -66,22 +66,22 @@ export interface ExerciseSetDetail {
 }
 
 export interface ExerciseData {
-  exerciseId?: string;  // UUID упражнения из БД (нужен для расчёта зон нагрузки)
+  exerciseId?: string; // UUID упражнения из БД (нужен для расчёта зон нагрузки)
   name: string;
   sets?: number;
   reps?: number;
   weight?: number;
   duration?: number;
   distance?: number;
-  notes?: string;       // тренерский комментарий к упражнению
-  blockId?: string;     // упражнения с одинаковым blockId — суперсет
-  zones?: string[];     // зоны мышц от AI (для аналитики если упражнение не в каталоге)
+  notes?: string; // тренерский комментарий к упражнению
+  blockId?: string; // упражнения с одинаковым blockId — суперсет
+  zones?: string[]; // зоны мышц от AI (для аналитики если упражнение не в каталоге)
   zoneWeights?: Record<string, number>; // доли нагрузки по зонам (сумма 1)
   setsDetail?: ExerciseSetDetail[]; // per-set data (pyramid support, bodybuilding only)
   // CrossFit / WOD fields
   wodType?: 'amrap' | 'fortime' | 'emom' | 'tabata';
-  timeCap?: number;     // минут: AMRAP — время работы; EMOM — общее время; For Time — time cap
-  rounds?: number;      // For Time / Tabata — количество раундов
+  timeCap?: number; // минут: AMRAP — время работы; EMOM — общее время; For Time — time cap
+  rounds?: number; // For Time / Tabata — количество раундов
   /** Упражнение с собственным весом — не требует указания кг */
   bodyweight?: boolean;
 }
@@ -189,6 +189,57 @@ export interface PeriodizationData {
   };
 }
 
+// ─── Copilot types ────────────────────────────────────────────────────────────
+
+export interface CopilotAthletePriority {
+  athleteId: number;
+  fullName: string | null;
+  photoUrl: string | null;
+  tsb: number;
+  phase: string;
+  daysSinceLastPlan: number;
+  daysSinceLastWorkout: number;
+  urgency: 'high' | 'medium' | 'low';
+  label: string;
+}
+
+export interface CopilotPriorityList {
+  needsAttention: CopilotAthletePriority[];
+  total: number;
+}
+
+export interface CopilotDraftParams {
+  athleteId: number;
+  weekStart?: string;
+}
+
+export interface CopilotInsightsSummary {
+  phase: string;
+  phaseAdvice?: string;
+  tsb: number;
+  atl: number;
+  ctl: number;
+  acwrZone: string;
+  overloadedZones: string[];
+  daysSinceLastWorkout: number;
+  daysSinceLastPlan: number;
+  recentWorkoutsCount?: number;
+  coldStart: boolean;
+}
+
+export interface CopilotDraftResult {
+  insights: CopilotInsightsSummary;
+  suggestedDates: string[];
+  chatMessageDraft: string;
+  ai: { cost: number; balanceAfter: number | null };
+}
+
+export interface CopilotSendMessageResult {
+  messageId: number | null;
+  chatId: number | null;
+  messageError: string | null;
+}
+
 export const trainerApi = {
   // Today overview
   getTodayOverview: () =>
@@ -224,11 +275,16 @@ export const trainerApi = {
   getAthleteAvatar: (athleteId: number, params?: Record<string, string>) =>
     privateApi.get(`/trainer/athletes/${athleteId}/avatar`, { params }),
   getAthletePeriodization: (athleteId: number) =>
-    privateApi.get<{ success: boolean; data: PeriodizationData }>(`/trainer/athletes/${athleteId}/periodization`),
+    privateApi.get<{ success: boolean; data: PeriodizationData }>(
+      `/trainer/athletes/${athleteId}/periodization`
+    ),
   getAthleteWorkouts: (athleteId: number, from: string, to: string) =>
-    privateApi.get<{ success: boolean; data: AthleteWorkoutEntry[] }>(`/trainer/athletes/${athleteId}/workouts`, {
-      params: { from, to },
-    }),
+    privateApi.get<{ success: boolean; data: AthleteWorkoutEntry[] }>(
+      `/trainer/athletes/${athleteId}/workouts`,
+      {
+        params: { from, to },
+      }
+    ),
 
   // Groups
   listGroups: () =>
@@ -298,8 +354,7 @@ export const trainerApi = {
       `/trainer/scheduled-workouts/${id}`,
       data
     ),
-  deleteScheduledWorkout: (id: number) =>
-    privateApi.delete(`/trainer/scheduled-workouts/${id}`),
+  deleteScheduledWorkout: (id: number) => privateApi.delete(`/trainer/scheduled-workouts/${id}`),
 
   // Workout templates
   getWorkoutTemplates: () =>
@@ -311,7 +366,10 @@ export const trainerApi = {
     description?: string;
     isPublic?: boolean;
   }) =>
-    privateApi.post<{ success: boolean; data: WorkoutTemplate }>('/trainer/workout-templates', data),
+    privateApi.post<{ success: boolean; data: WorkoutTemplate }>(
+      '/trainer/workout-templates',
+      data
+    ),
   updateWorkoutTemplate: (
     id: number,
     data: Partial<{
@@ -327,4 +385,25 @@ export const trainerApi = {
       data
     ),
   deleteWorkoutTemplate: (id: number) => privateApi.delete(`/trainer/workout-templates/${id}`),
+
+  // Trainer Copilot
+  copilotPriorityList: () =>
+    privateApi.get<{ success: boolean; data: CopilotPriorityList }>(
+      '/trainer/copilot/priority-list'
+    ),
+  copilotDraft: (params: CopilotDraftParams) =>
+    privateApi.post<{ success: boolean; data: CopilotDraftResult }>(
+      '/trainer/copilot/draft',
+      params
+    ),
+  copilotSendMessage: (athleteId: number, chatMessage: string) =>
+    privateApi.post<{ success: boolean; data: CopilotSendMessageResult }>(
+      '/trainer/copilot/send-message',
+      { athleteId, chatMessage }
+    ),
+  copilotCancelWeek: (athleteId: number, weekStart: string) =>
+    privateApi.delete<{ success: boolean; data: { deleted: number } }>(
+      '/trainer/copilot/week-plan',
+      { params: { athleteId, weekStart } }
+    ),
 };

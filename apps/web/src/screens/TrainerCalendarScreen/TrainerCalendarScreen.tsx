@@ -648,7 +648,9 @@ export default function TrainerCalendarScreen() {
   const workoutsByHour = useMemo(() => {
     const map: Record<number, ScheduledWorkout[]> = {};
     for (const w of timelineWorkouts) {
-      const h = getWorkoutHour(w.scheduledDate);
+      let h = getWorkoutHour(w.scheduledDate);
+      if (h < 7) h = 7;
+      if (h > 23) h = 23;
       if (!map[h]) map[h] = [];
       map[h].push(w);
     }
@@ -885,6 +887,7 @@ export default function TrainerCalendarScreen() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
+            className="glass rounded-xl px-4 pb-4"
           >
             {/* Day header */}
             <div className="flex items-center justify-between pt-3 pb-2 shrink-0">

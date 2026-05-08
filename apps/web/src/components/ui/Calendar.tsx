@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { format, startOfMonth, isSameDay, isToday, getDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CalendarDaysIcon, ScaleIcon, StarIcon, MoonIcon } from '@heroicons/react/24/outline';
+import { CalendarDaysIcon, MoonIcon } from '@heroicons/react/24/outline';
 
 export type LoadType = 'none' | 'low' | 'medium' | 'high';
 
@@ -13,6 +13,8 @@ export interface DayData {
   intensity?: number;
   fromTrainer?: boolean;
   hasDraft?: boolean;
+  /** В этот день есть хотя бы одна тренировка (даже без нагрузки). */
+  hasWorkouts?: boolean;
   /** В этот день есть тренировка с подходами без веса (силовые). */
   hasMissingWeights?: boolean;
   /** В этот день есть прошлая тренировка без RPE (где оценка учитывается). */
@@ -66,20 +68,6 @@ function countToLoad(count: number): LoadType {
   if (count === 1) return 'low';
   if (count === 2) return 'medium';
   return 'high';
-}
-
-function StrikethroughMiniIcon({ kind, title }: { kind: 'weight' | 'rpe'; title: string }) {
-  const Icon = kind === 'weight' ? ScaleIcon : StarIcon;
-  const color = kind === 'weight' ? 'text-amber-200/90' : 'text-sky-200/90';
-  return (
-    <span className="relative inline-flex shrink-0" title={title} aria-label={title}>
-      <Icon className={`w-3 h-3 ${color}`} />
-      <span
-        className="pointer-events-none absolute left-1/2 top-1/2 w-[13px] max-w-[180%] h-[1.5px] -translate-x-1/2 -translate-y-1/2 rotate-[42deg] bg-red-500/90 rounded-full"
-        aria-hidden
-      />
-    </span>
-  );
 }
 
 function TrainerDayCell({
@@ -246,17 +234,9 @@ export default function Calendar(props: CalendarProps) {
                 const isActive = selectedDate && isSameDay(day.date, selectedDate);
                 const isCurrentDay = isToday(day.date);
                 const hasLoad = day.load !== 'none';
+                const hasWorkoutsNoLoad = !hasLoad && Boolean(day.hasWorkouts);
                 const hideTrainer = props.hideTrainerBadge ?? false;
-                const showDataIssueIcons =
-                  hasLoad && (Boolean(day.hasMissingWeights) || Boolean(day.hasMissingRpe));
-                const issueTitleParts = [
-                  day.hasMissingWeights ? 'нет весов в подходах' : '',
-                  day.hasMissingRpe ? 'нет оценки нагрузки' : '',
-                ].filter(Boolean);
-                const dayTitle =
-                  issueTitleParts.length > 0
-                    ? `${format(day.date, 'd MMMM yyyy', { locale: ru })} — ${issueTitleParts.join(', ')}`
-                    : `${format(day.date, 'd MMMM yyyy', { locale: ru })}${hasLoad ? ' — нагрузка' : ''}`;
+                const dayTitle = `${format(day.date, 'd MMMM yyyy', { locale: ru })}${hasLoad ? ' — нагрузка' : hasWorkoutsNoLoad ? ' — тренировка' : ''}`;
                 return (
                   <button
                     key={i}
@@ -276,15 +256,8 @@ export default function Calendar(props: CalendarProps) {
                     >
                       {format(day.date, 'd')}
                     </span>
-                    {showDataIssueIcons && (
-                      <div className="flex items-center justify-center gap-0.5">
-                        {day.hasMissingWeights && (
-                          <StrikethroughMiniIcon kind="weight" title="Нет весов в подходах" />
-                        )}
-                        {day.hasMissingRpe && (
-                          <StrikethroughMiniIcon kind="rpe" title="Нет оценки нагрузки (1–5)" />
-                        )}
-                      </div>
+                    {hasWorkoutsNoLoad && (
+                      <div className="w-1 h-1 rounded-full bg-white/30 mt-0.5" />
                     )}
                     {isCurrentDay && (
                       <div className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-400 rounded-full" />
@@ -328,38 +301,33 @@ export default function Calendar(props: CalendarProps) {
             </div>
           </div>
         ) : (
-          <div className="flex flex-wrap justify-between items-center gap-2">
-            <span className="text-sm text-(--color_text_muted)">Нагрузка:</span>
-            <div className="flex gap-4 flex-wrap">
-              {(['low', 'medium', 'high'] as const).map((load, i) => (
-                <div key={load} className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded ${loadColors[load]}`} />
-                  <span className="text-xs text-(--color_text_secondary)">
-                    {['Низкая', 'Средняя', 'Высокая'][i]}
-                  </span>
-                </div>
-              ))}
-              {!props.hideTrainerBadge && (
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-violet-400" />
-                  <span className="text-xs text-(--color_text_secondary)">От тренера</span>
-                </div>
-              )}
-              {props.days.some((d) => d.hasDraft) && (
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-amber-400" />
-                  <span className="text-xs text-(--color_text_secondary)">Черновик</span>
-                </div>
-              )}
-              <div className="flex items-center gap-2">
-                <StrikethroughMiniIcon kind="weight" title="Нет весов" />
-                <span className="text-xs text-(--color_text_secondary)">Нет весов в подходах</span>
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            {(['low', 'medium', 'high'] as const).map((load, i) => (
+              <div key={load} className="flex items-center gap-1.5">
+                <div className={`w-3 h-3 rounded ${loadColors[load]}`} />
+                <span className="text-xs text-(--color_text_secondary)">
+                  {['Низкая', 'Средняя', 'Высокая'][i]}
+                </span>
               </div>
-              <div className="flex items-center gap-2">
-                <StrikethroughMiniIcon kind="rpe" title="Нет оценки" />
-                <span className="text-xs text-(--color_text_secondary)">Нет оценки нагрузки</span>
+            ))}
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-(--color_bg_card) border border-white/10 flex items-center justify-center">
+                <div className="w-1 h-1 rounded-full bg-white/30" />
               </div>
+              <span className="text-xs text-(--color_text_secondary)">Без нагрузки</span>
             </div>
+            {!props.hideTrainerBadge && (
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-violet-400" />
+                <span className="text-xs text-(--color_text_secondary)">От тренера</span>
+              </div>
+            )}
+            {props.days.some((d) => d.hasDraft) && (
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-amber-400" />
+                <span className="text-xs text-(--color_text_secondary)">Черновик</span>
+              </div>
+            )}
           </div>
         )}
       </div>

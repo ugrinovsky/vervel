@@ -35,3 +35,42 @@ export function resolveAfterId(
 export function formatSseEvent(id: number, data: object): string {
   return `id: ${id}\ndata: ${JSON.stringify(data)}\n\n`
 }
+
+export type SseWritableLike = {
+  writableEnded?: boolean
+  destroyed?: boolean
+  write: (payload: string) => unknown
+}
+
+/**
+ * Creates a "safe write" wrapper for SSE streams.
+ * It never throws; if a write fails, it calls `cleanupOnce` and marks the writer closed.
+ */
+export function createSafeSseWriter(raw: SseWritableLike, cleanupOnce: () => void) {
+  let closed = false
+
+  const close = () => {
+    if (closed) return
+    closed = true
+    cleanupOnce()
+  }
+
+  const safeWrite = (payload: string): boolean => {
+    if (closed || raw.writableEnded || raw.destroyed) return false
+    try {
+      raw.write(payload)
+      return true
+    } catch {
+      close()
+      return false
+    }
+  }
+
+  return {
+    get closed() {
+      return closed
+    },
+    close,
+    safeWrite,
+  }
+}

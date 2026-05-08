@@ -816,7 +816,7 @@ function FeatureSettingsSection({
         setApplyingMode(null);
       }
     },
-    [user, updateUser]
+    [user, updateUser, isTrainer]
   );
 
   // Compute if flags diverge from the current mode preset

@@ -386,6 +386,10 @@ export class WorkoutCalculator {
       lastWorkoutId: number | null
       lastWorkoutDate: string | null
     }
+    /** Тренировки без упражнений (запланированные, но пустые). */
+    emptyWorkouts: {
+      workoutsCount: number
+    }
     totalWorkouts: number
     lastWorkoutDaysAgo: number | null
   }> {
@@ -404,6 +408,7 @@ export class WorkoutCalculator {
           lastWorkoutDate: null,
         },
         missingRpe: { workoutsCount: 0, lastWorkoutId: null, lastWorkoutDate: null },
+        emptyWorkouts: { workoutsCount: 0 },
         totalWorkouts: 0,
         lastWorkoutDaysAgo: null,
       }
@@ -420,6 +425,8 @@ export class WorkoutCalculator {
     let lastMissingRpeWorkoutId: number | null = null
     let lastMissingRpeWorkoutDate: string | null = null
     let lastMissingRpeDaysAgo: number | null = null
+
+    let emptyWorkoutsCount = 0
 
     const debugWorkouts: Array<{
       id: number | string | null
@@ -504,6 +511,11 @@ export class WorkoutCalculator {
         }
       }
 
+      // Empty workout (no exercises)
+      if (!isFuture && exs.length === 0) {
+        emptyWorkoutsCount += 1
+      }
+
       // Subjective load (RPE): nudge UI when the session clearly happened but no rating was saved.
       const exListForRpe = Array.isArray(workout.exercises) ? workout.exercises : []
       const storedAbsForRpe = workout.zonesLoadAbs as Record<string, number> | null | undefined
@@ -580,6 +592,7 @@ export class WorkoutCalculator {
         lastWorkoutId: lastMissingRpeWorkoutId,
         lastWorkoutDate: lastMissingRpeWorkoutDate,
       },
+      emptyWorkouts: { workoutsCount: emptyWorkoutsCount },
       totalWorkouts: workouts.length,
       lastWorkoutDaysAgo: minDaysAgo === Infinity ? null : Math.round(minDaysAgo),
     }
@@ -683,7 +696,8 @@ export class WorkoutCalculator {
         typeof w.totalIntensity === 'string'
           ? Number.parseFloat(w.totalIntensity)
           : w.totalIntensity || 0
-      const hasExercises = Array.isArray(w.exercises) && w.exercises.length > 0
+      const exercisesCount = Array.isArray(w.exercises) ? w.exercises.length : 0
+      const hasExercises = exercisesCount > 0
       const hasMissingWeights =
         Array.isArray(w.exercises) &&
         w.exercises.some(
@@ -718,6 +732,7 @@ export class WorkoutCalculator {
         zones: WorkoutCalculator.toRelativeZonesLoad(zonesAbs),
         hasMissingWeights,
         hasMissingRpe,
+        exercisesCount,
       }
     })
 

@@ -8,7 +8,7 @@ import WorkoutTemplate from './workout_template.js'
 import type { ExerciseData } from './workout_template.js'
 import type { ScheduledWorkoutJsonType } from '#utils/scheduled_workout_types'
 
-export type WorkoutStatus = 'scheduled' | 'completed' | 'cancelled'
+export type WorkoutStatus = 'scheduled' | 'completed' | 'cancelled' | 'skipped'
 
 export interface AssignedTo {
   type: 'group' | 'athlete'

@@ -14,6 +14,7 @@ export interface WorkoutTimelineEntry {
   duration?: number;
   /** Список упражнений с бэкенда (для подсчёта «упражнений в день»). */
   exercises?: readonly unknown[];
+  exercisesCount?: number;
 }
 
 export interface WorkoutStats {

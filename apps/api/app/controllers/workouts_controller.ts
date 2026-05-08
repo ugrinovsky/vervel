@@ -2,6 +2,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
 import Workout, { type WorkoutExercise } from '#models/workout'
 import WorkoutDraft from '#models/workout_draft'
+import ScheduledWorkout from '#models/scheduled_workout'
 import { WorkoutCalculator } from '#services/WorkoutCalculator'
 import { StreakService } from '#services/StreakService'
 import { createWorkoutValidator, updateWorkoutValidator } from '#validators/workout_validator'
@@ -131,6 +132,29 @@ export default class WorkoutsController {
       .where('id', params.id)
       .where('userId', user.id)
       .firstOrFail()
+
+    await workout.delete()
+
+    return response.noContent()
+  }
+
+  /**
+   * Атлет отмечает тренировку от тренера как пропущенную
+   * PATCH /workouts/:id/skip
+   */
+  async skip({ auth, params, response }: HttpContext) {
+    const user = auth.user!
+    const workout = await Workout.query()
+      .where('id', params.id)
+      .where('userId', user.id)
+      .whereNotNull('scheduledWorkoutId')
+      .firstOrFail()
+
+    if (workout.scheduledWorkoutId) {
+      await ScheduledWorkout.query()
+        .where('id', workout.scheduledWorkoutId)
+        .update({ status: 'skipped' })
+    }
 
     await workout.delete()
 

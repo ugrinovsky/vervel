@@ -80,7 +80,9 @@ export function useActivityData(draftDate?: string | null) {
   const [stats, setStats] = useState<WorkoutStats | null>(null);
   const [loading, setLoading] = useState(true);
   const currentMonthRef = useRef(currentMonth);
-  useEffect(() => { currentMonthRef.current = currentMonth; }, [currentMonth]);
+  useEffect(() => {
+    currentMonthRef.current = currentMonth;
+  }, [currentMonth]);
 
   const refetch = async () => {
     const year = currentMonthRef.current.getFullYear();
@@ -139,6 +141,7 @@ export function useActivityData(draftDate?: string | null) {
         intensity: dayWs.length ? Math.max(0, ...dayWs.map((w) => w.intensity ?? 0)) : undefined,
         fromTrainer: dayWs.some((w) => w.scheduledWorkoutId != null),
         hasDraft: draftDate === dateKey,
+        hasWorkouts: dayWs.length > 0,
         hasMissingWeights: dayWs.some((w) => w.hasMissingWeights),
         hasMissingRpe: dayWs.some((w) => w.hasMissingRpe),
       };
@@ -148,10 +151,7 @@ export function useActivityData(draftDate?: string | null) {
   const dayStats: DayStats | null = useMemo(() => {
     if (!selectedDate || !stats?.timeline) return null;
 
-    const dayWorkouts = filterWorkoutsByDate(
-      stats.timeline,
-      format(selectedDate, 'yyyy-MM-dd'),
-    );
+    const dayWorkouts = filterWorkoutsByDate(stats.timeline, format(selectedDate, 'yyyy-MM-dd'));
 
     if (!dayWorkouts.length) return EMPTY_DAY_STATS;
 
@@ -165,7 +165,7 @@ export function useActivityData(draftDate?: string | null) {
         intensity: w.intensity || acc.intensity,
         fromTrainer: acc.fromTrainer || w.scheduledWorkoutId != null,
       }),
-      { ...EMPTY_DAY_STATS },
+      { ...EMPTY_DAY_STATS }
     );
   }, [selectedDate, stats]);
 
@@ -178,11 +178,11 @@ export function useActivityData(draftDate?: string | null) {
 
     const totalDuration = stats.timeline.reduce(
       (acc, w) => acc + (w.duration ?? DEFAULT_DURATION),
-      0,
+      0
     );
     const totalCalories = stats.timeline.reduce(
       (acc, w) => acc + Math.round((w.volume || 0) * CALORIES_PER_KG),
-      0,
+      0
     );
 
     return {

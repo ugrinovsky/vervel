@@ -20,6 +20,10 @@ export interface AvatarRecoveryStats {
     lastWorkoutId: number | null;
     lastWorkoutDate: string | null;
   };
+  /** Тренировки без упражнений. */
+  emptyWorkouts?: {
+    workoutsCount: number;
+  };
   totalWorkouts: number;
   lastWorkoutDaysAgo: number | null;
   allTimeWorkouts: number;

@@ -1,5 +1,5 @@
 import { test } from '@japa/runner'
-import { resolveAfterId, formatSseEvent } from '#services/chat_stream_logic'
+import { resolveAfterId, formatSseEvent, createSafeSseWriter } from '#services/chat_stream_logic'
 
 test.group('resolveAfterId: Last-Event-ID header takes precedence', () => {
   test('возвращает число из заголовка, игнорирует query-param', ({ assert }) => {
@@ -76,5 +76,61 @@ test.group('formatSseEvent: формат SSE-фрейма', () => {
     const data = { a: { b: [1, 2] } }
     const result = formatSseEvent(10, data)
     assert.include(result, JSON.stringify(data))
+  })
+})
+
+test.group('createSafeSseWriter: безопасная запись', () => {
+  test('пишет payload когда поток жив', ({ assert }) => {
+    let wrote: string | null = null
+    const raw = {
+      writableEnded: false,
+      destroyed: false,
+      write: (p: string) => {
+        wrote = p
+      },
+    }
+    let cleaned = 0
+    const w = createSafeSseWriter(raw, () => {
+      cleaned += 1
+    })
+
+    assert.isTrue(w.safeWrite('hello'))
+    assert.equal(wrote, 'hello')
+    assert.isFalse(w.closed)
+    assert.equal(cleaned, 0)
+  })
+
+  test('не пишет если writableEnded=true', ({ assert }) => {
+    const raw = { writableEnded: true, destroyed: false, write: () => assert.fail() }
+    const w = createSafeSseWriter(raw as any, () => {})
+    assert.isFalse(w.safeWrite('x'))
+  })
+
+  test('не пишет если destroyed=true', ({ assert }) => {
+    const raw = { writableEnded: false, destroyed: true, write: () => assert.fail() }
+    const w = createSafeSseWriter(raw as any, () => {})
+    assert.isFalse(w.safeWrite('x'))
+  })
+
+  test('если write кидает — закрывает и вызывает cleanup ровно один раз', ({ assert }) => {
+    const raw = {
+      writableEnded: false,
+      destroyed: false,
+      write: () => {
+        throw new Error('boom')
+      },
+    }
+    let cleaned = 0
+    const w = createSafeSseWriter(raw, () => {
+      cleaned += 1
+    })
+
+    assert.isFalse(w.safeWrite('x'))
+    assert.isTrue(w.closed)
+    assert.equal(cleaned, 1)
+
+    // subsequent writes are no-ops and don't call cleanup again
+    assert.isFalse(w.safeWrite('y'))
+    assert.equal(cleaned, 1)
   })
 })

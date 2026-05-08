@@ -49,10 +49,6 @@ export default function WorkoutForm() {
   }, []);
 
   const handleSubmit = async (data: WorkoutFormData) => {
-    if (!data.exercises.length) {
-      toast.error('Добавьте хотя бы одно упражнение');
-      return;
-    }
     try {
       await workoutsApi.create({
         date: toApiDateTime(data.date, data.time),
@@ -104,12 +100,12 @@ export default function WorkoutForm() {
             <>
               Выберите дату — тип тренировки совпадает с вашей главной целью. Затем{' '}
               <span className="text-white font-medium">ИИ</span> подставит упражнения и подходы.
-              Сохранить можно, как только в списке есть хотя бы одно упражнение.
+              Можно сохранить и без упражнений — как напоминание.
             </>
           ) : (
             <>
-              Выберите дату и тип, затем <span className="text-white font-medium">ИИ</span> подставит
-              упражнения и подходы. Сохранить можно, как только в списке есть хотя бы одно упражнение.
+              Выберите дату и тип, затем <span className="text-white font-medium">ИИ</span>{' '}
+              подставит упражнения и подходы. Можно сохранить и без упражнений — как напоминание.
             </>
           )}
         </ScreenHint>

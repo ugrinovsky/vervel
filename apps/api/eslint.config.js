@@ -3,7 +3,7 @@ import { configApp } from '@adonisjs/eslint-config'
 /** PascalCase service modules (e.g. WorkoutCalculator) — filename matches exported class. */
 export default [
   {
-    ignores: ['ace.js', 'tests/**'],
+    ignores: ['ace.js', 'tests/**', '**/*.mjs'],
   },
   ...configApp({
     name: 'app/services: allow PascalCase filenames',
