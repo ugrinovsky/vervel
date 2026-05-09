@@ -717,23 +717,31 @@ export default class OAuthController {
 
     try {
       const bodyParsed = request.body() as unknown
-      let bodyStr: string | undefined
+      let bodyJson: string
       if (
         bodyParsed &&
         typeof bodyParsed === 'object' &&
         !Array.isArray(bodyParsed) &&
         Object.keys(bodyParsed).length > 0
       ) {
-        bodyStr = JSON.stringify(bodyParsed)
+        bodyJson = JSON.stringify(bodyParsed)
+      } else {
+        // VK ожидает JSON-тело; пустой POST без тела иногда рвётся на стороне VK/прокси.
+        bodyJson = '{}'
       }
 
+      const ac = AbortSignal.timeout(12_000)
       const vkRes = await fetch(targetUrl, {
         method: 'POST',
+        signal: ac,
         headers: {
-          Accept: 'application/json, text/plain, */*',
-          ...(bodyStr ? { 'Content-Type': 'application/json' } : {}),
+          'Accept': 'application/json, text/plain, */*',
+          'Content-Type': 'application/json',
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept-Language': 'ru-RU,ru;q=0.9,en;q=0.8',
         },
-        body: bodyStr,
+        body: bodyJson,
       })
 
       const ct = vkRes.headers.get('content-type') ?? 'application/json; charset=utf-8'
@@ -742,7 +750,7 @@ export default class OAuthController {
       response.status(vkRes.status).header('Content-Type', ct)
       return response.send(buf)
     } catch (error) {
-      logger.error({ err: errorMessage(error) }, 'oauth: vkid config proxy failed')
+      logger.error({ err: errorMessage(error), targetUrl }, 'oauth: vkid config proxy failed')
       return response.badGateway({ message: 'VK ID config unavailable' })
     }
   }
