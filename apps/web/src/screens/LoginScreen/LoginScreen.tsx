@@ -43,7 +43,15 @@ function validateEmail(v: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 }
 
+/** На localhost OAuth-кнопки скрыты (редиректы VK/Yandex к прод-доменам и ЛК). */
+function shouldShowOAuthButtons(): boolean {
+  if (typeof window === 'undefined') return true;
+  const h = window.location.hostname;
+  return h !== 'localhost' && h !== '127.0.0.1' && h !== '[::1]';
+}
+
 export default function LoginScreen() {
+  const [showOAuthButtons] = useState(shouldShowOAuthButtons);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -399,25 +407,29 @@ export default function LoginScreen() {
             </motion.button>
           </form>
 
-          {/* OAuth divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/20"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span
-                className="px-2 text-emerald-200/70"
-                style={{ backgroundColor: 'rgb(var(--color_primary_dark_ch))' }}
-              >
-                или войти через
-              </span>
-            </div>
-          </div>
+          {showOAuthButtons ? (
+            <>
+              {/* OAuth divider */}
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/20"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span
+                    className="px-2 text-emerald-200/70"
+                    style={{ backgroundColor: 'rgb(var(--color_primary_dark_ch))' }}
+                  >
+                    или войти через
+                  </span>
+                </div>
+              </div>
 
-          <div className="relative z-10 flex flex-col gap-3">
-            <VkIdButton />
-            <YandexIdButton />
-          </div>
+              <div className="relative z-10 flex flex-col gap-3">
+                <VkIdButton />
+                <YandexIdButton />
+              </div>
+            </>
+          ) : null}
 
           {/* Тестовые данные */}
           <div className="mt-8 space-y-2">
