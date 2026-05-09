@@ -7,4 +7,6 @@ interface ImportMetaEnv {
   readonly VITE_VK_APP_ID?: string
   readonly VITE_ENABLE_VK_MINI_APP?: string
   readonly VITE_YANDEX_CLIENT_ID?: string
+  /** Опционально: свой URL скрипта YaAuthSuggest, если yastatic.net недоступен */
+  readonly VITE_YANDEX_SDK_URL?: string
 }

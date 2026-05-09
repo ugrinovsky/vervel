@@ -23,22 +23,43 @@ declare global {
 
 let scriptLoaded = false;
 
-function loadScript(): Promise<void> {
+const YANDEX_SUGGEST_SDK_SRC =
+  import.meta.env.VITE_YANDEX_SDK_URL ||
+  'https://yastatic.net/s3/passport-sdk/autofill/v1/sdk-suggest-with-polyfills-latest.js';
+
+export const YANDEX_SDK_SCRIPT_LOAD_FAILED = 'yandex_sdk_script_load_failed';
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Несколько попыток: yastatic.net иногда даёт ERR_CONNECTION_CLOSED (сеть / блокировки). */
+async function loadScript(): Promise<void> {
   if (scriptLoaded || document.querySelector('#ya-suggest-sdk')) {
-    return Promise.resolve();
+    return;
   }
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.id = 'ya-suggest-sdk';
-    script.src =
-      'https://yastatic.net/s3/passport-sdk/autofill/v1/sdk-suggest-with-polyfills-latest.js';
-    script.onload = () => {
+  let lastErr: unknown = new Error(YANDEX_SDK_SCRIPT_LOAD_FAILED);
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    document.getElementById('ya-suggest-sdk')?.remove();
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const script = document.createElement('script');
+        script.id = 'ya-suggest-sdk';
+        script.src = YANDEX_SUGGEST_SDK_SRC;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error(YANDEX_SDK_SCRIPT_LOAD_FAILED));
+        document.head.appendChild(script);
+      });
       scriptLoaded = true;
-      resolve();
-    };
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
+      return;
+    } catch (e) {
+      lastErr = e;
+      if (attempt < 2) {
+        await sleep(500 * (attempt + 1));
+      }
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error(YANDEX_SDK_SCRIPT_LOAD_FAILED);
 }
 
 export default function YandexIdButton() {
@@ -158,8 +179,14 @@ export default function YandexIdButton() {
           return;
         }
         console.error('YaAuthSuggest error:', error);
-        // Не показываем toast: сбой отрисовки виджета (гонка Strict Mode, DOM) ≠ ошибка входа пользователя.
-        // Реальные сбои обмена токена по-прежнему обрабатываются в handleToken.
+        if (
+          error instanceof Error &&
+          error.message === YANDEX_SDK_SCRIPT_LOAD_FAILED
+        ) {
+          toast.error(
+            'Не удалось загрузить вход через Яндекс (сеть или блокировка). Попробуйте позже или другой способ входа.',
+          );
+        }
       });
 
     return () => {
