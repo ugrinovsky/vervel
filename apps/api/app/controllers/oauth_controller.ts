@@ -680,6 +680,74 @@ export default class OAuthController {
   }
 
   /**
+   * Прокси POST https://id.vk.ru/vkid_sdk_get_config — у id.vk.ru нет CORS для произвольных origin,
+   * из‑за этого OneTap ломается на своём домене. Браузер дергает наш API (same CORS-политика, что и SPA).
+   *
+   * POST /oauth/vk/vkid-sdk-config-proxy?app_id=… (+доп. query с VK при необходимости)
+   */
+  public async vkidSdkConfigProxy({ request, response }: HttpContext) {
+    const ip = request.ip()
+    const lim = limiter.use({ requests: 120, duration: '15 mins', blockDuration: '15 mins' })
+    const lr = await lim.attempt(`oauth_vkid_cfg_ip_${ip}`, async () => true)
+    if (lr === null) {
+      return response.tooManyRequests({ message: 'Слишком много запросов. Попробуйте позже.' })
+    }
+
+    const qsFlat = request.qs()
+    const searchParams = new URLSearchParams()
+    for (const [rawKey, rawVal] of Object.entries(qsFlat)) {
+      const key = String(rawKey)
+      if (!/^[a-z0-9_]+$/i.test(key) || key.length > 64) {
+        return response.badRequest({ message: 'Invalid query key' })
+      }
+      const val = Array.isArray(rawVal) ? rawVal[0] : rawVal
+      const str = val === null || val === undefined ? '' : String(val)
+      if (str.length > 512) {
+        return response.badRequest({ message: 'Invalid query value length' })
+      }
+      searchParams.set(key, str)
+    }
+
+    const appId = searchParams.get('app_id')
+    if (!appId || !/^\d+$/.test(appId)) {
+      return response.badRequest({ message: 'Valid app_id query param is required' })
+    }
+
+    const targetUrl = `https://id.vk.ru/vkid_sdk_get_config?${searchParams.toString()}`
+
+    try {
+      const bodyParsed = request.body() as unknown
+      let bodyStr: string | undefined
+      if (
+        bodyParsed &&
+        typeof bodyParsed === 'object' &&
+        !Array.isArray(bodyParsed) &&
+        Object.keys(bodyParsed).length > 0
+      ) {
+        bodyStr = JSON.stringify(bodyParsed)
+      }
+
+      const vkRes = await fetch(targetUrl, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json, text/plain, */*',
+          ...(bodyStr ? { 'Content-Type': 'application/json' } : {}),
+        },
+        body: bodyStr,
+      })
+
+      const ct = vkRes.headers.get('content-type') ?? 'application/json; charset=utf-8'
+
+      const buf = Buffer.from(await vkRes.arrayBuffer())
+      response.status(vkRes.status).header('Content-Type', ct)
+      return response.send(buf)
+    } catch (error) {
+      logger.error({ err: errorMessage(error) }, 'oauth: vkid config proxy failed')
+      return response.badGateway({ message: 'VK ID config unavailable' })
+    }
+  }
+
+  /**
    * Set user role after OAuth registration
    * POST /oauth/set-role
    */

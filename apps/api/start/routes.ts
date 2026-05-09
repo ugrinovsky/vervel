@@ -29,6 +29,7 @@ router.get('/oauth/:provider/redirect', [OAuthController, 'redirect'])
 router.get('/oauth/:provider/callback', [OAuthController, 'callback'])
 router.post('/oauth/set-role', [OAuthController, 'setRole']).use(middleware.auth())
 router.post('/oauth/vk/sdk-login', [OAuthController, 'vkSdkLogin'])
+router.post('/oauth/vk/vkid-sdk-config-proxy', [OAuthController, 'vkidSdkConfigProxy'])
 router.post('/oauth/vk/mini-app-login', [OAuthController, 'vkMiniAppLogin'])
 router.post('/oauth/yandex/sdk-login', [OAuthController, 'yandexSdkLogin'])
 
@@ -236,6 +237,14 @@ router
       'athletes/:athleteId/nickname',
       '#controllers/trainer_controller.updateAthleteNickname'
     )
+    router.patch('athletes/:athleteId/crm', '#controllers/trainer_controller.updateAthleteCrm')
+
+    // Leads
+    router.get('leads', '#controllers/trainer_leads_controller.list')
+    router.post('leads', '#controllers/trainer_leads_controller.create')
+    router.patch('leads/:id', '#controllers/trainer_leads_controller.update')
+    router.post('leads/:id/convert', '#controllers/trainer_leads_controller.convert')
+    router.delete('leads/:id', '#controllers/trainer_leads_controller.delete')
 
     // Athlete data
     router.get('athletes/:athleteId/stats', '#controllers/trainer_controller.getAthleteStats')

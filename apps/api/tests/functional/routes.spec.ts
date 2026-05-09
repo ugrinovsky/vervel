@@ -861,6 +861,18 @@ test.group('OAuth: защита и базовая логика', () => {
     response.assertStatus(400)
   })
 
+  test('POST /oauth/vk/vkid-sdk-config-proxy без app_id → 400', async ({ client }) => {
+    const response = await client.post('/oauth/vk/vkid-sdk-config-proxy').json({})
+    response.assertStatus(400)
+  })
+
+  test('POST /oauth/vk/vkid-sdk-config-proxy с невалидным app_id → 400', async ({ client }) => {
+    const response = await client
+      .post('/oauth/vk/vkid-sdk-config-proxy?app_id=abc')
+      .json({})
+    response.assertStatus(400)
+  })
+
   test('POST /oauth/yandex/sdk-login без тела → 400', async ({ client }) => {
     const response = await client.post('/oauth/yandex/sdk-login').json({})
     response.assertStatus(400)
