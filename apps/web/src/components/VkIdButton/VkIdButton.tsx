@@ -12,8 +12,27 @@ import { userRoleFromApiString } from '@/util/userRole';
 
 const VK_APP_ID = Number(import.meta.env.VITE_VK_APP_ID) || 54455065;
 
-/** VKID.Config.init must run once per page; OneTap is created per mount (Strict Mode–safe). */
-let vkSdkConfigInitialized = false;
+/** Последние параметры Config.init — переинициализируем при смене, иначе exchangeCode шлёт старый redirect_uri. */
+let lastVkInitKey = '';
+
+/**
+ * Должен **буквально** совпадать с «доверенным redirect URL» в ЛК VK (путь, www, http/https — как в кабинете).
+ * `VITE_APP_URL` в проде или текущий URL страницы.
+ */
+function getVkIdRedirectUrl(): string {
+  const raw = import.meta.env.VITE_APP_URL?.trim() || '';
+  try {
+    const u = raw
+      ? new URL(raw)
+      : new URL(`${window.location.origin}${window.location.pathname}`);
+    u.hash = '';
+    u.search = '';
+    const path = u.pathname.replace(/\/+$/, '');
+    return path ? `${u.origin}${path}` : u.origin;
+  } catch {
+    return `${window.location.origin}${window.location.pathname.replace(/\/+$/, '') || ''}`;
+  }
+}
 
 function isVkLoginPayload(v: unknown): v is { code: string; device_id: string } {
   return isRecord(v) && typeof v.code === 'string' && typeof v.device_id === 'string';
@@ -50,10 +69,10 @@ export default function VkIdButton() {
     const el = containerRef.current;
     if (!el) return;
 
-    const redirectUrl =
-      import.meta.env.VITE_APP_URL || `${window.location.origin}${window.location.pathname}`;
-
-    if (!vkSdkConfigInitialized) {
+    const redirectUrl = getVkIdRedirectUrl();
+    const initKey = `${VK_APP_ID}|${redirectUrl}`;
+    if (initKey !== lastVkInitKey) {
+      lastVkInitKey = initKey;
       VKID.Config.init({
         app: VK_APP_ID,
         redirectUrl,
@@ -61,7 +80,6 @@ export default function VkIdButton() {
         source: VKID.ConfigSource.LOWCODE,
         scope: '',
       });
-      vkSdkConfigInitialized = true;
     }
 
     const oneTap = new VKID.OneTap();
@@ -71,8 +89,17 @@ export default function VkIdButton() {
         fastAuthEnabled: false,
         showAlternativeLogin: false,
       })
-      .on(VKID.WidgetEvents.ERROR, () => {
-        toast.error('Ошибка авторизации через VK');
+      .on(VKID.WidgetEvents.ERROR, (err: unknown) => {
+        const msg = isRecord(err) && typeof err.message === 'string' ? err.message : '';
+        if (msg.includes('redirect_uri')) {
+          const url = getVkIdRedirectUrl();
+          toast.error(
+            `VK: redirect_uri не совпадает с ЛК. Добавьте в VK точно: ${url} (и то же в VITE_APP_URL после пересборки фронта).`,
+            { duration: 8000 },
+          );
+          return;
+        }
+        toast.error(msg || 'Ошибка авторизации через VK');
       })
       .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async (payload: unknown) => {
         try {
