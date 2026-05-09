@@ -10,14 +10,14 @@ import toast from 'react-hot-toast';
 import { isRecord } from '@/utils/typeGuards';
 import { userRoleFromApiString } from '@/util/userRole';
 
-const VK_APP_ID = Number(import.meta.env.VITE_VK_APP_ID) || 54455065;
+const VK_APP_ID = Number(import.meta.env.VITE_VK_APP_ID);
+const vkAppIdConfigured = Number.isInteger(VK_APP_ID) && VK_APP_ID > 0;
 
 /** Последние параметры Config.init — переинициализируем при смене, иначе exchangeCode шлёт старый redirect_uri. */
 let lastVkInitKey = '';
 
 /**
  * Должен **буквально** совпадать с «доверенным redirect URL» в ЛК VK (путь, www, http/https — как в кабинете).
- * `VITE_APP_URL` в проде или текущий URL страницы.
  */
 function getVkIdRedirectUrl(): string {
   const raw = import.meta.env.VITE_APP_URL?.trim() || '';
@@ -67,7 +67,7 @@ export default function VkIdButton() {
 
   useEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    if (!el || !vkAppIdConfigured) return;
 
     const redirectUrl = getVkIdRedirectUrl();
     const initKey = `${VK_APP_ID}|${redirectUrl}`;
@@ -94,7 +94,7 @@ export default function VkIdButton() {
         if (msg.includes('redirect_uri')) {
           const url = getVkIdRedirectUrl();
           toast.error(
-            `VK: redirect_uri не совпадает с ЛК. Добавьте в VK точно: ${url} (и то же в VITE_APP_URL после пересборки фронта).`,
+            `VK: redirect_uri не совпадает с ЛК. Добавьте в VK точно: ${url} (как в VITE_APP_URL при сборке).`,
             { duration: 8000 },
           );
           return;
@@ -158,6 +158,10 @@ export default function VkIdButton() {
       el.innerHTML = '';
     };
   }, [login, navigate]);
+
+  if (!vkAppIdConfigured) {
+    return null;
+  }
 
   return <div ref={containerRef} className="w-full" />;
 }
