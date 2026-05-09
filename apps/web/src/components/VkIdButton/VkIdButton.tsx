@@ -67,7 +67,7 @@ export default function VkIdButton() {
   const navigate = useNavigate();
 
   const exchangeAndFinishLogin = useCallback(
-    async (code: string, device_id: string) => {
+    async (code: string, device_id: string, inviteTokenFromRedirect?: string | null) => {
       const exchanged: unknown = await VKID.Auth.exchangeCode(code, device_id);
       const tokens = vkExchangePayload(exchanged);
       if (!tokens) {
@@ -102,6 +102,11 @@ export default function VkIdButton() {
         clientPreferences: data.user.clientPreferences,
       };
       login(authUser);
+      toast.success(`Добро пожаловать, ${data.user.fullName}!`);
+      const invite =
+        inviteTokenFromRedirect ??
+        new URLSearchParams(window.location.search).get('invite');
+      navigate(invite ? `/invite/${invite}` : '/home');
     },
     [login, navigate],
   );
@@ -125,6 +130,8 @@ export default function VkIdButton() {
     const device_id = params.get('device_id') ?? params.get('deviceId');
     if (!code || !device_id) return;
 
+    const inviteToken = params.get('invite');
+
     redirectOAuthHandled.current = true;
     window.history.replaceState({}, '', `${window.location.pathname}${window.location.hash}`);
 
@@ -141,7 +148,7 @@ export default function VkIdButton() {
       });
     }
 
-    void exchangeAndFinishLogin(code, device_id).catch(() => {
+    void exchangeAndFinishLogin(code, device_id, inviteToken).catch(() => {
       toast.error('Не удалось войти через VK');
     });
   }, [exchangeAndFinishLogin]);
