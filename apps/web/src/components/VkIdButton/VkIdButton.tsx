@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import './vkSdkStatsShim';
 import * as VKID from '@vkid/sdk';
@@ -62,8 +62,89 @@ type VkSdkLoginResponse = {
 
 export default function VkIdButton() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const redirectOAuthHandled = useRef(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  const exchangeAndFinishLogin = useCallback(
+    async (code: string, device_id: string) => {
+      const exchanged: unknown = await VKID.Auth.exchangeCode(code, device_id);
+      const tokens = vkExchangePayload(exchanged);
+      if (!tokens) {
+        toast.error('Не удалось войти через VK');
+        return;
+      }
+
+      const res = await publicApi.post<VkSdkLoginResponse>('/oauth/vk/sdk-login', {
+        accessToken: tokens.accessToken,
+        userId: tokens.userId,
+      });
+
+      const data = res.data;
+
+      if (data.needsRole) {
+        navigate(`/select-role?userId=${data.userId}`);
+        return;
+      }
+
+      const role = userRoleFromApiString(data.user.role);
+      if (!role) {
+        toast.error('Не удалось войти через VK');
+        return;
+      }
+
+      const authUser: AuthUser = {
+        id: data.user.id,
+        email: data.user.email,
+        fullName: data.user.fullName,
+        role,
+        themeHue: data.user.themeHue,
+        clientPreferences: data.user.clientPreferences,
+      };
+      login(authUser);
+    },
+    [login, navigate],
+  );
+
+  /**
+   * Полный OAuth (окно прав VK): редирект на redirect_uri с ?code=&device_id= — OneTap по ним не срабатывает.
+   */
+  useEffect(() => {
+    if (!vkAppIdConfigured || redirectOAuthHandled.current) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const oauthError = params.get('error');
+    if (oauthError) {
+      redirectOAuthHandled.current = true;
+      window.history.replaceState({}, '', `${window.location.pathname}${window.location.hash}`);
+      toast.error('Вход через VK отменён');
+      return;
+    }
+
+    const code = params.get('code');
+    const device_id = params.get('device_id') ?? params.get('deviceId');
+    if (!code || !device_id) return;
+
+    redirectOAuthHandled.current = true;
+    window.history.replaceState({}, '', `${window.location.pathname}${window.location.hash}`);
+
+    const redirectUrl = getVkIdRedirectUrl();
+    const initKey = `${VK_APP_ID}|${redirectUrl}`;
+    if (initKey !== lastVkInitKey) {
+      lastVkInitKey = initKey;
+      VKID.Config.init({
+        app: VK_APP_ID,
+        redirectUrl,
+        responseMode: VKID.ConfigResponseMode.Callback,
+        source: VKID.ConfigSource.LOWCODE,
+        scope: '',
+      });
+    }
+
+    void exchangeAndFinishLogin(code, device_id).catch(() => {
+      toast.error('Не удалось войти через VK');
+    });
+  }, [exchangeAndFinishLogin]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -108,40 +189,7 @@ export default function VkIdButton() {
             return;
           }
           const { code, device_id } = payload;
-          const exchanged: unknown = await VKID.Auth.exchangeCode(code, device_id);
-          const tokens = vkExchangePayload(exchanged);
-          if (!tokens) {
-            toast.error('Не удалось войти через VK');
-            return;
-          }
-
-          const res = await publicApi.post<VkSdkLoginResponse>('/oauth/vk/sdk-login', {
-            accessToken: tokens.accessToken,
-            userId: tokens.userId,
-          });
-
-          const data = res.data;
-
-          if (data.needsRole) {
-            navigate(`/select-role?userId=${data.userId}`);
-            return;
-          }
-
-          const role = userRoleFromApiString(data.user.role);
-          if (!role) {
-            toast.error('Не удалось войти через VK');
-            return;
-          }
-
-          const authUser: AuthUser = {
-            id: data.user.id,
-            email: data.user.email,
-            fullName: data.user.fullName,
-            role,
-            themeHue: data.user.themeHue,
-            clientPreferences: data.user.clientPreferences,
-          };
-          login(authUser);
+          await exchangeAndFinishLogin(code, device_id);
         } catch {
           toast.error('Не удалось войти через VK');
         }
@@ -157,7 +205,7 @@ export default function VkIdButton() {
       }
       el.innerHTML = '';
     };
-  }, [login, navigate]);
+  }, [exchangeAndFinishLogin, login, navigate]);
 
   if (!vkAppIdConfigured) {
     return null;
