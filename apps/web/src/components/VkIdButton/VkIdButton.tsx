@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
+import './vkSdkStatsShim';
 import * as VKID from '@vkid/sdk';
 import { useAuth } from '@/contexts/AuthContext';
 import type { AuthUser } from '@/contexts/auth-types';

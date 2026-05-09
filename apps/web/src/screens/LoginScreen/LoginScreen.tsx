@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
 import VerveLogo from '@/components/VerveLogo/VerveLogo';
+import VkIdButton from '@/components/VkIdButton/VkIdButton';
 import YandexIdButton from '@/components/YandexIdButton/YandexIdButton';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -414,7 +415,7 @@ export default function LoginScreen() {
           </div>
 
           <div className="relative z-10 flex flex-col gap-3">
-            {/* <VkIdButton /> */}
+            <VkIdButton />
             <YandexIdButton />
           </div>
 
