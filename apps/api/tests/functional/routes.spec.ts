@@ -29,6 +29,18 @@ async function trainerUser() {
   return user
 }
 
+async function trainerUserB() {
+  const user = await User.firstOrCreate(
+    { email: 'test_trainer_b@test.ru' },
+    { password: 'password', role: 'trainer' }
+  )
+  if (user.role !== 'trainer') {
+    user.role = 'trainer'
+    await user.save()
+  }
+  return user
+}
+
 /** Очистка JSON-настроек для изоляции тестов `client_preferences`. */
 async function clearClientPreferences(user: User) {
   user.clientPreferences = {}
@@ -778,6 +790,161 @@ test.group('Trainer routes: доступ тренеру', () => {
       })
     response.assertStatus(201)
     response.assertBodyContains({ success: true })
+  })
+
+  test('POST intro без trainerLeadId → trainerLeadId null', async ({ client, assert }) => {
+    const trainer = await trainerUser()
+    const res = await client.post('/trainer/scheduled-workouts').loginAs(trainer).json({
+      scheduledDate: '2026-06-01T10:00:00',
+      workoutData: { type: 'intro', clientName: 'Иван', exercises: [] },
+      assignedTo: [],
+    })
+    res.assertStatus(201)
+    assert.strictEqual(res.body().data.trainerLeadId ?? null, null)
+  })
+
+  test('POST intro со своим лидом сохраняет trainerLeadId и отдаёт в списке', async ({
+    client,
+    assert,
+  }) => {
+    const trainer = await trainerUser()
+    const leadRes = await client.post('/trainer/leads').loginAs(trainer).json({
+      name: 'Лид вводной',
+      phone: '+79991234567',
+    })
+    leadRes.assertStatus(201)
+    const leadId = leadRes.body().data.id as number
+
+    const sw = await client.post('/trainer/scheduled-workouts').loginAs(trainer).json({
+      scheduledDate: '2026-06-02T11:00:00',
+      workoutData: { type: 'intro', clientName: 'Иван', exercises: [] },
+      assignedTo: [],
+      trainerLeadId: leadId,
+    })
+    sw.assertStatus(201)
+    assert.strictEqual(sw.body().data.trainerLeadId, leadId)
+
+    const list = await client
+      .get('/trainer/scheduled-workouts')
+      .qs({ from: '2026-06-01', to: '2026-06-30' })
+      .loginAs(trainer)
+    list.assertStatus(200)
+    const row = (list.body().data as { id: number; trainerLeadId?: number | null }[]).find(
+      (w) => w.id === sw.body().data.id
+    )
+    assert.exists(row)
+    assert.strictEqual(row!.trainerLeadId, leadId)
+  })
+
+  test('POST intro с лидом другого тренера → 400', async ({ client }) => {
+    const trainerA = await trainerUser()
+    const trainerB = await trainerUserB()
+    const leadRes = await client.post('/trainer/leads').loginAs(trainerA).json({
+      name: 'Чужой лид',
+      phone: '+79997654321',
+    })
+    leadRes.assertStatus(201)
+    const leadId = leadRes.body().data.id
+
+    const sw = await client.post('/trainer/scheduled-workouts').loginAs(trainerB).json({
+      scheduledDate: '2026-06-03T12:00:00',
+      workoutData: { type: 'intro', clientName: 'Петя', exercises: [] },
+      assignedTo: [],
+      trainerLeadId: leadId,
+    })
+    sw.assertStatus(400)
+  })
+
+  test('POST crossfit с trainerLeadId → 400', async ({ client }) => {
+    const trainer = await trainerUser()
+    const leadRes = await client.post('/trainer/leads').loginAs(trainer).json({
+      name: 'Л',
+      phone: '+79995551122',
+    })
+    leadRes.assertStatus(201)
+    const leadId = leadRes.body().data.id
+
+    const res = await client.post('/trainer/scheduled-workouts').loginAs(trainer).json({
+      scheduledDate: '2026-06-04T09:00:00',
+      workoutData: { type: 'crossfit', exercises: [] },
+      assignedTo: [],
+      trainerLeadId: leadId,
+    })
+    res.assertStatus(400)
+  })
+
+  test('PUT intro: смена и сброс trainerLeadId', async ({ client, assert }) => {
+    const trainer = await trainerUser()
+    const l1 = await client.post('/trainer/leads').loginAs(trainer).json({
+      name: 'L1',
+      phone: '+79991111111',
+    })
+    const l2 = await client.post('/trainer/leads').loginAs(trainer).json({
+      name: 'L2',
+      phone: '+79992222222',
+    })
+    l1.assertStatus(201)
+    l2.assertStatus(201)
+    const id1 = l1.body().data.id as number
+    const id2 = l2.body().data.id as number
+
+    const created = await client.post('/trainer/scheduled-workouts').loginAs(trainer).json({
+      scheduledDate: '2026-06-05T14:00:00',
+      workoutData: { type: 'intro', clientName: 'X', exercises: [] },
+      assignedTo: [],
+      trainerLeadId: id1,
+    })
+    created.assertStatus(201)
+    const swId = created.body().data.id as number
+
+    let put = await client.put(`/trainer/scheduled-workouts/${swId}`).loginAs(trainer).json({
+      workoutData: { type: 'intro', clientName: 'Y', exercises: [] },
+      assignedTo: [],
+      trainerLeadId: id2,
+    })
+    put.assertStatus(200)
+    assert.strictEqual(put.body().data.trainerLeadId, id2)
+
+    put = await client.put(`/trainer/scheduled-workouts/${swId}`).loginAs(trainer).json({
+      workoutData: { type: 'intro', clientName: 'Z', exercises: [] },
+      assignedTo: [],
+      trainerLeadId: null,
+    })
+    put.assertStatus(200)
+    assert.strictEqual(put.body().data.trainerLeadId ?? null, null)
+  })
+
+  test('PUT: смена типа с intro на bodybuilding обнуляет trainerLeadId', async ({
+    client,
+    assert,
+  }) => {
+    const trainer = await trainerUser()
+    const leadRes = await client.post('/trainer/leads').loginAs(trainer).json({
+      name: 'L',
+      phone: '+79993333333',
+    })
+    leadRes.assertStatus(201)
+    const leadId = leadRes.body().data.id as number
+
+    const created = await client.post('/trainer/scheduled-workouts').loginAs(trainer).json({
+      scheduledDate: '2026-06-06T08:00:00',
+      workoutData: { type: 'intro', clientName: 'Имя', exercises: [] },
+      assignedTo: [],
+      trainerLeadId: leadId,
+    })
+    created.assertStatus(201)
+    const swId = created.body().data.id as number
+
+    const put = await client.put(`/trainer/scheduled-workouts/${swId}`).loginAs(trainer).json({
+      workoutData: { type: 'bodybuilding', exercises: [] },
+      assignedTo: [],
+    })
+    put.assertStatus(200)
+    assert.strictEqual(put.body().data.trainerLeadId ?? null, null)
+
+    const row = await db.from('scheduled_workouts').where('id', swId).first()
+    assert.exists(row)
+    assert.strictEqual(row!.trainer_lead_id, null)
   })
 
   test('POST /trainer/workout-templates создаёт шаблон', async ({ client }) => {

@@ -4,7 +4,7 @@
 
 **Роли:** `athlete`, `trainer`, `both` (переключение кабинета тренер/атлет в приложении).
 
-Подробное описание возможностей и стек — в [**ТД.md**](./ТД.md).
+**Документация:** [индекс `docs/`](./docs/README.md) · [**ТД**](docs/ТД.md) · [продуктовый обзор](docs/VERVEL_PRODUCT_OVERVIEW.md) · [модули ↔ код](docs/VERVEL_FUNCTIONAL_MODULES.md) · [архитектурный инвентарь](docs/VERVEL_PROJECT_FULL_INVENTORY.md). Контракт API: `apps/api/start/routes.ts`.
 
 ## 🚀 Локальная разработка
 
@@ -206,6 +206,7 @@ vervel/
 
 ## 📝 Дополнительная информация
 
+- [Индекс документов в `docs/`](./docs/README.md)
 - [API Documentation](./apps/api/README.md)
 - [Web Documentation](./apps/web/README.md)
 

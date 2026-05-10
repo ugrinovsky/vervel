@@ -1,6 +1,7 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import { DateTime } from 'luxon'
 import ScheduledWorkout from '#models/scheduled_workout'
+import TrainerLead from '#models/trainer_lead'
 import { isScheduledRestDay } from '#utils/scheduled_workout_entry'
 import Workout from '#models/workout'
 import { JobQueueService } from '#services/JobQueueService'
@@ -8,6 +9,31 @@ import type { AssignedToItem } from '#services/ScheduledWorkoutFanoutService'
 import { parseDateRange } from '#utils/date'
 import { isScheduledWorkoutCalendarPayload } from '#utils/scheduled_workout_types'
 import { isRecord } from '#utils/type_guards'
+
+function payloadHasTrainerLeadId(body: Record<string, unknown>): boolean {
+  return Object.prototype.hasOwnProperty.call(body, 'trainerLeadId')
+}
+
+/** Разрешение FK лида для вводной: null снимает привязку */
+async function resolveIntroTrainerLeadFk(
+  trainerId: number,
+  leadIdRaw: unknown
+): Promise<{ ok: true; fk: number | null } | { ok: false; msg: string }> {
+  if (leadIdRaw === null || leadIdRaw === undefined) {
+    return { ok: true, fk: null }
+  }
+  if (typeof leadIdRaw !== 'number' || !Number.isInteger(leadIdRaw) || leadIdRaw < 1) {
+    return { ok: false, msg: 'Некорректный trainerLeadId' }
+  }
+  const lead = await TrainerLead.query()
+    .where('id', leadIdRaw)
+    .where('trainerId', trainerId)
+    .first()
+  if (!lead) {
+    return { ok: false, msg: 'Лид не найден' }
+  }
+  return { ok: true, fk: lead.id }
+}
 
 function isAssignedToItem(v: unknown): v is AssignedToItem {
   return (
@@ -51,6 +77,7 @@ export default class ScheduledWorkoutController {
         status: w.status,
         notes: w.notes,
         templateId: w.templateId,
+        trainerLeadId: w.trainerLeadId ?? null,
         createdAt: w.createdAt,
       })),
     })
@@ -82,6 +109,7 @@ export default class ScheduledWorkoutController {
         assignedTo: w.assignedTo,
         status: w.status,
         notes: w.notes,
+        trainerLeadId: w.trainerLeadId ?? null,
       })),
     })
   }
@@ -92,6 +120,7 @@ export default class ScheduledWorkoutController {
    */
   async create({ auth, request, response }: HttpContext) {
     const trainer = auth.user!
+    const bodyPayload = request.all() as Record<string, unknown>
     const { scheduledDate, workoutData, assignedTo, notes, templateId } = request.only([
       'scheduledDate',
       'workoutData',
@@ -107,6 +136,23 @@ export default class ScheduledWorkoutController {
     }
     if (!isScheduledWorkoutCalendarPayload(workoutData)) {
       return response.badRequest({ message: 'Некорректный workoutData' })
+    }
+
+    let trainerLeadId: number | null = null
+    if (workoutData.type === 'intro') {
+      const resolved = await resolveIntroTrainerLeadFk(trainer.id, bodyPayload['trainerLeadId'])
+      if (!resolved.ok) {
+        return response.badRequest({ message: resolved.msg })
+      }
+      trainerLeadId = resolved.fk
+    } else if (
+      payloadHasTrainerLeadId(bodyPayload) &&
+      bodyPayload['trainerLeadId'] !== null &&
+      bodyPayload['trainerLeadId'] !== undefined
+    ) {
+      return response.badRequest({
+        message: 'trainerLeadId допустим только для вводной тренировки',
+      })
     }
 
     // Client sends wall-clock local datetime without timezone suffix (e.g. "2026-04-07T15:00:00").
@@ -133,6 +179,7 @@ export default class ScheduledWorkoutController {
       status: 'scheduled',
       notes: notes || null,
       templateId: templateId || null,
+      trainerLeadId: workoutData.type === 'intro' ? trainerLeadId : null,
     })
 
     // Durable fan-out: create/sync athlete Workouts + send push notifications via jobs.
@@ -153,6 +200,7 @@ export default class ScheduledWorkoutController {
         assignedTo: workout.assignedTo,
         status: workout.status,
         notes: workout.notes,
+        trainerLeadId: workout.trainerLeadId ?? null,
       },
     })
   }
@@ -172,6 +220,8 @@ export default class ScheduledWorkoutController {
     if (!workout) {
       return response.notFound({ message: 'Тренировка не найдена' })
     }
+
+    const bodyPayload = request.all() as Record<string, unknown>
 
     const { scheduledDate, workoutData, assignedTo, status, notes } = request.only([
       'scheduledDate',
@@ -197,6 +247,18 @@ export default class ScheduledWorkoutController {
     if (status) workout.status = status
     if (notes !== undefined) workout.notes = notes
 
+    const mergedType = workout.workoutData.type
+
+    if (mergedType !== 'intro') {
+      workout.trainerLeadId = null
+    } else if (payloadHasTrainerLeadId(bodyPayload)) {
+      const resolved = await resolveIntroTrainerLeadFk(trainer.id, bodyPayload['trainerLeadId'])
+      if (!resolved.ok) {
+        return response.badRequest({ message: resolved.msg })
+      }
+      workout.trainerLeadId = resolved.fk
+    }
+
     await workout.save()
 
     // Durable sync of athlete workouts
@@ -221,6 +283,7 @@ export default class ScheduledWorkoutController {
         assignedTo: workout.assignedTo,
         status: workout.status,
         notes: workout.notes,
+        trainerLeadId: workout.trainerLeadId ?? null,
       },
     })
   }

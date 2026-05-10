@@ -132,6 +132,8 @@ export interface ScheduledWorkout {
   status: 'scheduled' | 'completed' | 'cancelled';
   notes?: string | null;
   templateId?: number | null;
+  /** Для типа intro — опциональная связь с лидом CRM */
+  trainerLeadId?: number | null;
   createdAt?: string;
 }
 
@@ -163,6 +165,7 @@ export interface TodayOverview {
     scheduledDate: string;
     workoutData: WorkoutData;
     assignedTo: AssignedTo[];
+    trainerLeadId?: number | null;
   }>;
   stats: {
     athleteCount: number;
@@ -427,6 +430,7 @@ export const trainerApi = {
     assignedTo: AssignedTo[];
     notes?: string;
     templateId?: number;
+    trainerLeadId?: number | null;
   }) =>
     privateApi.post<{ success: boolean; data: ScheduledWorkout }>(
       '/trainer/scheduled-workouts',
@@ -440,6 +444,7 @@ export const trainerApi = {
       assignedTo: AssignedTo[];
       status: 'scheduled' | 'completed' | 'cancelled';
       notes: string;
+      trainerLeadId: number | null;
     }>
   ) =>
     privateApi.put<{ success: boolean; data: ScheduledWorkout }>(

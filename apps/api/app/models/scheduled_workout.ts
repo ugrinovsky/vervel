@@ -4,6 +4,7 @@ import { BaseModel, column, belongsTo } from '@adonisjs/lucid/orm'
 import { SoftDeletes } from 'adonis-lucid-soft-deletes'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
+import TrainerLead from './trainer_lead.js'
 import WorkoutTemplate from './workout_template.js'
 import type { ExerciseData } from './workout_template.js'
 import type { ScheduledWorkoutJsonType } from '#utils/scheduled_workout_types'
@@ -56,6 +57,10 @@ export default class ScheduledWorkout extends compose(BaseModel, SoftDeletes) {
   @column()
   declare templateId: number | null
 
+  /** Для типа intro — опциональная связь с лидом CRM */
+  @column()
+  declare trainerLeadId: number | null
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 
@@ -67,4 +72,7 @@ export default class ScheduledWorkout extends compose(BaseModel, SoftDeletes) {
 
   @belongsTo(() => WorkoutTemplate, { foreignKey: 'templateId' })
   declare template: BelongsTo<typeof WorkoutTemplate>
+
+  @belongsTo(() => TrainerLead, { foreignKey: 'trainerLeadId' })
+  declare trainerLead: BelongsTo<typeof TrainerLead>
 }

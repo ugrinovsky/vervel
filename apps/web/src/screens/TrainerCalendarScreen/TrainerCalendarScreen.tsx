@@ -26,6 +26,7 @@ import {
   type ScheduledWorkout,
   type AthleteListItem,
   type TrainerGroupItem,
+  type TrainerLead,
 } from '@/api/trainer';
 import { toDateKey, parseApiDateTime, toApiDateTime, currentHourString } from '@/utils/date';
 import {
@@ -70,6 +71,32 @@ const INTRO_STRIPE_STYLE = {
   backgroundImage:
     'repeating-linear-gradient(45deg, rgba(56,189,248,0.18) 0px, rgba(56,189,248,0.18) 3px, transparent 3px, transparent 11px)',
 } as const;
+
+function formatRussianPhone(raw: string): string {
+  const digits = raw.replace(/[^\d]/g, '');
+  if (!digits) return raw.startsWith('+') ? '+' : '';
+
+  const d = digits.startsWith('7') || digits.startsWith('8') ? digits.slice(1) : digits;
+  const parts = [d.slice(0, 3), d.slice(3, 6), d.slice(6, 8), d.slice(8, 10)].filter(Boolean);
+  let formatted = '+7';
+  if (parts[0]) formatted += ` (${parts[0]}`;
+  if (parts[0]?.length === 3) formatted += ')';
+  if (parts[1]) formatted += ` ${parts[1]}`;
+  if (parts[2]) formatted += `-${parts[2]}`;
+  if (parts[3]) formatted += `-${parts[3]}`;
+  return formatted;
+}
+
+/** Лиды, с которых ещё ведём воронку (без финальных статусов) */
+function isLeadSelectableForIntro(lead: TrainerLead): boolean {
+  return lead.crmStatus !== 'converted' && lead.crmStatus !== 'lost';
+}
+
+const LEAD_PIPELINE_LABEL: Partial<Record<TrainerLead['crmStatus'], string>> = {
+  new: 'новый',
+  contacted: 'контакт',
+  trial: 'пробное',
+};
 
 // Hours shown on timeline (7:00 – 23:00)
 const TIMELINE_HOURS = Array.from({ length: 17 }, (_, i) => i + 7);
@@ -243,61 +270,130 @@ function DroppableHour({
 
 function IntroSessionForm({
   scheduledAt,
+  editWorkout,
+  crmEnabled,
   onSuccess,
   onCancel,
   draftKey,
 }: {
   scheduledAt: string;
+  editWorkout?: ScheduledWorkout;
+  /** Настройка «CRM» (featTrainerCrm): при false блок выбора лида скрыт */
+  crmEnabled: boolean;
   onSuccess: () => void;
   onCancel: () => void;
   draftKey?: string;
 }) {
-  const [clientName, setClientName] = useState('');
-  const [clientPhone, setClientPhone] = useState('');
+  const [clientName, setClientName] = useState(editWorkout?.workoutData.clientName ?? '');
+  const [clientPhone, setClientPhone] = useState(editWorkout?.workoutData.clientPhone ?? '');
+  const [selectedLeadId, setSelectedLeadId] = useState<number | null>(
+    editWorkout?.trainerLeadId ?? null
+  );
+  const [leads, setLeads] = useState<TrainerLead[]>([]);
   const [phoneError, setPhoneError] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    if (!crmEnabled) return;
+    let cancelled = false;
+    trainerApi
+      .listLeads()
+      .then((res) => {
+        if (!cancelled) setLeads(res.data.data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [crmEnabled]);
+
+  useEffect(() => {
+    if (crmEnabled || editWorkout) return;
+    setSelectedLeadId(null);
     if (!draftKey) return;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (!raw) return;
+      const parsed: unknown = JSON.parse(raw);
+      if (!isRecord(parsed) || !('leadId' in parsed)) return;
+      const next = { ...parsed };
+      delete next.leadId;
+      if (next.clientName || next.clientPhone) {
+        localStorage.setItem(draftKey, JSON.stringify(next));
+      } else {
+        localStorage.removeItem(draftKey);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [crmEnabled, editWorkout, draftKey]);
+
+  useEffect(() => {
+    if (editWorkout || !draftKey) return;
     try {
       const raw = localStorage.getItem(draftKey);
       if (raw) {
         const d = JSON.parse(raw);
         if (d.clientName) setClientName(d.clientName);
         if (d.clientPhone) setClientPhone(d.clientPhone);
+        if (typeof d.leadId === 'number') setSelectedLeadId(d.leadId);
       }
     } catch {}
-  }, [draftKey]);
+  }, [draftKey, editWorkout]);
 
   useEffect(() => {
-    if (!draftKey || (!clientName && !clientPhone)) return;
+    if (!draftKey || editWorkout) return;
+    if (!clientName && !clientPhone && selectedLeadId == null) return;
     try {
-      localStorage.setItem(draftKey, JSON.stringify({ clientName, clientPhone }));
+      localStorage.setItem(
+        draftKey,
+        JSON.stringify({
+          clientName,
+          clientPhone,
+          ...(selectedLeadId != null ? { leadId: selectedLeadId } : {}),
+        })
+      );
     } catch {}
-  }, [clientName, clientPhone, draftKey]);
+  }, [clientName, clientPhone, selectedLeadId, draftKey, editWorkout]);
 
-  const formatPhone = (raw: string): string => {
-    // Keep only digits and leading +
-    const digits = raw.replace(/[^\d]/g, '');
-    if (!digits) return raw.startsWith('+') ? '+' : '';
+  const leadOptions = useMemo(() => {
+    const pipeline = leads
+      .filter(isLeadSelectableForIntro)
+      .sort((a, b) =>
+        String(b.updatedAt ?? b.createdAt).localeCompare(
+          String(a.updatedAt ?? a.createdAt),
+          undefined,
+          { numeric: true }
+        )
+      );
+    const fk = editWorkout?.trainerLeadId;
+    if (fk != null && !pipeline.some((l) => l.id === fk)) {
+      const cur = leads.find((l) => l.id === fk);
+      return cur ? [cur, ...pipeline.filter((l) => l.id !== cur.id)] : pipeline;
+    }
+    return pipeline;
+  }, [leads, editWorkout?.trainerLeadId]);
 
-    // Russian format: +7 (999) 000-00-00
-    const d = digits.startsWith('7') || digits.startsWith('8') ? digits.slice(1) : digits;
-    const parts = [d.slice(0, 3), d.slice(3, 6), d.slice(6, 8), d.slice(8, 10)].filter(Boolean);
-    let formatted = '+7';
-    if (parts[0]) formatted += ` (${parts[0]}`;
-    if (parts[0]?.length === 3) formatted += ')';
-    if (parts[1]) formatted += ` ${parts[1]}`;
-    if (parts[2]) formatted += `-${parts[2]}`;
-    if (parts[3]) formatted += `-${parts[3]}`;
-    return formatted;
+  const onLeadChange = (value: string) => {
+    if (value === '') {
+      setSelectedLeadId(null);
+      return;
+    }
+    const id = Number(value);
+    const lead = leads.find((l) => l.id === id);
+    setSelectedLeadId(id);
+    if (lead) {
+      setClientName(lead.name);
+      if (lead.phone) setClientPhone(formatRussianPhone(lead.phone));
+      setPhoneError('');
+    }
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
     // Allow only: digits, +, space, (, ), -
     if (raw && /[^\d\s\+\(\)\-]/.test(raw)) return;
-    const formatted = raw === '' ? '' : formatPhone(raw);
+    const formatted = raw === '' ? '' : formatRussianPhone(raw);
     setClientPhone(formatted);
     setPhoneError('');
   };
@@ -318,18 +414,37 @@ function IntroSessionForm({
     if (!validatePhone()) return;
     setSaving(true);
     try {
-      await trainerApi.createScheduledWorkout({
-        scheduledDate: scheduledAt,
-        workoutData: {
-          type: 'intro',
-          clientName: clientName.trim(),
-          clientPhone: clientPhone.trim() || undefined,
-          exercises: [],
-        },
-        assignedTo: [],
-      });
-      if (draftKey) localStorage.removeItem(draftKey);
-      toast.success('Вводная добавлена');
+      const workoutData = {
+        type: 'intro' as const,
+        clientName: clientName.trim(),
+        clientPhone: clientPhone.trim() || undefined,
+        exercises: [],
+      };
+      const leadPayload =
+        crmEnabled && selectedLeadId != null ? { trainerLeadId: selectedLeadId } : {};
+
+      if (editWorkout) {
+        await trainerApi.updateScheduledWorkout(editWorkout.id, {
+          scheduledDate: scheduledAt,
+          workoutData,
+          assignedTo: [],
+          ...(crmEnabled
+            ? {
+                trainerLeadId: selectedLeadId,
+              }
+            : {}),
+        });
+        toast.success('Вводная обновлена');
+      } else {
+        await trainerApi.createScheduledWorkout({
+          scheduledDate: scheduledAt,
+          workoutData,
+          assignedTo: [],
+          ...leadPayload,
+        });
+        if (draftKey) localStorage.removeItem(draftKey);
+        toast.success('Вводная добавлена');
+      }
       onSuccess();
     } catch {
       toast.error('Ошибка сохранения');
@@ -337,6 +452,8 @@ function IntroSessionForm({
       setSaving(false);
     }
   };
+
+  const showLeadPicker = crmEnabled;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -353,6 +470,38 @@ function IntroSessionForm({
           <div className="text-xs text-(--color_text_muted)">Слот занят — клиент без аккаунта</div>
         </div>
       </div>
+
+      {showLeadPicker ? (
+        <div>
+          <label className="block text-xs text-(--color_text_muted) mb-1.5">
+            Лид из CRM <span className="text-white/35">необязательно</span>
+          </label>
+          <select
+            value={selectedLeadId ?? ''}
+            onChange={(e) => onLeadChange(e.target.value)}
+            className="w-full py-2.5 px-3 rounded-xl bg-(--color_bg_card_hover) text-white text-sm border border-transparent focus:border-sky-400/40 focus:ring-1 focus:ring-sky-400/30 outline-none appearance-none bg-[length:14px_10px] bg-[right_14px_center] bg-no-repeat"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+            }}
+          >
+            <option value="">Без привязки к лиду</option>
+            {leadOptions.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+                {LEAD_PIPELINE_LABEL[l.crmStatus]
+                  ? ` · ${LEAD_PIPELINE_LABEL[l.crmStatus]}`
+                  : ''}
+              </option>
+            ))}
+          </select>
+          {leadOptions.length === 0 && leads.filter(isLeadSelectableForIntro).length === 0 && (
+            <p className="text-[11px] text-(--color_text_muted) mt-1.5 leading-snug">
+              Нет лидов в воронке. Добавьте клиента на экране CRM или продолжайте только с именем
+              здесь.
+            </p>
+          )}
+        </div>
+      ) : null}
 
       {/* Name */}
       <div>
@@ -407,7 +556,7 @@ function IntroSessionForm({
             background: 'linear-gradient(135deg, rgba(14,165,233,0.75), rgba(2,132,199,0.75))',
           }}
         >
-          {saving ? 'Сохранение…' : 'Добавить'}
+          {saving ? 'Сохранение…' : editWorkout ? 'Сохранить' : 'Добавить'}
         </button>
       </div>
     </form>
@@ -421,6 +570,8 @@ export default function TrainerCalendarScreen() {
   const today = new Date();
   const { user } = useAuth();
   const flags = useFeatureFlags();
+  /** Тот же переключатель, что «CRM» в настройках профиля (featTrainerCrm) */
+  const trainerCrmEnabled = user?.clientPreferences?.featTrainerCrm ?? true;
   const calendarMoreLinks = useMemo(() => {
     const links: Array<{
       emoji: string;
@@ -924,7 +1075,10 @@ export default function TrainerCalendarScreen() {
                     className="mt-2"
                     tabs={[
                       { id: 'all' as const, label: 'Все слоты' },
-                      { id: 'intros' as const, label: 'Лиды' },
+                      {
+                        id: 'intros' as const,
+                        label: trainerCrmEnabled ? 'Лиды' : 'Вводные',
+                      },
                     ]}
                     active={daySlotFilter}
                     onChange={(id) => setDaySlotFilter(id)}
@@ -1125,6 +1279,8 @@ export default function TrainerCalendarScreen() {
             <IntroSessionForm
               key={editingWorkout.id}
               scheduledAt={editingWorkout.scheduledDate}
+              editWorkout={editingWorkout}
+              crmEnabled={trainerCrmEnabled}
               onSuccess={() => {
                 setEditingWorkout(null);
                 loadWorkouts(currentMonth);
@@ -1191,6 +1347,7 @@ export default function TrainerCalendarScreen() {
                 key={`intro-${selectedDateStr}-${selectedTime}`}
                 scheduledAt={`${selectedDateStr}T${selectedTime}:00`}
                 draftKey={introDraftKey}
+                crmEnabled={trainerCrmEnabled}
                 onSuccess={() => {
                   setSelectedTime(null);
                   loadWorkouts(currentMonth);

@@ -110,6 +110,7 @@ export default class TrainerController {
           scheduledDate: w.scheduledDate,
           workoutData: w.workoutData,
           assignedTo: w.assignedTo,
+          trainerLeadId: w.trainerLeadId ?? null,
         })),
         stats: {
           athleteCount: Number(athleteCount[0].$extras.total),
