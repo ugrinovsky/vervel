@@ -24,6 +24,7 @@ import {
   ChevronUpIcon,
   SparklesIcon,
   PhotoIcon,
+  PlusIcon,
 } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
 import GhostButton from '@/components/ui/GhostButton';
@@ -858,8 +859,12 @@ export default function WorkoutFormBase({
                     <>
                       <span className="text-xl shrink-0">📝</span>
                       <span className="flex-1 min-w-0">
-                        <span className="block text-sm font-medium text-white">Распознать по тексту</span>
-                        <span className="block text-xs text-(--color_text_muted)">ИИ распознает по тексту</span>
+                        <span className="block text-sm font-medium text-white">
+                          Распознать по тексту
+                        </span>
+                        <span className="block text-xs text-(--color_text_muted)">
+                          ИИ распознает по тексту
+                        </span>
                       </span>
                       <span className="text-emerald-400/60 text-base shrink-0">→</span>
                     </>
@@ -885,16 +890,23 @@ export default function WorkoutFormBase({
                   }
                 />
 
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border)">
-                  <span className="text-xl shrink-0">✏️</span>
-                  <span className="flex-1 min-w-0">
-                    <span className="block text-sm font-medium text-white/70">
-                      Вручную из каталога
-                    </span>
-                    <span className="block text-xs text-(--color_text_muted)">
-                      Добавьте упражнения по одному ниже
-                    </span>
-                  </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => exercisesEditorRef.current?.openExercisePicker()}
+                    className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) hover:border-(--color_primary_light) transition-colors"
+                  >
+                    <PlusIcon className="w-4 h-4 text-(--color_text_muted)" />
+                    <span className="text-sm font-medium text-white/70">Из каталога</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => exercisesEditorRef.current?.openCustomPicker()}
+                    className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) hover:border-(--color_primary_light) transition-colors"
+                  >
+                    <span>✏️</span>
+                    <span className="text-sm font-medium text-white/70">Свои</span>
+                  </button>
                 </div>
               </>
             )}
@@ -934,7 +946,7 @@ export default function WorkoutFormBase({
           exercises={exercises}
           profileWeight={profileWeight}
           hideWeights={hideExerciseWeights}
-          hideAddExerciseButton={lightOnboarding && !!showAi && exercises.length === 0}
+          hideAddExerciseButton
           onChange={(exs) => {
             setExercises(exs);
             setAiGenerated(false);

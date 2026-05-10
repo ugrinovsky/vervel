@@ -4,6 +4,7 @@ import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
 import { PushNotificationService } from '#services/PushNotificationService'
 import ScheduledWorkout from '#models/scheduled_workout'
+import TrainerLead from '#models/trainer_lead'
 import User from '#models/user'
 import {
   syncAthleteWorkoutsForScheduledWorkout,
@@ -112,7 +113,9 @@ export class JobWorkerService {
     const maxAttempts = Number(job.max_attempts ?? 5)
 
     try {
-      if (type === 'push_event') {
+      if (type === 'crm_daily_reminder') {
+        await this.handleCrmDailyReminder()
+      } else if (type === 'push_event') {
         const payload = parseJsonPayload(job.payload)
         if (!isPushJobPayload(payload)) {
           throw new Error('Invalid push job payload')
@@ -218,6 +221,43 @@ export class JobWorkerService {
         url: `/home`,
       })
       return
+    }
+  }
+
+  private async handleCrmDailyReminder() {
+    const todayStart = DateTime.now().startOf('day')
+    const todayEnd = DateTime.now().endOf('day')
+
+    // Все заявки с датой напоминания сегодня, не конвертированные и не потерянные
+    const leads = await TrainerLead.query()
+      .whereNotNull('next_follow_up_at')
+      .whereBetween('next_follow_up_at', [todayStart.toJSDate(), todayEnd.toJSDate()])
+      .whereNotIn('crm_status', ['converted', 'lost'])
+
+    if (leads.length === 0) return
+
+    // Группируем по тренеру
+    const byTrainer = new Map<number, typeof leads>()
+    for (const lead of leads) {
+      const arr = byTrainer.get(lead.trainerId) ?? []
+      arr.push(lead)
+      byTrainer.set(lead.trainerId, arr)
+    }
+
+    for (const [trainerId, trainerLeads] of byTrainer) {
+      const count = trainerLeads.length
+      const names = trainerLeads
+        .slice(0, 3)
+        .map((l) => l.name)
+        .join(', ')
+      const body =
+        count === 1 ? `Свяжитесь с ${names}` : `${names}${count > 3 ? ` и ещё ${count - 3}` : ''}`
+
+      await PushNotificationService.sendToUser(trainerId, {
+        title: count === 1 ? '📋 Напоминание о заявке' : `📋 Напоминания о заявках (${count})`,
+        body,
+        url: '/trainer/crm',
+      })
     }
   }
 

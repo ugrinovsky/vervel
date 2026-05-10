@@ -9,6 +9,11 @@ import path from 'node:path';
 export default defineConfig({
   server: {
     allowedHosts: true,
+    host: true,
+    watch: {
+      usePolling: true,
+      interval: 300,
+    },
     headers: {
       'Content-Security-Policy': "worker-src blob: 'self'",
     },

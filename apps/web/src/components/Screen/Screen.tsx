@@ -208,7 +208,9 @@ export default function Screen({
         ref={screenRef}
         className={`screen flex flex-col items-stretch justify-start h-full w-full max-w-[798px] mx-auto ${className}`.trim()}
         style={{
-          y: enablePullToRefresh ? springY : 0,
+          /* Без translate на корне, если PT выключен: иначе `position:fixed` у порталов/dnd
+             DragOverlay считается от wrong containing block и «плывёт» относительно курсора */
+          ...(enablePullToRefresh ? { y: springY } : {}),
           ...(bottomInset === 'safe' && {
             paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))',
           }),

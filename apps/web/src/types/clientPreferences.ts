@@ -37,4 +37,6 @@ export type ClientPreferences = {
   featTrainerTemplates?: boolean;
   /** Кабинет тренера: каталог упражнений */
   featTrainerLibrary?: boolean;
+  /** Кабинет тренера: CRM (пайплайн лидов и аналитика) */
+  featTrainerCrm?: boolean;
 };

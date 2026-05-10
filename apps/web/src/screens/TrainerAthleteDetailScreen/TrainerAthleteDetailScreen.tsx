@@ -17,7 +17,8 @@ import DayDetails from '@/screens/ActivityScreen/DayDetails';
 import AccentButton from '@/components/ui/AccentButton';
 import { useAthleteStats, type StatsPeriod } from '@/hooks/useAthleteStats';
 import { useAthleteAvatar } from '@/hooks/useAthleteAvatar';
-import { trainerApi, type PeriodizationData } from '@/api/trainer';
+import { trainerApi, type PeriodizationData, type AthleteCrmStatus } from '@/api/trainer';
+import AthleteCrmSheet from '@/components/trainer/AthleteCrmSheet';
 import { useTrainerUnreadCounts } from '@/hooks/useTrainerUnreadCounts';
 import {
   ChatBubbleLeftIcon,
@@ -25,6 +26,7 @@ import {
   PencilIcon,
   CheckIcon,
   XMarkIcon,
+  ChevronDownIcon,
 } from '@heroicons/react/24/outline';
 import CallButton from '@/components/VideoCall/CallButton';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
@@ -80,6 +82,10 @@ export default function TrainerAthleteDetailScreen() {
   const [nicknameInput, setNicknameInput] = useState('');
   const [savingNickname, setSavingNickname] = useState(false);
   const [periodization, setPeriodization] = useState<PeriodizationData | null>(null);
+  const [showCrm, setShowCrm] = useState(false);
+  const [crmStatus, setCrmStatus] = useState<AthleteCrmStatus>('active');
+  const [crmNote, setCrmNote] = useState<string | null>(null);
+  const [crmFollowUpAt, setCrmFollowUpAt] = useState<string | null>(null);
 
   // Activity calendar state
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
@@ -109,6 +115,9 @@ export default function TrainerAthleteDetailScreen() {
           setNickname(found.nickname ?? null);
           setNicknameInput(found.nickname ?? '');
           setAthletePhotoUrl(found.photoUrl ?? null);
+          setCrmStatus(found.crmStatus ?? 'active');
+          setCrmNote(found.crmNote ?? null);
+          setCrmFollowUpAt(found.nextFollowUpAt ?? null);
         }
         if (periodizationRes.data.success) setPeriodization(periodizationRes.data.data);
       } catch {
@@ -189,6 +198,22 @@ export default function TrainerAthleteDetailScreen() {
         title={athleteName}
         onClose={() => setShowChat(false)}
       />
+
+      {flags.trainerCrm && (
+        <AthleteCrmSheet
+          athleteId={id}
+          crmStatus={crmStatus}
+          crmNote={crmNote}
+          nextFollowUpAt={crmFollowUpAt}
+          open={showCrm}
+          onClose={() => setShowCrm(false)}
+          onUpdated={({ crmStatus: s, crmNote: n, nextFollowUpAt: f }) => {
+            setCrmStatus(s);
+            setCrmNote(n);
+            setCrmFollowUpAt(f);
+          }}
+        />
+      )}
 
       {/* ── Create workout overlay ────────────────────────────────────────── */}
       <BottomSheet
@@ -285,6 +310,50 @@ export default function TrainerAthleteDetailScreen() {
                 <p className="text-xs text-(--color_text_muted) mt-0.5 truncate max-w-full">
                   {athleteEmail}
                 </p>
+              )}
+
+              {/* CRM status chip — кликабелен */}
+              {flags.trainerCrm && (
+                <button
+                  type="button"
+                  onClick={() => setShowCrm(true)}
+                  className={`mt-1.5 inline-flex items-center gap-1.5 px-2 py-1 rounded-full border text-[11px] font-medium transition-all hover:brightness-125 active:scale-95 ${
+                    crmStatus === 'active'
+                      ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                      : crmStatus === 'sleeping'
+                        ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                        : crmStatus === 'paused'
+                          ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                          : 'bg-gray-500/10 border-gray-500/20 text-gray-400'
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      crmStatus === 'active'
+                        ? 'bg-green-400'
+                        : crmStatus === 'sleeping'
+                          ? 'bg-amber-400'
+                          : crmStatus === 'paused'
+                            ? 'bg-blue-400'
+                            : 'bg-gray-500'
+                    }`}
+                  />
+                  {
+                    { active: 'Активен', sleeping: 'Тихо', paused: 'Пауза', churned: 'Ушёл' }[
+                      crmStatus
+                    ]
+                  }
+                  {crmFollowUpAt && (
+                    <span className="opacity-60">
+                      ·{' '}
+                      {new Date(crmFollowUpAt).toLocaleDateString('ru-RU', {
+                        day: 'numeric',
+                        month: 'short',
+                      })}
+                    </span>
+                  )}
+                  <ChevronDownIcon className="w-3 h-3 opacity-50" />
+                </button>
               )}
             </div>
           </motion.div>

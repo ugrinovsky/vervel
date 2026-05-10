@@ -8,6 +8,7 @@
 import ExerciseParamsEditor from '@/components/ExerciseParamsEditor/ExerciseParamsEditor';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
+import CustomExercisePicker from '@/components/CustomExercisePicker/CustomExercisePicker';
 import type { ExerciseData } from '@/api/trainer';
 import type { ExerciseWithSets } from '@/types/Exercise';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
@@ -54,6 +55,7 @@ import GhostButton from '@/components/ui/GhostButton';
 
 export type WorkoutExercisesEditorHandle = {
   openExercisePicker: () => void;
+  openCustomPicker: () => void;
 };
 
 interface Props {
@@ -112,8 +114,15 @@ function SortableExerciseCard({
   onReplace: () => void;
   onRemove: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
-    useSortable({ id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
   const [handlePressed, setHandlePressed] = useState(false);
   const style = {
     transform: transform ? CSS.Transform.toString({ ...transform, x: 0 }) : undefined,
@@ -225,276 +234,295 @@ const WorkoutExercisesEditor = forwardRef<WorkoutExercisesEditorHandle, Props>(
     },
     ref
   ) {
-  const [catalogPickerOpen, setCatalogPickerOpen] = useState(false);
-  const [replacingIdx, setReplacingIdx] = useState<number | null>(null);
-  const [insertAt, setInsertAt] = useState<number | null>(null);
-  const [sortIds, setSortIds] = useState<string[]>([]);
-  const exerciseListBoundsRef = useRef<HTMLDivElement>(null);
+    const [catalogPickerOpen, setCatalogPickerOpen] = useState(false);
+    const [customPickerOpen, setCustomPickerOpen] = useState(false);
+    const [replacingIdx, setReplacingIdx] = useState<number | null>(null);
+    const [insertAt, setInsertAt] = useState<number | null>(null);
+    const [sortIds, setSortIds] = useState<string[]>([]);
+    const exerciseListBoundsRef = useRef<HTMLDivElement>(null);
 
-  const restrictToExerciseListBounds = useCallback<Modifier>(
-    ({ transform, draggingNodeRect }) =>
-      applyVerticalListBounds(transform, draggingNodeRect, exerciseListBoundsRef.current),
-    []
-  );
-
-  useImperativeHandle(ref, () => ({
-    openExercisePicker: () => setCatalogPickerOpen(true),
-  }));
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 6 },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 200, tolerance: 6 },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  useLayoutEffect(() => {
-    if (exercises.length === 0) {
-      setSortIds([]);
-      return;
-    }
-    setSortIds((prev) => {
-      if (prev.length === exercises.length) return prev;
-      return exercises.map(() => crypto.randomUUID());
-    });
-  }, [exercises]);
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIndex = sortIds.indexOf(String(active.id));
-    const newIndex = sortIds.indexOf(String(over.id));
-    if (oldIndex < 0 || newIndex < 0) return;
-    setSortIds(arrayMove(sortIds, oldIndex, newIndex));
-    const splitBlockId = exercises[oldIndex]?.blockId;
-    const reordered = arrayMove(exercises, oldIndex, newIndex);
-    onChange(
-      splitBlockId
-        ? reordered.map((ex) =>
-            ex.blockId === splitBlockId ? { ...ex, blockId: undefined } : ex
-          )
-        : reordered
+    const restrictToExerciseListBounds = useCallback<Modifier>(
+      ({ transform, draggingNodeRect }) =>
+        applyVerticalListBounds(transform, draggingNodeRect, exerciseListBoundsRef.current),
+      []
     );
-  };
 
-  const handleReplace = (ex: ExerciseWithSets) => {
-    if (replacingIdx === null) return;
-    onChange(
-      exercises.map((old, i) => {
-        if (i !== replacingIdx) return old;
-        return { ...old, exerciseId: String(ex.exerciseId), name: ex.title };
+    useImperativeHandle(ref, () => ({
+      openExercisePicker: () => setCatalogPickerOpen(true),
+      openCustomPicker: () => setCustomPickerOpen(true),
+    }));
+
+    const sensors = useSensors(
+      useSensor(PointerSensor, {
+        activationConstraint: { distance: 6 },
+      }),
+      useSensor(TouchSensor, {
+        activationConstraint: { delay: 200, tolerance: 6 },
+      }),
+      useSensor(KeyboardSensor, {
+        coordinateGetter: sortableKeyboardCoordinates,
       })
     );
-    setReplacingIdx(null);
-  };
 
-  const handleInsertPicked = (ex: ExerciseWithSets) => {
-    if (insertAt === null) return;
-    const data = exerciseWithSetsToExerciseData(ex, workoutType);
-    const next = [...exercises];
-    next.splice(insertAt, 0, data);
-    onChange(next);
-    setInsertAt(null);
-  };
+    useLayoutEffect(() => {
+      if (exercises.length === 0) {
+        setSortIds([]);
+        return;
+      }
+      setSortIds((prev) => {
+        if (prev.length === exercises.length) return prev;
+        return exercises.map(() => crypto.randomUUID());
+      });
+    }, [exercises]);
 
-  const update = (index: number, patch: Partial<ExerciseData>) => {
-    if (
-      !hideWeights &&
-      'bodyweight' in patch &&
-      patch.bodyweight &&
-      profileWeight
-    ) {
+    const handleDragEnd = (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+      const oldIndex = sortIds.indexOf(String(active.id));
+      const newIndex = sortIds.indexOf(String(over.id));
+      if (oldIndex < 0 || newIndex < 0) return;
+      setSortIds(arrayMove(sortIds, oldIndex, newIndex));
+      const splitBlockId = exercises[oldIndex]?.blockId;
+      const reordered = arrayMove(exercises, oldIndex, newIndex);
+      onChange(
+        splitBlockId
+          ? reordered.map((ex) =>
+              ex.blockId === splitBlockId ? { ...ex, blockId: undefined } : ex
+            )
+          : reordered
+      );
+    };
+
+    const handleReplace = (ex: ExerciseWithSets) => {
+      if (replacingIdx === null) return;
+      onChange(
+        exercises.map((old, i) => {
+          if (i !== replacingIdx) return old;
+          return { ...old, exerciseId: String(ex.exerciseId), name: ex.title };
+        })
+      );
+      setReplacingIdx(null);
+    };
+
+    const handleInsertPicked = (ex: ExerciseWithSets) => {
+      if (insertAt === null) return;
+      const data = exerciseWithSetsToExerciseData(ex, workoutType);
+      const next = [...exercises];
+      next.splice(insertAt, 0, data);
+      onChange(next);
+      setInsertAt(null);
+    };
+
+    const update = (index: number, patch: Partial<ExerciseData>) => {
+      if (!hideWeights && 'bodyweight' in patch && patch.bodyweight && profileWeight) {
+        onChange(
+          exercises.map((ex, i) => {
+            if (i !== index) return ex;
+            return {
+              ...ex,
+              ...patch,
+              setsDetail: (ex.setsDetail ?? []).map((s) => ({
+                ...s,
+                weight: s.weight ?? profileWeight,
+              })),
+            };
+          })
+        );
+      } else {
+        onChange(exercises.map((ex, i) => (i === index ? { ...ex, ...patch } : ex)));
+      }
+    };
+
+    const removeExercise = (index: number) => {
+      onChange(exercises.filter((_, i) => i !== index));
+    };
+
+    const addSet = (exIdx: number) => {
       onChange(
         exercises.map((ex, i) => {
-          if (i !== index) return ex;
+          if (i !== exIdx || ex.duration != null) return ex;
+          const detail = ex.setsDetail ?? [];
+          const last = detail[detail.length - 1];
           return {
             ...ex,
-            ...patch,
-            setsDetail: (ex.setsDetail ?? []).map((s) => ({ ...s, weight: s.weight ?? profileWeight })),
+            setsDetail: [...detail, { reps: last?.reps ?? 10, weight: last?.weight }],
           };
         })
       );
-    } else {
-      onChange(exercises.map((ex, i) => (i === index ? { ...ex, ...patch } : ex)));
-    }
-  };
+    };
 
-  const removeExercise = (index: number) => {
-    onChange(exercises.filter((_, i) => i !== index));
-  };
+    const removeSet = (exIdx: number, setIdx: number) => {
+      onChange(
+        exercises.map((ex, i) => {
+          if (i !== exIdx || ex.duration != null) return ex;
+          const detail = ex.setsDetail ?? [];
+          if (detail.length <= 1) return ex;
+          return { ...ex, setsDetail: detail.filter((_, si) => si !== setIdx) };
+        })
+      );
+    };
 
-  const addSet = (exIdx: number) => {
-    onChange(
-      exercises.map((ex, i) => {
-        if (i !== exIdx || ex.duration != null) return ex;
-        const detail = ex.setsDetail ?? [];
-        const last = detail[detail.length - 1];
-        return { ...ex, setsDetail: [...detail, { reps: last?.reps ?? 10, weight: last?.weight }] };
-      })
-    );
-  };
+    const dupSet = (exIdx: number, setIdx: number) => {
+      onChange(
+        exercises.map((ex, i) => {
+          if (i !== exIdx || ex.duration != null) return ex;
+          const detail = [...(ex.setsDetail ?? [])];
+          detail.splice(setIdx + 1, 0, { ...detail[setIdx] });
+          return { ...ex, setsDetail: detail };
+        })
+      );
+    };
 
-  const removeSet = (exIdx: number, setIdx: number) => {
-    onChange(
-      exercises.map((ex, i) => {
-        if (i !== exIdx || ex.duration != null) return ex;
-        const detail = ex.setsDetail ?? [];
-        if (detail.length <= 1) return ex;
-        return { ...ex, setsDetail: detail.filter((_, si) => si !== setIdx) };
-      })
-    );
-  };
+    const updateSet = (exIdx: number, setIdx: number, field: 'reps' | 'weight', raw: string) => {
+      onChange(
+        exercises.map((ex, i) => {
+          if (i !== exIdx || ex.duration != null) return ex;
+          const detail = [...(ex.setsDetail ?? [])];
+          const val = field === 'weight' ? parseFloat(raw) : parseInt(raw, 10);
+          detail[setIdx] = {
+            ...detail[setIdx],
+            [field]: raw === '' || isNaN(val) ? undefined : val,
+          };
+          return { ...ex, setsDetail: detail };
+        })
+      );
+    };
 
-  const dupSet = (exIdx: number, setIdx: number) => {
-    onChange(
-      exercises.map((ex, i) => {
-        if (i !== exIdx || ex.duration != null) return ex;
-        const detail = [...(ex.setsDetail ?? [])];
-        detail.splice(setIdx + 1, 0, { ...detail[setIdx] });
-        return { ...ex, setsDetail: detail };
-      })
-    );
-  };
-
-  const updateSet = (exIdx: number, setIdx: number, field: 'reps' | 'weight', raw: string) => {
-    onChange(
-      exercises.map((ex, i) => {
-        if (i !== exIdx || ex.duration != null) return ex;
-        const detail = [...(ex.setsDetail ?? [])];
-        const val = field === 'weight' ? parseFloat(raw) : parseInt(raw, 10);
-        detail[setIdx] = {
-          ...detail[setIdx],
-          [field]: raw === '' || isNaN(val) ? undefined : val,
-        };
-        return { ...ex, setsDetail: detail };
-      })
-    );
-  };
-
-  const toggleLink = (i: number) => {
-    const next = exercises.map((ex) => ({ ...ex }));
-    const a = next[i];
-    const b = next[i + 1];
-    if (!a || !b) return;
-    if (a.blockId && a.blockId === b.blockId) {
-      const bid = a.blockId;
-      for (let j = i + 1; j < next.length; j++) {
-        if (next[j].blockId === bid) delete next[j].blockId;
-        else break;
+    const toggleLink = (i: number) => {
+      const next = exercises.map((ex) => ({ ...ex }));
+      const a = next[i];
+      const b = next[i + 1];
+      if (!a || !b) return;
+      if (a.blockId && a.blockId === b.blockId) {
+        const bid = a.blockId;
+        for (let j = i + 1; j < next.length; j++) {
+          if (next[j].blockId === bid) delete next[j].blockId;
+          else break;
+        }
+        delete a.blockId;
+      } else {
+        const newBlockId = a.blockId ?? crypto.randomUUID();
+        a.blockId = newBlockId;
+        b.blockId = newBlockId;
       }
-      delete a.blockId;
-    } else {
-      const newBlockId = a.blockId ?? crypto.randomUUID();
-      a.blockId = newBlockId;
-      b.blockId = newBlockId;
-    }
-    onChange(next);
-  };
+      onChange(next);
+    };
 
-  const handleExercisePicked = (ex: ExerciseWithSets) => {
-    const data = exerciseWithSetsToExerciseData(ex, workoutType);
-    onChange([...exercises, data]);
-  };
+    const handleExercisePicked = (ex: ExerciseWithSets) => {
+      const data = exerciseWithSetsToExerciseData(ex, workoutType);
+      onChange([...exercises, data]);
+    };
 
-  const listReady = exercises.length > 0 && sortIds.length === exercises.length;
+    const listReady = exercises.length > 0 && sortIds.length === exercises.length;
 
-  return (
-    <div>
-      {toolbar}
+    return (
+      <div>
+        {toolbar}
 
-      {exercises.length > 0 && (
-        <div className={toolbar ? 'mt-3' : ''}>
-          {listReady ? (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCorners}
-              modifiers={[restrictToVerticalAxis, restrictToExerciseListBounds]}
-              onDragEnd={handleDragEnd}
+        {exercises.length > 0 && (
+          <div className={toolbar ? 'mt-3' : ''}>
+            {listReady ? (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCorners}
+                modifiers={[restrictToVerticalAxis, restrictToExerciseListBounds]}
+                onDragEnd={handleDragEnd}
+              >
+                <div ref={exerciseListBoundsRef} className="min-w-0">
+                  <InsertStartRow onClick={() => setInsertAt(0)} />
+                  <SortableContext items={sortIds} strategy={verticalListSortingStrategy}>
+                    {exercises.map((ex, i) => {
+                      const isInBlock = !!ex.blockId;
+                      const isLast = i === exercises.length - 1;
+                      const isLinkedToNext =
+                        superset &&
+                        workoutType !== 'crossfit' &&
+                        !isLast &&
+                        ex.blockId != null &&
+                        ex.blockId === exercises[i + 1].blockId;
+                      const showSupersetBetween = superset && workoutType !== 'crossfit';
+
+                      return (
+                        <SortableExerciseCard
+                          key={sortIds[i]}
+                          id={sortIds[i]}
+                          index={i}
+                          ex={ex}
+                          isInBlock={isInBlock}
+                          workoutType={workoutType}
+                          profileWeight={profileWeight}
+                          hideWeights={hideWeights}
+                          isLast={isLast}
+                          showBetweenRow
+                          showSupersetInBetween={showSupersetBetween}
+                          isLinkedToNext={isLinkedToNext}
+                          onToggleSuperset={() => toggleLink(i)}
+                          onInsertBetween={() => setInsertAt(i + 1)}
+                          onUpdate={(patch) => update(i, patch)}
+                          onAddSet={() => addSet(i)}
+                          onRemoveSet={(si) => removeSet(i, si)}
+                          onDupSet={(si) => dupSet(i, si)}
+                          onUpdateSet={(si, field, raw) => updateSet(i, si, field, raw)}
+                          onReplace={() => setReplacingIdx(i)}
+                          onRemove={() => removeExercise(i)}
+                        />
+                      );
+                    })}
+                  </SortableContext>
+                </div>
+              </DndContext>
+            ) : null}
+          </div>
+        )}
+
+        {!hideAddExerciseButton && (
+          <div className="mt-6 space-y-2">
+            <GhostButton onClick={() => setCatalogPickerOpen(true)} className="w-full">
+              <PlusIcon className="w-4 h-4" />
+              Добавить упражнение
+            </GhostButton>
+            <button
+              type="button"
+              onClick={() => setCustomPickerOpen(true)}
+              className="w-full flex items-center justify-center gap-1.5 text-sm text-(--color_text_muted) hover:text-white transition-colors py-1"
             >
-              <div ref={exerciseListBoundsRef} className="min-w-0">
-                <InsertStartRow onClick={() => setInsertAt(0)} />
-                <SortableContext items={sortIds} strategy={verticalListSortingStrategy}>
-                  {exercises.map((ex, i) => {
-                  const isInBlock = !!ex.blockId;
-                  const isLast = i === exercises.length - 1;
-                  const isLinkedToNext =
-                    superset &&
-                    workoutType !== 'crossfit' &&
-                    !isLast &&
-                    ex.blockId != null &&
-                    ex.blockId === exercises[i + 1].blockId;
-                  const showSupersetBetween = superset && workoutType !== 'crossfit';
-
-                  return (
-                      <SortableExerciseCard
-                        key={sortIds[i]}
-                        id={sortIds[i]}
-                        index={i}
-                        ex={ex}
-                        isInBlock={isInBlock}
-                        workoutType={workoutType}
-                        profileWeight={profileWeight}
-                        hideWeights={hideWeights}
-                        isLast={isLast}
-                        showBetweenRow
-                        showSupersetInBetween={showSupersetBetween}
-                        isLinkedToNext={isLinkedToNext}
-                        onToggleSuperset={() => toggleLink(i)}
-                        onInsertBetween={() => setInsertAt(i + 1)}
-                        onUpdate={(patch) => update(i, patch)}
-                        onAddSet={() => addSet(i)}
-                        onRemoveSet={(si) => removeSet(i, si)}
-                        onDupSet={(si) => dupSet(i, si)}
-                        onUpdateSet={(si, field, raw) => updateSet(i, si, field, raw)}
-                        onReplace={() => setReplacingIdx(i)}
-                        onRemove={() => removeExercise(i)}
-                      />
-                  );
-                })}
-                </SortableContext>
-              </div>
-            </DndContext>
-          ) : null}
-        </div>
-      )}
-
-      {!hideAddExerciseButton && (
-        <GhostButton onClick={() => setCatalogPickerOpen(true)} className="mt-6">
-          <PlusIcon className="w-4 h-4" />
-          Добавить упражнение
-        </GhostButton>
-      )}
-      <ExercisePicker
-        onSelect={handleExercisePicked}
-        workoutType={workoutType}
-        open={catalogPickerOpen}
-        onClose={() => setCatalogPickerOpen(false)}
-      />
-
-      {replacingIdx !== null && (
+              <span>✏️</span>
+              Свои упражнения
+            </button>
+          </div>
+        )}
         <ExercisePicker
-          open={true}
-          onClose={() => setReplacingIdx(null)}
-          onSelect={handleReplace}
+          onSelect={handleExercisePicked}
           workoutType={workoutType}
+          open={catalogPickerOpen}
+          onClose={() => setCatalogPickerOpen(false)}
         />
-      )}
+        <CustomExercisePicker
+          open={customPickerOpen}
+          onClose={() => setCustomPickerOpen(false)}
+          workoutType={workoutType}
+          onSelect={handleExercisePicked}
+        />
 
-      {insertAt !== null && (
-        <ExercisePicker
-          open={true}
-          onClose={() => setInsertAt(null)}
-          onSelect={handleInsertPicked}
-          workoutType={workoutType}
-        />
-      )}
-    </div>
-  );
+        {replacingIdx !== null && (
+          <ExercisePicker
+            open={true}
+            onClose={() => setReplacingIdx(null)}
+            onSelect={handleReplace}
+            workoutType={workoutType}
+          />
+        )}
+
+        {insertAt !== null && (
+          <ExercisePicker
+            open={true}
+            onClose={() => setInsertAt(null)}
+            onSelect={handleInsertPicked}
+            workoutType={workoutType}
+          />
+        )}
+      </div>
+    );
   }
 );
 

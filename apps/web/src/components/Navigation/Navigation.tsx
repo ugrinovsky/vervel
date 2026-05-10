@@ -29,6 +29,7 @@ export default function Navigation() {
         if (r.path === '/trainer/templates') return flags.trainerTemplates;
         if (r.path === '/trainer/library') return flags.trainerLibrary;
         if (r.path === '/trainer/team') return flags.teams;
+        if (r.path === '/trainer/crm') return flags.trainerCrm;
         return true;
       });
     return (

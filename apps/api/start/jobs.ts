@@ -1,7 +1,9 @@
 import env from '#start/env'
 import logger from '@adonisjs/core/services/logger'
 import { JobWorkerService } from '#services/JobWorkerService'
+import { JobQueueService } from '#services/JobQueueService'
 import db from '@adonisjs/lucid/services/db'
+import { nowDate, wallClockDate } from '#utils/date'
 import { isRecord } from '#utils/type_guards'
 
 const enabled = env.get('JOBS_WORKER_ENABLED', 'false') === 'true'
@@ -31,6 +33,34 @@ if (!enabled) {
     }
 
     logger.info({ pollMs }, 'jobs: worker enabled')
+
+    // ── Daily CRM reminder ────────────────────────────────────────────────────
+    // Enqueues crm_daily_reminder at 09:00 each day.
+    // Uses Luxon to find the next 09:00 relative to now.
+    const enqueueCrmReminder = async () => {
+      try {
+        await JobQueueService.enqueue({ type: 'crm_daily_reminder', payload: {} })
+        logger.info('jobs: crm_daily_reminder enqueued')
+      } catch (err: unknown) {
+        logger.error({ err: extractErr(err) }, 'jobs: failed to enqueue crm_daily_reminder')
+      }
+    }
+
+    const scheduleNextCrmReminder = () => {
+      const now = nowDate()
+      let next = wallClockDate(now.getFullYear(), now.getMonth() + 1, now.getDate(), 9, 0, 0)
+      if (next <= now) {
+        next = wallClockDate(now.getFullYear(), now.getMonth() + 1, now.getDate() + 1, 9, 0, 0)
+      }
+      const msUntil = next.getTime() - now.getTime()
+      logger.info({ nextAt: next.toISOString() }, 'jobs: crm_daily_reminder scheduled')
+      setTimeout(async () => {
+        await enqueueCrmReminder()
+        setInterval(enqueueCrmReminder, 24 * 60 * 60 * 1000)
+      }, msUntil)
+    }
+    scheduleNextCrmReminder()
+    // ─────────────────────────────────────────────────────────────────────────
 
     let consecutiveDbFailures = 0
 

@@ -5,9 +5,37 @@ export interface AthleteListItem {
   fullName: string | null;
   email: string;
   status: 'active' | 'pending';
+  crmStatus: AthleteCrmStatus;
+  crmNote: string | null;
+  nextFollowUpAt: string | null;
+  crmStatusChangedAt: string | null;
   linkedAt: string;
   nickname: string | null;
   photoUrl: string | null;
+}
+
+export type AthleteCrmStatus = 'active' | 'sleeping' | 'paused' | 'churned';
+export type LeadCrmStatus = 'new' | 'contacted' | 'trial' | 'converted' | 'lost';
+
+export interface TrainerLead {
+  id: number;
+  name: string;
+  phone: string;
+  email: string | null;
+  source: string | null;
+  crmStatus: LeadCrmStatus;
+  note: string | null;
+  nextFollowUpAt: string | null;
+  convertedAthleteId: number | null;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface TrainerCustomExercise {
+  id: number;
+  name: string;
+  notes: string | null;
+  createdAt: string;
 }
 
 export interface LeaderboardResponse {
@@ -268,6 +296,70 @@ export const trainerApi = {
       `/trainer/athletes/${athleteId}/nickname`,
       { nickname }
     ),
+  updateAthleteCrm: (
+    athleteId: number,
+    data: {
+      crmStatus?: AthleteCrmStatus;
+      crmNote?: string | null;
+      nextFollowUpAt?: string | null;
+    }
+  ) =>
+    privateApi.patch<{
+      success: boolean;
+      data: {
+        athleteId: number;
+        crmStatus: AthleteCrmStatus;
+        crmNote: string | null;
+        nextFollowUpAt: string | null;
+        crmStatusChangedAt: string | null;
+      };
+    }>(`/trainer/athletes/${athleteId}/crm`, data),
+
+  // Leads
+  listLeads: () => privateApi.get<{ success: boolean; data: TrainerLead[] }>('/trainer/leads'),
+  createLead: (data: {
+    name: string;
+    phone: string;
+    email?: string | null;
+    source?: string | null;
+    crmStatus?: LeadCrmStatus;
+    note?: string | null;
+    nextFollowUpAt?: string | null;
+  }) => privateApi.post<{ success: boolean; data: TrainerLead }>('/trainer/leads', data),
+  updateLead: (
+    id: number,
+    data: Partial<{
+      name: string;
+      phone: string;
+      email: string | null;
+      source: string | null;
+      crmStatus: LeadCrmStatus;
+      note: string | null;
+      nextFollowUpAt: string | null;
+    }>
+  ) => privateApi.patch<{ success: boolean; data: TrainerLead }>(`/trainer/leads/${id}`, data),
+  convertLead: (id: number, athleteId: number) =>
+    privateApi.post<{ success: boolean; data: TrainerLead }>(`/trainer/leads/${id}/convert`, {
+      athleteId,
+    }),
+  deleteLead: (id: number) => privateApi.delete(`/trainer/leads/${id}`),
+
+  // Custom exercises
+  listCustomExercises: () =>
+    privateApi.get<{ success: boolean; data: TrainerCustomExercise[] }>(
+      '/trainer/custom-exercises'
+    ),
+  createCustomExercise: (data: { name: string; notes?: string | null }) =>
+    privateApi.post<{ success: boolean; data: TrainerCustomExercise }>(
+      '/trainer/custom-exercises',
+      data
+    ),
+  updateCustomExercise: (id: number, data: Partial<{ name: string; notes: string | null }>) =>
+    privateApi.patch<{ success: boolean; data: TrainerCustomExercise }>(
+      `/trainer/custom-exercises/${id}`,
+      data
+    ),
+  deleteCustomExercise: (id: number) => privateApi.delete(`/trainer/custom-exercises/${id}`),
 
   // Athlete data
   getAthleteStats: (athleteId: number, from: string, to: string) =>

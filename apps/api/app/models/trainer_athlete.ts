@@ -3,6 +3,8 @@ import { BaseModel, column, belongsTo } from '@adonisjs/lucid/orm'
 import type { BelongsTo } from '@adonisjs/lucid/types/relations'
 import User from './user.js'
 
+export type TrainerAthleteCrmStatus = 'active' | 'sleeping' | 'paused' | 'churned'
+
 export default class TrainerAthlete extends BaseModel {
   @column({ isPrimary: true })
   declare id: number
@@ -21,6 +23,18 @@ export default class TrainerAthlete extends BaseModel {
 
   @column()
   declare nickname: string | null
+
+  @column()
+  declare crmStatus: TrainerAthleteCrmStatus
+
+  @column()
+  declare crmNote: string | null
+
+  @column.dateTime()
+  declare nextFollowUpAt: DateTime | null
+
+  @column.dateTime()
+  declare crmStatusChangedAt: DateTime | null
 
   @belongsTo(() => User, { foreignKey: 'trainerId' })
   declare trainer: BelongsTo<typeof User>

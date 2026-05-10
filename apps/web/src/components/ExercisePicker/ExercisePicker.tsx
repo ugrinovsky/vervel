@@ -22,7 +22,12 @@ interface Props {
   onClose?: () => void;
 }
 
-export default function ExercisePicker({ onSelect, workoutType, open: controlledOpen, onClose: onControlledClose }: Props) {
+export default function ExercisePicker({
+  onSelect,
+  workoutType,
+  open: controlledOpen,
+  onClose: onControlledClose,
+}: Props) {
   const [open, setOpen] = useState(false);
   const isOpen = controlledOpen !== undefined ? controlledOpen : open;
   const [view, setView] = useState<'list' | 'detail'>('list');
@@ -32,9 +37,12 @@ export default function ExercisePicker({ onSelect, workoutType, open: controlled
   const [loadingFull, setLoadingFull] = useState(false);
 
   const {
-    search, setSearch,
-    categoryFilter, setCategoryFilter,
-    zoneFilter, setZoneFilter,
+    search,
+    setSearch,
+    categoryFilter,
+    setCategoryFilter,
+    zoneFilter,
+    setZoneFilter,
     availableCategories,
     availableZones,
     filtered,
@@ -46,7 +54,11 @@ export default function ExercisePicker({ onSelect, workoutType, open: controlled
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const filterKey = `${search}|${categoryFilter}|${zoneFilter}`;
-  const { visible: visibleExercises, sentinelRef, hasMore } = useClientInfiniteScroll(filtered, filterKey, scrollContainerRef);
+  const {
+    visible: visibleExercises,
+    sentinelRef,
+    hasMore,
+  } = useClientInfiniteScroll(filtered, filterKey, scrollContainerRef);
 
   const openDetail = (ex: Exercise) => {
     setSelected(ex);
@@ -155,7 +167,12 @@ export default function ExercisePicker({ onSelect, workoutType, open: controlled
                   <>
                     <div className="grid grid-cols-2 gap-2">
                       {visibleExercises.map((ex) => (
-                        <ExercisePickerCard key={ex.id} exercise={ex} onClick={() => openDetail(ex)} onQuickAdd={() => handleQuickAdd(ex)} />
+                        <ExercisePickerCard
+                          key={ex.id}
+                          exercise={ex}
+                          onClick={() => openDetail(ex)}
+                          onQuickAdd={() => handleQuickAdd(ex)}
+                        />
                       ))}
                     </div>
                     {hasMore && <div ref={sentinelRef} className="h-8" />}

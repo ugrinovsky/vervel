@@ -17,6 +17,7 @@ export type FeatureFlags = {
   /** Кабинет тренера */
   trainerTemplates: boolean;
   trainerLibrary: boolean;
+  trainerCrm: boolean;
 };
 
 /**
@@ -43,6 +44,7 @@ export function useFeatureFlags(): FeatureFlags {
     videoCalls: p?.featVideoCalls ?? false,
     trainerTemplates: p?.featTrainerTemplates ?? true,
     trainerLibrary: p?.featTrainerLibrary ?? true,
+    trainerCrm: p?.featTrainerCrm ?? true,
   };
 }
 
@@ -64,6 +66,7 @@ export const MODE_FLAGS: Record<
     featVideoCalls: false,
     featTrainerTemplates: true,
     featTrainerLibrary: true,
+    featTrainerCrm: true,
   },
   pro: {
     featAi: true,
@@ -78,6 +81,7 @@ export const MODE_FLAGS: Record<
     featVideoCalls: false,
     featTrainerTemplates: true,
     featTrainerLibrary: true,
+    featTrainerCrm: true,
   },
   unleash: {
     featAi: true,
@@ -92,6 +96,7 @@ export const MODE_FLAGS: Record<
     featVideoCalls: true,
     featTrainerTemplates: true,
     featTrainerLibrary: true,
+    featTrainerCrm: true,
   },
 };
 

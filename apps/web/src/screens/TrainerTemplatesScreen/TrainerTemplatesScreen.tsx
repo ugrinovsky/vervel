@@ -9,7 +9,12 @@ import FormField from '@/components/FormField';
 import WorkoutTypeTabs, { type WorkoutType } from '@/components/WorkoutTypeTabs';
 import WorkoutExercisesEditor from '@/components/WorkoutExercisesEditor/WorkoutExercisesEditor';
 import { normalizeExercisesForType } from '@/components/WorkoutExercisesEditor/normalizeForWorkoutType';
-import { trainerApi, type WorkoutTemplate, type ExerciseData } from '@/api/trainer';
+import {
+  trainerApi,
+  type WorkoutTemplate,
+  type ExerciseData,
+  type TrainerCustomExercise,
+} from '@/api/trainer';
 import { useNavigate } from 'react-router';
 import { PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
@@ -33,10 +38,14 @@ import type {
 } from '@/api/ai';
 import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
 import SectionGroup from '@/components/ui/SectionGroup';
+import Tabs from '@/components/ui/Tabs';
 import { useTrainerCabinetRedirect } from '@/hooks/useTrainerCabinetRedirect';
 
-export default function TrainerTemplatesScreen() {
-  useTrainerCabinetRedirect('templates');
+/* ------------------------------------------------------------------ */
+/* Template tab                                                         */
+/* ------------------------------------------------------------------ */
+
+function TemplatesTab() {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,7 +117,7 @@ export default function TrainerTemplatesScreen() {
   const handleAiRecognizedResult = (result: AiRecognizedWorkoutResult) => {
     const converted = normalizeExercisesForType(
       templateType,
-      convertAiExercises(result.exercises, templateType),
+      convertAiExercises(result.exercises, templateType)
     );
     setTemplateExercises(converted);
     setAiGenerated(true);
@@ -117,23 +126,24 @@ export default function TrainerTemplatesScreen() {
 
   const handleAiTextParsed = (payload: AiTextParseUiPayload) => {
     const nameMap = new Map(payload.previewItems.map((item) => [item.exerciseId, item.name]));
-    const baseConverted: ExerciseData[] = payload.exercises.map((ex: AiParsedWorkoutExercisePayload) => ({
-      exerciseId: ex.exerciseId,
-      name:
-        nameMap.get(ex.exerciseId) ?? exerciseIdForDisplay(String(ex.exerciseId)),
-      zones: Array.isArray(ex.zones) ? ex.zones : undefined,
-      zoneWeights:
-        ex.zoneWeights && typeof ex.zoneWeights === 'object' ? ex.zoneWeights : undefined,
-      bodyweight: ex.bodyweight,
-      setsDetail: ex.sets?.map((s) => ({ reps: s.reps ?? 10, weight: s.weight })) ?? [],
-      sets: ex.sets?.length ?? 3,
-      blockId: ex.blockId,
-      duration: ex.sets?.[0]?.time ? Math.round(Number(ex.sets?.[0]?.time ?? 0) / 60) : undefined,
-    }));
+    const baseConverted: ExerciseData[] = payload.exercises.map(
+      (ex: AiParsedWorkoutExercisePayload) => ({
+        exerciseId: ex.exerciseId,
+        name: nameMap.get(ex.exerciseId) ?? exerciseIdForDisplay(String(ex.exerciseId)),
+        zones: Array.isArray(ex.zones) ? ex.zones : undefined,
+        zoneWeights:
+          ex.zoneWeights && typeof ex.zoneWeights === 'object' ? ex.zoneWeights : undefined,
+        bodyweight: ex.bodyweight,
+        setsDetail: ex.sets?.map((s) => ({ reps: s.reps ?? 10, weight: s.weight })) ?? [],
+        sets: ex.sets?.length ?? 3,
+        blockId: ex.blockId,
+        duration: ex.sets?.[0]?.time ? Math.round(Number(ex.sets?.[0]?.time ?? 0) / 60) : undefined,
+      })
+    );
 
     const converted = normalizeExercisesForType(
       templateType,
-      convertExercisesForType(baseConverted, 'bodybuilding', templateType),
+      convertExercisesForType(baseConverted, 'bodybuilding', templateType)
     );
 
     setTemplateDescription(payload.sourceText);
@@ -184,37 +194,33 @@ export default function TrainerTemplatesScreen() {
   };
 
   return (
-    <Screen className="trainer-templates-screen">
-      <div className="p-4 w-full mx-auto">
-        <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
-          <ScreenHeader
-            icon="📋"
-            title="Шаблоны"
-            description="Заготовки тренировок для быстрого назначения атлетам и группам — создайте один раз и используйте многократно"
-          />
-
-          <ScreenHint>
-            Шаблон — готовая тренировка. Создайте вручную или с помощью ИИ (фото, текст, запрос), затем
-            назначайте атлетам и группам через{' '}
-            <button onClick={() => navigate('/trainer/calendar')} className="text-white font-medium underline underline-offset-2 hover:no-underline">
-              Календарь
-            </button>
-            {' '}— не нужно каждый раз вводить упражнения заново.
-          </ScreenHint>
-        </SectionGroup>
-
-        <SectionGroup title="Все шаблоны" showBreakAfter={false}>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
+    <>
+      <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
+        <ScreenHint>
+          Шаблон — готовая тренировка. Создайте вручную или с помощью ИИ (фото, текст, запрос),
+          затем назначайте атлетам и группам через{' '}
+          <button
+            onClick={() => navigate('/trainer/calendar')}
+            className="text-white font-medium underline underline-offset-2 hover:no-underline"
           >
-            <div className="flex justify-end mb-4">
-              <AccentButton size="sm" onClick={openCreate}>
-                <PlusIcon className="w-4 h-4" />
-                Создать
-              </AccentButton>
-            </div>
+            Календарь
+          </button>{' '}
+          — не нужно каждый раз вводить упражнения заново.
+        </ScreenHint>
+      </SectionGroup>
+
+      <SectionGroup title="Все шаблоны" showBreakAfter={false}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
+        >
+          <div className="flex justify-end mb-4">
+            <AccentButton size="sm" onClick={openCreate}>
+              <PlusIcon className="w-4 h-4" />
+              Создать
+            </AccentButton>
+          </div>
 
           {loading ? (
             <div className="flex justify-center py-6">
@@ -225,15 +231,27 @@ export default function TrainerTemplatesScreen() {
               <div className="text-center">
                 <div className="text-3xl mb-2">📋</div>
                 <p className="text-sm font-medium text-white mb-1">Пока нет шаблонов</p>
-                <p className="text-xs text-(--color_text_muted)">Шаблон — это готовая тренировка, которую можно быстро назначить любому атлету или группе</p>
+                <p className="text-xs text-(--color_text_muted)">
+                  Шаблон — это готовая тренировка, которую можно быстро назначить любому атлету или
+                  группе
+                </p>
               </div>
               <div className="space-y-2 pt-1">
                 {[
                   { emoji: '1️⃣', text: 'Нажмите «Создать» и добавьте упражнения в шаблон' },
-                  { emoji: '2️⃣', text: 'Откройте Календарь и назначьте шаблон атлету или группе на нужную дату' },
-                  { emoji: '3️⃣', text: 'Атлет увидит тренировку в своём расписании в разделе «Моя команда»' },
+                  {
+                    emoji: '2️⃣',
+                    text: 'Откройте Календарь и назначьте шаблон атлету или группе на нужную дату',
+                  },
+                  {
+                    emoji: '3️⃣',
+                    text: 'Атлет увидит тренировку в своём расписании в разделе «Моя команда»',
+                  },
                 ].map(({ emoji, text }) => (
-                  <div key={emoji} className="flex items-start gap-2 text-xs text-(--color_text_muted)">
+                  <div
+                    key={emoji}
+                    className="flex items-start gap-2 text-xs text-(--color_text_muted)"
+                  >
                     <span className="shrink-0">{emoji}</span>
                     <span>{text}</span>
                   </div>
@@ -246,7 +264,6 @@ export default function TrainerTemplatesScreen() {
                 <ConfirmDeleteWrapper
                   key={template.id}
                   onConfirm={() => handleDelete(template.id)}
-
                   className="p-3 bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors"
                 >
                   <div className="flex items-center justify-between">
@@ -309,9 +326,8 @@ export default function TrainerTemplatesScreen() {
               ))}
             </div>
           )}
-          </motion.div>
-        </SectionGroup>
-      </div>
+        </motion.div>
+      </SectionGroup>
 
       {/* ── Form BottomSheet ── */}
       <BottomSheet
@@ -348,8 +364,12 @@ export default function TrainerTemplatesScreen() {
                   <>
                     <span className="text-xl shrink-0">📸</span>
                     <span className="flex-1 min-w-0">
-                      <span className="block text-sm font-medium text-white">Распознать изображение</span>
-                      <span className="block text-xs text-(--color_text_muted)">ИИ распознаёт по фото</span>
+                      <span className="block text-sm font-medium text-white">
+                        Распознать изображение
+                      </span>
+                      <span className="block text-xs text-(--color_text_muted)">
+                        ИИ распознаёт по фото
+                      </span>
                     </span>
                     <span className="text-emerald-400/60 text-base shrink-0">→</span>
                   </>
@@ -363,7 +383,9 @@ export default function TrainerTemplatesScreen() {
                   <>
                     <span className="text-xl shrink-0">✨</span>
                     <span className="flex-1 min-w-0">
-                      <span className="block text-sm font-medium text-white">Сгенерировать по описанию</span>
+                      <span className="block text-sm font-medium text-white">
+                        Сгенерировать по описанию
+                      </span>
                       <span className="block text-xs text-(--color_text_muted)">
                         ИИ подберёт упражнения, подходы и веса
                       </span>
@@ -375,8 +397,12 @@ export default function TrainerTemplatesScreen() {
               <div className="flex items-center gap-3 p-3 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border)">
                 <span className="text-xl shrink-0">✏️</span>
                 <span className="flex-1 min-w-0">
-                  <span className="block text-sm font-medium text-white/70">Вручную из каталога</span>
-                  <span className="block text-xs text-(--color_text_muted)">Добавьте упражнения в списке ниже</span>
+                  <span className="block text-sm font-medium text-white/70">
+                    Вручную из каталога
+                  </span>
+                  <span className="block text-xs text-(--color_text_muted)">
+                    Добавьте упражнения в списке ниже
+                  </span>
                 </span>
               </div>
             </div>
@@ -452,6 +478,237 @@ export default function TrainerTemplatesScreen() {
           </AccentButton>
         </div>
       </BottomSheet>
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Exercises tab                                                        */
+/* ------------------------------------------------------------------ */
+
+function ExercisesTab() {
+  const [exercises, setExercises] = useState<TrainerCustomExercise[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingExercise, setEditingExercise] = useState<TrainerCustomExercise | null>(null);
+  const [name, setName] = useState('');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  async function loadExercises() {
+    try {
+      setLoading(true);
+      const res = await trainerApi.listCustomExercises();
+      setExercises(res.data.data);
+    } catch {
+      toast.error('Ошибка загрузки упражнений');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadExercises();
+  }, []);
+
+  const openCreate = () => {
+    setEditingExercise(null);
+    setName('');
+    setNotes('');
+    setShowForm(true);
+  };
+
+  const openEdit = (ex: TrainerCustomExercise) => {
+    setEditingExercise(ex);
+    setName(ex.name);
+    setNotes(ex.notes ?? '');
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    if (saving) return;
+    setShowForm(false);
+  };
+
+  const handleSave = async () => {
+    if (!name.trim()) {
+      toast.error('Укажите название');
+      return;
+    }
+    try {
+      setSaving(true);
+      const payload = { name: name.trim(), notes: notes.trim() || null };
+      if (editingExercise) {
+        await trainerApi.updateCustomExercise(editingExercise.id, payload);
+        toast.success('Упражнение обновлено');
+      } else {
+        await trainerApi.createCustomExercise(payload);
+        toast.success('Упражнение добавлено');
+      }
+      setShowForm(false);
+      loadExercises();
+    } catch {
+      toast.error('Ошибка сохранения');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      await trainerApi.deleteCustomExercise(id);
+      toast.success('Упражнение удалено');
+      loadExercises();
+    } catch {
+      toast.error('Ошибка удаления');
+    }
+  };
+
+  return (
+    <>
+      <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
+        <ScreenHint>
+          Кастомные упражнения — те, которых нет в каталоге. Добавьте их здесь, и они будут доступны
+          при составлении тренировок и шаблонов.
+        </ScreenHint>
+      </SectionGroup>
+
+      <SectionGroup title="Мои упражнения" showBreakAfter={false}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
+        >
+          <div className="flex justify-end mb-4">
+            <AccentButton size="sm" onClick={openCreate}>
+              <PlusIcon className="w-4 h-4" />
+              Добавить
+            </AccentButton>
+          </div>
+
+          {loading ? (
+            <div className="flex justify-center py-6">
+              <LoadingSpinner size="md" />
+            </div>
+          ) : exercises.length === 0 ? (
+            <div className="py-6 text-center space-y-2">
+              <div className="text-3xl mb-2">✏️</div>
+              <p className="text-sm font-medium text-white mb-1">Нет кастомных упражнений</p>
+              <p className="text-xs text-(--color_text_muted)">
+                Добавьте упражнения, которых нет в каталоге — они появятся в пикере при составлении
+                тренировок
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {exercises.map((ex) => (
+                <ConfirmDeleteWrapper
+                  key={ex.id}
+                  onConfirm={() => handleDelete(ex.id)}
+                  className="p-3 bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <span className="text-sm font-medium text-white truncate block">
+                        {ex.name}
+                      </span>
+                      {ex.notes && (
+                        <span className="text-xs text-(--color_text_muted) mt-0.5 truncate block">
+                          {ex.notes}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 ml-2 shrink-0">
+                      <button
+                        onClick={() => openEdit(ex)}
+                        className="p-1.5 text-(--color_text_muted) hover:text-white transition-colors"
+                        title="Редактировать"
+                      >
+                        <PencilIcon className="w-4 h-4" />
+                      </button>
+                      <ConfirmDeleteWrapper.Trigger />
+                    </div>
+                  </div>
+                </ConfirmDeleteWrapper>
+              ))}
+            </div>
+          )}
+        </motion.div>
+      </SectionGroup>
+
+      <BottomSheet
+        id="trainer-custom-exercise-form"
+        open={showForm}
+        onClose={closeForm}
+        emoji="✏️"
+        title={editingExercise ? 'Редактировать упражнение' : 'Новое упражнение'}
+      >
+        <div className="space-y-4">
+          <FormField label="Название">
+            <AppInput
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Название упражнения..."
+              className="py-2 px-3 rounded-lg"
+            />
+          </FormField>
+
+          <FormField label="Заметка (опционально)">
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Техника выполнения, особенности..."
+              rows={2}
+              className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none"
+            />
+          </FormField>
+
+          <AccentButton
+            onClick={handleSave}
+            disabled={saving}
+            loading={saving}
+            loadingText="Сохранение..."
+          >
+            {editingExercise ? 'Сохранить изменения' : 'Добавить упражнение'}
+          </AccentButton>
+        </div>
+      </BottomSheet>
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Screen                                                               */
+/* ------------------------------------------------------------------ */
+
+type TabId = 'templates' | 'exercises';
+
+export default function TrainerTemplatesScreen() {
+  useTrainerCabinetRedirect('templates');
+  const [activeTab, setActiveTab] = useState<TabId>('templates');
+
+  return (
+    <Screen className="trainer-templates-screen">
+      <div className="p-4 w-full mx-auto">
+        <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
+          <ScreenHeader
+            icon="📋"
+            title="Шаблоны"
+            description="Заготовки тренировок и ваши упражнения"
+          />
+          <Tabs
+            active={activeTab}
+            onChange={setActiveTab}
+            tabs={[
+              { id: 'templates', label: '📋 Тренировки' },
+              { id: 'exercises', label: '✏️ Упражнения' },
+            ]}
+          />
+        </SectionGroup>
+
+        {activeTab === 'templates' ? <TemplatesTab /> : <ExercisesTab />}
+      </div>
     </Screen>
   );
 }

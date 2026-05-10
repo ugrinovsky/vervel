@@ -32,6 +32,13 @@
   background: transparent;
 }
 
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.6;
+  cursor: pointer;
+}
+
 html, body {
   background-color: var(--color_primary_dark);
   height: 100%;

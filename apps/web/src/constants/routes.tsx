@@ -14,6 +14,7 @@ import {
   BookOpenIcon,
   TrophyIcon,
   ChatBubbleLeftRightIcon,
+  ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline';
 
 const ActivityScreen = lazy(() => import('@/screens/ActivityScreen/ActivityScreen'));
@@ -38,11 +39,11 @@ const TrainerTemplatesScreen = lazy(
 const TrainerExerciseLibraryScreen = lazy(
   () => import('@/screens/TrainerExerciseLibraryScreen/TrainerExerciseLibraryScreen')
 );
-const AthleteMyTeamScreen = lazy(
-  () => import('@/screens/AthleteMyTeamScreen/AthleteMyTeamScreen')
-);
+const AthleteMyTeamScreen = lazy(() => import('@/screens/AthleteMyTeamScreen/AthleteMyTeamScreen'));
 const DialogsScreen = lazy(() => import('@/screens/DialogsScreen/DialogsScreen'));
 const TrainerTeamScreen = lazy(() => import('@/screens/TrainerTeamScreen/TrainerTeamScreen'));
+const TrainerLeadsScreen = lazy(() => import('@/screens/TrainerLeadsScreen/TrainerLeadsScreen'));
+const TrainerCrmScreen = lazy(() => import('@/screens/TrainerCrmScreen/TrainerCrmScreen'));
 
 function withRouteSuspense(node: ReactNode) {
   return <Suspense fallback={<RouteLoading />}>{node}</Suspense>;
@@ -158,6 +159,19 @@ export const trainerRoutes: RouteItem[] = [
     label: 'Команда',
     icon: UsersIcon,
     element: withRouteSuspense(<TrainerTeamScreen />),
+    toolbarPosition: 'left',
+  },
+  {
+    path: '/trainer/leads',
+    label: 'Лиды',
+    icon: ClipboardDocumentListIcon,
+    element: withRouteSuspense(<TrainerLeadsScreen />),
+  },
+  {
+    path: '/trainer/crm',
+    label: 'CRM',
+    icon: ClipboardDocumentListIcon,
+    element: withRouteSuspense(<TrainerCrmScreen />),
     toolbarPosition: 'left',
   },
   {

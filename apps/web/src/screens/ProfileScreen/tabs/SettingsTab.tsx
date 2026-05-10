@@ -638,6 +638,12 @@ const FEAT_GROUPS: Array<{ title: string; items: FeatItemConfig[] }> = [
         hint: 'Справочник движений в кабинете',
         trainerOnly: true,
       },
+      {
+        key: 'featTrainerCrm',
+        label: 'CRM',
+        hint: 'Заявки, статусы клиентов и аналитика',
+        trainerOnly: true,
+      },
     ],
   },
   {
@@ -722,6 +728,7 @@ const FEAT_FLAG_MAP: Record<FeatKey, keyof FeatureFlags> = {
   featVideoCalls: 'videoCalls',
   featTrainerTemplates: 'trainerTemplates',
   featTrainerLibrary: 'trainerLibrary',
+  featTrainerCrm: 'trainerCrm',
 };
 
 const FEAT_ITEMS_FLAT = FEAT_GROUPS.flatMap((g) => g.items);
@@ -868,7 +875,9 @@ function FeatureSettingsSection({
                   </p>
                 </div>
                 <div className="shrink-0 pt-0.5 text-right">
-                  {isActive && <span className="text-emerald-400 text-xs whitespace-nowrap">✓ активен</span>}
+                  {isActive && (
+                    <span className="text-emerald-400 text-xs whitespace-nowrap">✓ активен</span>
+                  )}
                   {applyingMode === mode && (
                     <span className="text-xs text-(--color_text_muted)">...</span>
                   )}

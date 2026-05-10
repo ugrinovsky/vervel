@@ -22,6 +22,7 @@ const FEAT_FLAG_MAP: Record<FeatKey, string> = {
   featVideoCalls: 'Видеозвонки',
   featTrainerTemplates: 'Шаблоны тренировок',
   featTrainerLibrary: 'Каталог упражнений',
+  featTrainerCrm: 'CRM',
 };
 
 /**

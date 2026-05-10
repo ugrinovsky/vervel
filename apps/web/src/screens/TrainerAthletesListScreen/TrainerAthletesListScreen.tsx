@@ -22,6 +22,14 @@ import {
   Bars3Icon,
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
+import type { AthleteCrmStatus } from '@/api/trainer';
+
+const CRM_STATUS_CONFIG: Record<AthleteCrmStatus, { label: string; dot: string; pill: string }> = {
+  active: { label: 'Активен', dot: 'bg-green-400', pill: 'text-green-300 bg-green-500/10' },
+  sleeping: { label: 'Тихо', dot: 'bg-amber-400', pill: 'text-amber-300 bg-amber-500/10' },
+  paused: { label: 'Пауза', dot: 'bg-blue-400', pill: 'text-blue-300 bg-blue-500/10' },
+  churned: { label: 'Ушёл', dot: 'bg-gray-500', pill: 'text-gray-400 bg-gray-500/10' },
+};
 import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
 import SectionGroup from '@/components/ui/SectionGroup';
 import { useTrainerTeamsFeatureRedirect } from '@/hooks/useTrainerTeamsFeatureRedirect';
@@ -86,7 +94,6 @@ export default function TrainerAthletesListScreen() {
     }
   };
 
-
   return (
     <Screen loading={loading} className="trainer-athletes-list-screen">
       <div className="p-4 w-full mx-auto">
@@ -100,8 +107,8 @@ export default function TrainerAthletesListScreen() {
           <ScreenHint>
             Здесь атлеты на персональном ведении. Нажмите на карточку — увидите аналитику нагрузок,
             историю тренировок и личный чат.{' '}
-            <span className="text-white font-medium">Назначить тренировку</span> можно через Календарь,
-            выбрав атлета при создании.
+            <span className="text-white font-medium">Назначить тренировку</span> можно через
+            Календарь, выбрав атлета при создании.
           </ScreenHint>
 
           <motion.div
@@ -146,155 +153,205 @@ export default function TrainerAthletesListScreen() {
             transition={{ delay: 0.1 }}
             className="space-y-3"
           >
-          {/* Search */}
-          {athletes.length > 0 && (
-            <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--color_text_muted) pointer-events-none" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Поиск по имени или email…"
-                className="w-full pl-9 pr-4 py-2 text-sm rounded-xl bg-(--color_bg_card) border border-(--color_border) text-white placeholder:text-(--color_text_muted) focus:outline-none focus:border-(--color_primary_light)/60"
+            {/* Search */}
+            {athletes.length > 0 && (
+              <div className="relative">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--color_text_muted) pointer-events-none" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Поиск по имени или email…"
+                  className="w-full pl-9 pr-4 py-2 text-sm rounded-xl bg-(--color_bg_card) border border-(--color_border) text-white placeholder:text-(--color_text_muted) focus:outline-none focus:border-(--color_primary_light)/60"
+                />
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Tabs
+                size="sm"
+                active={view}
+                onChange={setViewMode}
+                tabs={[
+                  { id: '2', label: <Squares2X2Icon className="w-4 h-4" /> },
+                  { id: '3', label: <ViewColumnsIcon className="w-4 h-4" /> },
+                  { id: 'list', label: <Bars3Icon className="w-4 h-4" /> },
+                ]}
               />
+              <AccentButton size="sm" onClick={() => setShowAddDrawer(true)}>
+                <PlusIcon className="w-4 h-4" />
+                Добавить
+              </AccentButton>
             </div>
-          )}
 
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <Tabs
-              size="sm"
-              active={view}
-              onChange={setViewMode}
-              tabs={[
-                { id: '2', label: <Squares2X2Icon className="w-4 h-4" /> },
-                { id: '3', label: <ViewColumnsIcon className="w-4 h-4" /> },
-                { id: 'list', label: <Bars3Icon className="w-4 h-4" /> },
-              ]}
-            />
-            <AccentButton size="sm" onClick={() => setShowAddDrawer(true)}>
-              <PlusIcon className="w-4 h-4" />
-              Добавить
-            </AccentButton>
-          </div>
-
-          {athletes.length === 0 ? (
-            <div className="py-4 space-y-3">
-              <div className="text-center">
-                <div className="text-3xl mb-2">🏃</div>
-                <p className="text-sm font-medium text-white mb-1">Пока нет атлетов</p>
-                <p className="text-xs text-(--color_text_muted)">Пригласите атлета — он увидит ваш профиль, расписание и сможет писать вам в чат</p>
-              </div>
-              <div className="space-y-2 pt-1">
-                {[
-                  { emoji: '1️⃣', text: 'Нажмите «Добавить» и отправьте атлету ссылку-приглашение' },
-                  { emoji: '2️⃣', text: 'Атлет принимает приглашение — вы появляетесь в его «Моя команда»' },
-                  { emoji: '3️⃣', text: 'Назначайте персональные тренировки через Календарь' },
-                ].map(({ emoji, text }) => (
-                  <div key={emoji} className="flex items-start gap-2 text-xs text-(--color_text_muted)">
-                    <span className="shrink-0">{emoji}</span>
-                    <span>{text}</span>
-                  </div>
-                ))}
-              </div>
-              <button
-                onClick={() => setShowAddDrawer(true)}
-                className="w-full py-2.5 rounded-xl bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity"
-              >
-                Пригласить первого атлета
-              </button>
-            </div>
-          ) : filteredAthletes.length === 0 ? (
-            <p className="text-sm text-(--color_text_muted) text-center py-8">Ничего не найдено</p>
-          ) : (
-            <AnimatePresence mode="wait">
-              {view === 'list' ? (
-                <motion.div
-                  key="list"
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.15 }}
-                  className="flex flex-col gap-2"
+            {athletes.length === 0 ? (
+              <div className="py-4 space-y-3">
+                <div className="text-center">
+                  <div className="text-3xl mb-2">🏃</div>
+                  <p className="text-sm font-medium text-white mb-1">Пока нет атлетов</p>
+                  <p className="text-xs text-(--color_text_muted)">
+                    Пригласите атлета — он увидит ваш профиль, расписание и сможет писать вам в чат
+                  </p>
+                </div>
+                <div className="space-y-2 pt-1">
+                  {[
+                    {
+                      emoji: '1️⃣',
+                      text: 'Нажмите «Добавить» и отправьте атлету ссылку-приглашение',
+                    },
+                    {
+                      emoji: '2️⃣',
+                      text: 'Атлет принимает приглашение — вы появляетесь в его «Моя команда»',
+                    },
+                    { emoji: '3️⃣', text: 'Назначайте персональные тренировки через Календарь' },
+                  ].map(({ emoji, text }) => (
+                    <div
+                      key={emoji}
+                      className="flex items-start gap-2 text-xs text-(--color_text_muted)"
+                    >
+                      <span className="shrink-0">{emoji}</span>
+                      <span>{text}</span>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setShowAddDrawer(true)}
+                  className="w-full py-2.5 rounded-xl bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity"
                 >
-                  {filteredAthletes.map((athlete) => {
-                    const unread = getAthleteUnread(athlete.id);
-                    return (
-                      <motion.div key={athlete.id} whileTap={{ scale: 0.99 }}>
-                        <ConfirmDeleteWrapper
-                          onConfirm={() => handleRemoveAthlete(athlete.id)}
-
-                          className="flex items-center gap-3 px-4 py-3 bg-(--color_bg_card) hover:bg-(--color_bg_card_hover) transition-colors"
-                        >
-                          <div className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}>
-                            <UserAvatar photoUrl={athlete.photoUrl} name={athlete.fullName} size={44} />
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-semibold text-white truncate leading-snug">
-                                {athlete.nickname || athlete.fullName || 'Без имени'}
-                              </div>
-                              {athlete.nickname && (
-                                <div className="text-[11px] text-(--color_text_muted) truncate leading-snug">
-                                  {athlete.fullName || ''}
+                  Пригласить первого атлета
+                </button>
+              </div>
+            ) : filteredAthletes.length === 0 ? (
+              <p className="text-sm text-(--color_text_muted) text-center py-8">
+                Ничего не найдено
+              </p>
+            ) : (
+              <AnimatePresence mode="wait">
+                {view === 'list' ? (
+                  <motion.div
+                    key="list"
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.15 }}
+                    className="flex flex-col gap-2"
+                  >
+                    {filteredAthletes.map((athlete) => {
+                      const unread = getAthleteUnread(athlete.id);
+                      return (
+                        <motion.div key={athlete.id} whileTap={{ scale: 0.99 }}>
+                          <ConfirmDeleteWrapper
+                            onConfirm={() => handleRemoveAthlete(athlete.id)}
+                            className="flex items-center gap-3 px-4 py-3 bg-(--color_bg_card) hover:bg-(--color_bg_card_hover) transition-colors"
+                          >
+                            <div
+                              className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                              onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}
+                            >
+                              <UserAvatar
+                                photoUrl={athlete.photoUrl}
+                                name={athlete.fullName}
+                                size={44}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-semibold text-white truncate leading-snug">
+                                  {athlete.nickname || athlete.fullName || 'Без имени'}
                                 </div>
-                              )}
-                              <div className="text-[11px] text-(--color_text_muted)/70 truncate leading-snug">
-                                {athlete.status === 'pending' ? '⏳ Ожидает' : athlete.email}
-                              </div>
-                            </div>
-                          </div>
-                          {unread > 0 && <Badge count={unread} />}
-                          <ConfirmDeleteWrapper.Trigger />
-                        </ConfirmDeleteWrapper>
-                      </motion.div>
-                    );
-                  })}
-                </motion.div>
-              ) : (
-                <motion.div
-                  key={view}
-                  initial={{ opacity: 0, scale: 0.97 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.97 }}
-                  transition={{ duration: 0.15 }}
-                  className={`grid gap-3 ${view === '2' ? 'grid-cols-2' : 'grid-cols-3'}`}
-                >
-                  {filteredAthletes.map((athlete) => {
-                    const unread = getAthleteUnread(athlete.id);
-                    return (
-                      <motion.div key={athlete.id} whileTap={{ scale: 0.97 }}>
-                        <ConfirmDeleteWrapper
-                          onConfirm={() => handleRemoveAthlete(athlete.id)}
-                          rounded="rounded-2xl"
-                          overlayLayout="column"
-                          className="flex flex-col items-center gap-2 p-4 bg-(--color_bg_card) hover:bg-(--color_bg_card_hover) transition-colors"
-                        >
-                          {unread > 0 && <Badge count={unread} className="absolute top-2.5 right-2.5" />}
-                          <ConfirmDeleteWrapper.Trigger className="absolute top-2.5 left-2.5" />
-                          <div className="cursor-pointer w-full flex flex-col items-center gap-2" onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}>
-                            <UserAvatar photoUrl={athlete.photoUrl} name={athlete.fullName} size={view === '2' ? 68 : 52} />
-                            <div className="w-full text-center">
-                              {athlete.nickname && (
-                                <div className={`leading-tight truncate font-semibold text-white ${view === '2' ? 'text-sm' : 'text-xs'}`}>
-                                  {athlete.nickname}
-                                </div>
-                              )}
-                              <div className={`text-(--color_text_muted) truncate ${view === '2' ? 'text-xs' : 'text-[10px]'}`}>
-                                {athlete.fullName || 'Без имени'}
-                              </div>
-                              {view === '2' && (
-                                <div className="text-[10px] text-(--color_text_muted)/60 truncate">
+                                {athlete.nickname && (
+                                  <div className="text-[11px] text-(--color_text_muted) truncate leading-snug">
+                                    {athlete.fullName || ''}
+                                  </div>
+                                )}
+                                <div className="text-[11px] text-(--color_text_muted)/70 truncate leading-snug">
                                   {athlete.status === 'pending' ? '⏳ Ожидает' : athlete.email}
                                 </div>
-                              )}
+                                {athlete.crmStatus && athlete.crmStatus !== 'active' && (
+                                  <div
+                                    className={`mt-0.5 inline-flex items-center gap-1 text-[10px] font-medium rounded-full px-1.5 py-0.5 ${CRM_STATUS_CONFIG[athlete.crmStatus].pill}`}
+                                  >
+                                    <span
+                                      className={`w-1.5 h-1.5 rounded-full ${CRM_STATUS_CONFIG[athlete.crmStatus].dot}`}
+                                    />
+                                    {CRM_STATUS_CONFIG[athlete.crmStatus].label}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </ConfirmDeleteWrapper>
-                      </motion.div>
-                    );
-                  })}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          )}
+                            {unread > 0 && <Badge count={unread} />}
+                            <ConfirmDeleteWrapper.Trigger />
+                          </ConfirmDeleteWrapper>
+                        </motion.div>
+                      );
+                    })}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key={view}
+                    initial={{ opacity: 0, scale: 0.97 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.97 }}
+                    transition={{ duration: 0.15 }}
+                    className={`grid gap-3 ${view === '2' ? 'grid-cols-2' : 'grid-cols-3'}`}
+                  >
+                    {filteredAthletes.map((athlete) => {
+                      const unread = getAthleteUnread(athlete.id);
+                      return (
+                        <motion.div key={athlete.id} whileTap={{ scale: 0.97 }}>
+                          <ConfirmDeleteWrapper
+                            onConfirm={() => handleRemoveAthlete(athlete.id)}
+                            rounded="rounded-2xl"
+                            overlayLayout="column"
+                            className="flex flex-col items-center gap-2 p-4 bg-(--color_bg_card) hover:bg-(--color_bg_card_hover) transition-colors"
+                          >
+                            {unread > 0 && (
+                              <Badge count={unread} className="absolute top-2.5 right-2.5" />
+                            )}
+                            <ConfirmDeleteWrapper.Trigger className="absolute top-2.5 left-2.5" />
+                            <div
+                              className="cursor-pointer w-full flex flex-col items-center gap-2"
+                              onClick={() => navigate(`/trainer/athletes/${athlete.id}`)}
+                            >
+                              <UserAvatar
+                                photoUrl={athlete.photoUrl}
+                                name={athlete.fullName}
+                                size={view === '2' ? 68 : 52}
+                              />
+                              <div className="w-full text-center">
+                                {athlete.nickname && (
+                                  <div
+                                    className={`leading-tight truncate font-semibold text-white ${view === '2' ? 'text-sm' : 'text-xs'}`}
+                                  >
+                                    {athlete.nickname}
+                                  </div>
+                                )}
+                                <div
+                                  className={`text-(--color_text_muted) truncate ${view === '2' ? 'text-xs' : 'text-[10px]'}`}
+                                >
+                                  {athlete.fullName || 'Без имени'}
+                                </div>
+                                {view === '2' && (
+                                  <div className="text-[10px] text-(--color_text_muted)/60 truncate">
+                                    {athlete.status === 'pending' ? '⏳ Ожидает' : athlete.email}
+                                  </div>
+                                )}
+                                {athlete.crmStatus && athlete.crmStatus !== 'active' && (
+                                  <div className="flex justify-center mt-0.5">
+                                    <span
+                                      className={`w-2 h-2 rounded-full ${CRM_STATUS_CONFIG[athlete.crmStatus].dot}`}
+                                      title={CRM_STATUS_CONFIG[athlete.crmStatus].label}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </ConfirmDeleteWrapper>
+                        </motion.div>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            )}
           </motion.div>
         </SectionGroup>
       </div>
@@ -303,6 +360,7 @@ export default function TrainerAthletesListScreen() {
         open={showAddDrawer}
         onClose={() => setShowAddDrawer(false)}
         onAdded={loadData}
+        onLeadCreated={loadData}
       />
     </Screen>
   );

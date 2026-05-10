@@ -93,7 +93,11 @@ const UNIQUE_FEAT_ITEMS = [
   { key: 'featVideoCalls' as FeatKey, label: 'Видеозвонки' },
 ];
 
-const TRAINER_ONBOARDING_EXTRA_FEAT_KEYS = ['featTrainerTemplates', 'featTrainerLibrary'] as const;
+const TRAINER_ONBOARDING_EXTRA_FEAT_KEYS = [
+  'featTrainerTemplates',
+  'featTrainerLibrary',
+  'featTrainerCrm',
+] as const;
 
 function featFlagsFromPrefs(p: ClientPreferences): Partial<Record<FeatKey, boolean>> {
   const init: Partial<Record<FeatKey, boolean>> = {};
@@ -114,6 +118,7 @@ function featFlagsFromPrefs(p: ClientPreferences): Partial<Record<FeatKey, boole
  */
 const TRAINER_SPOILER_FLAG_MAP = {
   featAi: 'ai',
+  featTrainerCrm: 'trainerCrm',
   featTrainerTemplates: 'trainerTemplates',
   featTrainerLibrary: 'trainerLibrary',
   featTeams: 'teams',
@@ -131,6 +136,11 @@ const TRAINER_SPOILER_ITEMS: Array<{
     key: 'featAi',
     label: 'AI-функции',
     hint: 'Генерация, распознавание по фото, чат',
+  },
+  {
+    key: 'featTrainerCrm',
+    label: 'CRM',
+    hint: 'Заявки, воронка и аналитика клиентской базы',
   },
   {
     key: 'featTrainerTemplates',
@@ -178,9 +188,9 @@ export default function OnboardingScreen(): JSX.Element {
   const [localFlags, setLocalFlags] = useState<Partial<Record<FeatKey, boolean>>>({});
   const [copiedEmail, setCopiedEmail] = useState(false);
   /** Подзаголовок финального шага атлета (например после «пропустить тренировку»). */
-  const [athleteDoneSubtitleOverride, setAthleteDoneSubtitleOverride] = useState<string | undefined>(
-    undefined
-  );
+  const [athleteDoneSubtitleOverride, setAthleteDoneSubtitleOverride] = useState<
+    string | undefined
+  >(undefined);
   /** Для атлета: куда вести основной CTA на финале (solo → календарь, coach/team → команда). */
   const [athleteDonePrimaryCta, setAthleteDonePrimaryCta] = useState<
     | {
@@ -513,7 +523,8 @@ export default function OnboardingScreen(): JSX.Element {
                   athleteApi.getMyTrainers(),
                 ]);
                 const hasTeam =
-                  (groupsRes.data.data?.length ?? 0) > 0 || (trainersRes.data.data?.length ?? 0) > 0;
+                  (groupsRes.data.data?.length ?? 0) > 0 ||
+                  (trainersRes.data.data?.length ?? 0) > 0;
                 if (hasTeam) {
                   setAthleteDoneSubtitleOverride('Команда уже подключена — откроем её.');
                   setAthleteDonePrimaryCta({ label: 'Открыть «Команда»', to: '/my-team' });
@@ -1000,7 +1011,9 @@ function FeatureSpoiler({
                         <div className="min-w-0">
                           <span className="text-sm text-white">{label}</span>
                           {hint && (
-                            <span className="text-[11px] text-(--color_text_muted) ml-2">{hint}</span>
+                            <span className="text-[11px] text-(--color_text_muted) ml-2">
+                              {hint}
+                            </span>
                           )}
                           {leaderboardBlocked && (
                             <p className="text-[10px] text-(--color_text_muted) mt-0.5">
@@ -1028,7 +1041,9 @@ function FeatureSpoiler({
                         <div className="min-w-0">
                           <span className="text-sm text-white">{label}</span>
                           {hint && (
-                            <span className="text-[11px] text-(--color_text_muted) ml-2">{hint}</span>
+                            <span className="text-[11px] text-(--color_text_muted) ml-2">
+                              {hint}
+                            </span>
                           )}
                         </div>
                         <Switch
@@ -1205,8 +1220,7 @@ function TrainerActionStep({
     typeof localFlags.featTrainerTemplates === 'boolean'
       ? localFlags.featTrainerTemplates
       : prefs.trainerTemplates;
-  const teamsOn =
-    typeof localFlags.featTeams === 'boolean' ? localFlags.featTeams : prefs.teams;
+  const teamsOn = typeof localFlags.featTeams === 'boolean' ? localFlags.featTeams : prefs.teams;
   const steps = getTrainerGettingStartedSteps(workStyle, {
     templates: templatesOn,
     teams: teamsOn,
@@ -1279,7 +1293,10 @@ function DoneStep({
   /** Для атлета: основной CTA на финале (если не задан — календарь). */
   athletePrimaryCta?: { label: string; to: '/calendar' | '/my-team' | '/home' };
 }) {
-  const athleteCta = athletePrimaryCta ?? { label: 'Перейти в календарь', to: '/calendar' as const };
+  const athleteCta = athletePrimaryCta ?? {
+    label: 'Перейти в календарь',
+    to: '/calendar' as const,
+  };
   return (
     <div className="flex flex-col py-4">
       <div className="text-center shrink-0">
@@ -1301,8 +1318,8 @@ function DoneStep({
         <p className="text-sm text-(--color_text_muted) mb-4 max-w-sm mx-auto">
           {isTrainerPath
             ? 'Дальше — добавить атлетов и первые назначения.'
-            : athleteSubtitle ??
-              'Дальше можно добавить первую тренировку, когда будет удобно — из календаря.'}
+            : (athleteSubtitle ??
+              'Дальше можно добавить первую тренировку, когда будет удобно — из календаря.')}
         </p>
       </div>
 

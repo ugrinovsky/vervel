@@ -9,7 +9,9 @@ import Badge from '@/components/ui/Badge';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
-import { trainerApi, type TodayOverview, type UnreadCounts } from '@/api/trainer';
+import AddAthleteDrawer from '@/components/AddAthleteDrawer/AddAthleteDrawer';
+import LeadDetailSheet from '@/components/trainer/LeadDetailSheet';
+import { trainerApi, type TodayOverview, type TrainerLead, type UnreadCounts } from '@/api/trainer';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   getTrainerGettingStartedSteps,
@@ -59,17 +61,22 @@ export default function TrainerTodayScreen() {
   const workStyle = user ? getTrainerWorkStyleIntent(user) : null;
   const [overview, setOverview] = useState<TodayOverview | null>(null);
   const [unreadCounts, setUnreadCounts] = useState<UnreadCounts | null>(null);
+  const [leads, setLeads] = useState<TrainerLead[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAddClient, setShowAddClient] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<TrainerLead | null>(null);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [overviewRes, unreadRes] = await Promise.all([
+      const [overviewRes, unreadRes, leadsRes] = await Promise.all([
         trainerApi.getTodayOverview(),
         trainerApi.getUnreadCounts(),
+        trainerApi.listLeads(),
       ]);
       setOverview(overviewRes.data.data);
       setUnreadCounts(unreadRes.data.data);
+      setLeads(leadsRes.data.data);
     } catch {
       toast.error('Ошибка загрузки данных');
     } finally {
@@ -100,8 +107,35 @@ export default function TrainerTodayScreen() {
 
   const todaySessionCount = todaySessionWorkouts.length;
 
+  const actionLeads = useMemo(() => {
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+    return leads
+      .filter((lead) => {
+        if (lead.crmStatus === 'converted' || lead.crmStatus === 'lost') return false;
+        if (lead.crmStatus === 'new') return true;
+        if (!lead.nextFollowUpAt) return false;
+        return new Date(lead.nextFollowUpAt).getTime() <= endOfToday.getTime();
+      })
+      .slice(0, 3);
+  }, [leads]);
+
+  const showCrmBlock = !!overview && flags.trainerCrm;
+
   return (
     <Screen loading={loading} className="trainer-today-screen">
+      <AddAthleteDrawer
+        open={showAddClient}
+        onClose={() => setShowAddClient(false)}
+        onAdded={loadData}
+        onLeadCreated={loadData}
+      />
+      <LeadDetailSheet
+        lead={selectedLead}
+        open={selectedLead !== null}
+        onClose={() => setSelectedLead(null)}
+        onUpdated={loadData}
+      />
       <div className="p-4 w-full mx-auto">
         <ScreenHeader
           icon="☀️"
@@ -212,9 +246,16 @@ export default function TrainerTodayScreen() {
               <h3 className="text-base font-semibold text-white mb-1">🚀 С чего начать</h3>
               <p className="text-xs text-(--color_text_muted) mb-4">
                 {flags.teams
-                  ? 'Добавьте атлетов — и всё заработает: статистика, расписание, чаты, аналитика прогресса'
+                  ? 'Запишите клиента или подключите атлета — дальше назначьте первую тренировку и не теряйте контакт из одного места'
                   : 'Календарь и шаблоны — без списка атлетов в приложении. Включите «Атлеты и группы» в настройках, когда понадобится ростер и чаты.'}
               </p>
+              <button
+                type="button"
+                onClick={() => setShowAddClient(true)}
+                className="w-full mb-4 rounded-xl bg-(--color_primary_light) px-4 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+              >
+                Добавить клиента
+              </button>
               <div className="space-y-3">
                 {getTrainerGettingStartedSteps(workStyle, {
                   templates: flags.trainerTemplates,
@@ -367,14 +408,75 @@ export default function TrainerTodayScreen() {
           </>
         )}
 
-        {/* Copilot — только если есть хотя бы 1 атлет и включены команды */}
-        {flags.teams && overview && overview.stats.athleteCount > 0 && (
-          <SectionGroup title="Ассистент">
+        {/* CRM action list: leads + athletes that need attention */}
+        {showCrmBlock && (
+          <SectionGroup title="Кого не потерять">
             <AnimatedBlock
               delay={0.15}
-              className="bg-(--color_bg_card) rounded-2xl p-4 border border-(--color_border)"
+              className="bg-(--color_bg_card) rounded-2xl p-4 border border-(--color_border) space-y-3"
             >
-              <CopilotAthleteList onAnyCommitted={loadData} />
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold text-white">CRM: следующие действия</div>
+                  <p className="text-xs text-(--color_text_muted) mt-1">
+                    Записывайте заявки и ведите атлетов, которым нужен план или напоминание о контакте.
+                  </p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/trainer/crm')}
+                    className="rounded-lg border border-(--color_border) px-3 py-2 text-xs font-medium text-(--color_text_muted) hover:text-white hover:border-(--color_primary_light)/40 transition-colors"
+                  >
+                    Все заявки
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddClient(true)}
+                    className="rounded-lg bg-(--color_primary_light) px-3 py-2 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+                  >
+                    Добавить
+                  </button>
+                </div>
+              </div>
+
+              {actionLeads.length > 0 && (
+                <div className="space-y-2">
+                  {actionLeads.map((lead) => (
+                    <button
+                      key={lead.id}
+                      type="button"
+                      onClick={() => setSelectedLead(lead)}
+                      className="w-full rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-left hover:bg-amber-500/15 transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-white truncate">{lead.name}</div>
+                          <div className="text-xs text-(--color_text_muted) truncate">
+                            {lead.phone}
+                          </div>
+                        </div>
+                        <span className="shrink-0 rounded-full bg-amber-500/20 px-2 py-1 text-[10px] font-semibold text-amber-200">
+                          {lead.crmStatus === 'new' ? 'Новый' : 'Напомнить'}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {flags.ai && flags.teams && overview.stats.athleteCount > 0 && (
+                <CopilotAthleteList onAnyCommitted={loadData} />
+              )}
+
+              {actionLeads.length === 0 && (!flags.teams || overview.stats.athleteCount === 0) && (
+                <div className="rounded-xl border border-dashed border-(--color_border) bg-(--color_bg_card_hover) p-4 text-center">
+                  <div className="text-sm font-medium text-white">Пока нечего спасать</div>
+                  <p className="mt-1 text-xs text-(--color_text_muted)">
+                    Добавьте первого клиента: он появится здесь как заявка с напоминанием.
+                  </p>
+                </div>
+              )}
             </AnimatedBlock>
           </SectionGroup>
         )}

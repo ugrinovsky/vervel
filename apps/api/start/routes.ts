@@ -246,6 +246,12 @@ router
     router.post('leads/:id/convert', '#controllers/trainer_leads_controller.convert')
     router.delete('leads/:id', '#controllers/trainer_leads_controller.delete')
 
+    // Custom exercises
+    router.get('custom-exercises', '#controllers/trainer_custom_exercises_controller.list')
+    router.post('custom-exercises', '#controllers/trainer_custom_exercises_controller.create')
+    router.patch('custom-exercises/:id', '#controllers/trainer_custom_exercises_controller.update')
+    router.delete('custom-exercises/:id', '#controllers/trainer_custom_exercises_controller.delete')
+
     // Athlete data
     router.get('athletes/:athleteId/stats', '#controllers/trainer_controller.getAthleteStats')
     router.get('athletes/:athleteId/avatar', '#controllers/trainer_controller.getAthleteAvatar')

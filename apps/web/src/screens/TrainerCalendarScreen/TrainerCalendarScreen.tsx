@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { getDaysInMonth, startOfMonth } from 'date-fns';
@@ -171,12 +172,12 @@ function DraggableWorkout({
 
   const isIntro = workout.workoutData.type === 'intro';
 
+  /* Корень без CSS transform: @dnd-kit измеряет getBoundingClientRect(ref); motion с translate
+   * на том же узле даёт смещение «призрака» DragOverlay относительно курсора. */
   return (
-    <motion.div
+    <div
       ref={setNodeRef}
       {...noPullRefreshProps}
-      initial={{ opacity: 0, x: -8 }}
-      animate={{ opacity: isDragging ? 0 : 1, x: 0 }}
       onClick={onEdit}
       {...listeners}
       {...attributes}
@@ -185,11 +186,17 @@ function DraggableWorkout({
         isEditing ? 'ring-2 ring-white/40' : ''
       } ${isIntro ? 'ring-1 ring-inset ring-sky-400/40' : (WORKOUT_TYPE_COLORS[workout.workoutData.type] ?? 'bg-(--color_bg_card)')}`}
     >
-      <WorkoutCardInner workout={workout} nicknames={nicknames} />
-      <div onPointerDown={(e) => e.stopPropagation()}>
-        <ConfirmDeleteButton onConfirm={onDelete} variant="overlay" overlayRounded="rounded-xl" />
-      </div>
-    </motion.div>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isDragging ? 0 : 1 }}
+        className="flex min-w-0 flex-1 items-center justify-between gap-2"
+      >
+        <WorkoutCardInner workout={workout} nicknames={nicknames} />
+        <div onPointerDown={(e) => e.stopPropagation()}>
+          <ConfirmDeleteButton onConfirm={onDelete} variant="overlay" overlayRounded="rounded-xl" />
+        </div>
+      </motion.div>
+    </div>
   );
 }
 
@@ -478,19 +485,19 @@ export default function TrainerCalendarScreen() {
   const [athletes, setAthletes] = useState<AthleteListItem[]>([]);
   const [groups, setGroups] = useState<TrainerGroupItem[]>([]);
   const [activeWorkout, setActiveWorkout] = useState<ScheduledWorkout | null>(null);
-  const [draggedWidth, setDraggedWidth] = useState<number | undefined>(undefined);
   const [sheetTab, setSheetTab] = useState<'workout' | 'intro'>('workout');
   const [daySlotFilter, setDaySlotFilter] = useState<'all' | 'intros'>('all');
   const timelineRef = useRef<HTMLDivElement>(null);
 
   const restrictToTimeline = useMemo<Modifier>(
     () =>
-      ({ transform, draggingNodeRect }) => {
+      ({ transform, activeNodeRect }) => {
         const container = timelineRef.current;
-        if (!container || !draggingNodeRect) return { ...transform, x: 0 };
+        /* Только вертикаль: слоты по часам. x обнуляем после фикса ref/motion (иначе был offset). */
+        if (!container || !activeNodeRect) return { ...transform, x: 0 };
         const containerRect = container.getBoundingClientRect();
-        const minY = containerRect.top - draggingNodeRect.top;
-        const maxY = containerRect.bottom - draggingNodeRect.bottom;
+        const minY = containerRect.top - activeNodeRect.top;
+        const maxY = containerRect.bottom - activeNodeRect.bottom;
         return {
           ...transform,
           x: 0,
@@ -673,8 +680,6 @@ export default function TrainerCalendarScreen() {
     const workout = cur.workout;
     if (!isScheduledWorkoutDragPayload(workout)) return;
     setActiveWorkout(workout);
-    const rect = event.active.rect.current.initial;
-    if (rect) setDraggedWidth(rect.width);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -771,7 +776,7 @@ export default function TrainerCalendarScreen() {
   };
 
   return (
-    <Screen className="trainer-calendar-screen">
+    <Screen className="trainer-calendar-screen" enablePullToRefresh={false}>
       <div className="flex flex-col px-4 w-full">
         <SectionGroup
           showLabel={false}
@@ -884,8 +889,8 @@ export default function TrainerCalendarScreen() {
 
         <SectionGroup title="Расписание дня" className="min-h-0 min-w-0" bodyClassName="space-y-0">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ delay: 0.1 }}
             className="glass rounded-xl px-4 pb-4"
           >
@@ -1064,26 +1069,31 @@ export default function TrainerCalendarScreen() {
                   })}
                 </div>
 
-                <DragOverlay dropAnimation={null}>
-                  {activeWorkout && (
-                    <div
-                      style={{
-                        width: draggedWidth,
-                        ...(activeWorkout.workoutData.type === 'intro' ? INTRO_STRIPE_STYLE : {}),
-                      }}
-                      className={`rounded-xl px-3 h-9 flex items-center justify-between gap-2 cursor-grabbing overflow-hidden ring-2 shadow-[0_0_20px_var(--color_primary_light)]/20 ${
-                        activeWorkout.workoutData.type === 'intro'
-                          ? 'ring-sky-400/60'
-                          : `ring-white/60 ${WORKOUT_TYPE_COLORS[activeWorkout.workoutData.type] ?? 'bg-(--color_bg_card)'}`
-                      }`}
-                    >
-                      <WorkoutCardInner workout={activeWorkout} nicknames={nicknames} />
-                      <div className="invisible pointer-events-none">
-                        <ConfirmDeleteButton onConfirm={() => {}} />
-                      </div>
-                    </div>
+                {typeof document !== 'undefined' &&
+                  createPortal(
+                    <DragOverlay dropAnimation={null} zIndex={10050}>
+                      {activeWorkout && (
+                        <div
+                          style={
+                            activeWorkout.workoutData.type === 'intro'
+                              ? INTRO_STRIPE_STYLE
+                              : undefined
+                          }
+                          className={`w-full max-w-none box-border rounded-xl px-3 h-9 flex items-center justify-between gap-2 cursor-grabbing overflow-hidden ring-2 shadow-[0_0_20px_var(--color_primary_light)]/20 ${
+                            activeWorkout.workoutData.type === 'intro'
+                              ? 'ring-sky-400/60'
+                              : `ring-white/60 ${WORKOUT_TYPE_COLORS[activeWorkout.workoutData.type] ?? 'bg-(--color_bg_card)'}`
+                          }`}
+                        >
+                          <WorkoutCardInner workout={activeWorkout} nicknames={nicknames} />
+                          <div className="invisible pointer-events-none">
+                            <ConfirmDeleteButton onConfirm={() => {}} />
+                          </div>
+                        </div>
+                      )}
+                    </DragOverlay>,
+                    document.body
                   )}
-                </DragOverlay>
               </DndContext>
             )}
           </motion.div>

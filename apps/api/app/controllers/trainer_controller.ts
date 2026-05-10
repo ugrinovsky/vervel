@@ -18,6 +18,21 @@ import {
   addAthleteToGroupValidator,
 } from '#validators/trainer_validator'
 
+const ATHLETE_CRM_STATUSES = ['active', 'sleeping', 'paused', 'churned'] as const
+type AthleteCrmStatus = (typeof ATHLETE_CRM_STATUSES)[number]
+
+function isAthleteCrmStatus(value: unknown): value is AthleteCrmStatus {
+  return typeof value === 'string' && ATHLETE_CRM_STATUSES.some((s) => s === value)
+}
+
+function parseOptionalDateTime(value: unknown): DateTime | null | undefined {
+  if (value === undefined) return undefined
+  if (value === null || value === '') return null
+  if (typeof value !== 'string') return undefined
+  const dt = DateTime.fromISO(value)
+  return dt.isValid ? dt : undefined
+}
+
 export default class TrainerController {
   private async linkAthlete(trainer: User, athlete: User, response: HttpContext['response']) {
     const existing = await TrainerAthlete.query()
@@ -30,12 +45,16 @@ export default class TrainerController {
         return response.conflict({ message: 'Атлет уже привязан' })
       }
       existing.status = 'active'
+      existing.crmStatus = 'active'
+      existing.crmStatusChangedAt = DateTime.now()
       await existing.save()
     } else {
       await TrainerAthlete.create({
         trainerId: trainer.id,
         athleteId: athlete.id,
         status: 'active',
+        crmStatus: 'active',
+        crmStatusChangedAt: DateTime.now(),
       })
     }
 
@@ -51,6 +70,7 @@ export default class TrainerController {
         fullName: athlete.fullName,
         email: athlete.email,
         status: 'active',
+        crmStatus: 'active',
       },
     })
   }
@@ -117,6 +137,10 @@ export default class TrainerController {
       fullName: b.athlete.fullName,
       email: b.athlete.email,
       status: b.status,
+      crmStatus: b.crmStatus,
+      crmNote: b.crmNote,
+      nextFollowUpAt: b.nextFollowUpAt,
+      crmStatusChangedAt: b.crmStatusChangedAt,
       linkedAt: b.createdAt,
       nickname: b.nickname,
       photoUrl: b.athlete.photoUrl ?? null,
@@ -215,6 +239,59 @@ export default class TrainerController {
     await binding.save()
 
     return response.ok({ success: true, data: { nickname: binding.nickname } })
+  }
+
+  async updateAthleteCrm({ auth, params, request, response }: HttpContext) {
+    const trainer = auth.user!
+    const crmStatus = request.input('crmStatus')
+    const crmNote = request.input('crmNote')
+    const nextFollowUpAtInput = request.input('nextFollowUpAt')
+
+    const binding = await TrainerAthlete.query()
+      .where('trainerId', trainer.id)
+      .where('athleteId', params.athleteId)
+      .where('status', 'active')
+      .first()
+
+    if (!binding) {
+      return response.notFound({ message: 'Связь не найдена' })
+    }
+
+    if (crmStatus !== undefined) {
+      if (!isAthleteCrmStatus(crmStatus)) {
+        return response.badRequest({ message: 'Некорректный CRM-статус' })
+      }
+      if (binding.crmStatus !== crmStatus) {
+        binding.crmStatus = crmStatus
+        binding.crmStatusChangedAt = DateTime.now()
+      }
+    }
+
+    if (crmNote !== undefined) {
+      binding.crmNote =
+        typeof crmNote === 'string' && crmNote.trim() ? crmNote.trim().slice(0, 2000) : null
+    }
+
+    const nextFollowUpAt = parseOptionalDateTime(nextFollowUpAtInput)
+    if (nextFollowUpAtInput !== undefined) {
+      if (nextFollowUpAt === undefined) {
+        return response.badRequest({ message: 'Некорректная дата follow-up' })
+      }
+      binding.nextFollowUpAt = nextFollowUpAt
+    }
+
+    await binding.save()
+
+    return response.ok({
+      success: true,
+      data: {
+        athleteId: Number(params.athleteId),
+        crmStatus: binding.crmStatus,
+        crmNote: binding.crmNote,
+        nextFollowUpAt: binding.nextFollowUpAt,
+        crmStatusChangedAt: binding.crmStatusChangedAt,
+      },
+    })
   }
 
   // ─── Athlete data viewing ───
