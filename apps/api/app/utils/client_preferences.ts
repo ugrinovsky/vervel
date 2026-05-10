@@ -40,6 +40,8 @@ export type ClientPreferences = {
   featVideoCalls?: boolean
   featTrainerTemplates?: boolean
   featTrainerLibrary?: boolean
+  /** Кабинет тренера: CRM (лиды, аналитика) */
+  featTrainerCrm?: boolean
 }
 
 function parseBool(v: unknown): boolean | undefined {
@@ -96,6 +98,7 @@ export function patchClientPreferencesFromBody(body: unknown): Partial<ClientPre
     'featVideoCalls',
     'featTrainerTemplates',
     'featTrainerLibrary',
+    'featTrainerCrm',
   ] as const satisfies readonly (keyof ClientPreferences)[]
 
   for (const key of boolFlags) {
@@ -128,6 +131,7 @@ const CLIENT_PREF_KEYS = [
   'featVideoCalls',
   'featTrainerTemplates',
   'featTrainerLibrary',
+  'featTrainerCrm',
 ] as const satisfies readonly (keyof ClientPreferences)[]
 
 function mergeDefinedField<K extends keyof ClientPreferences>(

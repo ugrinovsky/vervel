@@ -29,6 +29,12 @@ test.group('client_preferences: patchClientPreferencesFromBody', () => {
     })
     assert.deepEqual(p, {})
   })
+
+  test('принимает featTrainerCrm', ({ assert }) => {
+    assert.deepEqual(patchClientPreferencesFromBody({ featTrainerCrm: false }), {
+      featTrainerCrm: false,
+    })
+  })
 })
 
 test.group('client_preferences: mergeClientPreferences', () => {
