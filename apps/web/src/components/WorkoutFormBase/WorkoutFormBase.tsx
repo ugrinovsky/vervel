@@ -803,29 +803,24 @@ export default function WorkoutFormBase({
                   />
                 </div>
                 <div className="h-px bg-white/10 my-1" />
-                <button
-                  type="button"
-                  onClick={() => exercisesEditorRef.current?.openExercisePicker()}
-                  className="group flex w-full cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-2.5 text-left transition-colors hover:bg-white/[0.08] hover:border-white/20 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/40"
-                >
-                  <span className="text-lg shrink-0" aria-hidden>
-                    ✏️
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-medium text-white">
-                      Добрать из каталога
-                    </span>
-                    <span className="mt-0.5 block text-xs text-(--color_text_muted)">
-                      Если чего-то не хватает — вручную по одному
-                    </span>
-                  </span>
-                  <span
-                    className="shrink-0 text-base text-white/35 transition-colors group-hover:text-emerald-400/80"
-                    aria-hidden
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => exercisesEditorRef.current?.openExercisePicker()}
+                    className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
                   >
-                    →
-                  </span>
-                </button>
+                    <PlusIcon className="w-4 h-4 text-white/50" />
+                    <span className="text-sm font-medium text-white">Из каталога</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => exercisesEditorRef.current?.openCustomPicker()}
+                    className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+                  >
+                    <span>✏️</span>
+                    <span className="text-sm font-medium text-white">Свои</span>
+                  </button>
+                </div>
               </>
             ) : (
               <>
