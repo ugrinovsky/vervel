@@ -220,6 +220,35 @@ export interface PeriodizationData {
   };
 }
 
+// ─── Pass types ───────────────────────────────────────────────────────────────
+
+export type PassStatus = 'active' | 'depleted' | 'expired' | 'cancelled';
+
+export interface AthletePassSummary {
+  athleteId: number | null;
+  athleteName: string | null;
+  athleteEmail: string | null;
+  athletePhotoUrl: string | null;
+  trainerAthleteId: number;
+  activePass: AthletePass | null;
+  allPasses: AthletePass[];
+}
+
+export interface AthletePass {
+  id: number;
+  trainerAthleteId: number;
+  title: string;
+  priceAmount: number;
+  sessionsTotal: number;
+  sessionsUsed: number;
+  sessionsLeft: number;
+  validFrom: string;
+  validUntil: string | null;
+  status: PassStatus;
+  notes: string | null;
+  createdAt: string;
+}
+
 // ─── Copilot types ────────────────────────────────────────────────────────────
 
 export interface CopilotAthletePriority {
@@ -503,4 +532,44 @@ export const trainerApi = {
       '/trainer/copilot/week-plan',
       { params: { athleteId, weekStart } }
     ),
+
+  // Passes (абонементы)
+  listAllPasses: () =>
+    privateApi.get<{ success: boolean; data: AthletePassSummary[] }>('/trainer/passes'),
+  listPasses: (athleteId: number) =>
+    privateApi.get<{ success: boolean; data: AthletePass[] }>(
+      `/trainer/athletes/${athleteId}/passes`
+    ),
+  createPass: (
+    athleteId: number,
+    data: {
+      priceAmount: number;
+      sessionsTotal: number;
+      title?: string;
+      validFrom?: string;
+      validUntil?: string | null;
+      notes?: string | null;
+    }
+  ) =>
+    privateApi.post<{ success: boolean; data: AthletePass }>(
+      `/trainer/athletes/${athleteId}/passes`,
+      data
+    ),
+  updatePass: (
+    passId: number,
+    data: Partial<{
+      title: string;
+      notes: string | null;
+      validUntil: string | null;
+      sessionsTotal: number;
+      status: 'cancelled';
+    }>
+  ) => privateApi.patch<{ success: boolean; data: AthletePass }>(`/trainer/passes/${passId}`, data),
+  consumePass: (passId: number, workoutId?: number) =>
+    privateApi.post<{ success: boolean; data: AthletePass }>(
+      `/trainer/passes/${passId}/usages`,
+      workoutId ? { workoutId } : {}
+    ),
+  deletePassUsage: (usageId: number) =>
+    privateApi.delete<{ success: boolean; message: string }>(`/trainer/pass-usages/${usageId}`),
 };

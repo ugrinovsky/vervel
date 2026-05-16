@@ -18,6 +18,57 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import WeeklyPlanSheet from '@/components/athlete/WeeklyPlanSheet';
 import { athleteCopilotApi, type CopilotWeekItem } from '@/api/workouts';
 
+function SavedWorkoutBanner({
+  noStats,
+  onLog,
+  pushSupported,
+  pushPermission,
+  pushLoading,
+  onEnablePush,
+}: {
+  noStats: boolean;
+  onLog: () => void;
+  pushSupported: boolean;
+  pushPermission: NotificationPermission | 'unsupported' | undefined;
+  pushLoading: boolean;
+  onEnablePush: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex flex-col gap-3 rounded-2xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3.5"
+    >
+      <div>
+        <p className="text-sm font-semibold text-emerald-200">Тренировка сохранена</p>
+        <p className="text-xs text-white/70 mt-0.5">
+          {noStats
+            ? 'Когда появятся данные, день будет подсвечен в календаре.'
+            : 'Выбран день в календаре ниже — там детали записи.'}
+        </p>
+      </div>
+      <AccentButton size="sm" className="w-full sm:w-auto self-start" onClick={onLog}>
+        Залогировать ещё
+      </AccentButton>
+      {pushSupported && pushPermission === 'default' && (
+        <div className="pt-2 border-t border-emerald-500/25">
+          <p className="text-xs text-white/65 mb-2">
+            Можно включить напоминания в браузере — так проще не пропустить следующую тренировку.
+          </p>
+          <AccentButton
+            size="sm"
+            className="w-full sm:w-auto self-start"
+            disabled={pushLoading}
+            onClick={onEnablePush}
+          >
+            {pushLoading ? 'Запрос…' : 'Включить уведомления'}
+          </AccentButton>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 export default function ActivityScreen() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -116,44 +167,17 @@ export default function ActivityScreen() {
               </motion.div>
             )}
             {savedWorkoutBanner && (
-              <motion.div
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col gap-3 rounded-2xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3.5"
-              >
-                <div>
-                  <p className="text-sm font-semibold text-emerald-200">Тренировка сохранена</p>
-                  <p className="text-xs text-white/70 mt-0.5">
-                    Когда появятся данные, день будет подсвечен в календаре.
-                  </p>
-                </div>
-                <AccentButton
-                  size="sm"
-                  className="w-full sm:w-auto self-start"
-                  onClick={() => {
-                    setSavedWorkoutBanner(false);
-                    navigate('/workouts/new');
-                  }}
-                >
-                  Залогировать ещё
-                </AccentButton>
-                {pushSupported && pushPermission === 'default' && (
-                  <div className="pt-2 border-t border-emerald-500/25">
-                    <p className="text-xs text-white/65 mb-2">
-                      Можно включить напоминания в браузере — так проще не пропустить следующую
-                      тренировку.
-                    </p>
-                    <AccentButton
-                      size="sm"
-                      className="w-full sm:w-auto self-start"
-                      disabled={pushLoading}
-                      onClick={() => void handleEnablePushNudge()}
-                    >
-                      {pushLoading ? 'Запрос…' : 'Включить уведомления'}
-                    </AccentButton>
-                  </div>
-                )}
-              </motion.div>
+              <SavedWorkoutBanner
+                noStats
+                onLog={() => {
+                  setSavedWorkoutBanner(false);
+                  navigate('/workouts/new');
+                }}
+                pushSupported={pushSupported}
+                pushPermission={pushPermission}
+                pushLoading={pushLoading}
+                onEnablePush={() => void handleEnablePushNudge()}
+              />
             )}
           </SectionGroup>
 
@@ -223,44 +247,17 @@ export default function ActivityScreen() {
           />
 
           {savedWorkoutBanner && (
-            <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col gap-3 rounded-2xl border border-emerald-500/35 bg-emerald-500/10 px-4 py-3.5"
-            >
-              <div>
-                <p className="text-sm font-semibold text-emerald-200">Тренировка сохранена</p>
-                <p className="text-xs text-white/70 mt-0.5">
-                  Выбран день в календаре ниже — там детали записи.
-                </p>
-              </div>
-              <AccentButton
-                size="sm"
-                className="w-full sm:w-auto self-start"
-                onClick={() => {
-                  setSavedWorkoutBanner(false);
-                  navigate('/workouts/new');
-                }}
-              >
-                Залогировать ещё
-              </AccentButton>
-              {pushSupported && pushPermission === 'default' && (
-                <div className="pt-2 border-t border-emerald-500/25">
-                  <p className="text-xs text-white/65 mb-2">
-                    Можно включить напоминания в браузере — так проще не пропустить следующую
-                    тренировку.
-                  </p>
-                  <AccentButton
-                    size="sm"
-                    className="w-full sm:w-auto self-start"
-                    disabled={pushLoading}
-                    onClick={() => void handleEnablePushNudge()}
-                  >
-                    {pushLoading ? 'Запрос…' : 'Включить уведомления'}
-                  </AccentButton>
-                </div>
-              )}
-            </motion.div>
+            <SavedWorkoutBanner
+              noStats={false}
+              onLog={() => {
+                setSavedWorkoutBanner(false);
+                navigate('/workouts/new');
+              }}
+              pushSupported={pushSupported}
+              pushPermission={pushPermission}
+              pushLoading={pushLoading}
+              onEnablePush={() => void handleEnablePushNudge()}
+            />
           )}
 
           <ScreenHint>

@@ -52,6 +52,8 @@ import { InsertStartRow } from '@/components/workoutExerciseShared/WorkoutExerci
 import { SortableDragHandle } from '@/components/workoutExerciseShared/SortableDragHandle';
 import { WorkoutExerciseBetweenRow } from '@/components/workoutExerciseShared/WorkoutExerciseBetweenRow';
 import GhostButton from '@/components/ui/GhostButton';
+import { useActiveMode } from '@/contexts/AuthContext';
+import { buildTrainerCustomExerciseWithSets } from '@/util/trainerCustomExerciseWithSets';
 
 export type WorkoutExercisesEditorHandle = {
   openExercisePicker: () => void;
@@ -234,12 +236,16 @@ const WorkoutExercisesEditor = forwardRef<WorkoutExercisesEditorHandle, Props>(
     },
     ref
   ) {
+    const { activeMode } = useActiveMode();
+    const isTrainerMode = activeMode === 'trainer';
     const [catalogPickerOpen, setCatalogPickerOpen] = useState(false);
     const [customPickerOpen, setCustomPickerOpen] = useState(false);
+    const [customExerciseName, setCustomExerciseName] = useState('');
     const [replacingIdx, setReplacingIdx] = useState<number | null>(null);
     const [insertAt, setInsertAt] = useState<number | null>(null);
     const [sortIds, setSortIds] = useState<string[]>([]);
     const exerciseListBoundsRef = useRef<HTMLDivElement>(null);
+    const customInputRef = useRef<HTMLInputElement>(null);
 
     const restrictToExerciseListBounds = useCallback<Modifier>(
       ({ transform, draggingNodeRect }) =>
@@ -249,7 +255,14 @@ const WorkoutExercisesEditor = forwardRef<WorkoutExercisesEditorHandle, Props>(
 
     useImperativeHandle(ref, () => ({
       openExercisePicker: () => setCatalogPickerOpen(true),
-      openCustomPicker: () => setCustomPickerOpen(true),
+      openCustomPicker: () => {
+        if (isTrainerMode) {
+          setCustomPickerOpen(true);
+        } else {
+          customInputRef.current?.focus();
+          customInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      },
     }));
 
     const sensors = useSensors(
@@ -413,6 +426,14 @@ const WorkoutExercisesEditor = forwardRef<WorkoutExercisesEditorHandle, Props>(
       onChange([...exercises, data]);
     };
 
+    const handleAthleteCustomExerciseAdd = () => {
+      const name = customExerciseName.trim();
+      if (!name) return;
+      const ex = buildTrainerCustomExerciseWithSets(workoutType, name);
+      handleExercisePicked(ex);
+      setCustomExerciseName('');
+    };
+
     const listReady = exercises.length > 0 && sortIds.length === exercises.length;
 
     return (
@@ -481,14 +502,37 @@ const WorkoutExercisesEditor = forwardRef<WorkoutExercisesEditorHandle, Props>(
               <PlusIcon className="w-4 h-4" />
               Добавить упражнение
             </GhostButton>
-            <button
-              type="button"
-              onClick={() => setCustomPickerOpen(true)}
-              className="w-full flex items-center justify-center gap-1.5 text-sm text-(--color_text_muted) hover:text-white transition-colors py-1"
-            >
-              <span>✏️</span>
-              Свои упражнения
-            </button>
+            {isTrainerMode ? (
+              <button
+                type="button"
+                onClick={() => setCustomPickerOpen(true)}
+                className="w-full flex items-center justify-center gap-1.5 text-sm text-(--color_text_muted) hover:text-white transition-colors py-1"
+              >
+                <span>✏️</span>
+                Свои упражнения
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  ref={customInputRef}
+                  type="text"
+                  value={customExerciseName}
+                  onChange={(e) => setCustomExerciseName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAthleteCustomExerciseAdd()}
+                  placeholder="Название упражнения..."
+                  className="flex-1 bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-(--color_primary_light) placeholder:text-(--color_text_muted)"
+                />
+                <button
+                  type="button"
+                  onClick={handleAthleteCustomExerciseAdd}
+                  disabled={!customExerciseName.trim()}
+                  className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-medium text-(--color_primary_light) border border-(--color_primary_light)/40 hover:bg-(--color_primary_light)/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  Добавить
+                </button>
+              </div>
+            )}
           </div>
         )}
         <ExercisePicker
@@ -497,12 +541,14 @@ const WorkoutExercisesEditor = forwardRef<WorkoutExercisesEditorHandle, Props>(
           open={catalogPickerOpen}
           onClose={() => setCatalogPickerOpen(false)}
         />
-        <CustomExercisePicker
-          open={customPickerOpen}
-          onClose={() => setCustomPickerOpen(false)}
-          workoutType={workoutType}
-          onSelect={handleExercisePicked}
-        />
+        {isTrainerMode && (
+          <CustomExercisePicker
+            open={customPickerOpen}
+            onClose={() => setCustomPickerOpen(false)}
+            workoutType={workoutType}
+            onSelect={handleExercisePicked}
+          />
+        )}
 
         {replacingIdx !== null && (
           <ExercisePicker

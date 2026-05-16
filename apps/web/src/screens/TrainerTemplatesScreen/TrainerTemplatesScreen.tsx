@@ -21,7 +21,7 @@ import AccentButton from '@/components/ui/AccentButton';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AppInput from '@/components/ui/AppInput';
 import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
-import { WORKOUT_TYPE_CONFIG, exerciseBrief } from '@/constants/workoutTypes';
+import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
 import AiWorkoutGenerator from '@/components/AiWorkoutGenerator/AiWorkoutGenerator';
 import AiWorkoutRecognizer from '@/components/AiWorkoutRecognizer/AiWorkoutRecognizer';
 import AiWorkoutTextParser from '@/components/AiWorkoutTextParser/AiWorkoutTextParser';
@@ -38,6 +38,7 @@ import type {
 } from '@/api/ai';
 import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
 import SectionGroup from '@/components/ui/SectionGroup';
+import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import Tabs from '@/components/ui/Tabs';
 import { useTrainerCabinetRedirect } from '@/hooks/useTrainerCabinetRedirect';
 
@@ -209,25 +210,23 @@ function TemplatesTab() {
         </ScreenHint>
       </SectionGroup>
 
-      <SectionGroup title="Все шаблоны" showBreakAfter={false}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
-        >
-          <div className="flex justify-end mb-4">
-            <AccentButton size="sm" onClick={openCreate}>
-              <PlusIcon className="w-4 h-4" />
-              Создать
-            </AccentButton>
-          </div>
-
+      <SectionGroup
+        title="Все шаблоны"
+        showBreakAfter={false}
+        action={
+          <AccentButton size="sm" onClick={openCreate}>
+            <PlusIcon className="w-4 h-4" />
+            Создать
+          </AccentButton>
+        }
+      >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           {loading ? (
             <div className="flex justify-center py-6">
               <LoadingSpinner size="md" />
             </div>
           ) : templates.length === 0 ? (
-            <div className="py-4 space-y-3">
+            <div className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) space-y-3">
               <div className="text-center">
                 <div className="text-3xl mb-2">📋</div>
                 <p className="text-sm font-medium text-white mb-1">Пока нет шаблонов</p>
@@ -264,64 +263,65 @@ function TemplatesTab() {
                 <ConfirmDeleteWrapper
                   key={template.id}
                   onConfirm={() => handleDelete(template.id)}
-                  className="p-3 bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors"
+                  rounded="rounded-2xl"
+                  className="p-4 bg-(--color_bg_card) hover:bg-(--color_bg_card_hover) transition-colors"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <div className="text-sm font-medium text-white truncate">
-                          {template.name}
-                        </div>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-(--color_primary_light) text-white shrink-0">
-                          {WORKOUT_TYPE_CONFIG[template.workoutType] ?? template.workoutType}
-                        </span>
-                      </div>
-                      {template.description && (
-                        <div className="text-xs text-(--color_text_muted) mt-0.5 truncate">
-                          {template.description}
-                        </div>
-                      )}
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-(--color_primary_light)/15 flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="text-lg">
+                        {{
+                          crossfit: '🏋️',
+                          bodybuilding: '💪',
+                          cardio: '🏃',
+                          intro: '👋',
+                        }[template.workoutType] ?? '📋'}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-1 ml-2 shrink-0">
-                      <button
-                        onClick={() => openEdit(template)}
-                        className="p-1.5 text-(--color_text_muted) hover:text-white transition-colors"
-                        title="Редактировать"
-                      >
-                        <PencilIcon className="w-4 h-4" />
-                      </button>
-                      <ConfirmDeleteWrapper.Trigger />
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-semibold text-white truncate leading-snug">
+                            {template.name}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-0.5 leading-none">
+                            <span className="text-xs text-(--color_text_muted)">
+                              {WORKOUT_TYPE_CONFIG[template.workoutType] ?? template.workoutType}
+                            </span>
+                            {template.exercises?.length > 0 && (
+                              <>
+                                <span className="text-(--color_text_muted) opacity-40">·</span>
+                                <span className="text-xs text-(--color_text_muted)">
+                                  {template.exercises.length} упр.
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-0.5 -mr-1.5 -mt-0.5 shrink-0">
+                          <button
+                            onClick={() => openEdit(template)}
+                            className="p-1.5 text-(--color_text_muted) hover:text-white transition-colors rounded-lg hover:bg-white/5"
+                            title="Редактировать"
+                          >
+                            <PencilIcon className="w-3.5 h-3.5" />
+                          </button>
+                          <ConfirmDeleteWrapper.Trigger />
+                        </div>
+                      </div>
+                      {template.exercises?.length > 0 && (
+                        <p className="mt-0.5 text-[11px] text-(--color_text_muted) truncate">
+                          {template.exercises
+                            .slice(0, 5)
+                            .map((ex) => ex.name)
+                            .join(' · ')}
+                          {template.exercises.length > 5
+                            ? ` · +${template.exercises.length - 5}`
+                            : ''}
+                        </p>
+                      )}
                     </div>
                   </div>
-
-                  {template.exercises?.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {template.exercises.slice(0, 4).map((ex, i) => {
-                        const brief = exerciseBrief({
-                          duration: ex.duration,
-                          wodType: ex.wodType,
-                          timeCap: ex.timeCap,
-                          rounds: ex.rounds,
-                          reps: ex.reps,
-                          sets: ex.sets,
-                        });
-                        return (
-                          <span
-                            key={i}
-                            className="text-[10px] px-2 py-0.5 rounded-full bg-(--color_bg_card) text-(--color_text_secondary)"
-                          >
-                            {ex.name}
-                            {brief ? ` · ${brief}` : ''}
-                          </span>
-                        );
-                      })}
-                      {template.exercises.length > 4 && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-(--color_bg_card) text-(--color_text_muted)">
-                          +{template.exercises.length - 4}
-                        </span>
-                      )}
-                    </div>
-                  )}
                 </ConfirmDeleteWrapper>
               ))}
             </div>
@@ -708,6 +708,34 @@ export default function TrainerTemplatesScreen() {
         </SectionGroup>
 
         {activeTab === 'templates' ? <TemplatesTab /> : <ExercisesTab />}
+
+        <SectionGroup title="Ещё" showBreakAfter={false}>
+          <ScreenLinks
+            links={[
+              {
+                emoji: '📅',
+                bg: 'bg-emerald-500/20',
+                label: 'Календарь',
+                sub: 'Назначить тренировки',
+                to: '/trainer/calendar',
+              },
+              {
+                emoji: '🏋️',
+                bg: 'bg-blue-500/20',
+                label: 'Команда',
+                sub: 'Атлеты и группы',
+                to: '/trainer/athletes',
+              },
+              {
+                emoji: '🗂️',
+                bg: 'bg-rose-500/20',
+                label: 'CRM',
+                sub: 'Заявки и аналитика',
+                to: '/trainer/crm',
+              },
+            ]}
+          />
+        </SectionGroup>
       </div>
     </Screen>
   );

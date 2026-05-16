@@ -27,6 +27,7 @@ import {
   PlusIcon,
 } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
+import AppInput from '@/components/ui/AppInput';
 import GhostButton from '@/components/ui/GhostButton';
 import type { ExerciseData, WorkoutTemplate } from '@/api/trainer';
 import type {
@@ -39,6 +40,10 @@ import { WORKOUT_TYPE_CONFIG, DEFAULT_WORKOUT_TYPE } from '@/constants/workoutTy
 import type { ClientPreferences } from '@/types/clientPreferences';
 import { workoutTypeForAthletePrimaryGoal } from '@/util/athletePrimaryGoalWorkoutType';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
+import { useActiveMode } from '@/contexts/AuthContext';
+import BottomSheet from '@/components/BottomSheet/BottomSheet';
+import { buildTrainerCustomExerciseWithSets } from '@/util/trainerCustomExerciseWithSets';
+import { exerciseWithSetsToExerciseData } from '@/util/workoutExerciseConversions';
 import { nowRoundedToHour, today, parseTimeString, parseLocalDate, toDateKey } from '@/utils/date';
 import {
   convertExercisesForType,
@@ -510,8 +515,23 @@ export default function WorkoutFormBase({
   /* ─── Render ─────────────────────────────────────────────────────── */
 
   const { ai: aiEnabled } = useFeatureFlags();
+  const { activeMode } = useActiveMode();
+  const isTrainerMode = activeMode === 'trainer';
   // Combine prop and feature flag — if either says no AI, hide it everywhere
   const showAi = aiEnabled && !hideAiAssist;
+
+  const [athleteCustomName, setAthleteCustomName] = useState('');
+  const [athleteCustomOpen, setAthleteCustomOpen] = useState(false);
+
+  const handleAthleteCustomAdd = () => {
+    const name = athleteCustomName.trim();
+    if (!name) return;
+    const ex = buildTrainerCustomExerciseWithSets(workoutType, name);
+    const data = exerciseWithSetsToExerciseData(ex, workoutType);
+    setExercises((prev) => [...prev, data]);
+    setAthleteCustomName('');
+    setAthleteCustomOpen(false);
+  };
   const rootGap = lightOnboarding ? 'space-y-4' : 'space-y-5';
 
   const showWorkoutTypeTabs =
@@ -728,14 +748,38 @@ export default function WorkoutFormBase({
             }`}
           >
             {!showAi ? (
-              <div className={`flex items-center gap-3 ${lightOnboarding ? 'p-1' : 'p-2'}`}>
-                <span className="text-xl shrink-0">✏️</span>
-                <span className="flex-1 min-w-0 text-sm text-(--color_text_muted) leading-snug">
-                  {lightOnboarding
-                    ? 'Выберите упражнения в списке ниже — пара штук достаточно, чтобы увидеть прогресс.'
-                    : 'Добавьте одно или два упражнения из каталога ниже — так вы быстрее увидите прогресс в календаре.'}
-                </span>
-              </div>
+              <>
+                <div className={`flex items-center gap-3 ${lightOnboarding ? 'p-1' : 'p-2'}`}>
+                  <span className="text-xl shrink-0">✏️</span>
+                  <span className="flex-1 min-w-0 text-sm text-(--color_text_muted) leading-snug">
+                    {lightOnboarding
+                      ? 'Выберите упражнения в списке ниже — пара штук достаточно, чтобы увидеть прогресс.'
+                      : 'Добавьте одно или два упражнения из каталога ниже — так вы быстрее увидите прогресс в календаре.'}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => exercisesEditorRef.current?.openExercisePicker()}
+                    className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+                  >
+                    <PlusIcon className="w-4 h-4 text-white/50" />
+                    <span className="text-sm font-medium text-white">Из каталога</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      isTrainerMode
+                        ? exercisesEditorRef.current?.openCustomPicker()
+                        : setAthleteCustomOpen((v) => !v)
+                    }
+                    className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+                  >
+                    <span>✏️</span>
+                    <span className="text-sm font-medium text-white">Свои</span>
+                  </button>
+                </div>
+              </>
             ) : lightOnboarding ? (
               <>
                 <p className="text-[11px] font-medium text-emerald-200/90 tracking-wide">
@@ -761,9 +805,6 @@ export default function WorkoutFormBase({
                     </>
                   }
                 />
-                <p className="text-[10px] font-medium text-white/35 uppercase tracking-wider pt-1">
-                  Или так же через ИИ
-                </p>
                 <div className="space-y-2">
                   <AiWorkoutRecognizer
                     onResult={handleAiRecognizedResult}
@@ -802,20 +843,28 @@ export default function WorkoutFormBase({
                     }
                   />
                 </div>
-                <div className="h-px bg-white/10 my-1" />
+                <div className="flex items-center gap-2 my-1">
+                  <div className="h-px bg-white/10 flex-1" />
+                  <span className="text-[10px] text-white/30 shrink-0">или выбрать вручную</span>
+                  <div className="h-px bg-white/10 flex-1" />
+                </div>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => exercisesEditorRef.current?.openExercisePicker()}
-                    className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
                   >
                     <PlusIcon className="w-4 h-4 text-white/50" />
                     <span className="text-sm font-medium text-white">Из каталога</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => exercisesEditorRef.current?.openCustomPicker()}
-                    className="flex-1 flex items-center justify-center gap-2 p-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+                    onClick={() =>
+                      isTrainerMode
+                        ? exercisesEditorRef.current?.openCustomPicker()
+                        : setAthleteCustomOpen((v) => !v)
+                    }
+                    className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
                   >
                     <span>✏️</span>
                     <span className="text-sm font-medium text-white">Свои</span>
@@ -885,22 +934,31 @@ export default function WorkoutFormBase({
                   }
                 />
 
+                <div className="flex items-center gap-2 my-1">
+                  <div className="h-px bg-white/10 flex-1" />
+                  <span className="text-[10px] text-white/30 shrink-0">или выбрать вручную</span>
+                  <div className="h-px bg-white/10 flex-1" />
+                </div>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => exercisesEditorRef.current?.openExercisePicker()}
-                    className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) hover:border-(--color_primary_light) transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
                   >
-                    <PlusIcon className="w-4 h-4 text-(--color_text_muted)" />
-                    <span className="text-sm font-medium text-white/70">Из каталога</span>
+                    <PlusIcon className="w-4 h-4 text-white/50" />
+                    <span className="text-sm font-medium text-white">Из каталога</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => exercisesEditorRef.current?.openCustomPicker()}
-                    className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) hover:border-(--color_primary_light) transition-colors"
+                    onClick={() =>
+                      isTrainerMode
+                        ? exercisesEditorRef.current?.openCustomPicker()
+                        : setAthleteCustomOpen((v) => !v)
+                    }
+                    className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
                   >
                     <span>✏️</span>
-                    <span className="text-sm font-medium text-white/70">Свои</span>
+                    <span className="text-sm font-medium text-white">Свои</span>
                   </button>
                 </div>
               </>
@@ -1053,6 +1111,39 @@ export default function WorkoutFormBase({
           </button>
         )}
       </div>
+
+      {!isTrainerMode && (
+        <BottomSheet
+          id="athlete-custom-exercise"
+          open={athleteCustomOpen}
+          onClose={() => {
+            setAthleteCustomOpen(false);
+            setAthleteCustomName('');
+          }}
+          emoji="✏️"
+          title="Своё упражнение"
+        >
+          <div className="space-y-3 pb-4">
+            <p className="text-xs text-(--color_text_muted)">
+              Введите название — упражнение добавится в тренировку.
+            </p>
+            <AppInput
+              autoFocus
+              value={athleteCustomName}
+              onChange={(e) => setAthleteCustomName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAthleteCustomAdd()}
+              placeholder="Название упражнения..."
+            />
+            <AccentButton
+              onClick={handleAthleteCustomAdd}
+              disabled={!athleteCustomName.trim()}
+              className="w-full"
+            >
+              Добавить
+            </AccentButton>
+          </div>
+        </BottomSheet>
+      )}
     </div>
   );
 }

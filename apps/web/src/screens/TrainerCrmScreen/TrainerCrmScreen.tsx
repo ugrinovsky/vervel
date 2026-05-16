@@ -15,10 +15,11 @@ import {
 } from 'recharts';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
-import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import SectionGroup from '@/components/ui/SectionGroup';
-import AccentButton from '@/components/ui/AccentButton';
+import ScreenHint from '@/components/ScreenHint/ScreenHint';
+import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import Tabs from '@/components/ui/Tabs';
+import ChipScrollRow from '@/components/ui/ChipScrollRow';
 import AddAthleteDrawer from '@/components/AddAthleteDrawer/AddAthleteDrawer';
 import LeadDetailSheet from '@/components/trainer/LeadDetailSheet';
 import {
@@ -26,9 +27,16 @@ import {
   type TrainerLead,
   type LeadCrmStatus,
   type AthleteListItem,
+  type AthletePassSummary,
 } from '@/api/trainer';
-import { PlusIcon, PhoneIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import {
+  PlusIcon,
+  PhoneIcon,
+  CalendarDaysIcon,
+  MagnifyingGlassIcon,
+} from '@heroicons/react/24/outline';
 import { computeGrowthData, formatFollowUp, countLeadsByCrmStatus } from './crmUtils';
+import PassesTab from './PassesTab';
 
 // ─── Leads pipeline ──────────────────────────────────────────────────────────
 
@@ -103,7 +111,13 @@ const ATHLETE_CRM_CONFIG = {
   },
 };
 
+type MainTab = 'leads' | 'passes' | 'analytics';
+const MAIN_TABS: MainTab[] = ['leads', 'passes', 'analytics'];
+const isMainTab = (s: string | null): s is MainTab => s !== null && (MAIN_TABS as string[]).includes(s);
+
 type LeadFilter = 'all' | LeadCrmStatus;
+const LEAD_FILTERS: LeadFilter[] = ['all', 'new', 'contacted', 'trial', 'converted', 'lost'];
+const isLeadFilter = (key: string): key is LeadFilter => (LEAD_FILTERS as string[]).includes(key);
 
 const SOURCE_LABELS: Record<string, string> = {
   referral: 'Сарафан',
@@ -132,26 +146,40 @@ function ChartTooltip({
 
 // ─── Main screen ─────────────────────────────────────────────────────────────
 
-type MainTab = 'leads' | 'analytics';
-
 export default function TrainerCrmScreen() {
-  const [tab, setTab] = useState<MainTab>('leads');
+  const [tab, setTab] = useState<MainTab>(
+    () => { const s = localStorage.getItem('crm_tab'); return isMainTab(s) ? s : 'leads'; }
+  );
+
+  const [lastLoadedAt, setLastLoadedAt] = useState(0);
+
+  const handleTabChange = (next: MainTab) => {
+    localStorage.setItem('crm_tab', next);
+    setTab(next);
+    if (Date.now() - lastLoadedAt > 60_000) loadData();
+  };
   const [leads, setLeads] = useState<TrainerLead[]>([]);
   const [athletes, setAthletes] = useState<AthleteListItem[]>([]);
+  const [passSummaries, setPassSummaries] = useState<AthletePassSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<LeadFilter>('all');
+  const [sort, setSort] = useState<'created_desc' | 'followup_asc' | 'name_asc'>('created_desc');
+  const [search, setSearch] = useState('');
   const [showAddClient, setShowAddClient] = useState(false);
   const [selectedLead, setSelectedLead] = useState<TrainerLead | null>(null);
 
   const loadData = async () => {
     try {
-      const [leadsRes, athletesRes] = await Promise.all([
+      const [leadsRes, athletesRes, passesRes] = await Promise.all([
         trainerApi.listLeads(),
         trainerApi.listAthletes(),
+        trainerApi.listAllPasses(),
       ]);
       const freshLeads = leadsRes.data.data;
       setLeads(freshLeads);
       setAthletes(athletesRes.data.data);
+      setPassSummaries(passesRes.data.data);
+      setLastLoadedAt(Date.now());
       return freshLeads;
     } catch {
       toast.error('Ошибка загрузки');
@@ -179,10 +207,26 @@ export default function TrainerCrmScreen() {
     };
   }, [leads]);
 
-  const filteredLeads = useMemo(
-    () => (filter === 'all' ? leads : leads.filter((l) => l.crmStatus === filter)),
-    [leads, filter]
-  );
+  const filteredLeads = useMemo(() => {
+    let arr = filter === 'all' ? leads : leads.filter((l) => l.crmStatus === filter);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      arr = arr.filter((l) => l.name.toLowerCase().includes(q) || l.phone.includes(q));
+    }
+    const sorted = [...arr];
+    if (sort === 'created_desc') {
+      sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    } else if (sort === 'name_asc') {
+      sorted.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+    } else if (sort === 'followup_asc') {
+      sorted.sort((a, b) => {
+        if (!a.nextFollowUpAt) return 1;
+        if (!b.nextFollowUpAt) return -1;
+        return new Date(a.nextFollowUpAt).getTime() - new Date(b.nextFollowUpAt).getTime();
+      });
+    }
+    return sorted;
+  }, [leads, filter, search, sort]);
 
   const filterOptions: { id: LeadFilter; label: string; count: number }[] = [
     { id: 'all', label: 'Все', count: leadCounts.total },
@@ -216,7 +260,8 @@ export default function TrainerCrmScreen() {
   const sourceData = useMemo(() => {
     const counts: Record<string, number> = {};
     leads.forEach((l) => {
-      const src = l.source || 'manual';
+      const src = l.source;
+      if (!src || src === 'manual') return;
       counts[src] = (counts[src] || 0) + 1;
     });
     return Object.entries(counts)
@@ -233,6 +278,28 @@ export default function TrainerCrmScreen() {
       churned: active.filter((a) => a.crmStatus === 'churned').length,
     };
   }, [athletes]);
+
+  const passAnalytics = useMemo(() => {
+    const active = passSummaries.filter((s) => s.activePass?.status === 'active');
+    const activePortfolioValue = active.reduce(
+      (sum, s) => sum + Number(s.activePass!.priceAmount),
+      0
+    );
+    const expiringSoon = passSummaries.filter((s) => {
+      const p = s.activePass;
+      if (!p || p.status !== 'active') return false;
+      if (p.sessionsLeft <= 2) return true;
+      if (p.validUntil) {
+        const days = Math.ceil(
+          (new Date(p.validUntil).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        );
+        if (days <= 7) return true;
+      }
+      return false;
+    }).length;
+    const noPass = passSummaries.filter((s) => !s.activePass).length;
+    return { activePortfolioValue, expiringSoon, noPass, activeCount: active.length };
+  }, [passSummaries]);
 
   return (
     <Screen loading={loading} className="trainer-crm-screen">
@@ -258,21 +325,14 @@ export default function TrainerCrmScreen() {
         <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
           <ScreenHeader icon="🗂️" title="CRM" description="Заявки и аналитика клиентской базы" />
 
-          <ScreenHint>
-            <strong className="text-white">Заявка</strong> — потенциальный клиент, который ещё не
-            стал атлетом. Ведите статусы от «Новый» до «Клиент»: так видно, кто в работе, кто ждёт
-            пробной и кого пора добавить в команду.{' '}
-            <strong className="text-white">Напоминание</strong> — дата следующего контакта; в этот
-            день придёт push-уведомление.
-          </ScreenHint>
-
           <Tabs
             tabs={[
               { id: 'leads', label: 'Заявки' },
+              { id: 'passes', label: 'Абонементы' },
               { id: 'analytics', label: 'Аналитика' },
             ]}
             active={tab}
-            onChange={setTab}
+            onChange={handleTabChange}
           />
         </SectionGroup>
 
@@ -285,150 +345,225 @@ export default function TrainerCrmScreen() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.15 }}
-              className="space-y-4"
             >
-              {/* Summary */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1">
-                  <div className="text-xl font-bold text-white">{leadCounts.total}</div>
-                  <div className="text-[11px] text-(--color_text_muted) text-center">Всего</div>
-                </div>
-                <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1">
-                  <div className="text-xl font-bold text-amber-300">{leadCounts.active}</div>
-                  <div className="text-[11px] text-(--color_text_muted) text-center">В работе</div>
-                </div>
-                <div
-                  className={`rounded-xl p-3 border flex flex-col items-center gap-1 ${
-                    leadCounts.followUpToday > 0
-                      ? 'bg-red-500/10 border-red-500/30'
-                      : 'bg-(--color_bg_card) border-(--color_border)'
-                  }`}
-                >
-                  <div
-                    className={`text-xl font-bold ${leadCounts.followUpToday > 0 ? 'text-red-300' : 'text-white'}`}
-                  >
-                    {leadCounts.followUpToday}
+              <ScreenHint>
+                Потенциальный клиент, который ещё не стал атлетом. Ведите статусы и ставьте{' '}
+                <strong className="text-white">напоминания</strong> — нужные заявки подсветятся в
+                сводке в нужный день.
+              </ScreenHint>
+
+              <SectionGroup title="Сводка" showBreakAfter>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1">
+                    <div className="text-xl font-bold text-white">{leadCounts.total}</div>
+                    <div className="text-[11px] text-(--color_text_muted) text-center">Всего</div>
                   </div>
-                  <div className="text-[11px] text-(--color_text_muted) text-center">Напомнить</div>
-                </div>
-              </div>
-
-              {/* Filter chips */}
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-4 px-4">
-                {filterOptions.map((f) => {
-                  const isActive = filter === f.id;
-                  const cfg = f.id !== 'all' ? LEAD_STATUS_CONFIG[f.id] : null;
-                  return (
-                    <button
-                      key={f.id}
-                      type="button"
-                      onClick={() => setFilter(f.id)}
-                      className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
-                        isActive
-                          ? (cfg?.filterActiveClass ??
-                            'bg-(--color_primary_light)/20 border-(--color_primary_light)/40 text-white')
-                          : 'border-(--color_border) text-(--color_text_muted)'
-                      }`}
-                    >
-                      {f.label}
-                      {f.count > 0 && (
-                        <span
-                          className={`text-[10px] rounded-full px-1.5 py-0.5 ${isActive ? 'bg-white/20' : 'bg-(--color_bg_card_hover)'}`}
-                        >
-                          {f.count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Lead list */}
-              <AnimatePresence mode="wait">
-                {filteredLeads.length === 0 ? (
-                  <motion.div
-                    key="empty"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="rounded-2xl border border-dashed border-(--color_border) bg-(--color_bg_card) p-8 text-center"
-                  >
-                    <div className="text-3xl mb-2">📭</div>
-                    <div className="text-sm font-medium text-white mb-1">
-                      {filter === 'all'
-                        ? 'Пока нет заявок'
-                        : `Нет в статусе «${filterOptions.find((f) => f.id === filter)?.label}»`}
+                  <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1">
+                    <div className="text-xl font-bold text-amber-300">{leadCounts.active}</div>
+                    <div className="text-[11px] text-(--color_text_muted) text-center">
+                      В работе
                     </div>
-                    <p className="text-xs text-(--color_text_muted)">
-                      {filter === 'all'
-                        ? 'Запишите первого клиента'
-                        : 'Измените фильтр или добавьте нового'}
-                    </p>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key={filter}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.15 }}
-                    className="flex flex-col gap-2"
+                  </div>
+                  <div
+                    className={`rounded-xl p-3 border flex flex-col items-center gap-1 ${
+                      leadCounts.followUpToday > 0
+                        ? 'bg-red-500/10 border-red-500/30'
+                        : 'bg-(--color_bg_card) border-(--color_border)'
+                    }`}
                   >
-                    {filteredLeads.map((lead) => {
-                      const cfg = LEAD_STATUS_CONFIG[lead.crmStatus];
-                      const hasFollowUp = !!lead.nextFollowUpAt;
-                      const followUpText = hasFollowUp
-                        ? formatFollowUp(lead.nextFollowUpAt!)
-                        : null;
-                      const isOverdue = hasFollowUp && new Date(lead.nextFollowUpAt!) < new Date();
-                      return (
-                        <motion.button
-                          key={lead.id}
-                          type="button"
-                          whileTap={{ scale: 0.99 }}
-                          onClick={() => setSelectedLead(lead)}
-                          className="w-full text-left p-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) hover:border-(--color_primary_light)/30 transition-colors"
-                        >
-                          <div className="flex items-start justify-between gap-3 mb-2">
-                            <div className="text-sm font-semibold text-white truncate">
-                              {lead.name}
-                            </div>
-                            <span
-                              className={`shrink-0 px-2 py-0.5 rounded-full border text-[10px] font-semibold ${cfg.badgeClass}`}
-                            >
-                              {cfg.label}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3 text-xs text-(--color_text_muted)">
-                            <span className="flex items-center gap-1">
-                              <PhoneIcon className="w-3 h-3" />
-                              {lead.phone}
-                            </span>
-                            {followUpText && (
-                              <span
-                                className={`flex items-center gap-1 ${isOverdue ? 'text-red-400' : ''}`}
-                              >
-                                <CalendarDaysIcon className="w-3 h-3" />
-                                {followUpText}
-                              </span>
-                            )}
-                          </div>
-                          {lead.note && (
-                            <div className="mt-2 text-xs text-(--color_text_muted) truncate">
-                              {lead.note}
-                            </div>
-                          )}
-                        </motion.button>
-                      );
-                    })}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    <div
+                      className={`text-xl font-bold ${leadCounts.followUpToday > 0 ? 'text-red-300' : 'text-white'}`}
+                    >
+                      {leadCounts.followUpToday}
+                    </div>
+                    <div className="text-[11px] text-(--color_text_muted) text-center">
+                      Напомнить
+                    </div>
+                  </div>
+                </div>
+              </SectionGroup>
 
-              <AccentButton onClick={() => setShowAddClient(true)}>
-                <PlusIcon className="w-4 h-4" />
-                Записать клиента
-              </AccentButton>
+              <SectionGroup
+                title="Заявки"
+                showBreakAfter={false}
+                bodyClassName="space-y-3"
+                action={
+                  <button
+                    type="button"
+                    onClick={() => setShowAddClient(true)}
+                    className="flex items-center gap-1 text-xs text-(--color_primary_light) hover:opacity-80 transition-opacity"
+                  >
+                    <PlusIcon className="w-3.5 h-3.5" />
+                    Добавить
+                  </button>
+                }
+              >
+                <ChipScrollRow
+                  activeKey={filter}
+                  onChipClick={(key) => { if (isLeadFilter(key)) setFilter(key); }}
+                  pillClassName={(key) => {
+                    const map: Record<string, string> = {
+                      new: 'bg-amber-500',
+                      contacted: 'bg-blue-500',
+                      trial: 'bg-purple-500',
+                      converted: 'bg-green-500',
+                      lost: 'bg-gray-500',
+                    };
+                    return map[key ?? ''] ?? 'bg-(--color_primary_light)';
+                  }}
+                  chips={filterOptions.map((f) => ({
+                    key: f.id,
+                    label: (
+                      <>
+                        {f.label}
+                        {f.count > 0 && (
+                          <span className="text-[10px] rounded-full px-1.5 py-0.5 bg-white/20">
+                            {f.count}
+                          </span>
+                        )}
+                      </>
+                    ),
+                  }))}
+                />
+
+                {leads.length > 3 && (
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-(--color_text_muted)" />
+                      <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Имя или телефон..."
+                        className="w-full bg-(--color_bg_card) border border-(--color_border) rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder:text-(--color_text_muted) outline-none focus:border-(--color_primary_light)/50 transition-colors"
+                      />
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      {(
+                        [
+                          { id: 'created_desc', label: 'Новые' },
+                          { id: 'followup_asc', label: 'По дате' },
+                          { id: 'name_asc', label: 'А–Я' },
+                        ] as { id: typeof sort; label: string }[]
+                      ).map((s) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => setSort(s.id)}
+                          className={`px-2 py-1.5 rounded-lg text-xs transition-colors ${
+                            sort === s.id
+                              ? 'bg-(--color_bg_card) text-white border border-(--color_border)'
+                              : 'text-(--color_text_muted) hover:text-white'
+                          }`}
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <AnimatePresence mode="wait">
+                  {filteredLeads.length === 0 ? (
+                    <motion.div
+                      key="empty"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="rounded-2xl border border-dashed border-(--color_border) bg-(--color_bg_card) p-8 text-center"
+                    >
+                      <div className="text-3xl mb-2">📭</div>
+                      <div className="text-sm font-medium text-white mb-1">
+                        {filter === 'all'
+                          ? 'Пока нет заявок'
+                          : `Нет в статусе «${filterOptions.find((f) => f.id === filter)?.label}»`}
+                      </div>
+                      <p className="text-xs text-(--color_text_muted)">
+                        {filter === 'all'
+                          ? 'Запишите первого клиента'
+                          : 'Измените фильтр или добавьте нового'}
+                      </p>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key={filter}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.15 }}
+                      className="flex flex-col gap-2"
+                    >
+                      {filteredLeads.map((lead) => {
+                        const cfg = LEAD_STATUS_CONFIG[lead.crmStatus];
+                        const hasFollowUp = !!lead.nextFollowUpAt;
+                        const followUpText = hasFollowUp
+                          ? formatFollowUp(lead.nextFollowUpAt!)
+                          : null;
+                        const isOverdue =
+                          hasFollowUp && new Date(lead.nextFollowUpAt!) < new Date();
+                        return (
+                          <motion.button
+                            key={lead.id}
+                            type="button"
+                            whileTap={{ scale: 0.99 }}
+                            onClick={() => setSelectedLead(lead)}
+                            className="w-full text-left p-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) hover:border-(--color_primary_light)/30 transition-colors"
+                          >
+                            <div className="flex items-start justify-between gap-3 mb-2">
+                              <div className="text-sm font-semibold text-white truncate">
+                                {lead.name}
+                              </div>
+                              <span
+                                className={`shrink-0 px-2 py-0.5 rounded-full border text-[10px] font-semibold ${cfg.badgeClass}`}
+                              >
+                                {cfg.label}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-(--color_text_muted)">
+                              <span className="flex items-center gap-1">
+                                <PhoneIcon className="w-3 h-3" />
+                                {lead.phone}
+                              </span>
+                              {followUpText && (
+                                <span
+                                  className={`flex items-center gap-1 ${isOverdue ? 'text-red-400' : ''}`}
+                                >
+                                  <CalendarDaysIcon className="w-3 h-3" />
+                                  {followUpText}
+                                </span>
+                              )}
+                            </div>
+                            {lead.note && (
+                              <div className="mt-2 text-xs text-(--color_text_muted) truncate">
+                                {lead.note}
+                              </div>
+                            )}
+                          </motion.button>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </SectionGroup>
+            </motion.div>
+          )}
+
+          {/* ── PASSES TAB ────────────────────────────────────────────────── */}
+          {tab === 'passes' && (
+            <motion.div
+              key="passes"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.15 }}
+            >
+              <ScreenHint emoji="💳">
+                Отслеживайте оплаченные занятия. Нажмите на атлета, чтобы списать занятие или
+                добавить новый пакет.
+              </ScreenHint>
+
+              <SectionGroup title="Абонементы" showBreakAfter={false}>
+                <PassesTab summaries={passSummaries} loading={loading} />
+              </SectionGroup>
             </motion.div>
           )}
 
@@ -440,195 +575,258 @@ export default function TrainerCrmScreen() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.15 }}
-              className="space-y-5"
             >
-              {/* Key numbers */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1">
-                  <div className="text-xl font-bold text-white">{leadCounts.total}</div>
-                  <div className="text-[11px] text-(--color_text_muted) text-center">Заявок</div>
-                </div>
-                <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1">
-                  <div className="text-xl font-bold text-green-300">
-                    {leadCounts.byStatus.converted}
-                  </div>
-                  <div className="text-[11px] text-(--color_text_muted) text-center">Клиентов</div>
-                </div>
-                <div
-                  className={`rounded-xl p-3 border flex flex-col items-center gap-1 ${
-                    conversionRate !== null && conversionRate >= 50
-                      ? 'bg-green-500/10 border-green-500/20'
-                      : conversionRate !== null && conversionRate < 30
-                        ? 'bg-red-500/10 border-red-500/20'
-                        : 'bg-(--color_bg_card) border-(--color_border)'
-                  }`}
-                >
-                  <div
-                    className={`text-xl font-bold ${
-                      conversionRate === null
-                        ? 'text-(--color_text_muted)'
-                        : conversionRate >= 50
-                          ? 'text-green-300'
-                          : conversionRate < 30
-                            ? 'text-red-300'
-                            : 'text-white'
-                    }`}
-                  >
-                    {conversionRate !== null ? `${conversionRate}%` : '—'}
-                  </div>
-                  <div className="text-[11px] text-(--color_text_muted) text-center">Конверсия</div>
-                </div>
-              </div>
+              <ScreenHint emoji="📊">
+                Сводная статистика по заявкам и абонементам. Данные обновляются при каждом открытии
+                страницы.
+              </ScreenHint>
 
-              {/* Growth chart */}
-              {growthData.length >= 1 && (
-                <div className="bg-(--color_bg_card) rounded-2xl p-4 border border-(--color_border)">
-                  <div className="text-sm font-semibold text-white mb-1">Рост базы</div>
-                  <p className="text-xs text-(--color_text_muted) mb-4">
-                    Накопленно заявок и клиентов
-                  </p>
-                  <ResponsiveContainer width="100%" height={160}>
-                    <LineChart
-                      data={growthData}
-                      margin={{ top: 4, right: 4, left: -28, bottom: 0 }}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke="rgba(255,255,255,0.06)"
-                        vertical={false}
-                      />
-                      <XAxis
-                        dataKey="label"
-                        tick={{ fill: 'var(--color_text_muted)', fontSize: 10 }}
-                        axisLine={false}
-                        tickLine={false}
-                        interval="preserveStartEnd"
-                      />
-                      <YAxis
-                        tick={{ fill: 'var(--color_text_muted)', fontSize: 10 }}
-                        axisLine={false}
-                        tickLine={false}
-                        allowDecimals={false}
-                      />
-                      <Tooltip
-                        content={<ChartTooltip />}
-                        cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="total"
-                        name="Лиды"
-                        stroke="var(--color_primary_light)"
-                        strokeWidth={2}
-                        dot={false}
-                        activeDot={{ r: 4, fill: 'var(--color_primary_light)' }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="converted"
-                        name="Клиенты"
-                        stroke="#22c55e"
-                        strokeWidth={2}
-                        dot={false}
-                        activeDot={{ r: 4, fill: '#22c55e' }}
-                        strokeDasharray="4 2"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                  <div className="flex gap-4 mt-2 justify-center">
-                    <span className="flex items-center gap-1.5 text-[11px] text-(--color_text_muted)">
-                      <span className="w-4 h-0.5 rounded inline-block bg-(--color_primary_light)" />
+              {/* Сводные цифры */}
+              <SectionGroup title="Ключевые показатели" showBreakAfter>
+                <div className="bg-(--color_bg_card) rounded-2xl border border-(--color_border) overflow-hidden">
+                  <div className="px-4 pt-2.5 pb-2">
+                    <div className="text-[11px] font-semibold text-(--color_text_muted) uppercase tracking-wider mb-1.5">
                       Заявки
-                    </span>
-                    <span className="flex items-center gap-1.5 text-[11px] text-(--color_text_muted)">
-                      <span className="w-4 h-0.5 rounded inline-block bg-green-500" />
-                      Клиенты
-                    </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="flex flex-col items-center gap-0.5 py-1">
+                        <div className="text-xl font-bold text-white">{leadCounts.total}</div>
+                        <div className="text-[11px] text-(--color_text_muted) text-center">
+                          Всего
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-center gap-0.5 py-1">
+                        <div className="text-xl font-bold text-green-300">
+                          {leadCounts.byStatus.converted}
+                        </div>
+                        <div className="text-[11px] text-(--color_text_muted) text-center">
+                          Клиентов
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-center gap-0.5 py-1">
+                        <div
+                          className={`text-xl font-bold ${
+                            conversionRate === null
+                              ? 'text-(--color_text_muted)'
+                              : conversionRate >= 50
+                                ? 'text-green-300'
+                                : conversionRate < 30
+                                  ? 'text-red-300'
+                                  : 'text-white'
+                          }`}
+                        >
+                          {conversionRate !== null ? `${conversionRate}%` : '—'}
+                        </div>
+                        <div className="text-[11px] text-(--color_text_muted) text-center">
+                          Конверсия
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
 
-              {/* Funnel */}
-              <div className="bg-(--color_bg_card) rounded-2xl p-4 border border-(--color_border)">
-                <div className="text-sm font-semibold text-white mb-4">Воронка заявок</div>
-                {leads.length === 0 ? (
-                  <div className="text-center py-6 text-xs text-(--color_text_muted)">
-                    Добавьте заявки, чтобы увидеть воронку
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {funnelData.map((item) => {
-                      const cfg = LEAD_STATUS_CONFIG[item.status];
-                      const pct =
-                        leadCounts.total > 0
-                          ? Math.round((item.count / leadCounts.total) * 100)
-                          : 0;
-                      return (
-                        <div key={item.status}>
-                          <div className="flex justify-between text-xs mb-1">
-                            <span className="text-(--color_text_muted)">{item.label}</span>
-                            <span className="text-white font-medium">
-                              {item.count} · {pct}%
-                            </span>
+                  {passSummaries.length > 0 && (
+                    <>
+                      <div className="h-px bg-(--color_border) mx-4" />
+                      <div className="px-4 pt-2 pb-2.5">
+                        <div className="text-[11px] font-semibold text-(--color_text_muted) uppercase tracking-wider mb-1.5">
+                          Абонементы
+                        </div>
+                        <div className="grid grid-cols-4 gap-2">
+                          <div className="flex flex-col items-center gap-0.5 py-1">
+                            <div className="text-xl font-bold text-white">
+                              {passAnalytics.activeCount}
+                            </div>
+                            <div className="text-[11px] text-(--color_text_muted) text-center">
+                              Активных
+                            </div>
                           </div>
-                          <div className="h-2 rounded-full bg-(--color_bg_card_hover) overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${pct}%` }}
-                              transition={{ duration: 0.6, ease: 'easeOut' }}
-                              className="h-full rounded-full"
-                              style={{ backgroundColor: cfg.color }}
-                            />
+                          <div className="flex flex-col items-center gap-0.5 py-1">
+                            <div className="text-xl font-bold text-white">
+                              {passAnalytics.activePortfolioValue > 0
+                                ? `${Math.round(passAnalytics.activePortfolioValue / 1000)}к`
+                                : '—'}
+                            </div>
+                            <div className="text-[11px] text-(--color_text_muted) text-center">
+                              Оборот, ₽
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-center gap-0.5 py-1">
+                            <div
+                              className={`text-xl font-bold ${passAnalytics.expiringSoon > 0 ? 'text-amber-300' : 'text-white'}`}
+                            >
+                              {passAnalytics.expiringSoon}
+                            </div>
+                            <div className="text-[11px] text-(--color_text_muted) text-center">
+                              Истекает
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-center gap-0.5 py-1">
+                            <div className="text-xl font-bold text-(--color_text_muted)">
+                              {passAnalytics.noPass}
+                            </div>
+                            <div className="text-[11px] text-(--color_text_muted) text-center">
+                              Без пакета
+                            </div>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* Sources */}
-              {sourceData.length > 0 && (
-                <div className="bg-(--color_bg_card) rounded-2xl p-4 border border-(--color_border)">
-                  <div className="text-sm font-semibold text-white mb-4">Откуда клиенты</div>
-                  <ResponsiveContainer width="100%" height={sourceData.length * 44 + 16}>
-                    <BarChart
-                      data={sourceData}
-                      layout="vertical"
-                      margin={{ top: 0, right: 40, left: 0, bottom: 0 }}
-                    >
-                      <XAxis type="number" hide />
-                      <YAxis
-                        type="category"
-                        dataKey="label"
-                        width={80}
-                        tick={{ fill: 'var(--color_text_muted)', fontSize: 12 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip
-                        content={<ChartTooltip />}
-                        cursor={{ fill: 'rgba(255,255,255,0.04)' }}
-                      />
-                      <Bar
-                        dataKey="count"
-                        radius={[0, 6, 6, 0]}
-                        maxBarSize={24}
-                        fill="hsl(210, 70%, 60%)"
-                        fillOpacity={0.8}
-                      >
-                        <LabelList
-                          dataKey="count"
-                          position="right"
-                          style={{ fill: 'white', fontSize: 12, fontWeight: 600 }}
-                        />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                      </div>
+                    </>
+                  )}
                 </div>
+              </SectionGroup>
+
+              {/* Рост базы */}
+              {growthData.length >= 1 && (
+                <SectionGroup title="Рост базы" showBreakAfter>
+                  <div className="bg-(--color_bg_card) rounded-2xl p-4 border border-(--color_border)">
+                    <p className="text-xs text-(--color_text_muted) mb-4">
+                      Накоплено заявок и клиентов
+                    </p>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <LineChart
+                        data={growthData}
+                        margin={{ top: 4, right: 4, left: -28, bottom: 0 }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="rgba(255,255,255,0.06)"
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey="label"
+                          tick={{ fill: 'var(--color_text_muted)', fontSize: 10 }}
+                          axisLine={false}
+                          tickLine={false}
+                          interval="preserveStartEnd"
+                        />
+                        <YAxis
+                          tick={{ fill: 'var(--color_text_muted)', fontSize: 10 }}
+                          axisLine={false}
+                          tickLine={false}
+                          allowDecimals={false}
+                        />
+                        <Tooltip
+                          content={<ChartTooltip />}
+                          cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="total"
+                          name="Лиды"
+                          stroke="var(--color_primary_light)"
+                          strokeWidth={2}
+                          dot={false}
+                          activeDot={{ r: 4, fill: 'var(--color_primary_light)' }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="converted"
+                          name="Клиенты"
+                          stroke="#22c55e"
+                          strokeWidth={2}
+                          dot={false}
+                          activeDot={{ r: 4, fill: '#22c55e' }}
+                          strokeDasharray="4 2"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                    <div className="flex gap-4 mt-2 justify-center">
+                      <span className="flex items-center gap-1.5 text-[11px] text-(--color_text_muted)">
+                        <span className="w-4 h-0.5 rounded inline-block bg-(--color_primary_light)" />
+                        Заявки
+                      </span>
+                      <span className="flex items-center gap-1.5 text-[11px] text-(--color_text_muted)">
+                        <span className="w-4 h-0.5 rounded inline-block bg-green-500" />
+                        Клиенты
+                      </span>
+                    </div>
+                  </div>
+                </SectionGroup>
               )}
 
-              {/* Athletes by CRM status */}
+              {/* Воронка */}
+              <SectionGroup title="Воронка заявок" showBreakAfter={sourceData.length > 0}>
+                <div className="bg-(--color_bg_card) rounded-2xl p-4 border border-(--color_border)">
+                  {leads.length === 0 ? (
+                    <div className="text-center py-6 text-xs text-(--color_text_muted)">
+                      Добавьте заявки, чтобы увидеть воронку
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {funnelData.map((item) => {
+                        const cfg = LEAD_STATUS_CONFIG[item.status];
+                        const pct =
+                          leadCounts.total > 0
+                            ? Math.round((item.count / leadCounts.total) * 100)
+                            : 0;
+                        return (
+                          <div key={item.status}>
+                            <div className="flex justify-between text-xs mb-1">
+                              <span className="text-(--color_text_muted)">{item.label}</span>
+                              <span className="text-white font-medium">
+                                {item.count} · {pct}%
+                              </span>
+                            </div>
+                            <div className="h-2 rounded-full bg-(--color_bg_card_hover) overflow-hidden">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${pct}%` }}
+                                transition={{ duration: 0.6, ease: 'easeOut' }}
+                                className="h-full rounded-full"
+                                style={{ backgroundColor: cfg.color }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </SectionGroup>
+
+              {/* Источники */}
+              {sourceData.length > 0 && (
+                <SectionGroup title="Откуда клиенты" showBreakAfter>
+                  <div className="bg-(--color_bg_card) rounded-2xl p-4 border border-(--color_border)">
+                    <ResponsiveContainer width="100%" height={sourceData.length * 44 + 16}>
+                      <BarChart
+                        data={sourceData}
+                        layout="vertical"
+                        margin={{ top: 0, right: 40, left: 0, bottom: 0 }}
+                      >
+                        <XAxis type="number" hide />
+                        <YAxis
+                          type="category"
+                          dataKey="label"
+                          width={80}
+                          tick={{ fill: 'var(--color_text_muted)', fontSize: 12 }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <Tooltip
+                          content={<ChartTooltip />}
+                          cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                        />
+                        <Bar
+                          dataKey="count"
+                          radius={[0, 6, 6, 0]}
+                          maxBarSize={24}
+                          fill="hsl(210, 70%, 60%)"
+                          fillOpacity={0.8}
+                        >
+                          <LabelList
+                            dataKey="count"
+                            position="right"
+                            style={{ fill: 'white', fontSize: 12, fontWeight: 600 }}
+                          />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </SectionGroup>
+              )}
+
+              {/* Атлеты по CRM-статусу */}
               {(() => {
                 const rows = [
                   ['active', athleteCrmData.active],
@@ -638,64 +836,62 @@ export default function TrainerCrmScreen() {
                 ] as [keyof typeof ATHLETE_CRM_CONFIG, number][];
                 const total = rows.reduce((s, [, n]) => s + n, 0);
                 return (
-                  <div className="bg-(--color_bg_card) rounded-2xl p-4 border border-(--color_border)">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="text-sm font-semibold text-white">Атлеты по статусу</div>
-                      {total > 0 && (
-                        <div className="text-xs text-(--color_text_muted)">{total} всего</div>
+                  <SectionGroup
+                    title="Атлеты по статусу"
+                    showBreakAfter={false}
+                    description={total > 0 ? `${total} всего` : undefined}
+                  >
+                    <div className="bg-(--color_bg_card) rounded-2xl p-4 border border-(--color_border)">
+                      {total > 0 ? (
+                        <div className="flex rounded-full overflow-hidden h-1.5 mb-4 gap-px">
+                          {rows.map(([status, count]) => {
+                            const pct = (count / total) * 100;
+                            if (pct === 0) return null;
+                            return (
+                              <div
+                                key={status}
+                                className={ATHLETE_CRM_CONFIG[status].bar}
+                                style={{ width: `${pct}%` }}
+                              />
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="h-1.5 rounded-full bg-(--color_border) mb-4" />
                       )}
-                    </div>
-
-                    {/* Stacked proportion bar */}
-                    {total > 0 ? (
-                      <div className="flex rounded-full overflow-hidden h-1.5 mb-4 gap-px">
+                      <div className="space-y-2.5">
                         {rows.map(([status, count]) => {
-                          const pct = (count / total) * 100;
-                          if (pct === 0) return null;
+                          const cfg = ATHLETE_CRM_CONFIG[status];
+                          const pct = total > 0 ? Math.round((count / total) * 100) : 0;
                           return (
-                            <div
-                              key={status}
-                              className={ATHLETE_CRM_CONFIG[status].bar}
-                              style={{ width: `${pct}%` }}
-                            />
+                            <div key={status} className="flex items-center gap-3">
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-xs font-medium text-white">
+                                    {cfg.label}
+                                  </span>
+                                  <span className="text-[11px] text-(--color_text_muted)">
+                                    {cfg.hint}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-baseline gap-1 shrink-0">
+                                <span className={`text-base font-bold leading-none ${cfg.text}`}>
+                                  {count}
+                                </span>
+                                {total > 0 && (
+                                  <span className="text-[10px] text-(--color_text_muted)">
+                                    {pct}%
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           );
                         })}
                       </div>
-                    ) : (
-                      <div className="h-1.5 rounded-full bg-(--color_border) mb-4" />
-                    )}
-
-                    {/* Stats list */}
-                    <div className="space-y-2.5">
-                      {rows.map(([status, count]) => {
-                        const cfg = ATHLETE_CRM_CONFIG[status];
-                        const pct = total > 0 ? Math.round((count / total) * 100) : 0;
-                        return (
-                          <div key={status} className="flex items-center gap-3">
-                            <span className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-baseline gap-1.5">
-                                <span className="text-xs font-medium text-white">{cfg.label}</span>
-                                <span className="text-[11px] text-(--color_text_muted)">
-                                  {cfg.hint}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex items-baseline gap-1 shrink-0">
-                              <span className={`text-base font-bold leading-none ${cfg.text}`}>
-                                {count}
-                              </span>
-                              {total > 0 && (
-                                <span className="text-[10px] text-(--color_text_muted)">
-                                  {pct}%
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
                     </div>
-                  </div>
+                  </SectionGroup>
                 );
               })()}
 
@@ -711,6 +907,34 @@ export default function TrainerCrmScreen() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <SectionGroup title="Ещё" showBreakAfter={false}>
+          <ScreenLinks
+            links={[
+              {
+                emoji: '📅',
+                bg: 'bg-emerald-500/20',
+                label: 'Календарь',
+                sub: 'Запланировать тренировки',
+                to: '/trainer/calendar',
+              },
+              {
+                emoji: '🏋️',
+                bg: 'bg-blue-500/20',
+                label: 'Команда',
+                sub: 'Атлеты и группы',
+                to: '/trainer/athletes',
+              },
+              {
+                emoji: '📋',
+                bg: 'bg-amber-500/20',
+                label: 'Шаблоны',
+                sub: 'Готовые тренировки',
+                to: '/trainer/templates',
+              },
+            ]}
+          />
+        </SectionGroup>
       </div>
     </Screen>
   );

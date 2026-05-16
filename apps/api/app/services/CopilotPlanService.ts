@@ -2,6 +2,7 @@ import { DateTime } from 'luxon'
 import ScheduledWorkout from '#models/scheduled_workout'
 import { YandexAiService } from '#services/YandexAiService'
 import type { CopilotInsights } from '#services/CopilotInsightsService'
+import { clock } from '#utils/date'
 
 export interface CopilotSuggestion {
   suggestedDates: string[]
@@ -71,7 +72,7 @@ export class CopilotPlanService {
 
     // Блокируем прошедшие дни и уже занятые
     const todayOffset = Math.floor(
-      DateTime.now().startOf('day').diff(weekStartDt.startOf('day'), 'days').days
+      clock.now().startOf('day').diff(weekStartDt.startOf('day'), 'days').days
     )
     const pastOffsets = Array.from({ length: Math.max(0, todayOffset) }, (_, i) => i)
     const blockedSet = new Set([...existingOffsets, ...pastOffsets])

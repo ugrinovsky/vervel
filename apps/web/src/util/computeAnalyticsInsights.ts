@@ -69,6 +69,154 @@ export interface AnalyticsInsightsData {
     projectedPerMonth: number;
   } | null;
   softOverloadHint: boolean;
+  weeklySlope: {
+    slopePerWeek: number;
+    weekCount: number;
+    isRising: boolean;
+    isTooFast: boolean;
+  } | null;
+  monotony: {
+    value: number;
+    riskLevel: 'low' | 'moderate' | 'high';
+  } | null;
+  recovery: {
+    afterHigh: number | null;
+    afterMedium: number | null;
+    afterLow: number | null;
+  } | null;
+  activeWeeks: {
+    consecutiveWeeks: number;
+    totalActiveWeeks: number;
+  } | null;
+}
+
+function isoWeekMonday(dateStr: string): string {
+  const d = new Date(dateStr);
+  const day = d.getDay() || 7;
+  d.setDate(d.getDate() + 1 - day);
+  return d.toISOString().slice(0, 10);
+}
+
+function computeWeeklySlope(
+  timeline: WorkoutTimelineEntry[]
+): AnalyticsInsightsData['weeklySlope'] {
+  const byWeek: Record<string, number> = {};
+  for (const entry of timeline) {
+    const key = isoWeekMonday(entry.date);
+    byWeek[key] = (byWeek[key] ?? 0) + (entry.volume ?? 0);
+  }
+  const weeks = Object.keys(byWeek).sort();
+  if (weeks.length < 2) return null;
+
+  const volumes = weeks.map((w) => byWeek[w]);
+  const n = volumes.length;
+  const sumX = (n * (n - 1)) / 2;
+  const sumX2 = (n * (n - 1) * (2 * n - 1)) / 6;
+  const sumY = volumes.reduce((s, v) => s + v, 0);
+  const sumXY = volumes.reduce((s, v, i) => s + i * v, 0);
+  const denom = n * sumX2 - sumX * sumX;
+  if (denom === 0) return null;
+
+  const slope = (n * sumXY - sumX * sumY) / denom;
+  const meanY = sumY / n;
+  if (meanY === 0) return null;
+
+  const slopePerWeek = +((slope / meanY) * 100).toFixed(1);
+  return {
+    slopePerWeek,
+    weekCount: n,
+    isRising: slope > 0,
+    isTooFast: slopePerWeek > 10,
+  };
+}
+
+function computeMonotony(timeline: WorkoutTimelineEntry[]): AnalyticsInsightsData['monotony'] {
+  if (timeline.length < 3) return null;
+
+  const timestamps = timeline.map((e) => new Date(e.date).getTime());
+  const minTs = Math.min(...timestamps);
+  const maxTs = Math.max(...timestamps);
+  const totalDays = Math.max(1, Math.round((maxTs - minTs) / 86_400_000) + 1);
+
+  const byDay: Record<string, number> = {};
+  for (const entry of timeline) {
+    const key = entry.date.slice(0, 10);
+    byDay[key] = (byDay[key] ?? 0) + (entry.volume ?? 0);
+  }
+
+  const dailyLoads: number[] = [];
+  const start = new Date(minTs);
+  for (let i = 0; i < totalDays; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    dailyLoads.push(byDay[d.toISOString().slice(0, 10)] ?? 0);
+  }
+
+  const avg = dailyLoads.reduce((s, v) => s + v, 0) / dailyLoads.length;
+  if (avg === 0) return null;
+
+  const variance = dailyLoads.reduce((s, v) => s + (v - avg) ** 2, 0) / dailyLoads.length;
+  const stdDev = Math.sqrt(variance);
+  if (stdDev === 0) return null;
+
+  const value = +(avg / stdDev).toFixed(2);
+  return {
+    value,
+    riskLevel: value > 2.0 ? 'high' : value > 1.5 ? 'moderate' : 'low',
+  };
+}
+
+function computeRecovery(timeline: WorkoutTimelineEntry[]): AnalyticsInsightsData['recovery'] {
+  if (timeline.length < 2) return null;
+
+  const sorted = [...timeline].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+  const gapsByLevel: Record<string, number[]> = { high: [], medium: [], low: [] };
+
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = sorted[i - 1];
+    const level = prev.loadLevel ?? 'none';
+    if (!(level in gapsByLevel)) continue;
+    const gap = (new Date(sorted[i].date).getTime() - new Date(prev.date).getTime()) / 86_400_000;
+    if (gap > 0 && gap <= 14) gapsByLevel[level].push(gap);
+  }
+
+  const avg = (arr: number[]): number | null =>
+    arr.length ? +(arr.reduce((s, v) => s + v, 0) / arr.length).toFixed(1) : null;
+
+  const afterHigh = avg(gapsByLevel['high']);
+  const afterMedium = avg(gapsByLevel['medium']);
+  const afterLow = avg(gapsByLevel['low']);
+
+  if (afterHigh === null && afterMedium === null && afterLow === null) return null;
+  return { afterHigh, afterMedium, afterLow };
+}
+
+function computeActiveWeeks(
+  timeline: WorkoutTimelineEntry[]
+): AnalyticsInsightsData['activeWeeks'] {
+  if (timeline.length === 0) return null;
+
+  const activeWeekKeys = new Set(timeline.map((e) => isoWeekMonday(e.date)));
+  const totalActiveWeeks = activeWeekKeys.size;
+
+  const sortedWeeks = [...activeWeekKeys].sort().reverse();
+  let consecutive = 1;
+  let current = new Date(sortedWeeks[0]);
+
+  for (let i = 1; i < sortedWeeks.length; i++) {
+    const expected = new Date(current);
+    expected.setDate(expected.getDate() - 7);
+    if (sortedWeeks[i] === expected.toISOString().slice(0, 10)) {
+      consecutive++;
+      current = expected;
+    } else {
+      break;
+    }
+  }
+
+  return { consecutiveWeeks: consecutive, totalActiveWeeks };
 }
 
 export function computeAnalyticsInsights(
@@ -91,6 +239,10 @@ export function computeAnalyticsInsights(
       coach: null,
       pace: null,
       softOverloadHint: false,
+      weeklySlope: null,
+      monotony: null,
+      recovery: null,
+      activeWeeks: null,
     };
   }
 
@@ -181,8 +333,7 @@ export function computeAnalyticsInsights(
         }
       : null;
 
-  const coach =
-    scheduled > 0 ? { scheduled, self: n - scheduled } : null;
+  const coach = scheduled > 0 ? { scheduled, self: n - scheduled } : null;
 
   const avgI = Number(stats.avgIntensity) || 0;
   const intensityPct = avgI > 1 ? avgI : avgI * 100;
@@ -201,6 +352,10 @@ export function computeAnalyticsInsights(
     coach,
     pace,
     softOverloadHint,
+    weeklySlope: computeWeeklySlope(timeline),
+    monotony: computeMonotony(timeline),
+    recovery: computeRecovery(timeline),
+    activeWeeks: computeActiveWeeks(timeline),
   };
 }
 

@@ -33,6 +33,7 @@ const CRM_STATUS_CONFIG: Record<AthleteCrmStatus, { label: string; dot: string; 
   churned: { label: 'Ушёл', dot: 'bg-gray-500', pill: 'text-gray-400 bg-gray-500/10' },
 };
 import SectionGroup from '@/components/ui/SectionGroup';
+import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTrainerTeamsFeatureRedirect } from '@/hooks/useTrainerTeamsFeatureRedirect';
 
@@ -173,8 +174,13 @@ export default function TrainerTeamScreen() {
         </div>
       </BottomSheet>
 
-      <div className="px-4 pt-4 pb-3">
-        <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-3">
+      <div className="px-4 pt-4">
+        <SectionGroup
+          showLabel={false}
+          showBreakAfter={false}
+          bodyClassName="space-y-3"
+          className="!mb-2"
+        >
           <motion.div
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -458,6 +464,36 @@ export default function TrainerTeamScreen() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <div className="px-4 pb-4">
+        <SectionGroup title="Ещё" showBreakAfter={false}>
+          <ScreenLinks
+            links={[
+              {
+                emoji: '📅',
+                bg: 'bg-emerald-500/20',
+                label: 'Календарь',
+                sub: 'Запланировать тренировки',
+                to: '/trainer/calendar',
+              },
+              {
+                emoji: '🗂️',
+                bg: 'bg-rose-500/20',
+                label: 'CRM',
+                sub: 'Заявки и аналитика',
+                to: '/trainer/crm',
+              },
+              {
+                emoji: '📋',
+                bg: 'bg-amber-500/20',
+                label: 'Шаблоны',
+                sub: 'Готовые тренировки',
+                to: '/trainer/templates',
+              },
+            ]}
+          />
+        </SectionGroup>
+      </div>
     </Screen>
   );
 }

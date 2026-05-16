@@ -488,9 +488,7 @@ function IntroSessionForm({
             {leadOptions.map((l) => (
               <option key={l.id} value={l.id}>
                 {l.name}
-                {LEAD_PIPELINE_LABEL[l.crmStatus]
-                  ? ` · ${LEAD_PIPELINE_LABEL[l.crmStatus]}`
-                  : ''}
+                {LEAD_PIPELINE_LABEL[l.crmStatus] ? ` · ${LEAD_PIPELINE_LABEL[l.crmStatus]}` : ''}
               </option>
             ))}
           </select>
@@ -932,7 +930,7 @@ export default function TrainerCalendarScreen() {
         <SectionGroup
           showLabel={false}
           showBreakAfter={false}
-          className="shrink-0"
+          className="shrink-0 !mb-2"
           bodyClassName="space-y-0"
         >
           <motion.div
@@ -1046,8 +1044,8 @@ export default function TrainerCalendarScreen() {
             className="glass rounded-xl px-4 pb-4"
           >
             {/* Day header */}
-            <div className="flex items-center justify-between pt-3 pb-2 shrink-0">
-              <div>
+            <div className="flex items-start justify-between gap-3 pt-3 pb-2 shrink-0">
+              <div className="min-w-0">
                 <div className="text-sm font-semibold text-white capitalize flex items-center gap-1.5">
                   <CalendarDaysIcon className="w-4 h-4 text-(--color_text_muted) shrink-0" />
                   {selectedDate.toLocaleDateString('ru-RU', {
@@ -1056,7 +1054,7 @@ export default function TrainerCalendarScreen() {
                     month: 'long',
                   })}
                 </div>
-                <div className="text-xs text-(--color_text_muted)">
+                <div className="text-xs text-(--color_text_muted) mt-0.5">
                   {loading
                     ? '…'
                     : selectedSessionWorkouts.length === 0
@@ -1085,19 +1083,20 @@ export default function TrainerCalendarScreen() {
                   />
                 )}
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 shrink-0">
+                <GhostButton
+                  variant="outline-accent"
                   onClick={toggleRestDay}
                   disabled={togglingRest}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-200 disabled:opacity-40 ${
+                  className={
                     isRestDay
-                      ? 'bg-slate-600/70 text-slate-300 ring-1 ring-slate-500/50 hover:bg-slate-500/70'
-                      : 'bg-(--color_bg_card) text-(--color_text_muted) ring-1 ring-(--color_border) hover:text-white'
-                  }`}
+                      ? 'bg-slate-600/70 !text-slate-300 !border-slate-500/50 hover:!bg-slate-500/70'
+                      : '!text-(--color_text_muted) hover:!text-white'
+                  }
                 >
-                  <MoonIcon className={`w-3.5 h-3.5 ${isRestDay ? 'text-slate-300' : ''}`} />
+                  <MoonIcon className="w-3.5 h-3.5" />
                   {isRestDay ? 'Снять выходной' : 'Выходной'}
-                </button>
+                </GhostButton>
                 {selectedTime === null && !isRestDay && (
                   <AccentButton size="sm" onClick={() => openFormAt(currentHourString())}>
                     <PlusIcon className="w-4 h-4" />

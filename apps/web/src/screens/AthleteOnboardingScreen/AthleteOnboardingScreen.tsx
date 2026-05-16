@@ -27,23 +27,16 @@ import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 
 type Step = 'context' | 'coach_connect' | 'workout' | 'done';
 
-function progressForStep(step: Step, showCoachConnect: boolean): { current: number; total: number } {
+function progressForStep(
+  step: Step,
+  showCoachConnect: boolean
+): { current: number; total: number } {
   const total = showCoachConnect ? 4 : 3;
   if (showCoachConnect) {
-    const map: Record<Step, number> = {
-      context: 1,
-      coach_connect: 2,
-      workout: 3,
-      done: 4,
-    };
+    const map: Record<Step, number> = { context: 1, coach_connect: 2, workout: 3, done: 4 };
     return { current: map[step], total };
   }
-  const map: Record<Step, number> = {
-    context: 1,
-    coach_connect: 1,
-    workout: 2,
-    done: 3,
-  };
+  const map: Record<Step, number> = { context: 1, coach_connect: 1, workout: 2, done: 3 };
   return { current: map[step], total };
 }
 
@@ -54,8 +47,7 @@ export default function AthleteOnboardingScreen(): JSX.Element {
   const { teams } = useFeatureFlags();
   const [step, setStep] = useState<Step>('context');
   const [coachContext, setCoachContext] = useState<'solo' | 'with_coach' | null>(null);
-  /** workout: сначала способ ввода, потом форма */
-  const [workoutInputMode, setWorkoutInputMode] = useState<'ai' | 'manual' | null>(null);
+  const [aiMode, setAiMode] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -68,7 +60,7 @@ export default function AthleteOnboardingScreen(): JSX.Element {
   const showCoachConnect = coachContext === 'with_coach';
   const { current: progress, total: totalSteps } = progressForStep(step, showCoachConnect);
   const athletePrimaryGoal = user?.clientPreferences?.athletePrimaryGoal;
-  const legacyOnboardingWorkoutInitialType =
+  const initialWorkoutType =
     athletePrimaryGoal && athletePrimaryGoal !== 'general'
       ? workoutTypeForAthletePrimaryGoal(athletePrimaryGoal)
       : DEFAULT_WORKOUT_TYPE;
@@ -77,10 +69,7 @@ export default function AthleteOnboardingScreen(): JSX.Element {
     if (!user) return;
     updateUser({
       ...user,
-      clientPreferences: {
-        ...user.clientPreferences,
-        athleteOnboardingComplete: true,
-      },
+      clientPreferences: { ...user.clientPreferences, athleteOnboardingComplete: true },
     });
     navigate('/home', { replace: true });
     void profileApi
@@ -100,10 +89,6 @@ export default function AthleteOnboardingScreen(): JSX.Element {
       .catch(() => {
         toast.error('Не удалось сохранить на сервере. Проверьте сеть.');
       });
-  };
-
-  const finishToCalendar = () => {
-    navigate('/calendar');
   };
 
   const handleWorkoutSubmit = async (data: WorkoutFormData) => {
@@ -144,9 +129,7 @@ export default function AthleteOnboardingScreen(): JSX.Element {
     }
   };
 
-  if (!user) {
-    return <></>;
-  }
+  if (!user) return <></>;
 
   return (
     <Screen bottomInset="safe" enablePullToRefresh={false}>
@@ -171,14 +154,15 @@ export default function AthleteOnboardingScreen(): JSX.Element {
           )}
         </div>
 
+        {/* ── Шаг 1: контекст ─────────────────────────────────────────────── */}
         {step === 'context' && (
           <>
             <ScreenHeader
               icon="👋"
               title="Добро пожаловать"
-              description="За пару минут настроим профиль и первую тренировку — так быстрее появится ценность в календаре."
+              description="Пара вопросов — и календарь сразу будет подстроен под вас."
             />
-            <p className="text-sm text-(--color_text_muted) mb-4">Как вы тренируетесь?</p>
+            <p className="text-sm text-(--color_text_muted) mb-4">Как тренируетесь?</p>
             <div className="grid gap-3 mb-6">
               <button
                 type="button"
@@ -187,18 +171,13 @@ export default function AthleteOnboardingScreen(): JSX.Element {
                     try {
                       await setAthleteCoachIntent(user, updateUser, 'solo');
                       setCoachContext('solo');
-                      setWorkoutInputMode(null);
                       setStep('workout');
                     } catch {
                       toast.error('Не удалось сохранить выбор. Проверьте сеть.');
                     }
                   })();
                 }}
-                className={`rounded-2xl border p-4 text-left transition-colors ${
-                  coachContext === 'solo'
-                    ? 'border-emerald-400 bg-emerald-500/15'
-                    : 'border-(--color_border) bg-(--color_bg_card) hover:border-emerald-500/40'
-                }`}
+                className="rounded-2xl border border-(--color_border) bg-(--color_bg_card) p-4 text-left transition-colors hover:border-emerald-500/40"
               >
                 <div className="text-2xl mb-1">🏠</div>
                 <div className="font-semibold text-white">Самостоятельно</div>
@@ -219,58 +198,65 @@ export default function AthleteOnboardingScreen(): JSX.Element {
                     }
                   })();
                 }}
-                className={`rounded-2xl border p-4 text-left transition-colors ${
-                  coachContext === 'with_coach'
-                    ? 'border-emerald-400 bg-emerald-500/15'
-                    : 'border-(--color_border) bg-(--color_bg_card) hover:border-emerald-500/40'
-                }`}
+                className="rounded-2xl border border-(--color_border) bg-(--color_bg_card) p-4 text-left transition-colors hover:border-emerald-500/40"
               >
                 <div className="text-2xl mb-1">🤝</div>
                 <div className="font-semibold text-white">С тренером</div>
                 <div className="text-xs text-(--color_text_muted) mt-1">
-                  Дальше — как связаться с тренером по шагам
+                  Тренер добавит меня в приложение — покажи как
                 </div>
               </button>
             </div>
           </>
         )}
 
+        {/* ── Шаг 2 (only with_coach): связь с тренером ──────────────────── */}
         {step === 'coach_connect' && (
           <>
             <ScreenHeader
               icon="🤝"
-              title="Связь с тренером"
-              description="Вас к команде добавляет тренер из своего кабинета. Коротко — что ему понадобится от вас."
+              title="Как тренер вас добавит"
+              description="Тренер добавляет вас со своей стороны. Дайте ему один из вариантов:"
             />
             <div className="flex-1 min-h-0 overflow-y-auto pb-4">
-              <div className="rounded-2xl border border-(--color_border) bg-(--color_bg_card) p-4 text-sm text-(--color_text_muted) leading-relaxed space-y-3">
-                <p className="text-white font-medium text-[15px]">Дайте тренеру один из вариантов</p>
-                <ul className="space-y-2 pl-0.5">
-                  <li>
-                    <span className="text-white/90 font-medium">Email</span> — почта этого аккаунта Vervel.
-                  </li>
-                  <li>
-                    <span className="text-white/90 font-medium">Ссылка</span> — тренер пришлёт приглашение,
-                    вы откроете и примете.
-                  </li>
-                  {teams && (
-                    <li>
-                      <span className="text-white/90 font-medium">QR</span> — покажите код из{' '}
-                      <span className="text-white/90">Профиля</span>, тренер отсканирует при добавлении атлета.
-                    </li>
-                  )}
-                </ul>
-                {teams ? (
-                  <p className="text-xs border-t border-white/10 pt-3">
-                    После связи тренер и чаты появятся в{' '}
-                    <span className="text-white font-medium">«Команда»</span>. Подробности снова покажем там,
-                    если вы ещё не в команде.
-                  </p>
-                ) : (
-                  <p className="text-xs border-t border-white/10 pt-3">
-                    Передайте тренеру email — дальнейшие шаги по договорённости. Раздел «Команда» и QR в
-                    профиле можно включить в настройках, если понадобятся.
-                  </p>
+              <div className="space-y-2">
+                <div className="flex gap-3 rounded-xl border border-(--color_border) bg-(--color_bg_card) p-3">
+                  <span className="text-xl shrink-0">📧</span>
+                  <div>
+                    <div className="text-sm font-semibold text-white mb-0.5">
+                      Email этого аккаунта
+                    </div>
+                    <div className="text-xs text-(--color_text_muted) leading-relaxed">
+                      Тренер введёт почту — вы появитесь у него в команде автоматически.
+                    </div>
+                    <div className="mt-1.5 px-2.5 py-1 rounded-lg bg-(--color_bg_card_hover) text-xs text-white/80 font-mono break-all select-all">
+                      {user.email}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3 rounded-xl border border-(--color_border) bg-(--color_bg_card) p-3">
+                  <span className="text-xl shrink-0">🔗</span>
+                  <div>
+                    <div className="text-sm font-semibold text-white mb-0.5">
+                      Ссылка-приглашение
+                    </div>
+                    <div className="text-xs text-(--color_text_muted) leading-relaxed">
+                      Тренер генерирует ссылку и отправляет вам. Просто откройте её.
+                    </div>
+                  </div>
+                </div>
+                {teams && (
+                  <div className="flex gap-3 rounded-xl border border-(--color_border) bg-(--color_bg_card) p-3">
+                    <span className="text-xl shrink-0">📷</span>
+                    <div>
+                      <div className="text-sm font-semibold text-white mb-0.5">
+                        QR-код из профиля
+                      </div>
+                      <div className="text-xs text-(--color_text_muted) leading-relaxed">
+                        Откройте Профиль → покажите QR тренеру для сканирования.
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -285,125 +271,84 @@ export default function AthleteOnboardingScreen(): JSX.Element {
               >
                 Назад
               </GhostButton>
-              <AccentButton
-                className="flex-1 font-semibold"
-                onClick={() => {
-                  setWorkoutInputMode(null);
-                  setStep('workout');
-                }}
-              >
+              <AccentButton className="flex-1 font-semibold" onClick={() => setStep('workout')}>
                 Понятно, дальше
               </AccentButton>
             </div>
           </>
         )}
 
-        {step === 'workout' && workoutInputMode === null && (
-          <>
-            <div className="flex-1 min-h-0 overflow-y-auto pb-4">
-              <ScreenHeader
-                icon="💪"
-                title="Первая тренировка"
-                description="Как удобнее занести упражнения? ИИ — как в обычной форме (фото, текст, описание). Вручную — только поля и список, без списаний за ИИ."
-              />
-              <p className="text-[11px] text-(--color_text_muted) mb-2 leading-snug">
-                Каталог названий слабее ИИ — если не хотите ковыряться в списке, берите ИИ.
-              </p>
-              <div className="grid gap-2 w-full shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setWorkoutInputMode('ai')}
-                  className="rounded-xl border border-emerald-500/35 bg-emerald-500/10 p-3 text-left flex gap-3 items-start self-start w-full transition-colors hover:bg-emerald-500/15"
-                >
-                  <span className="text-xl shrink-0 leading-none pt-0.5" aria-hidden>
-                    ✨
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-white">С помощью ИИ</span>
-                      <span className="text-[9px] font-semibold uppercase tracking-wide text-emerald-400/90">
-                        Рекомендуем
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-(--color_text_muted) mt-0.5 leading-snug">
-                      Фото, текст, описание — как в «Новой тренировке». Платёж с кошелька за правилами
-                      сервиса.
-                    </p>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setWorkoutInputMode('manual')}
-                  className="rounded-xl border border-(--color_border) bg-(--color_bg_card) p-3 text-left flex gap-3 items-start self-start w-full transition-colors hover:border-white/25"
-                >
-                  <span className="text-xl shrink-0 leading-none pt-0.5" aria-hidden>
-                    ✏️
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold text-white">Вручную</div>
-                    <p className="text-[11px] text-(--color_text_muted) mt-0.5 leading-snug">
-                      Дата, тип, упражнения из списка, без ИИ.
-                    </p>
-                  </div>
-                </button>
-              </div>
-            </div>
-            <div className="shrink-0 pt-2">
-              <GhostButton
-                variant="solid"
-                className="w-full"
-                onClick={() => setStep(showCoachConnect ? 'coach_connect' : 'context')}
-              >
-                Назад
-              </GhostButton>
-            </div>
-          </>
-        )}
-
-        {step === 'workout' && workoutInputMode !== null && (
+        {/* ── Шаг workout: первая тренировка ──────────────────────────────── */}
+        {step === 'workout' && (
           <>
             <ScreenHeader
               icon="💪"
               title="Первая тренировка"
-              description={
-                workoutInputMode === 'ai'
-                  ? 'Сначала вставьте текст программы или выберите упражнения вручную — остальное по желанию.'
-                  : 'Дата, тип и упражнения из списка. ИИ на этом шаге отключён.'
-              }
+              description="Занесите последнюю тренировку или создайте новую — так в календаре сразу появятся данные."
             />
-            {/* Без вложенного overflow-y-auto — иначе dnd по упражнениям режется; скролл даёт .screen */}
+
+            {/* Тогл AI / вручную */}
+            <div className="flex gap-1 bg-(--color_bg_card) border border-(--color_border) rounded-xl p-1 mb-4">
+              <button
+                type="button"
+                onClick={() => setAiMode(true)}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  aiMode
+                    ? 'bg-(--color_primary_light) text-white'
+                    : 'text-(--color_text_muted) hover:text-white'
+                }`}
+              >
+                ✨ С помощью ИИ
+              </button>
+              <button
+                type="button"
+                onClick={() => setAiMode(false)}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  !aiMode
+                    ? 'bg-(--color_bg_card_hover) text-white'
+                    : 'text-(--color_text_muted) hover:text-white'
+                }`}
+              >
+                ✏️ Вручную
+              </button>
+            </div>
+
             <div className="min-w-0 w-full">
               <WorkoutFormBase
+                key={aiMode ? 'ai' : 'manual'}
                 lightOnboarding
                 athletePrimaryGoal={athletePrimaryGoal}
-                initialType={legacyOnboardingWorkoutInitialType}
-                hideAiAssist={workoutInputMode === 'manual'}
+                initialType={initialWorkoutType}
+                hideAiAssist={!aiMode}
                 notesLabel="Заметки (по желанию)"
                 notesPlaceholder="Как прошла сессия…"
                 submitLabel="Сохранить тренировку"
                 onSubmit={handleWorkoutSubmit}
-                onCancel={() => setWorkoutInputMode(null)}
+                onCancel={() => setStep(showCoachConnect ? 'coach_connect' : 'context')}
               />
             </div>
           </>
         )}
 
+        {/* ── Done ────────────────────────────────────────────────────────── */}
         {step === 'done' && (
           <div className="flex flex-col py-4">
             <div className="text-center shrink-0">
               <div className="text-5xl mb-3">✅</div>
-              <h2 className="text-xl font-bold text-white mb-2">Отличное начало</h2>
+              <h2 className="text-xl font-bold text-white mb-2">Отличное начало!</h2>
               <p className="text-sm text-(--color_text_muted) mb-4 max-w-sm mx-auto">
-                Тренировка в календаре. Ниже — по желанию: установка на экран и уведомления (как в
-                настройках профиля).
+                Тренировка в календаре. Включите уведомления — будем напоминать о занятиях.
               </p>
             </div>
 
             <OnboardingPwaPushSection />
 
             <div className="shrink-0 w-full max-w-md mx-auto space-y-2">
-              <AccentButton className="w-full font-semibold py-3" onClick={finishToCalendar}>
-                Перейти в календарь
+              <AccentButton
+                className="w-full font-semibold py-3"
+                onClick={() => navigate('/calendar')}
+              >
+                Открыть календарь
               </AccentButton>
               <button
                 type="button"
@@ -411,13 +356,6 @@ export default function AthleteOnboardingScreen(): JSX.Element {
                 className="w-full text-sm text-(--color_text_muted) hover:text-white transition-colors py-2"
               >
                 На главную
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/profile?tab=settings')}
-                className="w-full text-xs text-(--color_text_muted) hover:text-emerald-400/90 transition-colors"
-              >
-                Все настройки уведомлений и ярлыка на экране → Настройки
               </button>
             </div>
           </div>

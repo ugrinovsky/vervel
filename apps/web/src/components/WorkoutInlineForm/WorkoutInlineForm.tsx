@@ -31,13 +31,14 @@ import Tabs from '@/components/ui/Tabs';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AccentButton from '@/components/ui/AccentButton';
 import GhostButton from '@/components/ui/GhostButton';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, useActiveMode } from '@/contexts/AuthContext';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
 import { aiApi } from '@/api/ai';
 import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
 import { normalizeExercisesForType } from '@/components/WorkoutExercisesEditor/normalizeForWorkoutType';
 import { convertExercisesForType } from '@/components/WorkoutFormBase/workoutTypeConversion';
+import { buildTrainerCustomExerciseWithSets } from '@/util/trainerCustomExerciseWithSets';
 
 function isEditableWorkoutType(t: WorkoutData['type']): t is WorkoutType {
   return t === 'crossfit' || t === 'bodybuilding' || t === 'cardio';
@@ -94,6 +95,8 @@ export default function WorkoutInlineForm({
   noCard = false,
 }: WorkoutInlineFormProps) {
   const { user } = useAuth();
+  const { activeMode } = useActiveMode();
+  const isTrainerMode = activeMode === 'trainer';
   const { teams: teamsEnabled } = useFeatureFlags();
   const storageKey = !editWorkout && user ? `trainer_workout_draft_${user.id}` : undefined;
 
@@ -352,6 +355,7 @@ export default function WorkoutInlineForm({
   };
 
   const [customPickerOpen, setCustomPickerOpen] = useState(false);
+  const [customExerciseName, setCustomExerciseName] = useState('');
 
   const handleQuickCustomPick = (ex: ExerciseWithSets) => {
     const data: ExerciseData = {
@@ -363,6 +367,14 @@ export default function WorkoutInlineForm({
     };
     setParsedExercises((prev) => [...prev, data]);
     setQuickMode(false);
+  };
+
+  const handleAthleteCustomExerciseAdd = () => {
+    const name = customExerciseName.trim();
+    if (!name) return;
+    const ex = buildTrainerCustomExerciseWithSets('bodybuilding', name);
+    handleQuickCustomPick(ex);
+    setCustomExerciseName('');
   };
 
   // ── Quick AI parse ────────────────────────────────────────────────
@@ -611,10 +623,37 @@ export default function WorkoutInlineForm({
         </div>
       </div>
 
-      <GhostButton variant="solid" onClick={() => setCustomPickerOpen(true)} disabled={quickSaving}>
-        <PlusIcon className="w-4 h-4" />
-        ✏️ Добавить своё упражнение
-      </GhostButton>
+      {isTrainerMode ? (
+        <GhostButton
+          variant="solid"
+          onClick={() => setCustomPickerOpen(true)}
+          disabled={quickSaving}
+        >
+          <PlusIcon className="w-4 h-4" />
+          ✏️ Добавить своё упражнение
+        </GhostButton>
+      ) : (
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={customExerciseName}
+            onChange={(e) => setCustomExerciseName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAthleteCustomExerciseAdd()}
+            placeholder="Название упражнения..."
+            disabled={quickSaving}
+            className="flex-1 bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) placeholder:text-(--color_text_muted) disabled:opacity-50"
+          />
+          <button
+            type="button"
+            onClick={handleAthleteCustomExerciseAdd}
+            disabled={!customExerciseName.trim() || quickSaving}
+            className="flex items-center gap-1 px-3 py-2.5 rounded-xl text-sm font-medium text-(--color_primary_light) border border-(--color_primary_light)/40 hover:bg-(--color_primary_light)/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+          >
+            <PlusIcon className="w-4 h-4" />
+            Добавить
+          </button>
+        </div>
+      )}
 
       <div>
         <div className="flex items-center justify-between mb-1">
@@ -678,12 +717,14 @@ export default function WorkoutInlineForm({
         </GhostButton>
       </div>
 
-      <CustomExercisePicker
-        open={customPickerOpen}
-        onClose={() => setCustomPickerOpen(false)}
-        workoutType="bodybuilding"
-        onSelect={handleQuickCustomPick}
-      />
+      {isTrainerMode && (
+        <CustomExercisePicker
+          open={customPickerOpen}
+          onClose={() => setCustomPickerOpen(false)}
+          workoutType="bodybuilding"
+          onSelect={handleQuickCustomPick}
+        />
+      )}
     </div>
   );
 

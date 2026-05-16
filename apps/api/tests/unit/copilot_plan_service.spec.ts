@@ -1,7 +1,9 @@
 import { test } from '@japa/runner'
+import { DateTime } from 'luxon'
 import ScheduledWorkout from '#models/scheduled_workout'
 import { YandexAiService } from '#services/YandexAiService'
 import { CopilotPlanService } from '#services/CopilotPlanService'
+import { clock } from '#utils/date'
 
 function thenable<T>(value: T) {
   const b: any = {
@@ -56,10 +58,12 @@ test.group('CopilotPlanService.build()', () => {
   test('если AI падает — использует fallback сообщение', async ({ assert }) => {
     const originalQuery = ScheduledWorkout.query
     const originalAi = YandexAiService.generateCopilotMessage
-    ;(ScheduledWorkout as any).query = () => thenable([]) // no existing
+    const originalNow = clock.now
+    ;(ScheduledWorkout as any).query = () => thenable([])
     ;(YandexAiService as any).generateCopilotMessage = async () => {
       throw new Error('boom')
     }
+    clock.now = () => DateTime.fromISO('2026-05-01')
 
     try {
       const res = await CopilotPlanService.build({
@@ -88,6 +92,7 @@ test.group('CopilotPlanService.build()', () => {
     } finally {
       ;(ScheduledWorkout as any).query = originalQuery
       ;(YandexAiService as any).generateCopilotMessage = originalAi
+      clock.now = originalNow
     }
   })
 })

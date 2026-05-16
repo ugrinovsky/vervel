@@ -82,8 +82,13 @@ export default function CustomExercisePicker({ open, onClose, workoutType, onSel
   );
 
   return (
-    <BottomSheet id="custom-exercise-picker" open={open} onClose={handleClose} header={headerContent}>
-      <div className="flex flex-col" style={{ height: 'calc(90dvh - 140px)' }}>
+    <BottomSheet
+      id="custom-exercise-picker"
+      open={open}
+      onClose={handleClose}
+      header={headerContent}
+    >
+      <div className="flex flex-col" style={{ maxHeight: 'calc(90dvh - 140px)' }}>
         {/* Search */}
         <div className="mb-3">
           <AppInput
@@ -177,15 +182,17 @@ export default function CustomExercisePicker({ open, onClose, workoutType, onSel
             </div>
           </div>
         ) : (
-          <div className="shrink-0 border-t border-(--color_border) pt-3">
-            <button
-              onClick={() => setShowCreate(true)}
-              className="flex items-center gap-1.5 text-sm text-(--color_text_muted) hover:text-white transition-colors"
-            >
-              <PlusIcon className="w-4 h-4" />
-              Создать новое упражнение
-            </button>
-          </div>
+          filtered.length > 0 && (
+            <div className="shrink-0 border-t border-(--color_border) pt-3">
+              <button
+                onClick={() => setShowCreate(true)}
+                className="flex items-center gap-1.5 text-sm text-(--color_text_muted) hover:text-white transition-colors"
+              >
+                <PlusIcon className="w-4 h-4" />
+                Создать новое упражнение
+              </button>
+            </div>
+          )
         )}
       </div>
     </BottomSheet>

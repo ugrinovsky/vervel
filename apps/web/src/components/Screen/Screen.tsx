@@ -6,6 +6,7 @@ import './styles.css';
 const PULL_TRIGGER = 62;
 const MAX_VISUAL = 90;
 const INDICATOR_SIZE = 28; // px
+const MIN_HOLD_MS = 350; // must hold at/above PULL_TRIGGER for this long to commit refresh
 
 interface ScreenProps {
   /** Показать спиннер вместо дочерних элементов */
@@ -48,10 +49,11 @@ function PullSpinner({ progress, spinning }: { progress: number; spinning: boole
   );
 }
 
-const defaultRefresh = () => new Promise<void>((resolve) => {
-  window.location.reload();
-  resolve();
-});
+const defaultRefresh = () =>
+  new Promise<void>((resolve) => {
+    window.location.reload();
+    resolve();
+  });
 
 export default function Screen({
   children,
@@ -69,6 +71,8 @@ export default function Screen({
   // После этого e.preventDefault() вызывается на КАЖДЫЙ touchmove — браузер не скроллит
   const hasPulledRef = useRef(false);
   const isRefreshingRef = useRef(false);
+  // Timestamp когда visual впервые достиг PULL_TRIGGER; null если ниже порога
+  const holdStartRef = useRef<number | null>(null);
 
   const [pullProgress, setPullProgress] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -98,8 +102,7 @@ export default function Screen({
       touchStartYRef.current = e.touches[0].clientY;
       hasPulledRef.current = false;
       const t = e.target;
-      pullIgnoredRef.current =
-        t instanceof Element && t.closest('[data-no-pull-refresh]') !== null;
+      pullIgnoredRef.current = t instanceof Element && t.closest('[data-no-pull-refresh]') !== null;
     };
 
     const onTouchMove = (e: TouchEvent) => {
@@ -114,12 +117,18 @@ export default function Screen({
         const visual = dy > 0 ? Math.min(Math.sqrt(dy) * 7.2, MAX_VISUAL) : 0;
         rawY.set(visual);
         setPullProgress(Math.min(visual / PULL_TRIGGER, 1));
+        // Отслеживаем время удержания на пороге
+        if (visual >= PULL_TRIGGER) {
+          if (holdStartRef.current === null) holdStartRef.current = Date.now();
+        } else {
+          holdStartRef.current = null;
+        }
         return;
       }
 
       // Ещё не тянули — ждём порог
       if (el.scrollTop > 0) return;
-      if (dy <= 4) return;
+      if (dy <= 10) return;
 
       // Порог пересечён — начинаем
       e.preventDefault();
@@ -132,6 +141,7 @@ export default function Screen({
     const resetRaw = () => {
       hasPulledRef.current = false;
       pullIgnoredRef.current = false;
+      holdStartRef.current = null;
       setPullProgress(0);
       rawY.set(0);
     };
@@ -144,7 +154,6 @@ export default function Screen({
       if (isRefreshingRef.current) return;
       const visual = rawY.get();
 
-
       if (!hasPulledRef.current || visual <= 0) {
         if (visual > 0) rawY.set(0);
         hasPulledRef.current = false;
@@ -153,7 +162,11 @@ export default function Screen({
 
       hasPulledRef.current = false;
 
-      if (visual >= PULL_TRIGGER * 0.88) {
+      const heldLongEnough =
+        holdStartRef.current !== null && Date.now() - holdStartRef.current >= MIN_HOLD_MS;
+      holdStartRef.current = null;
+
+      if (visual >= PULL_TRIGGER * 0.88 && heldLongEnough) {
         isRefreshingRef.current = true;
         setIsRefreshing(true);
         setPullProgress(1);

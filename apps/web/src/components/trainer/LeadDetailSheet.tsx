@@ -200,18 +200,28 @@ export default function LeadDetailSheet({ lead, open, onClose, onUpdated }: Prop
           </button>
         )}
 
-        {/* Invite to app */}
-        {(status !== 'converted' || inviteLink) && (
+        {/* Invite to app — always show until athlete is connected */}
+        {!lead.convertedAthleteId && (
           <div>
-            <div className="text-xs text-(--color_text_muted) mb-2">Пригласить в приложение</div>
+            <div className="text-xs text-(--color_text_muted) mb-2">
+              {status === 'converted' ? (
+                <span className="text-amber-400">Атлет ещё не подключён к приложению</span>
+              ) : (
+                'Пригласить в приложение'
+              )}
+            </div>
             {!inviteLink ? (
               <button
                 type="button"
                 disabled={generatingInvite}
                 onClick={handleGenerateInvite}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-(--color_border) bg-(--color_bg_card_hover) text-sm font-medium text-white hover:border-(--color_primary_light)/40 transition-colors disabled:opacity-50"
+                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-colors disabled:opacity-50 ${
+                  status === 'converted'
+                    ? 'border-amber-500/40 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20'
+                    : 'border-(--color_border) bg-(--color_bg_card_hover) text-white hover:border-(--color_primary_light)/40'
+                }`}
               >
-                <UserPlusIcon className="w-4 h-4 text-(--color_primary_icon)" />
+                <UserPlusIcon className="w-4 h-4" />
                 {generatingInvite ? 'Генерируем...' : 'Сгенерировать ссылку'}
               </button>
             ) : (

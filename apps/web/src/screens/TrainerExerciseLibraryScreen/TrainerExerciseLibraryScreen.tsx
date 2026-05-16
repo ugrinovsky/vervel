@@ -25,9 +25,12 @@ export default function TrainerExerciseLibraryScreen() {
   const flags = useFeatureFlags();
   const { data: exercises, loading } = useExercises();
   const {
-    search, setSearch,
-    categoryFilter, setCategoryFilter,
-    zoneFilter, setZoneFilter,
+    search,
+    setSearch,
+    categoryFilter,
+    setCategoryFilter,
+    zoneFilter,
+    setZoneFilter,
     availableCategories,
     availableZones,
     filtered,
@@ -77,7 +80,9 @@ export default function TrainerExerciseLibraryScreen() {
 
   // Scroll to top when filter chip changes
   useEffect(() => {
-    document.querySelector('.trainer-exercise-library-screen')?.scrollTo({ top: 0, behavior: 'smooth' });
+    document
+      .querySelector('.trainer-exercise-library-screen')
+      ?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [categoryFilter, zoneFilter]);
 
   return (
@@ -97,54 +102,71 @@ export default function TrainerExerciseLibraryScreen() {
             />
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+          >
             <ScreenHint>
               Фильтруйте по <span className="text-white font-medium">категории</span> или{' '}
               <span className="text-white font-medium">зоне мышц</span>, нажмите на карточку —
               увидите технику и описание. Упражнения доступны при создании шаблонов и тренировок.
             </ScreenHint>
           </motion.div>
-
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <p className="text-xs text-(--color_text_muted)">
-              {loading ? '…' : `${filtered.length} упражнений`}
-            </p>
-          </motion.div>
         </SectionGroup>
 
-        <SectionGroup title="Каталог" className="px-4" bodyClassName="space-y-0" showBreakAfter={false}>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="pb-4">
-          {loading ? (
-            <div className="grid grid-cols-2 gap-3">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-2xl overflow-hidden border border-white/10 bg-white/5"
-                >
-                  <div className="aspect-video bg-white/10 animate-pulse" />
-                  <div className="p-2.5 space-y-1.5">
-                    <div className="h-3 bg-white/10 rounded animate-pulse w-3/4" />
-                    <div className="h-2.5 bg-white/10 rounded animate-pulse w-1/2" />
+        <SectionGroup
+          title="Каталог"
+          action={
+            <span className="text-xs text-(--color_text_muted)">
+              {loading ? '…' : `${filtered.length} упражнений`}
+            </span>
+          }
+          className="px-4"
+          bodyClassName="space-y-0"
+          showBreakAfter={false}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="pb-4"
+          >
+            {loading ? (
+              <div className="grid grid-cols-2 gap-3">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="rounded-2xl overflow-hidden border border-white/10 bg-white/5"
+                  >
+                    <div className="aspect-video bg-white/10 animate-pulse" />
+                    <div className="p-2.5 space-y-1.5">
+                      <div className="h-3 bg-white/10 rounded animate-pulse w-3/4" />
+                      <div className="h-2.5 bg-white/10 rounded animate-pulse w-1/2" />
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : visible.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <span className="text-4xl mb-3">🔍</span>
-              <p className="text-white/50 text-sm">Ничего не найдено</p>
-              <p className="text-white/30 text-xs mt-1">Попробуйте другой запрос</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-3">
-              {visible.map((ex) => (
-                <ExerciseLibraryCard key={ex.id} exercise={ex} onClick={() => setSelectedExercise(ex)} />
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            ) : visible.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <span className="text-4xl mb-3">🔍</span>
+                <p className="text-white/50 text-sm">Ничего не найдено</p>
+                <p className="text-white/30 text-xs mt-1">Попробуйте другой запрос</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {visible.map((ex) => (
+                  <ExerciseLibraryCard
+                    key={ex.id}
+                    exercise={ex}
+                    onClick={() => setSelectedExercise(ex)}
+                  />
+                ))}
+              </div>
+            )}
 
-          {hasMore && <div ref={sentinelRef} className="h-8" />}
-        </motion.div>
+            {hasMore && <div ref={sentinelRef} className="h-8" />}
+          </motion.div>
         </SectionGroup>
 
         {/* Placeholder occupies space when filter bar is fixed */}
@@ -157,11 +179,12 @@ export default function TrainerExerciseLibraryScreen() {
           className="px-4 pt-4 pb-3 z-10 border-t border-(--color_border)"
           style={{
             position: hasMore ? 'fixed' : 'sticky',
-            bottom: hasMore
-              ? 'calc(var(--nav-height) + env(safe-area-inset-bottom, 0px))'
-              : 0,
-            ...(hasMore ? { left: 0, right: 0, maxWidth: '798px', marginLeft: 'auto', marginRight: 'auto' } : {}),
-            background: 'linear-gradient(to top, rgb(var(--color_primary_ch) / 0.95) 0%, rgb(var(--color_primary_dark_ch) / 0.85) 60%, rgb(var(--color_primary_dark_ch) / 0.5) 100%)',
+            bottom: hasMore ? 'calc(var(--nav-height) + env(safe-area-inset-bottom, 0px))' : 0,
+            ...(hasMore
+              ? { left: 0, right: 0, maxWidth: '798px', marginLeft: 'auto', marginRight: 'auto' }
+              : {}),
+            background:
+              'linear-gradient(to top, rgb(var(--color_primary_ch) / 0.95) 0%, rgb(var(--color_primary_dark_ch) / 0.85) 60%, rgb(var(--color_primary_dark_ch) / 0.5) 100%)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
           }}
@@ -179,9 +202,12 @@ export default function TrainerExerciseLibraryScreen() {
           />
         </div>
 
-
         <SectionGroup title="Ещё" className="px-4" showBreakAfter={false}>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
             <ScreenLinks className="pb-4" links={libraryMoreLinks} />
           </motion.div>
         </SectionGroup>

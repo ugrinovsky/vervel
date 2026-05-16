@@ -6,6 +6,8 @@ export interface SectionGroupProps {
   title?: ReactNode;
   /** Подзаголовок под группой — мелкий текст без uppercase */
   description?: ReactNode;
+  /** Действие справа от заголовка (кнопка, иконка) */
+  action?: ReactNode;
   children: ReactNode;
   className?: string;
   /** Доп. классы для `<h2>` */
@@ -17,8 +19,6 @@ export interface SectionGroupProps {
    * У последней группы на экране передайте false.
    */
   showBreakAfter?: boolean;
-  /** Вид разделителя */
-  breakVariant?: 'dots' | 'line';
   /**
    * Показывать подпись-группу (uppercase) над контентом.
    * false — только разделитель (если включён) и контент: для блока под основным ScreenHeader, без дубля «Обзор» и т.п.
@@ -33,12 +33,12 @@ export interface SectionGroupProps {
 export default function SectionGroup({
   title,
   description,
+  action,
   children,
   className = '',
   titleClassName = '',
   bodyClassName = 'space-y-3',
   showBreakAfter = true,
-  breakVariant = 'dots',
   showLabel = true,
 }: SectionGroupProps) {
   const hasTitle = title != null && title !== '';
@@ -48,14 +48,17 @@ export default function SectionGroup({
 
   return (
     <section className={`flex flex-col gap-3 ${spacingAfter} ${className}`.trim()}>
-      {showLabel && (hasTitle || hasDescription) && (
+      {showLabel && (hasTitle || hasDescription || action) && (
         <header className="space-y-1 px-0.5">
-          {hasTitle && (
-            <h2
-              className={`text-[11px] font-semibold text-(--color_text_muted) uppercase tracking-wider ${titleClassName}`.trim()}
-            >
-              {title}
-            </h2>
+          {(hasTitle || action) && (
+            <div className="flex items-center justify-between gap-2">
+              <h2
+                className={`text-[11px] font-semibold text-(--color_text_muted) uppercase tracking-wider ${titleClassName}`.trim()}
+              >
+                {title}
+              </h2>
+              {action}
+            </div>
           )}
           {hasDescription && (
             <p className="text-xs text-(--color_text_muted) leading-relaxed">{description}</p>
@@ -63,7 +66,7 @@ export default function SectionGroup({
         </header>
       )}
       <div className={bodyClassName}>{children}</div>
-      {showBreakAfter && <SectionBreak variant={breakVariant} />}
+      {showBreakAfter && <SectionBreak />}
     </section>
   );
 }

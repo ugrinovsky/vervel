@@ -1,3 +1,4 @@
+import { useRef, useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router';
 import { motion } from 'framer-motion';
 import VerveLogo from '@/components/VerveLogo/VerveLogo';
@@ -79,14 +80,20 @@ function Wrap({
   pt = 72,
   pb = 72,
   id,
+  className,
 }: {
   children: React.ReactNode;
   pt?: number;
   pb?: number;
   id?: string;
+  className?: string;
 }) {
   return (
-    <div id={id} style={{ position: 'relative', zIndex: 1, paddingTop: pt, paddingBottom: pb }}>
+    <div
+      id={id}
+      className={className}
+      style={{ position: 'relative', zIndex: 1, paddingTop: pt, paddingBottom: pb }}
+    >
       <div style={{ maxWidth: 1080, margin: '0 auto', padding: '0 24px' }}>{children}</div>
     </div>
   );
@@ -191,17 +198,35 @@ function Showcase({
 
 export default function LandingScreen() {
   const { user } = useAuth();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const top = el.scrollTop;
+      setScrolled((prev) => {
+        if (!prev && top > 60) return true;
+        if (prev && top < 30) return false;
+        return prev;
+      });
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
+
   if (user) return <Navigate to="/home" replace />;
 
   return (
-    <div className="lnd-root">
+    <div className="lnd-root" ref={rootRef}>
       {/* Фоновые блобы */}
       <div className="lnd-blob lnd-blob-1" />
       <div className="lnd-blob lnd-blob-2" />
       <div className="lnd-blob lnd-blob-3" />
 
       {/* ━━━━━━━━━━━━━━━━ NAV ━━━━━━━━━━━━━━━━ */}
-      <nav className="lnd-nav">
+      <nav className={`lnd-nav${scrolled ? ' lnd-nav--scrolled' : ''}`}>
         <div className="lnd-nav-inner">
           <VerveLogo className="h-8 w-auto" />
           <div className="lnd-nav-links">
@@ -216,37 +241,18 @@ export default function LandingScreen() {
             <Link to="/login" className="lnd-btn-ghost">
               Войти
             </Link>
-            <Link
-              to="/register"
-              className="lnd-btn-primary main-button"
-              style={{
-                borderRadius: 10,
-                padding: '9px 18px',
-                fontSize: 14,
-                fontWeight: 700,
-                textDecoration: 'none',
-                display: 'inline-block',
-              }}
-            >
+            <Link to="/register" className="lnd-btn-primary">
               Начать
             </Link>
           </div>
         </div>
       </nav>
+      <div className="lnd-nav-spacer" />
 
       {/* ━━━━━━━━━━━━━━━━ HERO ━━━━━━━━━━━━━━━━ */}
-      <Wrap pt={80} pb={88}>
+      <Wrap pt={80} pb={88} className="lnd-hero-top-wrap">
         <div className="lnd-hero-grid">
           <div>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="lnd-hero-pill"
-            >
-              🏋️&nbsp; Для атлета · Для тренера · Одно приложение
-            </motion.div>
-
             <motion.h1
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -264,8 +270,8 @@ export default function LandingScreen() {
               transition={{ duration: 0.6, delay: 0.14 }}
               className="lnd-hero-desc"
             >
-              Карта восстановления мышц, периодизация ATL/CTL/TSB, силовой журнал, тренерская CRM,
-              шаблоны с ИИ и видеозвонки — всё в одном PWA для атлета и тренера.
+              Дневник тренировок, аналитика нагрузки и ИИ-помощник — для атлета. CRM, абонементы и
+              планирование — для тренера. Одно приложение, один аккаунт.
             </motion.p>
 
             <motion.div
@@ -319,12 +325,7 @@ export default function LandingScreen() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'flex-end',
-              position: 'relative',
-            }}
+            className="lnd-hero-phones"
           >
             <div className="lnd-hero-glow" />
             <PhoneSlot src={SHOTS.avatarHome} name="Карта мышц" h={500} w={220} zIndex={2} />
@@ -346,9 +347,9 @@ export default function LandingScreen() {
         <motion.div {...fadeIn()} className="lnd-stats-bar">
           {(
             [
-              { n: '27+', label: 'экранов и функций' },
-              { n: '3', label: 'вида ИИ в одном месте' },
-              { n: '2 роли', label: 'в одном аккаунте' },
+              { n: '3 роли ИИ', label: 'фото, текст, генерация' },
+              { n: 'CRM', label: 'заявки и абонементы' },
+              { n: '2 роли', label: 'атлет и тренер' },
               { n: 'PWA', label: 'без магазина приложений' },
             ] as const
           ).map(({ n, label }) => (
@@ -737,7 +738,7 @@ export default function LandingScreen() {
         </Showcase>
       </Wrap>
 
-      {/* Showcase 4 — CRM + Лиды (ключевой дифференциатор) */}
+      {/* Showcase 4 — CRM + Абонементы (ключевой дифференциатор) */}
       <Wrap pt={20} pb={0}>
         <Showcase
           flip
@@ -765,20 +766,29 @@ export default function LandingScreen() {
             <span className="lnd-new-badge">NEW</span>
           </div>
           <p className="lnd-showcase-desc">
-            Не теряй лиды в переписках. Воронка «Новый → Контакт → Пробник → Конверсия» с
-            напоминаниями о follow-up. Статусы атлетов «Спящий / Под угрозой» — видишь, кого
-            теряешь.
+            Три вкладки в одном экране: заявки по воронке с напоминаниями, абонементы с контролем
+            остатков занятий, аналитика конверсии и удержания — всё без сторонних CRM.
           </p>
           <div className="lnd-check-list">
-            <Check text="Воронка лидов с 5 статусами и хронологией действий" variant="trainer" />
-            <Check text="Follow-up напоминания прямо на экране «Сегодня»" variant="trainer" />
-            <Check text="Конвертация лида в атлета — одно нажатие" variant="trainer" />
             <Check
-              text="Аналитика воронки: конверсии, потери, активность по месяцам"
+              text="Заявки: воронка «Новый → Контакт → Пробник → Клиент» с 5 статусами"
               variant="trainer"
             />
             <Check
-              text="Статусы атлетов: Активный / Спящий / Под угрозой ухода"
+              text="Follow-up напоминания: поставил дату — заявка подсветится в нужный день"
+              variant="trainer"
+            />
+            <Check text="Конвертация лида в атлета через ссылку-приглашение" variant="trainer" />
+            <Check
+              text="Абонементы: пакеты занятий, списание за тренировку, архив"
+              variant="trainer"
+            />
+            <Check
+              text="Быстрое списание прямо из CRM-списка — без входа в карточку атлета"
+              variant="trainer"
+            />
+            <Check
+              text="Аналитика: конверсия воронки, активные абонементы, статусы атлетов"
               variant="trainer"
             />
           </div>
@@ -981,8 +991,8 @@ export default function LandingScreen() {
           <div className="lnd-cta-pill">Бесплатный старт</div>
           <h2 className="lnd-cta-title">Начни. Это бесплатно.</h2>
           <p className="lnd-cta-desc">
-            Зарегистрируйся как атлет, подключи тренера по ссылке или открой кабинет тренера — всё с
-            одного аккаунта.
+            Регистрация за минуту. Выбери роль — и сразу к делу. Атлет и тренер живут в одном
+            аккаунте.
           </p>
           <div className="lnd-cta-btns">
             <Link to="/register" className="lnd-cta-split lnd-cta-split--athl">

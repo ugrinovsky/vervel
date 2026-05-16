@@ -8,9 +8,18 @@ export function toLocalDateKey(date: Date): string {
   return `${y}-${m}-${d}`
 }
 
+/**
+ * Единая точка входа для текущего времени.
+ * Используй `clock.now()` вместо `DateTime.now()` — так можно подменить в тестах:
+ *   clock.now = () => DateTime.fromISO('2026-01-01')
+ */
+export const clock = {
+  now: (): DateTime => DateTime.now(),
+}
+
 /** Текущий момент как `Date` (единая точка входа). */
 export function nowDate(): Date {
-  return DateTime.now().toJSDate()
+  return clock.now().toJSDate()
 }
 
 /** Копия `Date` без мутации исходного значения. */

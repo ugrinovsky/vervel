@@ -8,6 +8,7 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import FullScreenChat from '@/components/FullScreenChat/FullScreenChat';
 import AiChat from '@/components/AiChat/AiChat';
 import { athleteApi, type AthleteGroup, type AthleteTrainer } from '@/api/athlete';
+import { parseLocalDate } from '@/utils/date';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import {
   ChatBubbleLeftIcon,
@@ -22,7 +23,6 @@ import {
 import IconButton from '@/components/ui/IconButton';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
-import { AI_CHAT_MIN_BALANCE } from '@/constants/ai';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import SectionGroup from '@/components/ui/SectionGroup';
 import { useAuth } from '@/contexts/AuthContext';
@@ -49,15 +49,13 @@ const WORKOUT_COLORS: Record<string, string> = {
 };
 
 function formatWorkoutDate(dateStr: string) {
-  const date = new Date(dateStr);
+  const date = parseLocalDate(dateStr);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  if (d.getTime() === today.getTime()) return 'Сегодня';
-  if (d.getTime() === tomorrow.getTime()) return 'Завтра';
+  if (date.getTime() === today.getTime()) return 'Сегодня';
+  if (date.getTime() === tomorrow.getTime()) return 'Завтра';
   return date.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
@@ -253,9 +251,7 @@ export default function AthleteMyTeamScreen() {
                   Вопросы про тренировки, питание, восстановление
                 </p>
               </div>
-              <span className="text-xs text-(--color_text_muted) shrink-0">
-                от {AI_CHAT_MIN_BALANCE}₽/сообщение
-              </span>
+              <span className="text-xs text-(--color_text_muted) shrink-0">Спросить →</span>
             </motion.button>
           </SectionGroup>
         )}
@@ -291,7 +287,6 @@ export default function AthleteMyTeamScreen() {
                       const trainerUnread = trainer.chatId
                         ? (unreadMap.get(trainer.chatId) ?? 0)
                         : 0;
-                      const _initials = (trainer.fullName || trainer.email)[0].toUpperCase();
                       return (
                         <div
                           key={trainer.id}
@@ -451,7 +446,7 @@ export default function AthleteMyTeamScreen() {
                       return (
                         <div
                           key={w.id}
-                          onClick={() => navigate('/calendar')}
+                          onClick={() => navigate('/calendar', { state: { date: w.date } })}
                           className="flex items-center gap-3 p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors cursor-pointer"
                         >
                           <div
@@ -466,7 +461,7 @@ export default function AthleteMyTeamScreen() {
                                 </span>
                               )}
                             </div>
-                            <div className="text-xs text-(--color_text_muted) mt-0.5">
+                            <div className="text-xs text-(--color_text_muted) mt-0.5 truncate">
                               {w.exerciseCount} упражнений
                               {w.notes ? ` · ${w.notes}` : ''}
                             </div>

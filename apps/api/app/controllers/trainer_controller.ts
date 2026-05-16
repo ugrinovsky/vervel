@@ -133,19 +133,48 @@ export default class TrainerController {
       .whereIn('status', ['active', 'pending'])
       .preload('athlete')
 
-    const athletes = bindings.map((b) => ({
-      id: b.athlete.id,
-      fullName: b.athlete.fullName,
-      email: b.athlete.email,
-      status: b.status,
-      crmStatus: b.crmStatus,
-      crmNote: b.crmNote,
-      nextFollowUpAt: b.nextFollowUpAt,
-      crmStatusChangedAt: b.crmStatusChangedAt,
-      linkedAt: b.createdAt,
-      nickname: b.nickname,
-      photoUrl: b.athlete.photoUrl ?? null,
-    }))
+    // Fetch last workout dates for all athletes in one query
+    const athleteIds = bindings.map((b) => b.athleteId).filter((id): id is number => id !== null)
+    const lastWorkoutRows =
+      athleteIds.length > 0
+        ? await Workout.query()
+            .whereIn('userId', athleteIds)
+            .groupBy('userId')
+            .select('userId')
+            .max('date as lastDate')
+        : []
+
+    const lastWorkoutMap = new Map<number, Date>(
+      lastWorkoutRows.map((r) => [Number(r.userId), new Date(r.$extras.lastDate)])
+    )
+
+    const now = Date.now()
+    const SLEEPING_THRESHOLD_MS = 14 * 24 * 60 * 60 * 1000
+
+    const athletes = bindings.map((b) => {
+      let effectiveCrmStatus = b.crmStatus
+      if (b.crmStatus === 'active') {
+        const lastWorkout = lastWorkoutMap.get(b.athleteId!)
+        const msSince = lastWorkout ? now - lastWorkout.getTime() : Infinity
+        if (msSince > SLEEPING_THRESHOLD_MS) {
+          effectiveCrmStatus = 'sleeping'
+        }
+      }
+
+      return {
+        id: b.athlete.id,
+        fullName: b.athlete.fullName,
+        email: b.athlete.email,
+        status: b.status,
+        crmStatus: effectiveCrmStatus,
+        crmNote: b.crmNote,
+        nextFollowUpAt: b.nextFollowUpAt,
+        crmStatusChangedAt: b.crmStatusChangedAt,
+        linkedAt: b.createdAt,
+        nickname: b.nickname,
+        photoUrl: b.athlete.photoUrl ?? null,
+      }
+    })
 
     return response.ok({ success: true, data: athletes })
   }

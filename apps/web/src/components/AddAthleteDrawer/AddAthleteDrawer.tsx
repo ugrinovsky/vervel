@@ -137,7 +137,7 @@ export default function AddAthleteDrawer({ open, onClose, onAdded, onLeadCreated
         name: leadName.trim(),
         phone: leadPhone.trim(),
         note: leadNote.trim() || null,
-        source: leadSource || 'manual',
+        source: leadSource || null,
       });
       toast.success('Клиент записан');
       onLeadCreated?.();

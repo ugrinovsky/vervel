@@ -35,6 +35,7 @@ import type { MonthlyStatsData } from '@/screens/ActivityScreen/useActivityData'
 import SectionGroup from '@/components/ui/SectionGroup';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { useTrainerTeamsFeatureRedirect } from '@/hooks/useTrainerTeamsFeatureRedirect';
+import PassBlock from './PassBlock';
 
 type Tab = 'analytics' | 'activity' | 'avatar';
 
@@ -178,12 +179,17 @@ export default function TrainerAthleteDetailScreen() {
     const tl = trainerTimeline;
     const totalVolume = tl.reduce((s, w) => s + (w.volume || 0), 0);
     const count = tl.length;
+    const durEntries = tl.filter((w) => w.duration != null && w.duration > 0);
+    const avgDuration =
+      durEntries.length > 0
+        ? Math.round(durEntries.reduce((s, w) => s + w.duration!, 0) / durEntries.length)
+        : 60;
     return {
       workouts: count,
       activeDays: new Set(tl.map((w) => format(new Date(w.date), 'yyyy-MM-dd'))).size,
       totalVolume,
       avgVolume: Math.round(totalVolume / count),
-      avgDuration: 60,
+      avgDuration,
       totalCalories: tl.reduce((s, w) => s + Math.round((w.volume || 0) * 0.05), 0),
       streak: monthStats?.streak ?? 0,
     };
@@ -233,7 +239,7 @@ export default function TrainerAthleteDetailScreen() {
 
       <div className="p-4 w-full mx-auto">
         <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-5">
-          <BackButton onClick={() => navigate('/trainer/athletes')} />
+          <BackButton onClick={() => navigate(-1)} />
 
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -295,7 +301,7 @@ export default function TrainerAthleteDetailScreen() {
                     >
                       {nickname || 'Никнейм…'}
                     </span>
-                    <PencilIcon className="w-3.5 h-3.5 text-(--color_text_muted) opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                    <PencilIcon className="w-3.5 h-3.5 text-(--color_text_muted) opacity-40 group-hover:opacity-100 transition-opacity shrink-0" />
                   </button>
                 )}
               </div>
@@ -375,6 +381,16 @@ export default function TrainerAthleteDetailScreen() {
             </AccentButton>
             {flags.videoCalls && <CallButton athleteId={id} />}
           </motion.div>
+
+          {flags.trainerCrm && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.08 }}
+            >
+              <PassBlock athleteId={id} />
+            </motion.div>
+          )}
 
           <motion.div
             initial={{ opacity: 0, y: 8 }}

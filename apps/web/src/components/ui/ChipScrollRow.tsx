@@ -1,11 +1,4 @@
-import {
-  useRef,
-  useCallback,
-  useLayoutEffect,
-  useEffect,
-  useState,
-  type ReactNode,
-} from 'react';
+import { useRef, useCallback, useLayoutEffect, useEffect, useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
@@ -65,6 +58,7 @@ export default function ChipScrollRow({
   onChipClick,
   disabled = false,
   className = '',
+  pillClassName,
 }: {
   chips: ChipScrollItem[];
   activeKey: string | null;
@@ -72,7 +66,13 @@ export default function ChipScrollRow({
   disabled?: boolean;
   /** Доп. классы на контейнер скролла (например `pr-3 pb-2` под полосу скролла). */
   className?: string;
+  /** CSS-классы таблетки. Может быть строкой или функцией от activeKey. По умолчанию bg-(--color_primary_light). */
+  pillClassName?: string | ((activeKey: string | null) => string);
 }) {
+  const resolvedPillClass =
+    typeof pillClassName === 'function'
+      ? pillClassName(activeKey)
+      : (pillClassName ?? 'bg-(--color_primary_light)');
   const rowRef = useScrollMask();
   const btnRefs = useRef<Map<string, HTMLElement>>(new Map());
   const [pill, setPill] = useState<{ left: number; width: number } | null>(null);
@@ -98,7 +98,7 @@ export default function ChipScrollRow({
     >
       {pill && (
         <motion.div
-          className="absolute top-0 bottom-0.5 z-[1] rounded-full bg-(--color_primary_light) pointer-events-none"
+          className={`absolute top-0 bottom-0.5 z-1 rounded-full pointer-events-none ${resolvedPillClass}`}
           initial={{ left: pill.left, width: pill.width }}
           animate={{ left: pill.left, width: pill.width }}
           transition={{ type: 'spring', stiffness: 400, damping: 35 }}

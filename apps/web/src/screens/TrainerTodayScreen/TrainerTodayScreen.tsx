@@ -415,29 +415,30 @@ export default function TrainerTodayScreen() {
               delay={0.15}
               className="bg-(--color_bg_card) rounded-2xl p-4 border border-(--color_border) space-y-3"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-3">
                   <div className="text-sm font-semibold text-white">CRM: следующие действия</div>
-                  <p className="text-xs text-(--color_text_muted) mt-1">
-                    Записывайте заявки и ведите атлетов, которым нужен план или напоминание о контакте.
-                  </p>
+                  <div className="flex gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => navigate('/trainer/crm')}
+                      className="rounded-lg border border-(--color_border) px-3 py-2 text-xs font-medium text-(--color_text_muted) hover:text-white hover:border-(--color_primary_light)/40 transition-colors"
+                    >
+                      Все заявки
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddClient(true)}
+                      className="rounded-lg bg-(--color_primary_light) px-3 py-2 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+                    >
+                      Добавить
+                    </button>
+                  </div>
                 </div>
-                <div className="flex gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => navigate('/trainer/crm')}
-                    className="rounded-lg border border-(--color_border) px-3 py-2 text-xs font-medium text-(--color_text_muted) hover:text-white hover:border-(--color_primary_light)/40 transition-colors"
-                  >
-                    Все заявки
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddClient(true)}
-                    className="rounded-lg bg-(--color_primary_light) px-3 py-2 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
-                  >
-                    Добавить
-                  </button>
-                </div>
+                <p className="text-xs text-(--color_text_muted)">
+                  Записывайте заявки и ведите атлетов, которым нужен план или напоминание о
+                  контакте.
+                </p>
               </div>
 
               {actionLeads.length > 0 && (

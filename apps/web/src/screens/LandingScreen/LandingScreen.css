@@ -8,6 +8,7 @@
   position: fixed;
   inset: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   z-index: 50;
   background: radial-gradient(
     ellipse 100% 50% at 50% 0%,
@@ -65,8 +66,10 @@
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 .lnd-nav {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 100;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -78,6 +81,15 @@
   );
   border-bottom: 1px solid rgb(var(--color_primary_ch) / 0.5);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  transition: box-shadow 0.3s ease;
+}
+
+.lnd-nav--scrolled {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+
+.lnd-nav-spacer {
+  height: 56px; /* nav default height — keeps content below nav */
 }
 
 .lnd-nav-inner {
@@ -88,6 +100,18 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  transition: padding 0.3s ease;
+}
+
+.lnd-nav--scrolled .lnd-nav-inner {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.lnd-nav--scrolled .lnd-btn-ghost,
+.lnd-nav--scrolled .lnd-btn-primary {
+  padding-top: 2px;
+  padding-bottom: 2px;
 }
 
 .lnd-nav-links {
@@ -113,14 +137,15 @@
 }
 
 .lnd-btn-ghost {
-  padding: 9px 18px;
-  border-radius: 10px;
+  padding: 7px 14px;
+  border-radius: 9px;
   color: rgba(203, 213, 225, 0.9);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   border: 1px solid transparent;
   transition:
+    padding 0.3s ease,
     color 0.2s,
     border-color 0.2s;
   background: transparent;
@@ -133,8 +158,26 @@
   border-color: rgba(255, 255, 255, 0.12);
 }
 
-.lnd-btn-cta,
 .lnd-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 16px;
+  border-radius: 9px;
+  background: var(--color_primary_light);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition:
+    padding 0.3s ease,
+    opacity 0.2s;
+}
+
+.lnd-btn-primary:hover {
+  opacity: 0.85;
+}
+
+.lnd-btn-cta {
   /* main-button из App.css делает остальное */
 }
 
@@ -192,6 +235,14 @@
   left: 50%;
   transform: translate(-50%, -50%);
   pointer-events: none;
+}
+
+/* Hero phone mockups container */
+.lnd-hero-phones {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  position: relative;
 }
 
 /* Dual-path buttons */
@@ -857,15 +908,48 @@
     grid-template-columns: 1fr;
   }
 
+  .lnd-hero-phones {
+    overflow: hidden;
+    max-width: 100%;
+  }
+
+  .lnd-hero-top-wrap {
+    padding-top: 32px !important;
+  }
+
+  /* Hide the second (dimmed) phone mockup on mobile */
+  .lnd-hero-phones > *:nth-child(3) {
+    display: none;
+  }
+
   .lnd-hero-paths {
     flex-direction: column;
+    align-items: stretch;
   }
 
   .lnd-path-btn {
     min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .lnd-nav-links {
     display: none;
+  }
+
+  .lnd-cta-btns {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .lnd-cta-split {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+  }
+
+  .lnd-cta-box {
+    padding: 48px 20px;
   }
 }

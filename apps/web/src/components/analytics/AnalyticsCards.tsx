@@ -15,6 +15,10 @@ import TrendChart from './TrendChart';
 import WeekdayChart from './WeekdayChart';
 import PeriodizationChart from './PeriodizationChart';
 import AcwrChart from './AcwrChart';
+import WeeklySlopeCard from './WeeklySlopeCard';
+import MonotonyCard from './MonotonyCard';
+import RecoveryCard from './RecoveryCard';
+import ActiveWeeksCard from './ActiveWeeksCard';
 
 interface Props {
   stats: WorkoutStats;
@@ -91,8 +95,7 @@ export default function AnalyticsCards({
 }: Props) {
   const [activeCard, setActiveCard] = useState<string | null>(null);
 
-  const periodLabel =
-    timeRange === 'week' ? 'Неделя' : timeRange === 'month' ? 'Месяц' : 'Год';
+  const periodLabel = timeRange === 'week' ? 'Неделя' : timeRange === 'month' ? 'Месяц' : 'Год';
 
   const simpleCards: CardDef[] = useMemo(
     () => [
@@ -162,6 +165,34 @@ export default function AnalyticsCards({
               content: <WeekdayChart data={stats} />,
             } satisfies CardDef,
           ]),
+      {
+        id: 'weekly-slope',
+        icon: '📐',
+        title: 'Рост нагрузки',
+        tileSubtitle: 'Темп изменений · открыть →',
+        content: <WeeklySlopeCard data={stats} period={timeRange} />,
+      },
+      {
+        id: 'monotony',
+        icon: '🔁',
+        title: 'Монотонность',
+        tileSubtitle: 'Однообразие сессий · открыть →',
+        content: <MonotonyCard data={stats} period={timeRange} />,
+      },
+      {
+        id: 'recovery',
+        icon: '🛌',
+        title: 'Восстановление',
+        tileSubtitle: 'Паузы по нагрузке · открыть →',
+        content: <RecoveryCard data={stats} period={timeRange} />,
+      },
+      {
+        id: 'active-weeks',
+        icon: '📆',
+        title: 'Стаж',
+        tileSubtitle: 'Недели без пропусков · открыть →',
+        content: <ActiveWeeksCard data={stats} period={timeRange} />,
+      },
     ],
     [stats, monthStats, timeRange, periodLabel]
   );
@@ -210,8 +241,8 @@ export default function AnalyticsCards({
             </h3>
             {showAdvancedSettingsHint && (
               <p className="text-[11px] text-(--color_text_muted) mb-2 leading-relaxed">
-                Модели нагрузки (форма, усталость, ACWR). Можно скрыть в профиле → настройки → «Сложная
-                аналитика».
+                Модели нагрузки (форма, усталость, ACWR). Можно скрыть в профиле → настройки →
+                «Сложная аналитика».
               </p>
             )}
             <CardGrid cards={advancedCards} keyPrefix="adv" onOpen={setActiveCard} />
