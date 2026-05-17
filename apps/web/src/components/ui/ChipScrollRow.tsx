@@ -1,6 +1,7 @@
 import { useRef, useCallback, useLayoutEffect, useEffect, useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import Button from '@/components/ui/Button';
 
 function makeMask(atStart: boolean, atEnd: boolean): string {
   if (atStart && atEnd) return 'none';
@@ -124,16 +125,18 @@ export default function ChipScrollRow({
                 disabled ? 'opacity-50' : ''
               } ${tone(active)}`}
             >
-              <button
+              <Button
                 type="button"
+                variant="unstyled"
                 disabled={disabled}
                 onClick={() => onChipClick(key)}
                 className="min-w-0 flex-1 px-3 py-1.5 rounded-l-full text-left font-medium outline-none focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:ring-inset"
               >
                 {label}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="unstyled"
                 disabled={disabled}
                 aria-label="Сбросить"
                 onClick={(e) => {
@@ -144,15 +147,16 @@ export default function ChipScrollRow({
                 className="relative z-20 flex size-7 shrink-0 items-center justify-center rounded-full border border-white/30 bg-black/50 text-white hover:bg-black/65 disabled:pointer-events-none"
               >
                 <XMarkIcon className="size-3.5 shrink-0 stroke-2" />
-              </button>
+              </Button>
             </div>
           );
         }
 
         return (
-          <button
+          <Button
             key={key}
             type="button"
+            variant="unstyled"
             ref={(el) => {
               if (el) btnRefs.current.set(key, el);
               else btnRefs.current.delete(key);
@@ -164,7 +168,7 @@ export default function ChipScrollRow({
             )}`}
           >
             {label}
-          </button>
+          </Button>
         );
       })}
     </div>

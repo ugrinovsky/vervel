@@ -7,6 +7,7 @@ import {
 } from '@headlessui/react';
 import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
 import { useState } from 'react';
+import Button from '@/components/ui/Button';
 
 export interface UiOption<T> {
   value: T;
@@ -60,7 +61,7 @@ export default function UiCombobox<T>({
               placeholder={placeholder}
             />
 
-            <ComboboxButton className="px-2">
+            <ComboboxButton as={Button} type="button" variant="unstyled" className="px-2">
               <ChevronUpDownIcon className="h-5 w-5 text-white/40" />
             </ComboboxButton>
           </div>

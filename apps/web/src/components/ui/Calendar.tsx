@@ -3,6 +3,7 @@ import { format, startOfMonth, isSameDay, isToday, getDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CalendarDaysIcon, MoonIcon } from '@heroicons/react/24/outline';
+import Button from '@/components/ui/Button';
 
 export type LoadType = 'none' | 'low' | 'medium' | 'high';
 
@@ -98,7 +99,9 @@ function TrainerDayCell({
   const title = `${format(day.date, 'd MMMM yyyy', { locale: ru })}${isRest ? ' — выходной' : day.count > 0 ? ` — ${day.count} тренировок` : ''}`;
 
   return (
-    <button
+    <Button
+      type="button"
+      variant="unstyled"
       onClick={onSelect}
       className={`relative h-12 rounded-lg transition-all duration-200 flex flex-col items-center justify-center gap-0.5 ${bgClass} ${ringClass}`}
       title={title}
@@ -129,7 +132,7 @@ function TrainerDayCell({
           className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${isRest ? 'bg-slate-400' : 'bg-emerald-400'}`}
         />
       )}
-    </button>
+    </Button>
   );
 }
 
@@ -166,31 +169,38 @@ export default function Calendar(props: CalendarProps) {
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-6">
         <div className="flex items-center justify-between flex-1">
-          <button
+          <Button
+            type="button"
+            variant="unstyled"
             onClick={() => navigate(-1)}
             className="p-1.5 hover:bg-(--color_bg_card_hover) rounded-full transition"
             aria-label="Предыдущий месяц"
           >
             ←
-          </button>
+          </Button>
           <h2 className="text-base font-bold text-white capitalize flex items-center gap-2">
             <CalendarDaysIcon className="w-4 h-4 text-(--color_text_muted) shrink-0" />
             {format(currentMonth, 'LLLL yyyy', { locale: ru })}
           </h2>
-          <button
+          <Button
+            type="button"
+            variant="unstyled"
             onClick={() => navigate(1)}
             className="p-1.5 hover:bg-(--color_bg_card_hover) rounded-full transition"
             aria-label="Следующий месяц"
           >
             →
-          </button>
+          </Button>
         </div>
-        <button
+        <Button
+          type="button"
+          variant="emerald"
+          size="sm"
           onClick={goToToday}
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm font-medium transition text-white"
+          className="px-4 py-2 rounded-lg"
         >
           Сегодня
-        </button>
+        </Button>
       </div>
 
       {/* Weekday headers */}
@@ -238,8 +248,10 @@ export default function Calendar(props: CalendarProps) {
                 const hideTrainer = props.hideTrainerBadge ?? false;
                 const dayTitle = `${format(day.date, 'd MMMM yyyy', { locale: ru })}${hasLoad ? ' — нагрузка' : hasWorkoutsNoLoad ? ' — тренировка' : ''}`;
                 return (
-                  <button
+                  <Button
                     key={i}
+                    type="button"
+                    variant="unstyled"
                     onClick={() => props.onSelect(day)}
                     className={`
                       relative min-h-14 py-1 rounded-lg transition-all duration-200
@@ -274,7 +286,7 @@ export default function Calendar(props: CalendarProps) {
                         title="Есть черновик"
                       />
                     )}
-                  </button>
+                  </Button>
                 );
               })}
         </motion.div>

@@ -5,6 +5,7 @@ import type { ExerciseWithSets } from '@/types/Exercise';
 import { useCallback, useEffect, useState, startTransition } from 'react';
 import { ArrowUpIcon, ArrowDownIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
+import Button from '@/components/ui/Button';
 import GhostButton from '@/components/ui/GhostButton';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
 
@@ -193,20 +194,24 @@ export default function ExerciseDrawer({ open, exercise, workoutType = 'bodybuil
         {/* Pyramid buttons — bodybuilding only */}
         {workoutType === 'bodybuilding' && (
           <div className="flex gap-2">
-            <button
+            <Button
+              type="button"
+              variant="unstyled"
               onClick={() => generatePyramid('up')}
               className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-300 text-sm font-medium hover:bg-blue-500/25 transition-colors"
             >
               <ArrowUpIcon className="w-3.5 h-3.5" />
               Пирамида вверх
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
+              variant="unstyled"
               onClick={() => generatePyramid('down')}
               className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-purple-500/15 border border-purple-500/30 text-purple-300 text-sm font-medium hover:bg-purple-500/25 transition-colors"
             >
               <ArrowDownIcon className="w-3.5 h-3.5" />
               Пирамида вниз
-            </button>
+            </Button>
           </div>
         )}
 

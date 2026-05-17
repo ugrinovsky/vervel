@@ -3,6 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router';
 import { athleteRoutes, trainerRoutes, RouteItem } from '@/constants/routes';
 import { useActiveMode } from '@/contexts/AuthContext';
 import Badge from '@/components/ui/Badge';
+import Button from '@/components/ui/Button';
 import { useDialogs } from '@/hooks/useDialogs';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 
@@ -144,7 +145,9 @@ function ActionButton({
   const location = useLocation();
   const isActive = location.pathname === route.path;
   return (
-    <button
+    <Button
+      type="button"
+      variant="unstyled"
       onClick={() => navigate(route.path)}
       className={
         route.accent
@@ -157,6 +160,6 @@ function ActionButton({
       }
     >
       <route.icon className="w-6 h-6" strokeWidth={route.accent ? 2.5 : 2} />
-    </button>
+    </Button>
   );
 }

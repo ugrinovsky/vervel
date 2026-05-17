@@ -9,6 +9,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import type { PeriodizationData } from '@/api/trainer';
+import { AnalyticsEmptyState } from './AnalyticsEmptyState';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 import type { RechartsTooltipContentProps } from './rechartsTooltip';
 
@@ -219,9 +220,11 @@ export default function AcwrChart({ data }: Props) {
           </ResponsiveContainer>
         </div>
       ) : (
-        <div className="flex items-center justify-center h-32 text-sm text-(--color_text_muted)">
-          Недостаточно тренировок для кривой
-        </div>
+        <AnalyticsEmptyState
+          hint="Кривая строится по истории тренировок: нужно несколько недель регулярных записей в журнале."
+          message="Недостаточно тренировок для кривой"
+          className="min-h-32"
+        />
       )}
 
       <p className="text-[11px] text-(--color_text_muted) leading-relaxed">

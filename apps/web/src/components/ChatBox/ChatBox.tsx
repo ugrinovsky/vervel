@@ -12,6 +12,7 @@ import { chatApi } from '@/api/chat';
 import type { ChatMessage } from '@/api/trainer';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
+import Button from '@/components/ui/Button';
 import AppInput from '@/components/ui/AppInput';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -622,7 +623,9 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
               style={{ outline: 'none', maxHeight: '72px', overflowY: 'auto' }}
             />
           </div>
-          <button
+          <Button
+            type="button"
+            variant="unstyled"
             onClick={handleSend}
             disabled={!newMessage.trim() || sending}
             className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all duration-200 disabled:cursor-not-allowed ${
@@ -630,19 +633,21 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
                 ? 'bg-(--color_primary_light) opacity-100'
                 : 'bg-white/10 opacity-50'
             }`}
+            aria-label="Отправить"
           >
             <PaperAirplaneIcon className="w-4 h-4 text-white" />
-          </button>
+          </Button>
           {klipyEnabled && (
-            <button
+            <Button
               type="button"
+              variant="unstyled"
               onClick={() => setKlipyOpen(true)}
               disabled={sending}
               className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-white/10 border border-white/15 text-[10px] font-bold tracking-wide text-white/90 disabled:opacity-40"
               title="GIF"
             >
               GIF
-            </button>
+            </Button>
           )}
         </div>
       ) : (
@@ -666,15 +671,16 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
               <PaperAirplaneIcon className="w-5 h-5" />
             </AccentButton>
             {klipyEnabled && (
-              <button
+              <Button
                 type="button"
+                variant="unstyled"
                 onClick={() => setKlipyOpen(true)}
                 disabled={sending}
                 className="h-10 px-2.5 rounded-xl shrink-0 text-[10px] font-bold tracking-wide border border-(--color_border) bg-(--color_bg_card_hover) text-(--color_text_secondary) hover:bg-(--color_bg_card) disabled:opacity-40"
                 title="GIF"
               >
                 GIF
-              </button>
+              </Button>
             )}
           </div>
         </div>

@@ -5,6 +5,7 @@ import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import SectionGroup from '@/components/ui/SectionGroup';
 import AccentButton from '@/components/ui/AccentButton';
+import Button, { MotionButton } from '@/components/ui/Button';
 import AddAthleteDrawer from '@/components/AddAthleteDrawer/AddAthleteDrawer';
 import LeadDetailSheet from '@/components/trainer/LeadDetailSheet';
 import { trainerApi, type TrainerLead, type LeadCrmStatus } from '@/api/trainer';
@@ -177,9 +178,10 @@ export default function TrainerLeadsScreen() {
               const isActive = filter === f.id;
               const statusCfg = f.id !== 'all' ? STATUS_CONFIG[f.id] : null;
               return (
-                <button
+                <Button
                   key={f.id}
                   type="button"
+                  variant="unstyled"
                   onClick={() => setFilter(f.id)}
                   className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
                     isActive
@@ -197,7 +199,7 @@ export default function TrainerLeadsScreen() {
                       {f.count}
                     </span>
                   )}
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -238,12 +240,13 @@ export default function TrainerLeadsScreen() {
                   const followUpText = hasFollowUp ? formatFollowUp(lead.nextFollowUpAt!) : null;
                   const isOverdue = hasFollowUp && new Date(lead.nextFollowUpAt!) < new Date();
                   return (
-                    <motion.button
+                    <MotionButton
                       key={lead.id}
                       type="button"
+                      variant="unstyled"
                       whileTap={{ scale: 0.99 }}
                       onClick={() => setSelectedLead(lead)}
-                      className="glass rounded-xl w-full text-left p-4 hover:bg-(--color_bg_card_hover) hover:border-(--color_primary_light)/30 transition-colors"
+                      className="glass-row rounded-xl w-full text-left p-4"
                     >
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <div className="text-sm font-semibold text-white truncate">{lead.name}</div>
@@ -272,7 +275,7 @@ export default function TrainerLeadsScreen() {
                           {lead.note}
                         </div>
                       )}
-                    </motion.button>
+                    </MotionButton>
                   );
                 })}
               </motion.div>

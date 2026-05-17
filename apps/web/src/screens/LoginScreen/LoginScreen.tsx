@@ -9,6 +9,7 @@ import VkIdButton from '@/components/VkIdButton/VkIdButton';
 import YandexIdButton from '@/components/YandexIdButton/YandexIdButton';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import Button, { MotionButton } from '@/components/ui/Button';
 
 // Генерируем ВСЕ значения для звезд ОДИН РАЗ
 const STARS = [...Array(150)].map((_, i) => ({
@@ -355,17 +356,19 @@ export default function LoginScreen() {
                   spellCheck={false}
                   onKeyDown={handleKeyDown}
                 />
-                <button
+                <Button
                   type="button"
+                  variant="unstyled"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-400 hover:text-emerald-300 transition"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-400 hover:text-emerald-300 p-0"
+                  aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
                 >
                   {showPassword ? (
                     <EyeSlashIcon className="w-5 h-5" />
                   ) : (
                     <EyeIcon className="w-5 h-5" />
                   )}
-                </button>
+                </Button>
               </div>
               {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password}</p>}
             </div>
@@ -378,33 +381,18 @@ export default function LoginScreen() {
             </div>
 
             {/* Кнопка входа */}
-            <motion.button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-xl font-semibold text-lg relative overflow-hidden group main-button"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <span className="relative z-10 flex items-center justify-center">
+            <motion.div className="w-full" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button type="submit" size="lg" fullWidth disabled={loading} className="font-semibold">
                 {loading ? (
-                  <>
-                    <span className="mr-2 inline-flex shrink-0">
-                      <LoadingSpinner size="sm" variant="soft" />
-                    </span>
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <LoadingSpinner size="sm" variant="soft" />
                     Вход...
-                  </>
+                  </span>
                 ) : (
                   'Войти'
                 )}
-              </span>
-              <div
-                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                style={{
-                  background:
-                    'linear-gradient(135deg, var(--color_primary_light), var(--color_primary))',
-                }}
-              />
-            </motion.button>
+              </Button>
+            </motion.div>
           </form>
 
           {showOAuthButtons ? (
@@ -437,9 +425,10 @@ export default function LoginScreen() {
               { label: 'Тестовый атлет', email: 'test@example.com', password: '123456' },
               { label: 'Тестовый тренер', email: 'trainer@example.com', password: '123456' },
             ].map((account) => (
-              <motion.button
+              <MotionButton
                 key={account.email}
                 type="button"
+                variant="unstyled"
                 className="w-full p-4 rounded-xl border relative overflow-hidden text-left cursor-pointer"
                 style={{
                   backgroundColor: 'rgba(14, 92, 77, 0.2)',
@@ -465,7 +454,7 @@ export default function LoginScreen() {
                     <span className="text-emerald-300/50">Пароль:</span> {account.password}
                   </p>
                 </div>
-              </motion.button>
+              </MotionButton>
             ))}
           </div>
 

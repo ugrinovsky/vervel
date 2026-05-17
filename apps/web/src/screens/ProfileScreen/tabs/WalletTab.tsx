@@ -10,6 +10,7 @@ import { useServerPagination } from '@/hooks/useServerPagination';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import AiChat from '@/components/AiChat/AiChat';
 import AccentButton from '@/components/ui/AccentButton';
+import Button from '@/components/ui/Button';
 import ListButton from '@/components/ui/ListButton';
 import ToggleGroup from '@/components/ui/ToggleGroup';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -175,14 +176,16 @@ export default function WalletTab({ balance, inTrainerMode }: Props) {
                 );
               })}
               {txHasMore && (
-                <button
+                <Button
                   type="button"
+                  variant="link"
+                  fullWidth
                   onClick={() => txLoadMore()}
                   disabled={txLoading}
-                  className="w-full text-xs text-(--color_text_muted) hover:text-white py-1 transition-colors disabled:opacity-50"
+                  className="py-1 !text-xs text-(--color_text_muted) hover:!text-white !no-underline disabled:opacity-50"
                 >
                   {txLoading ? 'Загрузка…' : 'Загрузить ещё'}
-                </button>
+                </Button>
               )}
             </div>
           )}

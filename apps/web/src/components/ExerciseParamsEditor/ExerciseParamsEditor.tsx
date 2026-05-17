@@ -10,6 +10,8 @@ import { WOD_CONFIG, WOD_TYPES } from '@/constants/workoutTypes';
 import { DocumentDuplicateIcon, TrashIcon, UserIcon } from '@heroicons/react/24/outline';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
 import NumberInput from '@/components/ui/NumberInput';
+import Button from '@/components/ui/Button';
+import ToolbarButton from '@/components/ui/ToolbarButton';
 import { useNavigate } from 'react-router';
 
 export interface SetDetail {
@@ -60,8 +62,9 @@ function BodyweightToggle({
   onToggle: () => void;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="unstyled"
       onClick={onToggle}
       title={
         bodyweight && profileWeight
@@ -78,20 +81,21 @@ function BodyweightToggle({
     >
       <UserIcon className="w-3 h-3 shrink-0" />
       {bodyweight && profileWeight ? `${profileWeight} кг` : 'вес тела'}
-    </button>
+    </Button>
   );
 }
 
 function BodyweightWarning() {
   const navigate = useNavigate();
   return (
-    <button
+    <Button
       type="button"
+      variant="link"
       onClick={() => navigate('/profile')}
-      className="text-[10px] text-amber-400/80 hover:text-amber-300 transition-colors text-left"
+      className="!text-[10px] !text-amber-400/80 hover:!text-amber-300 !no-underline text-left p-0"
     >
       ⚠ Укажите вес тела в профиле — нужен для расчёта интенсивности →
-    </button>
+    </Button>
   );
 }
 
@@ -138,9 +142,11 @@ export default function ExerciseParamsEditor({
           {WOD_TYPES.map((value) => {
             const cfg = WOD_CONFIG[value];
             return (
-              <button
+              <Button
                 key={value}
                 type="button"
+                variant="unstyled"
+                fullWidth
                 onClick={() => onPatch({ wodType: value === wodType ? undefined : value })}
                 title={cfg.hint}
                 className={`py-1 rounded-lg text-[11px] font-medium transition-colors ${
@@ -150,7 +156,7 @@ export default function ExerciseParamsEditor({
                 }`}
               >
                 {cfg.label}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -287,33 +293,29 @@ export default function ExerciseParamsEditor({
             </>
           )}
           <div className="flex gap-1 shrink-0 w-14 justify-end">
-            <button
-              type="button"
-              onClick={() => onDupSet?.(si)}
-              className="w-6 h-6 flex items-center justify-center rounded-md text-white/30 hover:text-blue-400 hover:bg-blue-500/15 transition-colors"
-              title="Дублировать"
-            >
+            <ToolbarButton type="button" tone="info" onClick={() => onDupSet?.(si)} title="Дублировать">
               <DocumentDuplicateIcon className="w-3.5 h-3.5" />
-            </button>
-            <button
+            </ToolbarButton>
+            <ToolbarButton
               type="button"
+              tone="danger"
               onClick={() => onRemoveSet?.(si)}
               disabled={(setsDetail ?? []).length <= 1}
-              className="w-6 h-6 flex items-center justify-center rounded-md text-white/30 hover:text-red-400 hover:bg-red-500/15 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
               title="Удалить"
             >
               <TrashIcon className="w-3.5 h-3.5" />
-            </button>
+            </ToolbarButton>
           </div>
         </div>
       ))}
-      <button
+      <Button
         type="button"
+        variant="link"
         onClick={onAddSet}
-        className="mt-0.5 text-[11px] text-white/35 hover:text-emerald-400 transition-colors flex items-center gap-1 font-medium"
+        className="mt-0.5 !text-[11px] !text-white/35 hover:!text-emerald-400 !no-underline flex items-center gap-1 font-medium p-0"
       >
         <span className="text-sm leading-none">+</span> подход
-      </button>
+      </Button>
       {!hideWeights && bodyweight && !profileWeight && <BodyweightWarning />}
     </div>
   );

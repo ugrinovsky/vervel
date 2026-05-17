@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { trainerApi, type AthleteCrmStatus } from '@/api/trainer';
 import AppInput from '@/components/ui/AppInput';
+import Button from '@/components/ui/Button';
 
 interface Props {
   athleteId: number;
@@ -122,16 +123,18 @@ export default function AthleteCrmSheet({
               const cfg = STATUS_CONFIG[s];
               const isActive = status === s;
               return (
-                <button
+                <Button
                   key={s}
                   type="button"
+                  variant="unstyled"
+                  fullWidth
                   disabled={saving}
                   onClick={() => handleStatusChange(s)}
                   className={`px-3 py-2.5 rounded-xl border text-left transition-all disabled:opacity-50 ${isActive ? cfg.activeClass : cfg.inactiveClass}`}
                 >
                   <div className="text-sm font-semibold leading-tight">{cfg.label}</div>
                   <div className="text-[11px] opacity-70 mt-0.5">{cfg.desc}</div>
-                </button>
+                </Button>
               );
             })}
           </div>

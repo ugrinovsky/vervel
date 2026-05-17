@@ -1,5 +1,5 @@
 import { MuscleZone } from '@/constants/zones';
-import { Button } from '@headlessui/react';
+import Button from '@/components/ui/Button';
 
 interface MuscleZonesProps {
   zones: MuscleZone[];
@@ -12,6 +12,8 @@ export default function MuscleZones({ zones, onListClick }: MuscleZonesProps) {
       {zones.map((zone) => (
         <Button
           key={zone.id}
+          type="button"
+          variant="unstyled"
           onClick={() => onListClick(zone)}
           className="px-3 py-1 rounded-full text-sm font-medium bg-white/20 text-white-800 hover:bg-[var(--color_text_secondary)] mr-2 mb-2"
         >

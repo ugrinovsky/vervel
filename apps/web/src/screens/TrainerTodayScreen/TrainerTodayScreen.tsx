@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import AnimatedBlock from '@/components/ui/AnimatedBlock';
 import SectionGroup from '@/components/ui/SectionGroup';
 import AccentButton from '@/components/ui/AccentButton';
+import Button, { MotionButton } from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
@@ -194,12 +194,14 @@ export default function TrainerTodayScreen() {
                 const groupsTotal = groupsWithUnread.reduce((s, g) => s + g.unread, 0);
                 if (groupsTotal === 0) return null;
                 return (
-                  <motion.button
+                  <MotionButton
                     key="groups-unread"
+                    type="button"
+                    variant="unstyled"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     onClick={() => navigate('/trainer/groups')}
-                    className="glass rounded-xl w-full flex items-center gap-3 p-4 hover:bg-(--color_bg_card_hover) transition-colors text-left"
+                    className="glass-row rounded-xl w-full flex items-center gap-3 p-4 text-left"
                   >
                     <ChatBubbleLeftEllipsisIcon className="w-6 h-6 text-(--color_primary_icon) shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -210,7 +212,7 @@ export default function TrainerTodayScreen() {
                       </div>
                     </div>
                     <Badge count={groupsTotal} size="md" />
-                  </motion.button>
+                  </MotionButton>
                 );
               })()}
               {(() => {
@@ -218,13 +220,15 @@ export default function TrainerTodayScreen() {
                 const athletesTotal = athletesWithUnread.reduce((s, a) => s + a.unread, 0);
                 if (athletesTotal === 0) return null;
                 return (
-                  <motion.button
+                  <MotionButton
                     key="athletes-unread"
+                    type="button"
+                    variant="unstyled"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.05 }}
                     onClick={() => navigate('/trainer/athletes')}
-                    className="glass rounded-xl w-full flex items-center gap-3 p-4 hover:bg-(--color_bg_card_hover) transition-colors text-left"
+                    className="glass-row rounded-xl w-full flex items-center gap-3 p-4 text-left"
                   >
                     <ChatBubbleLeftEllipsisIcon className="w-6 h-6 text-(--color_primary_icon) shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -235,7 +239,7 @@ export default function TrainerTodayScreen() {
                       </div>
                     </div>
                     <Badge count={athletesTotal} size="md" />
-                  </motion.button>
+                  </MotionButton>
                 );
               })()}
             </div>
@@ -266,12 +270,14 @@ export default function TrainerTodayScreen() {
                       <div className="text-sm font-medium text-white">{title}</div>
                       <div className="text-xs text-(--color_text_muted) mt-0.5">{desc}</div>
                     </div>
-                    <button
+                    <Button
+                      variant="soft-muted"
+                      size="sm"
                       onClick={() => navigate(to)}
-                      className="shrink-0 text-xs px-3 py-1.5 rounded-lg bg-(--color_primary_light)/20 text-(--color_primary) font-medium hover:bg-(--color_primary_light)/30 transition-colors"
+                      className="shrink-0 text-xs"
                     >
                       {label}
-                    </button>
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -285,42 +291,48 @@ export default function TrainerTodayScreen() {
               <AnimatedBlock
                 className={`grid gap-3 ${flags.teams ? 'grid-cols-3' : 'grid-cols-1'}`}
               >
-                <button
+                <Button
                   type="button"
+                  variant="unstyled"
+                  fullWidth
                   aria-label="Открыть календарь тренера"
                   onClick={() => navigate('/trainer/calendar')}
-                  className="glass rounded-xl p-4 text-center hover:border-(--color_primary_light)/50 hover:bg-(--color_bg_card_hover) transition-colors"
+                  className="glass-row rounded-xl p-4 text-center"
                 >
                   <ClockIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
                   <div className="text-2xl font-bold text-white">{todaySessionCount}</div>
                   <div className="text-xs text-(--color_text_muted) mt-1">Тренировок</div>
-                </button>
+                </Button>
                 {flags.teams ? (
                   <>
-                    <button
+                    <Button
                       type="button"
+                      variant="unstyled"
+                      fullWidth
                       aria-label="Список атлетов"
                       onClick={() => navigate('/trainer/athletes')}
-                      className="glass rounded-xl p-4 text-center hover:border-(--color_primary_light)/50 hover:bg-(--color_bg_card_hover) transition-colors"
+                      className="glass-row rounded-xl p-4 text-center"
                     >
                       <UsersIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
                       <div className="text-2xl font-bold text-white">
                         {overview.stats.athleteCount}
                       </div>
                       <div className="text-xs text-(--color_text_muted) mt-1">Атлетов</div>
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="unstyled"
+                      fullWidth
                       aria-label="Список групп"
                       onClick={() => navigate('/trainer/groups')}
-                      className="glass rounded-xl p-4 text-center hover:border-(--color_primary_light)/50 hover:bg-(--color_bg_card_hover) transition-colors"
+                      className="glass-row rounded-xl p-4 text-center"
                     >
                       <UserGroupIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
                       <div className="text-2xl font-bold text-white">
                         {overview.stats.groupCount}
                       </div>
                       <div className="text-xs text-(--color_text_muted) mt-1">Групп</div>
-                    </button>
+                    </Button>
                   </>
                 ) : null}
               </AnimatedBlock>
@@ -340,10 +352,13 @@ export default function TrainerTodayScreen() {
                 ) : (
                   <div className="space-y-3">
                     {todaySessionWorkouts.map((workout) => (
-                      <button
+                      <Button
                         key={workout.id}
+                        type="button"
+                        variant="unstyled"
+                        fullWidth
                         onClick={() => navigate('/trainer/calendar')}
-                        className="w-full text-left p-4 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) hover:border-(--color_primary_light)/40 transition-colors"
+                        className="text-left p-4 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) hover:border-(--color_primary_light)/40 transition-colors"
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
@@ -393,7 +408,7 @@ export default function TrainerTodayScreen() {
                               </div>
                             </div>
                           )}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 )}
@@ -410,13 +425,15 @@ export default function TrainerTodayScreen() {
                 <div className="flex items-center justify-between gap-3">
                   <div className="text-sm font-semibold text-white">CRM: следующие действия</div>
                   <div className="flex gap-2 shrink-0">
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
+                      size="xs"
                       onClick={() => navigate('/trainer/crm')}
-                      className="rounded-lg border border-(--color_border) px-3 py-2 text-xs font-medium text-(--color_text_muted) hover:text-white hover:border-(--color_primary_light)/40 transition-colors"
+                      className="shrink-0"
                     >
                       Все заявки
-                    </button>
+                    </Button>
                     <AccentButton
                       onClick={() => setShowAddClient(true)}
                       size="sm"
@@ -435,11 +452,13 @@ export default function TrainerTodayScreen() {
               {actionLeads.length > 0 && (
                 <div className="space-y-2">
                   {actionLeads.map((lead) => (
-                    <button
+                    <Button
                       key={lead.id}
                       type="button"
+                      variant="unstyled"
+                      fullWidth
                       onClick={() => setSelectedLead(lead)}
-                      className="w-full rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-left hover:bg-amber-500/15 transition-colors"
+                      className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-left hover:bg-amber-500/15 transition-colors"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
@@ -452,7 +471,7 @@ export default function TrainerTodayScreen() {
                           {lead.crmStatus === 'new' ? 'Новый' : 'Напомнить'}
                         </span>
                       </div>
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}

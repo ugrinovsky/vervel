@@ -1,5 +1,6 @@
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/react';
 import { ChevronUpDownIcon } from '@heroicons/react/24/solid';
+import Button from '@/components/ui/Button';
 
 export interface UiListboxOption<T> {
   value: T;
@@ -23,6 +24,9 @@ export default function UiListbox<T>({
     <Listbox value={value ?? undefined} onChange={onChange}>
       <div className="relative">
         <ListboxButton
+          as={Button}
+          type="button"
+          variant="unstyled"
           className="
             w-full flex items-center justify-between
             px-3 py-2 rounded-lg

@@ -10,6 +10,7 @@ import {
   type TrendDirection,
 } from '@/constants/AnalyticsConstants';
 import { getZoneLabel } from '@/util/zones';
+import { AnalyticsEmptyState } from './AnalyticsEmptyState';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 
 interface TopMusclesProps {
@@ -98,10 +99,10 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
   // Если нет данных
   if (muscles.length === 0) {
     return (
-      <div className="text-center py-8 text-[var(--color_text_muted)]">
-        <p>Нет данных о нагрузке на мышцы</p>
-        <p className="text-sm mt-2">Добавьте тренировки, чтобы увидеть статистику</p>
-      </div>
+      <AnalyticsEmptyState
+        hint="Добавьте тренировки с упражнениями по зонам — тогда появится распределение нагрузки на мышцы."
+        message="Нет данных о нагрузке на мышцы"
+      />
     );
   }
 

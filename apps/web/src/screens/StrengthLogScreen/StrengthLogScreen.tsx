@@ -18,6 +18,7 @@ import BackButton from '@/components/BackButton/BackButton';
 import AnimatedBlock from '@/components/ui/AnimatedBlock';
 import { cardClass } from '@/components/ui/Card';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
+import Button from '@/components/ui/Button';
 import GhostButton from '@/components/ui/GhostButton';
 import PillButton from '@/components/ui/PillButton';
 import ListButton from '@/components/ui/ListButton';
@@ -349,8 +350,9 @@ function ExerciseCard({
   const progressPct = useMemo(() => strengthLogProgressPercent(entry), [entry]);
 
   const modeBtn = (mode: CardViewMode, icon: ReactNode, title: string) => (
-    <button
+    <Button
       type="button"
+      variant="unstyled"
       onClick={() => setViewMode(mode)}
       className={`flex items-center justify-center p-1.5 rounded-lg transition-colors ${
         viewMode === mode
@@ -361,7 +363,7 @@ function ExerciseCard({
       aria-label={title}
     >
       {icon}
-    </button>
+    </Button>
   );
 
   return (
@@ -400,18 +402,20 @@ function ExerciseCard({
             <PresentationChartLineIcon className="w-5 h-5 shrink-0" />,
             'Сводка 30 дней'
           )}
-          <button
+          <Button
             type="button"
+            variant="unstyled"
             onClick={() => onOpenStandards(entry)}
             className="flex items-center justify-center p-1.5 rounded-lg text-(--color_text_muted) hover:text-(--color_primary_light) hover:bg-(--color_primary_light)/10"
             title="Объединить варианты одного упражнения"
             aria-label="Эталон: объединить варианты упражнения"
           >
             <StarIcon className="w-5 h-5 shrink-0" />
-          </button>
+          </Button>
           {pinnedOnly ? (
-            <button
+            <Button
               type="button"
+              variant="unstyled"
               disabled={pinsBusy}
               onClick={() => onUnpin(strengthLogBaseGroupKey(entry.exerciseId))}
               className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-(--color_text_muted) hover:text-rose-300 hover:bg-rose-500/10 disabled:opacity-40"
@@ -419,10 +423,11 @@ function ExerciseCard({
             >
               <BookmarkSlashIcon className="w-4 h-4 shrink-0" />
               <span className="whitespace-nowrap">Снять</span>
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
               type="button"
+              variant="unstyled"
               disabled={pinsBusy}
               onClick={() => onPin(strengthLogBaseGroupKey(entry.exerciseId))}
               className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-(--color_primary_light) hover:bg-(--color_primary_light)/10 disabled:opacity-40"
@@ -430,7 +435,7 @@ function ExerciseCard({
             >
               <BookmarkIcon className="w-4 h-4 shrink-0" />
               <span className="whitespace-nowrap">Закрепить</span>
-            </button>
+            </Button>
           )}
         </div>
       </div>

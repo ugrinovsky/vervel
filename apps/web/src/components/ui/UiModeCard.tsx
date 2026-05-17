@@ -1,7 +1,7 @@
-import { motion } from 'framer-motion';
 import type { JSX } from 'react';
 import type { UiMode, UiModeContext } from '@/util/uiModeCopy';
 import { uiModeCardCopy } from '@/util/uiModeCopy';
+import Button, { MotionButton } from '@/components/ui/Button';
 
 export default function UiModeCard({
   mode,
@@ -16,8 +16,9 @@ export default function UiModeCard({
 
   if (mode === 'unleash') {
     return (
-      <motion.button
+      <MotionButton
         type="button"
+        variant="unstyled"
         onClick={onClick}
         className="rounded-2xl border-2 border-orange-500 p-4 text-left relative overflow-hidden"
         style={{
@@ -40,7 +41,7 @@ export default function UiModeCard({
             {copy.unleashBadge.text}
           </div>
         )}
-      </motion.button>
+      </MotionButton>
     );
   }
 
@@ -50,7 +51,7 @@ export default function UiModeCard({
       : 'glass rounded-2xl p-4 text-left hover:border-emerald-500/40 transition-colors';
 
   return (
-    <button type="button" onClick={onClick} className={baseClass}>
+    <Button type="button" variant="unstyled" onClick={onClick} className={baseClass}>
       {copy.tag ? (
         <div className="flex items-center gap-2 mb-1">
           <span className="text-2xl">{copy.emoji}</span>
@@ -63,6 +64,6 @@ export default function UiModeCard({
       )}
       <div className="font-semibold text-white">{copy.title}</div>
       <div className="text-xs text-(--color_text_muted) mt-1">{copy.subtitle}</div>
-    </button>
+    </Button>
   );
 }

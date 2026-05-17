@@ -11,6 +11,7 @@ import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
 import WorkoutDetailSheet from '@/screens/ActivityScreen/WorkoutDetailSheet';
+import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
 import { ZONE_NORMALIZE } from './avatarViewZoneNormalize';
@@ -423,10 +424,13 @@ export default function AvatarView({
                   const phase = getPhase(zoneState);
                   const cfg = PHASE_CONFIG[phase];
                   return (
-                    <button
+                    <Button
                       key={name}
+                      type="button"
+                      variant="unstyled"
+                      fullWidth
                       onClick={() => handleZoneClick(ZONE_NORMALIZE[name] ?? name)}
-                      className={`w-full flex items-center gap-3 p-2.5 rounded-lg transition-all text-left ${
+                      className={`flex items-center gap-3 p-2.5 rounded-lg transition-all text-left ${
                         selectedZone === (ZONE_NORMALIZE[name] ?? name)
                           ? 'bg-(--color_primary_light)/15 ring-1 ring-(--color_primary_light)/30'
                           : 'hover:bg-(--color_bg_card_hover)'
@@ -446,7 +450,7 @@ export default function AvatarView({
                       <span className={`text-xs w-20 text-right font-medium ${cfg.color}`}>
                         {cfg.label}
                       </span>
-                    </button>
+                    </Button>
                   );
                 })}
             </div>
@@ -492,11 +496,13 @@ export default function AvatarView({
                     {!zoneWorkoutsLoading && zoneWorkouts && zoneWorkouts.length > 0 && (
                       <div className="flex flex-col gap-2 max-w-full">
                         {zoneWorkouts.map((w) => (
-                          <button
+                          <Button
                             key={w.id}
                             type="button"
+                            variant="unstyled"
+                            fullWidth
                             onClick={() => openWorkoutFromZone(w)}
-                            className="w-full min-w-0 rounded-xl bg-(--color_bg_card) px-3 py-2.5 text-left transition-colors hover:bg-(--color_bg_card_hover) border border-white/5"
+                            className="glass-row min-w-0 rounded-xl px-3 py-2.5 text-left"
                           >
                             <div className="flex items-center gap-1.5 mb-1.5 min-w-0">
                               <span className="text-xs font-semibold text-white shrink-0 tabular-nums">
@@ -539,7 +545,7 @@ export default function AvatarView({
                                 тренировку, чтобы увидеть полный состав.
                               </p>
                             )}
-                          </button>
+                          </Button>
                         ))}
                       </div>
                     )}

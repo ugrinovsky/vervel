@@ -1,6 +1,7 @@
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import type { WorkoutTemplate } from '@/api/trainer';
+import Button from '@/components/ui/Button';
 
 const TYPE_BADGE: Record<string, string> = {
   bodybuilding: 'Сил',
@@ -21,6 +22,9 @@ export default function TemplatePicker({ templates, value, onChange }: Props) {
     <Listbox value={value} onChange={onChange}>
       <div className="relative">
         <ListboxButton
+          as={Button}
+          type="button"
+          variant="unstyled"
           className={`group w-full flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-sm text-left transition-colors border outline-none ${
             selected
               ? 'bg-(--color_primary_light)/10 border-(--color_primary_light) text-white'

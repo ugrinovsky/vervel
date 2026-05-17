@@ -1,5 +1,6 @@
 import { type ReactNode, useId } from 'react';
 import { motion } from 'framer-motion';
+import Button from '@/components/ui/Button';
 
 interface Tab<T extends string> {
   id: T;
@@ -27,13 +28,14 @@ export default function TabCard<T extends string>({
 
   return (
     <div
-      className={`rounded-xl border border-(--color_border) overflow-hidden card-shadow ${className}`}
+      className={`glass rounded-xl overflow-hidden ${className}`}
     >
       <div className="flex border-b border-(--color_border) bg-(--color_bg_card)">
         {tabs.map((tab) => (
-          <button
+          <Button
             key={tab.id}
             type="button"
+            variant="unstyled"
             onClick={() => onChange(tab.id)}
             className="relative flex-1 flex items-center justify-center px-2 py-2 text-sm font-medium transition-colors outline-none"
             style={active === tab.id ? { color: 'white' } : undefined}
@@ -50,7 +52,7 @@ export default function TabCard<T extends string>({
             >
               {tab.label}
             </span>
-          </button>
+          </Button>
         ))}
       </div>
       <div className={`bg-(--color_bg_card_hover) ${bodyClassName}`}>{children}</div>

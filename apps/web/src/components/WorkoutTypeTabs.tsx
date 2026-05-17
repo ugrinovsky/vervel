@@ -1,3 +1,4 @@
+import ToggleGroup from '@/components/ui/ToggleGroup';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
 
 export type WorkoutType = 'crossfit' | 'bodybuilding' | 'cardio';
@@ -7,23 +8,19 @@ interface Props {
   onChange: (type: WorkoutType) => void;
 }
 
+const OPTIONS = (['bodybuilding', 'crossfit', 'cardio'] as const).map((type) => ({
+  value: type,
+  label: WORKOUT_TYPE_CONFIG[type],
+}));
+
 export default function WorkoutTypeTabs({ value, onChange }: Props) {
   return (
-    <div className="grid grid-cols-3 gap-2">
-      {(['bodybuilding', 'crossfit', 'cardio'] as const).map((type) => (
-        <button
-          key={type}
-          type="button"
-          onClick={() => onChange(type)}
-          className={`py-2.5 px-3 rounded-xl text-sm font-medium transition-colors ${
-            value === type
-              ? 'bg-(--color_primary_light) text-white'
-              : 'bg-(--color_bg_card_hover) text-(--color_text_muted) hover:text-white border border-(--color_border)'
-          }`}
-        >
-          {WORKOUT_TYPE_CONFIG[type]}
-        </button>
-      ))}
-    </div>
+    <ToggleGroup
+      cols={3}
+      value={value}
+      onChange={onChange}
+      options={OPTIONS}
+      itemPy="py-2.5"
+    />
   );
 }

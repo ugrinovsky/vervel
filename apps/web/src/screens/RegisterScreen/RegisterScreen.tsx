@@ -7,6 +7,7 @@ import { authApi, type UserRole } from '@/api/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import AppInput from '@/components/ui/AppInput';
 import GenderToggle from '@/components/ui/GenderToggle';
+import Button from '@/components/ui/Button';
 
 export default function RegisterScreen() {
   const [fullName, setFullName] = useState('');
@@ -199,8 +200,10 @@ export default function RegisterScreen() {
             <div>
               <label className="block text-sm font-medium mb-3 text-(--color_text_secondary)">Я являюсь</label>
               <div className="grid grid-cols-2 gap-3">
-                <button
+                <Button
                   type="button"
+                  variant="unstyled"
+                  fullWidth
                   onClick={() => toggleRole('athlete')}
                   className={`p-3 rounded-xl border text-center transition-all ${
                     selectedRoles.has('athlete')
@@ -210,9 +213,11 @@ export default function RegisterScreen() {
                 >
                   <div className="text-2xl mb-1">🏃</div>
                   <div className="text-sm font-medium">Атлет</div>
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="unstyled"
+                  fullWidth
                   onClick={() => toggleRole('trainer')}
                   className={`p-3 rounded-xl border text-center transition-all ${
                     selectedRoles.has('trainer')
@@ -222,7 +227,7 @@ export default function RegisterScreen() {
                 >
                   <div className="text-2xl mb-1">🏋️</div>
                   <div className="text-sm font-medium">Тренер</div>
-                </button>
+                </Button>
               </div>
               {selectedRoles.size === 2 && (
                 <p className="text-xs text-emerald-300/60 mt-2 text-center">
@@ -231,17 +236,19 @@ export default function RegisterScreen() {
               )}
             </div>
 
-            <motion.button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-xl font-semibold text-lg relative overflow-hidden group main-button"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <span className="relative z-10">
-                {loading ? 'Регистрация...' : 'Создать аккаунт'}
-              </span>
-            </motion.button>
+            <motion.div className="w-full" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                type="submit"
+                size="lg"
+                fullWidth
+                disabled={loading}
+                loading={loading}
+                loadingText="Регистрация..."
+                className="font-semibold"
+              >
+                Создать аккаунт
+              </Button>
+            </motion.div>
           </form>
 
           <p className="text-center mt-6 text-sm text-emerald-200/70 relative z-10">

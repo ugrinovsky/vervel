@@ -8,6 +8,7 @@ import { aiApi, type AiChatApiMessage } from '@/api/ai';
 import { checkForNewAchievements } from '@/hooks/useAchievementToast';
 import { useAuth, useActiveMode } from '@/contexts/AuthContext';
 import { useAiBalance } from '@/hooks/useAiBalance';
+import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { AI_CHAT_MIN_BALANCE as MIN_BALANCE } from '@/constants/ai';
 const DISPLAY_STEP = 20;
@@ -246,19 +247,24 @@ export default function AiChat({ open, onClose }: Props) {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {messages.length > 0 && (
-              <button
+              <Button
+                type="button"
+                variant="link"
                 onClick={() => void handleClearHistory()}
-                className="text-[10px] text-(--color_text_muted) hover:text-white transition-colors"
+                className="!text-[10px] !no-underline text-(--color_text_muted) hover:!text-white p-0"
               >
                 Очистить
-              </button>
+              </Button>
             )}
-            <button
+            <Button
+              type="button"
+              variant="unstyled"
               onClick={onClose}
               className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+              aria-label="Закрыть"
             >
               <XMarkIcon className="w-4 h-4 text-white" />
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -352,13 +358,16 @@ export default function AiChat({ open, onClose }: Props) {
               </p>
               <div className="pl-9 flex flex-col gap-1.5">
                 {suggestions.map((s) => (
-                  <button
+                  <Button
                     key={s}
+                    type="button"
+                    variant="unstyled"
+                    fullWidth
                     onClick={() => setInput(s)}
                     className="glass text-left text-xs px-3 py-2 rounded-xl text-(--color_text_secondary) hover:text-white hover:border-emerald-500/30 transition-colors"
                   >
                     {s}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -403,13 +412,16 @@ export default function AiChat({ open, onClose }: Props) {
                 </span>
               )}
             </div>
-            <button
+            <Button
+              type="button"
+              variant="emerald"
               onClick={handleSend}
               disabled={!input.trim() || loading || !hasEnoughBalance}
-              className="w-12 h-12 shrink-0 flex items-center justify-center rounded-2xl bg-emerald-600 text-white hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-12 h-12 shrink-0 !rounded-2xl p-0"
+              aria-label="Отправить"
             >
               <PaperAirplaneIcon className="w-5 h-5" />
-            </button>
+            </Button>
           </div>
         </div>
       </>

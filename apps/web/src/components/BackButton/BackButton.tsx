@@ -1,4 +1,5 @@
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import Button from '@/components/ui/Button';
 
 interface BackButtonProps {
   onClick: () => void;
@@ -8,7 +9,9 @@ interface BackButtonProps {
 
 export default function BackButton({ onClick, label = 'Назад', className = '' }: BackButtonProps) {
   return (
-    <button
+    <Button
+      type="button"
+      variant="unstyled"
       onClick={onClick}
       className={`group flex items-center gap-2 ${className}`}
     >
@@ -18,6 +21,6 @@ export default function BackButton({ onClick, label = 'Назад', className = 
       <span className="text-sm text-white/50 group-hover:text-white/80 transition-colors duration-200">
         {label}
       </span>
-    </button>
+    </Button>
   );
 }

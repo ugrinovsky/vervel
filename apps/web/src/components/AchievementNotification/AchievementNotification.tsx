@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import Button from '@/components/ui/Button';
 import { useEffect, useState } from 'react';
 
 interface AchievementNotificationProps {
@@ -65,15 +66,18 @@ export default function AchievementNotification({
                 </div>
               </div>
 
-              <button
+              <Button
+                type="button"
+                variant="unstyled"
                 onClick={() => {
                   setVisible(false);
                   setTimeout(onClose, 300);
                 }}
-                className="text-white/70 hover:text-white transition-colors"
+                className="text-white/70 hover:text-white transition-colors p-0"
+                aria-label="Закрыть"
               >
                 <XMarkIcon className="w-5 h-5" />
-              </button>
+              </Button>
             </div>
           </div>
         </motion.div>

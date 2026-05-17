@@ -155,7 +155,7 @@ input:focus {
 /* ─── Glass card ─────────────────────────────────────────────────────────── */
 /* Базовый класс для карточек: фон + рамка + тень.
    Скругление добавляй отдельно: rounded-xl или rounded-2xl.
-   Чтобы изменить тень/цвет для всех карточек — меняй только здесь. */
+   Для своего фона/рамки (черновик, предупреждение) — .draft-banner, не .glass. */
 .glass {
   background: var(--color_bg_card);
   border: 1px solid var(--color_border);
@@ -164,8 +164,30 @@ input:focus {
     0 4px 6px -4px rgb(0 0 0 / 0.2);
 }
 
-/* Только тень — для акцентных блоков с собственным фоном/рамкой */
+/* Строка внутри glass-списка: те же рамка/тень + hover без Tailwind bg-* */
+.glass-row {
+  background: var(--color_bg_card);
+  border: 1px solid var(--color_border);
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.2),
+    0 4px 6px -4px rgb(0 0 0 / 0.2);
+  transition: background-color 0.15s ease;
+}
+.glass-row:hover {
+  background: var(--color_bg_card_hover);
+}
+
+/* Только тень — для акцентных блоков с градиентом/своим фоном (не дублировать с glass) */
 .card-shadow {
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 0.2),
+    0 4px 6px -4px rgb(0 0 0 / 0.2);
+}
+
+/* Баннер незаконченной / восстановленной тренировки (янтарь + тень карточки) */
+.draft-banner {
+  background-color: rgb(245 158 11 / 0.1);
+  border: 1px solid rgb(245 158 11 / 0.3);
   box-shadow:
     0 10px 15px -3px rgb(0 0 0 / 0.2),
     0 4px 6px -4px rgb(0 0 0 / 0.2);

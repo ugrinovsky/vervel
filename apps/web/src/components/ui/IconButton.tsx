@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import Button from '@/components/ui/Button';
 
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
@@ -20,16 +21,19 @@ export default function IconButton({
   variant = 'ghost',
   size = 'sm',
   className = '',
+  type = 'button',
   ...props
 }: IconButtonProps) {
   if (variant === 'row-action') {
     return (
-      <button
-        {...props}
+      <Button
+        type={type}
+        variant="unstyled"
         className={`shrink-0 flex items-center justify-center w-10 self-stretch border-l border-(--color_border) text-(--color_text_muted) hover:text-white hover:bg-(--color_bg_card_hover) transition-colors disabled:opacity-50 ${className}`}
+        {...props}
       >
         {children}
-      </button>
+      </Button>
     );
   }
 
@@ -44,11 +48,13 @@ export default function IconButton({
       : 'bg-(--color_bg_card) text-(--color_text_muted) hover:text-white';
 
   return (
-    <button
-      {...props}
+    <Button
+      type={type}
+      variant="unstyled"
       className={`${base} ${colors} text-xs font-medium transition-colors disabled:opacity-50 ${className}`}
+      {...props}
     >
       {children}
-    </button>
+    </Button>
   );
 }

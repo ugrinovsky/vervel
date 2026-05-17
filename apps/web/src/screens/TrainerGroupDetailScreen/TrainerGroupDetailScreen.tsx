@@ -208,8 +208,8 @@ export default function TrainerGroupDetailScreen() {
                       trigger={
                         <ConfirmDeleteWrapper.Trigger className="absolute top-2 right-2 z-[1]" />
                       }
-                      outerClassName="card-shadow"
-                      className="bg-(--color_bg_card) hover:bg-(--color_border) transition-colors cursor-pointer"
+                      surface="glass-row"
+                      className="cursor-pointer"
                     >
                       <div
                         className="flex flex-col items-center gap-1.5 p-3"

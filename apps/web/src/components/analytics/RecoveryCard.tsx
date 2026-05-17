@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { WorkoutStats } from '@/types/Analytics';
 import { computeAnalyticsInsights } from '@/util/computeAnalyticsInsights';
+import { AnalyticsEmptyState } from './AnalyticsEmptyState';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 
 interface Props {
@@ -20,14 +21,7 @@ export default function RecoveryCard({ data, period }: Props) {
 
   if (!recovery) {
     return (
-      <div className="space-y-4">
-        <AnalyticsSheetIntro>
-          Нужно несколько тренировок разных классов нагрузки, чтобы посчитать паузы по уровням.
-        </AnalyticsSheetIntro>
-        <p className="text-sm text-(--color_text_muted) text-center py-6">
-          Пока недостаточно данных.
-        </p>
-      </div>
+      <AnalyticsEmptyState hint="Нужно несколько тренировок разных классов нагрузки, чтобы посчитать паузы по уровням." />
     );
   }
 

@@ -3,6 +3,7 @@ import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'rechar
 import { WorkoutStats } from '@/types/Analytics';
 import { normalizeIntensity } from '@/constants/AnalyticsConstants';
 import { parseApiDateTime } from '@/utils/date';
+import { AnalyticsEmptyState } from './AnalyticsEmptyState';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 import type { RechartsTooltipContentProps } from './rechartsTooltip';
 
@@ -84,9 +85,10 @@ export default function WeekdayChart({ data }: Props) {
 
   if (!totalWorkouts) {
     return (
-      <div className="flex items-center justify-center h-40 text-sm text-(--color_text_muted)">
-        Нет данных за период
-      </div>
+      <AnalyticsEmptyState
+        hint="Нужны тренировки за месяц или год, чтобы увидеть распределение по дням недели."
+        message="Нет данных за период"
+      />
     );
   }
 

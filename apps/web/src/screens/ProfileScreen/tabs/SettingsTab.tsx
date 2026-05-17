@@ -25,7 +25,9 @@ import {
 import { isOAuthPlaceholderEmail } from '@/util/oauthPlaceholderEmail';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import AccentButton from '@/components/ui/AccentButton';
+import Button from '@/components/ui/Button';
 import GhostButton from '@/components/ui/GhostButton';
+import ListButton from '@/components/ui/ListButton';
 import AppInput from '@/components/ui/AppInput';
 import ToggleGroup from '@/components/ui/ToggleGroup';
 import GenderToggle from '@/components/ui/GenderToggle';
@@ -410,7 +412,9 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
         <div className="glass rounded-2xl p-6">
           <h3 className="text-sm font-semibold text-white mb-4">Тема</h3>
           <div className="grid grid-cols-8 gap-3">
-            <button
+            <Button
+              type="button"
+              variant="unstyled"
               onClick={() => handleSpecialThemeChange('auto')}
               title="Авто"
               className="relative aspect-square w-full rounded-full border-2 transition-all overflow-hidden"
@@ -428,7 +432,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
                 className="absolute inset-0"
                 style={{ background: '#22222A', clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }}
               />
-            </button>
+            </Button>
             {(
               [
                 {
@@ -447,8 +451,10 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
                 },
               ] as const
             ).map((t) => (
-              <button
+              <Button
                 key={t.id}
+                type="button"
+                variant="unstyled"
                 onClick={() => handleSpecialThemeChange(t.id)}
                 title={t.title}
                 className="relative aspect-square w-full rounded-full border-2 transition-all"
@@ -460,8 +466,10 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
               />
             ))}
             {THEME_PRESETS.map((preset) => (
-              <button
+              <Button
                 key={preset.hue}
+                type="button"
+                variant="unstyled"
                 onClick={() => handleThemeChange(preset.hue)}
                 title={preset.label}
                 className="relative aspect-square w-full rounded-full border-2 transition-all"
@@ -518,20 +526,14 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
                 {pushPermission === 'denied' && 'Заблокированы — разрешите в настройках браузера'}
               </p>
               {pushPermission !== 'denied' && (
-                <button
+                <AccentButton
+                  size="sm"
                   onClick={enablePush}
                   disabled={pushLoading || pushPermission === 'granted'}
-                  className="shrink-0 px-4 py-2 rounded-xl text-xs font-medium transition-all disabled:opacity-50"
-                  style={{
-                    background:
-                      pushPermission === 'granted'
-                        ? 'var(--color_bg_card_hover)'
-                        : 'var(--color_primary_light)',
-                    color: 'white',
-                  }}
+                  className={`shrink-0 ${pushPermission === 'granted' ? 'bg-(--color_bg_card_hover) opacity-70' : ''}`}
                 >
                   {pushLoading ? '...' : pushPermission === 'granted' ? 'Включены' : 'Включить'}
-                </button>
+                </AccentButton>
               )}
             </div>
           ) : (
@@ -542,14 +544,15 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
 
       <SectionGroup title="Помощь и документы">
         <div className="glass rounded-2xl overflow-hidden">
-          <button
+          <ListButton
             type="button"
+            variant="flat"
             onClick={() => setFeedbackOpen(true)}
-            className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left text-sm font-medium text-white hover:bg-(--color_bg_card_hover) transition-colors"
+            className="w-full justify-between gap-3 px-5 py-4 text-sm font-medium text-white hover:bg-(--color_bg_card_hover)"
           >
             <span>💬 Написать нам</span>
             <span className="text-(--color_text_muted) text-xs shrink-0">→</span>
-          </button>
+          </ListButton>
           <div className="border-t border-(--color_border) px-5 py-4">
             <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wider mb-3">
               Документы
@@ -560,15 +563,17 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
                 { path: '/docs/offer', label: 'Публичная оферта' },
                 { path: '/docs/seller', label: 'Реквизиты продавца' },
               ].map(({ path, label }) => (
-                <button
+                <Button
                   key={path}
                   type="button"
+                  variant="link"
+                  fullWidth
                   onClick={() => navigate(path)}
-                  className="w-full flex items-center justify-between text-sm text-(--color_text_muted) hover:text-white transition-colors"
+                  className="flex justify-between text-sm w-full"
                 >
                   <span>{label}</span>
                   <span className="text-xs">→</span>
-                </button>
+                </Button>
               ))}
             </div>
             <p className="text-[10px] text-(--color_text_muted) mt-3 leading-relaxed">
@@ -851,9 +856,11 @@ function FeatureSettingsSection({
           {UI_MODE_ORDER.map((mode) => {
             const isActive = currentMode === mode && !isDiverged;
             return (
-              <button
+              <Button
                 key={mode}
                 type="button"
+                variant="unstyled"
+                fullWidth
                 disabled={!!applyingMode}
                 onClick={() => {
                   if (isDiverged || currentMode !== mode) {
@@ -882,7 +889,7 @@ function FeatureSettingsSection({
                     <span className="text-xs text-(--color_text_muted)">...</span>
                   )}
                 </div>
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -895,13 +902,15 @@ function FeatureSettingsSection({
               флаги функций будут сброшены к настройкам этого режима.
             </p>
             <div className="flex gap-2">
-              <button
+              <Button
                 type="button"
+                variant="success"
+                size="sm"
                 onClick={() => void handleApplyMode(confirmMode)}
-                className="flex-1 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 text-xs font-semibold"
+                className="flex-1"
               >
                 Применить
-              </button>
+              </Button>
               <GhostButton
                 variant="solid"
                 onClick={() => setConfirmMode(null)}
@@ -954,8 +963,10 @@ function FeatureSettingsSection({
         );
       })}
 
-      <button
+      <Button
         type="button"
+        variant="link"
+        fullWidth
         onClick={() => {
           if (!user) return;
           const patch =
@@ -966,10 +977,10 @@ function FeatureSettingsSection({
           void profileApi.patchClientPreferences(patch).catch(() => {});
           nav('/onboarding');
         }}
-        className="w-full text-xs text-(--color_text_muted) hover:text-emerald-400/90 transition-colors py-2 text-center"
+        className="text-xs py-2 text-center hover:text-emerald-400/90 w-full"
       >
         Пройти настройку заново →
-      </button>
+      </Button>
     </SectionGroup>
   );
 }

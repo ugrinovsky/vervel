@@ -2,6 +2,7 @@ import { generateRecommendations } from '@/util/getRecomendations';
 import type { Recommendation } from '@/util/getRecomendations';
 import { getZoneLabel } from '@/util/zones';
 import { WorkoutStats } from '@/types/Analytics';
+import { AnalyticsEmptyState } from './AnalyticsEmptyState';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 
 interface RecommendationsProps {
@@ -56,18 +57,10 @@ export default function Recommendations({ stats }: RecommendationsProps) {
 
   if (recommendations.length === 0) {
     return (
-      <div className="space-y-4">
-        <AnalyticsSheetIntro>
-          Советы строятся из вашей статистики за период. Если данных мало, рекомендаций может не быть.
-        </AnalyticsSheetIntro>
-        <div className="flex flex-col items-center justify-center py-8 gap-3">
-          <div className="text-4xl">✅</div>
-          <p className="text-sm font-semibold text-white">Всё в порядке</p>
-          <p className="text-xs text-(--color_text_muted) text-center leading-relaxed">
-            Нагрузка сбалансирована, интенсивность в норме.
-          </p>
-        </div>
-      </div>
+      <AnalyticsEmptyState
+        hint="Советы строятся из вашей статистики за период. Если данных мало, рекомендаций может не быть."
+        message="Всё в порядке — нагрузка сбалансирована, интенсивность в норме."
+      />
     );
   }
 

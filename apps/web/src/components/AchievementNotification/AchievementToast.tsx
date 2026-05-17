@@ -1,4 +1,5 @@
 import toast, { type Toast } from 'react-hot-toast';
+import Button from '@/components/ui/Button';
 import type { Achievement } from '@/api/streak';
 
 export function AchievementToast({ t, achievement }: { t: Toast; achievement: Achievement }) {
@@ -15,13 +16,15 @@ export function AchievementToast({ t, achievement }: { t: Toast; achievement: Ac
         </p>
         <p className="text-sm font-semibold text-white truncate">{achievement.title}</p>
       </div>
-      <button
+      <Button
         type="button"
+        variant="unstyled"
         onClick={() => toast.dismiss(t.id)}
-        className="text-white/40 hover:text-white transition-colors shrink-0 text-xl leading-none pb-0.5"
+        className="text-white/40 hover:text-white transition-colors shrink-0 text-xl leading-none pb-0.5 p-0"
+        aria-label="Закрыть"
       >
         ×
-      </button>
+      </Button>
     </div>
   );
 }

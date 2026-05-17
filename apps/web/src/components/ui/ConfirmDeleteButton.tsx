@@ -2,6 +2,7 @@ import { useState, useEffect, useId } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { TrashIcon, XMarkIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { CONFIRM_DELETE_OPEN_EVENT } from '@/components/ui/confirmDeleteOpenEvent';
+import Button, { MotionButton } from '@/components/ui/Button';
 
 interface Props {
   onConfirm: () => void;
@@ -54,46 +55,53 @@ export default function ConfirmDeleteButton({
     if (confirming) {
       return (
         <div className="inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-          <button
+          <Button
             type="button"
-            onClick={() => { onConfirm(); setConfirming(false); }}
+            variant="unstyled"
+            onClick={() => {
+              onConfirm();
+              setConfirming(false);
+            }}
             className="text-red-400 hover:text-red-300 transition-colors"
             title="Да"
           >
             <CheckIcon className="w-3.5 h-3.5 block" />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="unstyled"
             onClick={() => setConfirming(false)}
             className="text-white/40 hover:text-white transition-colors"
             title="Отмена"
           >
             <XMarkIcon className="w-3.5 h-3.5 block" />
-          </button>
+          </Button>
         </div>
       );
     }
     return (
-      <button
+      <Button
         type="button"
+        variant="unstyled"
         onClick={startConfirming}
         className={`text-white/30 hover:text-red-400 transition-colors ${className}`}
       >
         {icon === 'trash' ? <TrashIcon className="w-4 h-4" /> : <XMarkIcon className="w-4 h-4" />}
-      </button>
+      </Button>
     );
   }
 
   /* ── overlay variant ── */
   return (
     <>
-      <button
+      <Button
         type="button"
+        variant="unstyled"
         onClick={startConfirming}
         className={`text-(--color_text_muted) hover:text-red-400 transition-colors p-1 ${className}`}
       >
         {icon === 'trash' ? <TrashIcon className="w-4 h-4" /> : <XMarkIcon className="w-4 h-4" />}
-      </button>
+      </Button>
 
       <AnimatePresence>
         {confirming && (
@@ -111,18 +119,23 @@ export default function ConfirmDeleteButton({
               {label}
             </span>
             <div className="flex gap-2">
-              <motion.button
+              <MotionButton
                 type="button"
+                variant="unstyled"
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 }}
-                onClick={() => { onConfirm(); setConfirming(false); }}
+                onClick={() => {
+                  onConfirm();
+                  setConfirming(false);
+                }}
                 className="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/80 hover:bg-red-500 text-[white] transition-colors"
               >
                 Да
-              </motion.button>
-              <motion.button
+              </MotionButton>
+              <MotionButton
                 type="button"
+                variant="unstyled"
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.08 }}
@@ -130,7 +143,7 @@ export default function ConfirmDeleteButton({
                 className="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 hover:bg-white/20 text-[white] transition-colors"
               >
                 Нет
-              </motion.button>
+              </MotionButton>
             </div>
           </motion.div>
         )}

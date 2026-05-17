@@ -7,6 +7,7 @@ import {
   formatVolume,
   normalizeIntensity,
 } from '@/constants/AnalyticsConstants';
+import { AnalyticsEmptyState } from './AnalyticsEmptyState';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 import type { RechartsTooltipContentProps } from './rechartsTooltip';
 
@@ -72,6 +73,12 @@ export default function StatsOverview({ period, data }: StatsOverviewProps) {
 
   const byType = data.byType ?? {};
   const typeTotal = Object.values(byType).reduce((s, v) => s + v, 0);
+
+  if (!data.workoutsCount) {
+    return (
+      <AnalyticsEmptyState hint="Здесь — число тренировок, суммарный объём и средняя интенсивность за период." />
+    );
+  }
 
   return (
     <div className="space-y-4">

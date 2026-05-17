@@ -144,7 +144,7 @@ export default function ActivityScreen() {
               <motion.div
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="card-shadow flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30"
+                className="draft-banner flex items-center justify-between gap-3 px-4 py-3 rounded-xl"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-amber-300">Незаконченная тренировка</p>
@@ -272,7 +272,7 @@ export default function ActivityScreen() {
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30"
+              className="draft-banner flex items-center justify-between gap-3 px-4 py-3 rounded-xl"
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium text-amber-300">Незаконченная тренировка</p>

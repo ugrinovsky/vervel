@@ -1,6 +1,7 @@
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
 import { ChevronDownIcon, ChevronUpDownIcon } from '@heroicons/react/24/outline';
 import { CheckIcon } from '@heroicons/react/24/solid';
+import Button from '@/components/ui/Button';
 
 export interface SelectOption {
   value: string;
@@ -43,7 +44,7 @@ export default function Select({
       {label && <label className="block text-xs text-(--color_text_muted) mb-1">{label}</label>}
       <Listbox value={value} onChange={onChange}>
         <div className="relative">
-          <ListboxButton className={buttonClass}>
+          <ListboxButton as={Button} type="button" variant="unstyled" className={buttonClass}>
             <span className={selected ? 'text-white' : 'text-(--color_text_muted)'}>
               {selected?.label ?? placeholder}
             </span>

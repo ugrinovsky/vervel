@@ -7,6 +7,7 @@ import { workoutsApi } from '@/api/workouts';
 import ExplainWhy from './ExplainWhy';
 import WeeklyPlanSheet from './WeeklyPlanSheet';
 import AccentButton from '@/components/ui/AccentButton';
+import Button from '@/components/ui/Button';
 import { SparklesIcon } from '@heroicons/react/24/outline';
 
 const WORKOUT_TYPE_LABEL: Record<string, string> = {
@@ -26,12 +27,15 @@ function ColdStartCard({ message }: { message: string }) {
           <p className="text-xs text-(--color_text_muted)">{message}</p>
         </div>
       </div>
-      <button
+      <Button
+        variant="soft"
+        size="xs"
+        fullWidth
         onClick={() => navigate('/workouts/new')}
-        className="mt-3 w-full py-2 rounded-xl text-sm font-medium text-(--color_primary) bg-(--color_primary_light)/15 hover:bg-(--color_primary_light)/25 transition-colors"
+        className="mt-3 py-2 rounded-xl text-sm"
       >
         Добавить тренировку
-      </button>
+      </Button>
     </div>
   );
 }
@@ -186,9 +190,12 @@ export default function AthleteCopilotCard({ onDraftCreated }: Props) {
         {/* Неделя */}
         {weekItems.length > 0 && (
           <div className="glass rounded-2xl p-4 space-y-3">
-            <button
+            <Button
+              type="button"
+              variant="unstyled"
+              fullWidth
               onClick={() => setShowWeek((v) => !v)}
-              className="flex items-center justify-between w-full"
+              className="flex items-center justify-between"
             >
               <span className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wider">
                 Неделя
@@ -196,7 +203,7 @@ export default function AthleteCopilotCard({ onDraftCreated }: Props) {
               <span className="text-xs text-(--color_text_muted)">
                 {showWeek ? 'Свернуть ▲' : 'Показать ▼'}
               </span>
-            </button>
+            </Button>
             <AnimatePresence>
               {showWeek && (
                 <motion.div
@@ -207,13 +214,16 @@ export default function AthleteCopilotCard({ onDraftCreated }: Props) {
                   <WeeklyPlanSheet items={weekItems} />
 
                   {meta.canSendToCoach && !coachSent && !hasTrainerWorkouts && (
-                    <button
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      fullWidth
                       onClick={handleSendToCoach}
                       disabled={sendingToCoach}
-                      className="mt-3 w-full py-2 rounded-xl text-xs text-(--color_text_muted) border border-white/10 hover:bg-white/5 transition-colors disabled:opacity-40"
+                      className="mt-3 py-2 rounded-xl text-xs border-white/10 hover:bg-white/5"
                     >
                       {sendingToCoach ? 'Отправляю...' : '📤 Предложить план тренеру'}
-                    </button>
+                    </Button>
                   )}
                   {coachSent && (
                     <p className="mt-2 text-xs text-green-400 text-center">

@@ -6,6 +6,7 @@ import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import AccentButton from '@/components/ui/AccentButton';
 import GhostButton from '@/components/ui/GhostButton';
+import Button from '@/components/ui/Button';
 import WorkoutFormBase, {
   type WorkoutFormData,
 } from '@/components/WorkoutFormBase/WorkoutFormBase';
@@ -418,13 +419,14 @@ export default function OnboardingScreen(): JSX.Element {
             {progress} / {totalSteps}
           </span>
           {step !== 'done' && (
-            <button
+            <Button
               type="button"
+              variant="link"
               onClick={handleSkip}
-              className="text-[11px] text-emerald-400/70 hover:text-emerald-300 underline-offset-2 hover:underline shrink-0"
+              className="text-[11px] text-emerald-400/70 hover:text-emerald-300 shrink-0"
             >
               Пропустить
-            </button>
+            </Button>
           )}
         </div>
 
@@ -779,13 +781,15 @@ function AthleteCoachInfoStep({
             <p className="text-sm font-semibold text-white">Email аккаунта</p>
             <p className="text-xs text-(--color_text_muted) mt-0.5">{user.email}</p>
           </div>
-          <button
+          <Button
             type="button"
+            variant="success"
+            size="sm"
             onClick={handleCopyEmail}
-            className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 transition-colors"
+            className="shrink-0"
           >
             {copiedEmail ? '✓ Скопировано' : 'Скопировать'}
-          </button>
+          </Button>
         </div>
 
         {teams ? (
@@ -855,13 +859,15 @@ function AthleteTeamInfoStep({
             <p className="text-sm font-semibold text-white">Email</p>
             <p className="text-xs text-(--color_text_muted) mt-0.5">{user.email}</p>
           </div>
-          <button
+          <Button
             type="button"
+            variant="success"
+            size="sm"
             onClick={handleCopyEmail}
-            className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 transition-colors"
+            className="shrink-0"
           >
             {copiedEmail ? '✓ Скопировано' : 'Скопировать'}
-          </button>
+          </Button>
         </div>
         {teams ? (
           <p className="text-[11px] text-(--color_text_muted) leading-relaxed px-0.5">
@@ -973,8 +979,10 @@ function FeatureSpoiler({
 
   return (
     <div className="glass rounded-2xl overflow-hidden mt-3">
-      <button
+      <Button
         type="button"
+        variant="unstyled"
+        fullWidth
         onClick={() => setOpen(!open)}
         className="w-full p-4 flex items-center justify-between text-left"
       >
@@ -989,7 +997,7 @@ function FeatureSpoiler({
         >
           ▾
         </motion.span>
-      </button>
+      </Button>
 
       <AnimatePresence>
         {open && (
@@ -1094,10 +1102,12 @@ function AthleteWorkoutChoiceStep({
           description="Как добавим? AI — быстрее и умнее. Вручную — если хочешь контроль над каждым полем."
         />
         <div className="grid gap-2 w-full">
-          <button
+          <Button
             type="button"
+            variant="unstyled"
+            fullWidth
             onClick={onSelectAi}
-            className="rounded-xl border border-emerald-500/35 bg-emerald-500/10 p-3 text-left flex gap-3 items-start w-full transition-colors hover:bg-emerald-500/15"
+            className="rounded-xl border border-emerald-500/35 bg-emerald-500/10 p-3 text-left flex gap-3 items-start transition-colors hover:bg-emerald-500/15"
           >
             <span className="text-xl shrink-0 leading-none pt-0.5">✨</span>
             <div className="min-w-0 flex-1">
@@ -1111,11 +1121,13 @@ function AthleteWorkoutChoiceStep({
                 Фото, текст, описание — как в «Новой тренировке».
               </p>
             </div>
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="unstyled"
+            fullWidth
             onClick={onSelectManual}
-            className="glass rounded-xl p-3 text-left flex gap-3 items-start w-full transition-colors hover:border-white/25"
+            className="glass rounded-xl p-3 text-left flex gap-3 items-start transition-colors hover:border-white/25"
           >
             <span className="text-xl shrink-0 leading-none pt-0.5">✏️</span>
             <div className="min-w-0 flex-1">
@@ -1124,16 +1136,18 @@ function AthleteWorkoutChoiceStep({
                 Дата, тип, упражнения из каталога, без AI.
               </p>
             </div>
-          </button>
+          </Button>
         </div>
 
-        <button
+        <Button
           type="button"
+          variant="link"
+          fullWidth
           onClick={onSkipFirstWorkout}
-          className="w-full py-2.5 text-xs text-(--color_text_muted) hover:text-emerald-400/90 transition-colors text-center rounded-xl border border-transparent hover:border-white/10"
+          className="py-2.5 text-xs text-center hover:text-emerald-400/90 rounded-xl border border-transparent hover:border-white/10"
         >
           Пропустить — добавлю тренировку из календаря
-        </button>
+        </Button>
 
         <FeatureSpoiler
           open={spoilerOpen}
@@ -1334,28 +1348,34 @@ function DoneStep({
           {isTrainerPath ? 'Перейти на «Сегодня»' : athleteCta.label}
         </AccentButton>
         {isTrainerPath && (
-          <button
+          <Button
             type="button"
+            variant="link"
+            fullWidth
             onClick={() => navigate('/trainer/team')}
-            className="w-full py-2 text-sm text-emerald-400/90 hover:text-emerald-300 transition-colors"
+            className="py-2 text-sm text-emerald-400/90 hover:text-emerald-300"
           >
             Открыть «Команда» и добавить атлета
-          </button>
+          </Button>
         )}
-        <button
+        <Button
           type="button"
+          variant="link"
+          fullWidth
           onClick={() => navigate(isTrainerPath ? '/trainer' : '/home', { replace: true })}
-          className="w-full text-sm text-(--color_text_muted) hover:text-white transition-colors py-2"
+          className="text-sm py-2 hover:text-white"
         >
           На главную
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="link"
+          fullWidth
           onClick={() => navigate('/profile?tab=settings')}
-          className="w-full text-xs text-(--color_text_muted) hover:text-emerald-400/90 transition-colors py-1"
+          className="text-xs py-1 hover:text-emerald-400/90"
         >
           Настройки уведомлений и функций →
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -1375,14 +1395,16 @@ function ScenarioCard({
   onClick: () => void;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="unstyled"
+      fullWidth
       onClick={onClick}
-      className="glass rounded-2xl p-4 text-left w-full transition-colors hover:border-emerald-500/40 hover:bg-emerald-500/5 active:scale-[0.98]"
+      className="glass rounded-2xl p-4 text-left transition-colors hover:border-emerald-500/40 hover:bg-emerald-500/5 active:scale-[0.98]"
     >
       <div className="text-2xl mb-1">{emoji}</div>
       <div className="font-semibold text-white">{title}</div>
       <div className="text-xs text-(--color_text_muted) mt-1">{hint}</div>
-    </button>
+    </Button>
   );
 }

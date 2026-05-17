@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { WorkoutStats } from '@/types/Analytics';
+import { AnalyticsEmptyState } from './AnalyticsEmptyState';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 
 interface Props {
@@ -129,6 +130,12 @@ export default function StreakBlock({ data, period }: Props) {
   }, [data]);
 
   const totalDays = trainedSet.size;
+
+  if (!(data.timeline ?? []).length) {
+    return (
+      <AnalyticsEmptyState hint="Календарь точек строится по последним 28 дням; для полноценной сетки переключитесь на «Месяц»." />
+    );
+  }
 
   return (
     <div className="space-y-4">

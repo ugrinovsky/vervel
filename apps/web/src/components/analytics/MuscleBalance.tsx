@@ -1,4 +1,5 @@
 import { WorkoutStats } from '@/types/Analytics';
+import { AnalyticsEmptyState } from './AnalyticsEmptyState';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 
 interface MuscleBalanceProps {
@@ -84,13 +85,7 @@ export default function MuscleBalance({ period, data }: MuscleBalanceProps) {
 
   if (noData) {
     return (
-      <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
-        <span className="text-4xl">⚖️</span>
-        <p className="text-sm text-(--color_text_muted)">Недостаточно данных для анализа баланса</p>
-        <p className="text-xs text-(--color_text_muted)/60">
-          Добавьте больше тренировок с разными группами мышц
-        </p>
-      </div>
+      <AnalyticsEmptyState hint="Добавьте больше тренировок с разными группами мышц, чтобы сравнить верх/низ, перед/зад и толкание/тягу." />
     );
   }
 

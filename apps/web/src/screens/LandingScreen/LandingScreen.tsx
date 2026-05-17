@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router';
+import ButtonLink from '@/components/ui/ButtonLink';
 import { motion } from 'framer-motion';
 import VerveLogo from '@/components/VerveLogo/VerveLogo';
 import { useAuth } from '@/contexts/AuthContext';
@@ -304,20 +305,20 @@ export default function LandingScreen() {
               transition={{ duration: 0.5, delay: 0.36 }}
               style={{ marginTop: 24 }}
             >
-              <Link
+              <ButtonLink
                 to="/register"
-                className="lnd-btn-cta main-button"
+                variant="primary"
+                className="lnd-btn-cta"
                 style={{
                   borderRadius: 13,
                   padding: '13px 26px',
                   fontSize: 14,
                   fontWeight: 700,
-                  textDecoration: 'none',
                   display: 'inline-block',
                 }}
               >
                 Начать бесплатно →
-              </Link>
+              </ButtonLink>
             </motion.div>
           </div>
 

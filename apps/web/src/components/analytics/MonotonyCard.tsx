@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { WorkoutStats } from '@/types/Analytics';
 import { computeAnalyticsInsights } from '@/util/computeAnalyticsInsights';
+import { AnalyticsEmptyState } from './AnalyticsEmptyState';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 
 interface Props {
@@ -36,14 +37,7 @@ export default function MonotonyCard({ data, period }: Props) {
   const { monotony } = useMemo(() => computeAnalyticsInsights(data, period), [data, period]);
 
   if (!monotony) {
-    return (
-      <div className="space-y-4">
-        <AnalyticsSheetIntro>Нужно минимум 3 тренировки с данными об объёме.</AnalyticsSheetIntro>
-        <p className="text-sm text-(--color_text_muted) text-center py-6">
-          Пока недостаточно данных.
-        </p>
-      </div>
-    );
+    return <AnalyticsEmptyState hint="Нужно минимум 3 тренировки с данными об объёме." />;
   }
 
   const cfg = RISK_CONFIG[monotony.riskLevel];

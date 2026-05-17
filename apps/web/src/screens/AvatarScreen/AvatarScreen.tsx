@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import AccentButton from '@/components/ui/AccentButton';
+import Button, { MotionButton } from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { toDateKey, getCurrentHour } from '@/utils/date';
 import { useAthleteWorkoutDraftLocal } from '@/hooks/useAthleteWorkoutDraftLocal';
@@ -173,7 +174,7 @@ export default function AvatarScreen() {
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="card-shadow flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30"
+              className="draft-banner flex items-center justify-between gap-3 px-4 py-3 rounded-xl"
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium text-amber-300">Незаконченная тренировка</p>
@@ -199,12 +200,14 @@ export default function AvatarScreen() {
           {/* Тренировка от тренера сегодня */}
           <AnimatePresence>
             {todayWorkout && (
-              <motion.button
+              <MotionButton
+                type="button"
+                variant="unstyled"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 onClick={() => navigate('/calendar')}
-                className="w-full text-left rounded-2xl p-4 main-button relative overflow-hidden"
+                className="w-full text-left rounded-2xl p-4 bg-(--color_primary_light) text-white relative overflow-hidden"
               >
                 <div className="absolute inset-0 bg-black/20" />
                 <div className="relative flex items-center gap-3">
@@ -221,7 +224,7 @@ export default function AvatarScreen() {
                   </div>
                   <div className="text-white/60 text-sm shrink-0">→</div>
                 </div>
-              </motion.button>
+              </MotionButton>
             )}
           </AnimatePresence>
 
@@ -331,7 +334,7 @@ export default function AvatarScreen() {
                 <motion.div
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="card-shadow rounded-2xl overflow-hidden border border-white/10"
+                  className="glass rounded-2xl overflow-hidden"
                 >
                   {items.map((item, idx) => {
                     const c = colorMap[item.color];
@@ -347,12 +350,14 @@ export default function AvatarScreen() {
                             <p className={`text-xs ${c.body} mt-0.5 leading-snug`}>{item.body}</p>
                           </div>
                           {item.action && (
-                            <button
+                            <Button
+                              type="button"
+                              variant="link"
                               onClick={() => navigate(item.action!.to)}
-                              className={`text-xs font-medium shrink-0 mt-0.5 ${c.title} hover:opacity-80 transition-opacity`}
+                              className={`text-xs font-medium shrink-0 mt-0.5 !no-underline ${c.title} hover:opacity-80`}
                             >
                               {item.action.label} →
-                            </button>
+                            </Button>
                           )}
                         </div>
                       </div>

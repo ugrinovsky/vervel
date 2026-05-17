@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { authApi, type UserRole } from '@/api/auth';
 import { useAuth } from '@/contexts/AuthContext';
+import Button from '@/components/ui/Button';
 
 /** Выбор роли после OAuth / встроенного входа / Яндекса, если в ответе логина нет роли. */
 export default function SelectRoleScreen() {
@@ -87,8 +88,10 @@ export default function SelectRoleScreen() {
 
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <button
+              <Button
                 type="button"
+                variant="unstyled"
+                fullWidth
                 onClick={() => toggleRole('athlete')}
                 className={`p-4 rounded-xl border text-center transition-all ${
                   selectedRoles.has('athlete')
@@ -99,10 +102,12 @@ export default function SelectRoleScreen() {
                 <div className="text-3xl mb-2">🏃</div>
                 <div className="font-medium">Атлет</div>
                 <div className="text-xs text-white/60 mt-1">Тренируюсь сам</div>
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
+                variant="unstyled"
+                fullWidth
                 onClick={() => toggleRole('trainer')}
                 className={`p-4 rounded-xl border text-center transition-all ${
                   selectedRoles.has('trainer')
@@ -113,7 +118,7 @@ export default function SelectRoleScreen() {
                 <div className="text-3xl mb-2">🏋️</div>
                 <div className="font-medium">Тренер</div>
                 <div className="text-xs text-white/60 mt-1">Тренирую других</div>
-              </button>
+              </Button>
             </div>
 
             {selectedRoles.size === 2 && (
@@ -122,15 +127,20 @@ export default function SelectRoleScreen() {
               </p>
             )}
 
-            <motion.button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="w-full py-3 rounded-xl font-semibold text-lg main-button"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {loading ? 'Сохранение...' : 'Продолжить'}
-            </motion.button>
+            <motion.div className="w-full" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                type="button"
+                size="lg"
+                fullWidth
+                onClick={handleSubmit}
+                disabled={loading}
+                loading={loading}
+                loadingText="Сохранение..."
+                className="font-semibold"
+              >
+                Продолжить
+              </Button>
+            </motion.div>
           </div>
         </div>
       </motion.div>

@@ -12,6 +12,7 @@ import ListButton from '@/components/ui/ListButton';
 import ToggleGroup from '@/components/ui/ToggleGroup';
 import BackButton from '@/components/BackButton/BackButton';
 import AccentButton from '@/components/ui/AccentButton';
+import { buttonClasses } from '@/components/ui/buttonStyles';
 import AppInput from '@/components/ui/AppInput';
 
 const DONATION_AMOUNTS = [100, 300, 500, 1000];
@@ -92,7 +93,7 @@ export default function TrainerPublicProfileScreen() {
             photoUrl={profile.photoUrl}
             name={profile.fullName}
             size={112}
-            className="mb-3 shadow-lg"
+            className="mb-3"
           />
           <h1 className="text-xl font-bold text-white mb-1">{profile.fullName || 'Тренер'}</h1>
           {profile.specializations && profile.specializations.length > 0 && (
@@ -243,7 +244,13 @@ export default function TrainerPublicProfileScreen() {
                     }
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity"
+                    className={buttonClasses({
+                      variant: 'primary',
+                      size: 'md',
+                      fullWidth: true,
+                      className: 'gap-2',
+                    })}
+                    style={{ color: 'white' }}
                   >
                     Оплатить картой через ЮКасса
                     {donationAmount ? ` · ${donationAmount}₽` : ''}

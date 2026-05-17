@@ -8,6 +8,7 @@ import { aiApi, type AiWorkoutResult } from '@/api/ai';
 import { useAiBalance } from '@/hooks/useAiBalance';
 import AiSheetHeader from '@/components/ui/AiSheetHeader';
 import AiCostNotice from '@/components/ui/AiCostNotice';
+import Button from '@/components/ui/Button';
 
 const MAX_PROMPT_LENGTH = 600;
 
@@ -90,10 +91,14 @@ export default function AiWorkoutGenerator({ onResult, triggerClassName, trigger
 
   return (
     <>
-      <button
+      <Button
         type="button"
+        variant="link"
         onClick={() => setOpen(true)}
-        className={triggerClassName ?? 'flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors'}
+        className={
+          triggerClassName ??
+          'flex items-center gap-1.5 !text-xs !text-emerald-400 hover:!text-emerald-300 !no-underline p-0'
+        }
       >
         {triggerContent ?? (
           <>
@@ -101,7 +106,7 @@ export default function AiWorkoutGenerator({ onResult, triggerClassName, trigger
             Сгенерировать ИИ
           </>
         )}
-      </button>
+      </Button>
 
       <BottomSheet id="ai-workout-generator" open={open} onClose={handleClose} header={sheetHeader}>
         <AnimatePresence mode="wait">
@@ -146,27 +151,31 @@ export default function AiWorkoutGenerator({ onResult, triggerClassName, trigger
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {EXAMPLES.map((ex) => (
-                    <button
+                    <Button
                       key={ex}
                       type="button"
+                      variant="subtle"
+                      size="xs"
                       onClick={() => setPrompt(ex)}
-                      className="px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/50 hover:text-white hover:border-white/25 transition-colors text-left"
+                      className="text-left text-white/50 hover:text-white"
                     >
                       {ex}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
 
-              <button
+              <Button
                 type="button"
+                variant="emerald"
+                fullWidth
                 onClick={handleGenerate}
                 disabled={!prompt.trim() || !hasEnoughBalance}
-                className="w-full py-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="py-3 gap-2"
               >
                 <SparklesIcon className="w-4 h-4" />
                 Сгенерировать {cost}₽
-              </button>
+              </Button>
             </motion.div>
           )}
         </AnimatePresence>

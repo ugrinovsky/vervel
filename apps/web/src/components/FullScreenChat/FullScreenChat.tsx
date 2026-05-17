@@ -1,5 +1,6 @@
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import ChatBox from '@/components/ChatBox/ChatBox';
+import Button from '@/components/ui/Button';
 import ModalOverlay from '@/components/ModalOverlay/ModalOverlay';
 
 interface FullScreenChatProps {
@@ -14,12 +15,15 @@ export default function FullScreenChat({ open, chatId, title, onClose }: FullScr
     <ModalOverlay open={open && chatId !== null} variant="fullscreen" onClose={onClose}>
       <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-(--color_border) shrink-0">
         <span className="text-base font-semibold text-white truncate">{title}</span>
-        <button
+        <Button
+          type="button"
+          variant="unstyled"
           onClick={onClose}
           className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors shrink-0"
+          aria-label="Закрыть"
         >
           <XMarkIcon className="w-4 h-4 text-white" />
-        </button>
+        </Button>
       </div>
       {chatId && <ChatBox chatId={chatId} className="flex-1 min-h-0" />}
     </ModalOverlay>

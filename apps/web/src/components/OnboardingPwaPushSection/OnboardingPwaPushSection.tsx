@@ -6,6 +6,7 @@ import {
   isMobileBrowser,
 } from '@/components/PwaInstallHint/pwaInstallShared';
 import { PwaInstructions } from '@/components/PwaInstallHint/PwaInstallHint';
+import Button from '@/components/ui/Button';
 
 /**
  * Общий блок PWA + web push для финального шага онбординга (атлет / тренер).
@@ -49,8 +50,9 @@ export default function OnboardingPwaPushSection() {
                 'Заблокированы в браузере — разрешите в настройках сайта'}
             </p>
             {pushPermission !== 'denied' && (
-              <button
+              <Button
                 type="button"
+                variant="unstyled"
                 onClick={() => void handleEnablePush()}
                 disabled={pushLoading || pushPermission === 'granted'}
                 className="shrink-0 px-4 py-2 rounded-xl text-xs font-medium transition-all disabled:opacity-50"
@@ -63,7 +65,7 @@ export default function OnboardingPwaPushSection() {
                 }}
               >
                 {pushLoading ? '...' : pushPermission === 'granted' ? 'Включены' : 'Включить'}
-              </button>
+              </Button>
             )}
           </div>
         </div>

@@ -23,6 +23,7 @@ import {
   normalizeIntensity,
 } from '@/constants/AnalyticsConstants';
 import type { WorkoutStats } from '@/types/Analytics';
+import { AnalyticsEmptyState } from './AnalyticsEmptyState';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 
 interface WorkoutRadarProps {
@@ -112,6 +113,14 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
   const weakest = metrics.reduce((worst, current) =>
     current.value < worst.value ? current : worst
   );
+
+  if (!workoutsCount) {
+    return (
+      <div className="glass p-6 rounded-xl">
+        <AnalyticsEmptyState hint="Четыре шкалы на одной сетке: интенсивность, объём, баланс зон и частота. Появятся после первых тренировок в периоде." />
+      </div>
+    );
+  }
 
   return (
     <div className="glass p-6 rounded-xl">

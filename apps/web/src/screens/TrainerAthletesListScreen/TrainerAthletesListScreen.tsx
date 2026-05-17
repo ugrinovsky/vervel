@@ -214,12 +214,9 @@ export default function TrainerAthletesListScreen() {
                     </div>
                   ))}
                 </div>
-                <button
-                  onClick={() => setShowAddDrawer(true)}
-                  className="w-full py-2.5 rounded-xl bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity"
-                >
+                <AccentButton onClick={() => setShowAddDrawer(true)} className="py-2.5">
                   Пригласить первого атлета
-                </button>
+                </AccentButton>
               </div>
             ) : filteredAthletes.length === 0 ? (
               <p className="text-sm text-(--color_text_muted) text-center py-8">
@@ -242,8 +239,8 @@ export default function TrainerAthletesListScreen() {
                         <motion.div key={athlete.id} whileTap={{ scale: 0.99 }}>
                           <ConfirmDeleteWrapper
                             onConfirm={() => handleRemoveAthlete(athlete.id)}
-                            outerClassName="card-shadow"
-                            className="bg-(--color_bg_card) flex items-center gap-3 px-4 py-3 hover:bg-(--color_bg_card_hover) transition-colors"
+                            surface="glass-row"
+                            className="flex items-center gap-3 px-4 py-3"
                           >
                             <div
                               className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
@@ -302,8 +299,8 @@ export default function TrainerAthletesListScreen() {
                             onConfirm={() => handleRemoveAthlete(athlete.id)}
                             rounded="rounded-2xl"
                             overlayLayout="column"
-                            outerClassName="card-shadow"
-                            className="bg-(--color_bg_card) flex flex-col items-center gap-2 p-4 hover:bg-(--color_bg_card_hover) transition-colors"
+                            surface="glass-row"
+                            className="flex flex-col items-center gap-2 p-4"
                           >
                             {unread > 0 && (
                               <Badge count={unread} className="absolute top-2.5 right-2.5" />

@@ -1,4 +1,5 @@
 import type { Exercise, ExerciseCategory } from '@/types/Exercise';
+import Button from '@/components/ui/Button';
 import { getZoneLabel } from '@/util/zones';
 import { CATEGORY_LABELS } from '@/components/ExerciseFilterBar/exerciseFilterConstants';
 import { useImageLoad } from '@/hooks/useImageLoad';
@@ -55,12 +56,18 @@ export function ExercisePickerCard({
   onQuickAdd: () => void;
 }) {
   return (
-    <div className="glass flex flex-col rounded-xl overflow-hidden hover:bg-(--color_bg_card_hover) transition-all text-left">
-      <button onClick={onClick} className="w-full focus:outline-none">
+    <div className="glass-row flex flex-col rounded-xl overflow-hidden text-left">
+      <Button type="button" variant="unstyled" fullWidth onClick={onClick} className="focus:outline-none p-0">
         <ExerciseImage exercise={exercise} aspectClass="aspect-video" />
-      </button>
+      </Button>
 
-      <div className="px-2 pt-1.5 pb-1 cursor-pointer flex-1" onClick={onClick}>
+      <Button
+        type="button"
+        variant="unstyled"
+        fullWidth
+        onClick={onClick}
+        className="px-2 pt-1.5 pb-1 flex-1 text-left"
+      >
         <p className="text-xs font-medium text-(--color_text_secondary) leading-snug line-clamp-2">
           {exercise.title}
         </p>
@@ -69,17 +76,19 @@ export function ExercisePickerCard({
             {getZoneLabel(exercise.zones[0])}
           </span>
         )}
-      </div>
+      </Button>
 
-      <button
+      <Button
+        variant="soft"
+        size="xs"
         onClick={(e) => {
           e.stopPropagation();
           onQuickAdd();
         }}
-        className="mx-2 mb-2 py-1 rounded-lg text-xs font-semibold transition-all active:scale-95 bg-(--color_primary_light)/15 hover:bg-(--color_primary_light)/25 text-(--color_primary_light)"
+        className="mx-2 mb-2"
       >
         + Добавить
-      </button>
+      </Button>
     </div>
   );
 }
@@ -96,9 +105,12 @@ export function ExerciseLibraryCard({
   onClick: () => void;
 }) {
   return (
-    <button
+    <Button
+      type="button"
+      variant="unstyled"
+      fullWidth
       onClick={onClick}
-      className="glass flex flex-col rounded-2xl overflow-hidden border border-white/10 hover:bg-white/10 active:scale-[0.98] transition-all text-left w-full"
+      className="glass-row flex flex-col rounded-2xl overflow-hidden active:scale-[0.98] transition-all text-left"
     >
       <ExerciseImage exercise={exercise} aspectClass="aspect-3/2" />
 
@@ -133,6 +145,6 @@ export function ExerciseLibraryCard({
           </div>
         </div>
       </div>
-    </button>
+    </Button>
   );
 }

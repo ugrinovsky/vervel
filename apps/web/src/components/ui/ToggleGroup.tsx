@@ -1,8 +1,11 @@
 import { type ReactNode } from 'react';
+import Button from '@/components/ui/Button';
 
 interface Option<T> {
   value: T;
   label: ReactNode;
+  /** joined: 'card' uses muted card bg when active instead of primary */
+  activeTone?: 'primary' | 'card';
 }
 
 interface Props<T extends string | number> {
@@ -16,6 +19,8 @@ interface Props<T extends string | number> {
   itemPy?: string;
   /** Join buttons together without gap, rounded only on ends */
   joined?: boolean;
+  /** joined: compact chips (rounded-lg, text-xs) inside a padded container */
+  joinedCompact?: boolean;
 }
 
 const COLS = { 2: 'grid-cols-2', 3: 'grid-cols-3', 4: 'grid-cols-4' } as const;
@@ -33,6 +38,7 @@ export default function ToggleGroup<T extends string | number>({
   className = '',
   itemPy = 'py-2',
   joined = false,
+  joinedCompact = false,
 }: Props<T>) {
   const colClass = COLS[cols ?? gridColsForCount(options.length)];
 
@@ -43,22 +49,30 @@ export default function ToggleGroup<T extends string | number>({
           const active = opt.value === value;
           const isFirst = i === 0;
           const isLast = i === options.length - 1;
+          const radius = joinedCompact ? 'rounded-lg' : 'rounded-xl';
+          const activeTone = opt.activeTone ?? 'primary';
+          const activeCls =
+            activeTone === 'card'
+              ? 'bg-(--color_bg_card_hover) text-white'
+              : 'bg-(--color_primary_light) text-white';
           return (
-            <button
+            <Button
               key={opt.value}
               type="button"
+              variant="unstyled"
               onClick={() => onChange(opt.value)}
-              className={`flex-1 ${itemPy} text-sm font-medium transition-all border relative
-                ${isFirst ? 'rounded-l-xl' : '-ml-px'}
-                ${isLast ? 'rounded-r-xl' : ''}
+              className={`flex-1 ${itemPy} ${joinedCompact ? 'text-xs' : 'text-sm'} font-medium transition-colors relative
+                ${joinedCompact ? radius : `${isFirst ? 'rounded-l-xl' : '-ml-px'} ${isLast ? 'rounded-r-xl' : ''}`}
                 ${
                   active
-                    ? 'bg-(--color_primary_light) border-(--color_primary_light) text-white z-10'
-                    : 'glass border-(--color_border) text-(--color_text_muted) hover:text-white'
+                    ? activeCls
+                    : joinedCompact
+                      ? 'text-(--color_text_muted) hover:text-white'
+                      : 'glass border border-(--color_border) text-(--color_text_muted) hover:text-white'
                 }`}
             >
               {opt.label}
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -70,9 +84,10 @@ export default function ToggleGroup<T extends string | number>({
       {options.map((opt) => {
         const active = opt.value === value;
         return (
-          <button
+          <Button
             key={opt.value}
             type="button"
+            variant="unstyled"
             onClick={() => onChange(opt.value)}
             className={`${itemPy} rounded-xl text-sm font-medium transition-all border ${
               active
@@ -81,7 +96,7 @@ export default function ToggleGroup<T extends string | number>({
             }`}
           >
             {opt.label}
-          </button>
+          </Button>
         );
       })}
     </div>

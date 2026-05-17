@@ -16,6 +16,7 @@ import {
 import type { DragEndEvent, DragStartEvent, Modifier } from '@dnd-kit/core';
 import Screen from '@/components/Screen/Screen';
 import AccentButton from '@/components/ui/AccentButton';
+import Button from '@/components/ui/Button';
 import AppInput from '@/components/ui/AppInput';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
@@ -547,16 +548,17 @@ function IntroSessionForm({
         >
           Отмена
         </GhostButton>
-        <button
+        <Button
           type="submit"
+          variant="unstyled"
           disabled={saving || !clientName.trim()}
-          className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-40 transition-opacity ring-1 ring-sky-400/40"
+          className="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-40 ring-1 ring-sky-400/40"
           style={{
             background: 'linear-gradient(135deg, rgba(14,165,233,0.75), rgba(2,132,199,0.75))',
           }}
         >
           {saving ? 'Сохранение…' : editWorkout ? 'Сохранить' : 'Добавить'}
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -991,7 +993,7 @@ export default function TrainerCalendarScreen() {
               <motion.div
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-3 flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30"
+                className="draft-banner mb-3 flex items-center justify-between gap-3 px-4 py-3 rounded-xl"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-amber-300">Незаконченная тренировка</p>
@@ -1123,13 +1125,15 @@ export default function TrainerCalendarScreen() {
                     Запись на тренировки недоступна
                   </p>
                 </div>
-                <button
+                <Button
+                  type="button"
+                  variant="unstyled"
                   onClick={toggleRestDay}
                   disabled={togglingRest}
-                  className="mt-1 px-4 py-2 rounded-xl text-xs font-medium text-slate-300 bg-slate-600/50 ring-1 ring-slate-500/40 hover:bg-slate-500/50 transition-colors disabled:opacity-40"
+                  className="mt-1 px-4 py-2 rounded-xl text-xs font-medium text-slate-300 bg-slate-600/50 ring-1 ring-slate-500/40 hover:bg-slate-500/50 disabled:opacity-40"
                 >
                   Отменить выходной
-                </button>
+                </Button>
               </motion.div>
             )}
 
@@ -1183,19 +1187,21 @@ export default function TrainerCalendarScreen() {
                                       />
                                     </div>
                                     {isLast && (
-                                      <button
+                                      <Button
+                                        type="button"
+                                        variant="link"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           openFormAt(timeStr);
                                         }}
-                                        className={`shrink-0 text-xs transition-colors px-1 ${
+                                        className={`shrink-0 !text-xs px-1 !no-underline ${
                                           isActive
-                                            ? 'text-emerald-400 hover:text-emerald-300'
-                                            : 'text-(--color_text_muted) hover:text-white'
+                                            ? '!text-emerald-400 hover:!text-emerald-300'
+                                            : 'text-(--color_text_muted) hover:!text-white'
                                         }`}
                                       >
                                         + ещё
-                                      </button>
+                                      </Button>
                                     )}
                                   </div>
                                 );
@@ -1203,10 +1209,13 @@ export default function TrainerCalendarScreen() {
                             </div>
                           ) : (
                             /* Empty slot — click to add */
-                            <button
+                            <Button
+                              type="button"
+                              variant="unstyled"
+                              fullWidth
                               onClick={() => openFormAt(timeStr)}
                               className={`
-                            w-full h-9 rounded-lg text-xs transition-all duration-150 text-left px-2
+                            h-9 rounded-lg text-xs transition-all duration-150 text-left px-2
                             ${
                               isActive
                                 ? 'bg-emerald-900/60 text-emerald-300 ring-1 ring-emerald-600'
@@ -1215,7 +1224,7 @@ export default function TrainerCalendarScreen() {
                           `}
                             >
                               + добавить в {timeStr}
-                            </button>
+                            </Button>
                           )}
                         </DroppableHour>
                       </div>

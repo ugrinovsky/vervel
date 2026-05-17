@@ -7,6 +7,7 @@ import {
   type Ref,
 } from 'react';
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import Button from '@/components/ui/Button';
 
 function assignRef<T>(r: Ref<T> | undefined, value: T | null) {
   if (r == null) return;
@@ -92,14 +93,15 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(function Sear
         {...props}
       />
       {showClear && (
-        <button
+        <Button
           type="button"
+          variant="unstyled"
           className={`shrink-0 rounded-md text-(--color_text_muted) hover:text-(--color_text_secondary) hover:bg-(--color_bg_card_hover) transition-colors ${dense ? 'p-0.5' : 'p-1 rounded-lg'}`}
           aria-label="Очистить"
           onClick={handleClear}
         >
           <XMarkIcon className={iconSz} />
-        </button>
+        </Button>
       )}
     </div>
   );

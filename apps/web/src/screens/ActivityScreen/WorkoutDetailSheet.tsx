@@ -25,6 +25,8 @@ import { WOD_CONFIG, isWodType } from '@/constants/workoutTypes';
 import { getZoneLabel } from '@/util/zones';
 import toast from 'react-hot-toast';
 import GhostButton from '@/components/ui/GhostButton';
+import Button from '@/components/ui/Button';
+import ToolbarButton from '@/components/ui/ToolbarButton';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 import { PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -372,13 +374,13 @@ function ExerciseCard({
             <span className="text-xs text-emerald-400 font-semibold">{formatVolume(vol)}</span>
           )}
           {isEditing && (
-            <button
+            <ToolbarButton
               onClick={onEditClick}
-              className="p-1 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
+              className="p-1 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white/80"
               title="Редактировать упражнение"
             >
               <PencilIcon className="w-3.5 h-3.5" />
-            </button>
+            </ToolbarButton>
           )}
           {isEditing && onDelete && (
             <ConfirmDeleteButton
@@ -935,10 +937,12 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
     >
       {workout && !isEditing && (
         <div className="mb-4">
-          <button
+          <Button
             type="button"
+            variant="unstyled"
+            fullWidth
             onClick={startEditWorkout}
-            className="group flex items-center gap-2.5 w-full max-w-full rounded-xl px-3 py-2.5 text-left border border-(--color_border) bg-(--color_bg_card_hover)/60 hover:bg-(--color_bg_card_hover) hover:border-white/20 transition-colors"
+            className="group flex items-center gap-2.5 max-w-full rounded-xl px-3 py-2.5 text-left border border-(--color_border) bg-(--color_bg_card_hover)/60 hover:bg-(--color_bg_card_hover) hover:border-white/20 transition-colors"
           >
             <span className="min-w-0 flex-1 text-sm leading-snug">
               {effectiveDateIso ? (
@@ -961,7 +965,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
               <PencilIcon className="w-4 h-4 opacity-90" />
               {effectiveDateIso ? 'Изменить' : 'Выбрать'}
             </span>
-          </button>
+          </Button>
         </div>
       )}
 
@@ -1008,14 +1012,17 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
                   <XMarkIcon className="w-4 h-4" />
                   Отмена
                 </GhostButton>
-                <button
+                <Button
+                  variant="emerald-cta"
                   onClick={handleSaveWeights}
                   disabled={savingWeights}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium bg-emerald-500 text-black hover:bg-emerald-400 transition-colors disabled:opacity-50"
+                  loading={savingWeights}
+                  loadingText="Сохранение..."
+                  className="flex-1"
                 >
                   <CheckIcon className="w-4 h-4" />
-                  {savingWeights ? 'Сохранение...' : 'Сохранить'}
-                </button>
+                  Сохранить
+                </Button>
               </div>
               <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
                 <PencilIcon className="w-4 h-4 shrink-0" />
@@ -1047,9 +1054,10 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
                 {RPE_LEVELS.map((level) => {
                   const selected = rpe === level.value;
                   return (
-                    <button
+                    <Button
                       key={level.value}
                       type="button"
+                      variant="unstyled"
                       onClick={() => handleRpeTap(level.value)}
                       disabled={savingRpe}
                       className={`flex flex-col items-center gap-1 py-2 px-1 rounded-xl border transition-all disabled:opacity-50 ${
@@ -1064,7 +1072,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
                       >
                         {level.label}
                       </span>
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -1283,13 +1291,14 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
                 >
                   Отмена
                 </GhostButton>
-                <button
+                <Button
+                  variant="emerald-cta"
                   onClick={handleApplyParsed}
                   disabled={isApplying}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium bg-emerald-500 text-black hover:bg-emerald-400 transition-colors disabled:opacity-50"
+                  className="flex-1"
                 >
                   {isApplying ? <LoadingSpinner size="xs" variant="trackLight" /> : 'Сохранить'}
-                </button>
+                </Button>
               </div>
             </div>
           )}

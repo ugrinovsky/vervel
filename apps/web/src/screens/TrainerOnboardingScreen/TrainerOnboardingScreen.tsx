@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import AccentButton from '@/components/ui/AccentButton';
+import Button from '@/components/ui/Button';
 import GhostButton from '@/components/ui/GhostButton';
 import AppInput from '@/components/ui/AppInput';
 import PhoneInput from '@/components/ui/PhoneInput';
@@ -140,13 +141,14 @@ export default function TrainerOnboardingScreen(): JSX.Element {
             Шаг {progress} / {totalSteps}
           </span>
           {step !== 'done' && (
-            <button
+            <Button
               type="button"
+              variant="link"
               onClick={handleSkip}
-              className="text-emerald-400/90 hover:text-emerald-300 underline-offset-2 hover:underline"
+              className="!text-emerald-400/90 hover:!text-emerald-300 !no-underline hover:underline"
             >
               Пропустить
-            </button>
+            </Button>
           )}
         </div>
 
@@ -161,16 +163,18 @@ export default function TrainerOnboardingScreen(): JSX.Element {
             <p className="text-sm text-(--color_text_muted) mb-3">Формат работы</p>
             <div className="grid gap-2 w-full shrink-0">
               {STYLE_OPTIONS.map((o) => (
-                <button
+                <Button
                   key={o.id}
                   type="button"
+                  variant="unstyled"
+                  fullWidth
                   onClick={() => void selectWorkStyle(o.id)}
-                  className="glass rounded-xl p-3 text-left w-full transition-colors hover:border-emerald-500/40"
+                  className="glass rounded-xl p-3 text-left transition-colors hover:border-emerald-500/40"
                 >
                   <div className="text-2xl mb-1">{o.emoji}</div>
                   <div className="font-semibold text-white">{o.title}</div>
                   <div className="text-xs text-(--color_text_muted) mt-1">{o.hint}</div>
-                </button>
+                </Button>
               ))}
             </div>
           </>
@@ -290,13 +294,15 @@ export default function TrainerOnboardingScreen(): JSX.Element {
               >
                 📋 Открыть CRM
               </AccentButton>
-              <button
+              <Button
                 type="button"
+                variant="link"
+                fullWidth
                 onClick={() => navigate('/trainer', { replace: true })}
-                className="w-full py-2 text-sm text-(--color_text_muted) hover:text-white transition-colors"
+                className="py-2 !text-sm text-(--color_text_muted) hover:!text-white !no-underline"
               >
                 На главную тренера
-              </button>
+              </Button>
             </div>
           </div>
         )}

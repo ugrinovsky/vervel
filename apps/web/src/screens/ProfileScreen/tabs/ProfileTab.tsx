@@ -13,6 +13,7 @@ import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import ListButton from '@/components/ui/ListButton';
 import { CameraIcon } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
+import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import SectionGroup from '@/components/ui/SectionGroup';
 import { isOAuthPlaceholderEmail, profileEmailSubtitle } from '@/util/oauthPlaceholderEmail';
@@ -173,11 +174,12 @@ export default function ProfileTab({ data, trainerStats }: Props) {
       <SectionGroup showLabel={false} showBreakAfter={false}>
         <div className="glass rounded-2xl overflow-hidden">
           <div className="flex items-center gap-4 p-6">
-            <button
+            <Button
               type="button"
+              variant="unstyled"
               onClick={() => fileRef.current?.click()}
               disabled={uploadingPhoto}
-              className="relative shrink-0"
+              className="relative shrink-0 p-0"
             >
               <UserAvatar photoUrl={photoUrl} size={96} />
               {!photoUrl && !uploadingPhoto && (
@@ -196,7 +198,7 @@ export default function ProfileTab({ data, trainerStats }: Props) {
                   <LoadingSpinner size="sm" variant="light" />
                 </div>
               )}
-            </button>
+            </Button>
             <div className="min-w-0">
               <div className="text-xl font-bold text-white truncate">
                 {data.user.fullName || 'Без имени'}
@@ -210,10 +212,12 @@ export default function ProfileTab({ data, trainerStats }: Props) {
             </div>
           </div>
           {inTrainerMode && (
-            <button
+            <Button
               type="button"
+              variant="unstyled"
+              fullWidth
               onClick={() => navigate('/trainer/personal')}
-              className="w-full flex items-center gap-3 px-6 py-4 border-t border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
+              className="flex items-center gap-3 px-6 py-4 border-t border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
             >
               <span className="text-xl">🪪</span>
               <div className="flex-1 min-w-0">
@@ -223,7 +227,7 @@ export default function ProfileTab({ data, trainerStats }: Props) {
                 </div>
               </div>
               <span className="text-(--color_text_muted) text-sm shrink-0">→</span>
-            </button>
+            </Button>
           )}
         </div>
       </SectionGroup>
@@ -254,18 +258,7 @@ export default function ProfileTab({ data, trainerStats }: Props) {
       {inAthleteMode && (
         <SectionGroup title="Прогресс и приглашения">
           {flags.streaks && (
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={() => navigate('/streak')}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  navigate('/streak');
-                }
-              }}
-              className="glass rounded-2xl p-5 cursor-pointer hover:bg-(--color_bg_card_hover) transition-colors flex items-center justify-between"
-            >
+            <ListButton onClick={() => navigate('/streak')} className="justify-between">
               <div>
                 <div className="text-base font-semibold text-white mb-0.5">Ачивки и серия</div>
                 <p className="text-sm text-(--color_text_muted)">Посмотреть достижения</p>
@@ -274,7 +267,7 @@ export default function ProfileTab({ data, trainerStats }: Props) {
                 <span className="text-2xl">🏆</span>
                 <span className="text-(--color_text_muted) text-sm">→</span>
               </div>
-            </div>
+            </ListButton>
           )}
           {flags.teams && (
             <ListButton onClick={() => setQrOpen(true)}>

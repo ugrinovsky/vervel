@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { getApiErrorMessage } from '@/utils/apiError';
-import { useParams, useNavigate, Link } from 'react-router';
+import { useParams, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { athleteApi } from '@/api/athlete';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeatureUnlock } from '@/hooks/useFeatureUnlock';
 import AccentButton from '@/components/ui/AccentButton';
+import ButtonLink from '@/components/ui/ButtonLink';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface InviteInfo {
@@ -73,12 +74,9 @@ export default function InviteScreen() {
         <p className="text-sm text-(--color_text_muted) mb-6">
           Приглашение уже использовано или истекло
         </p>
-        <Link
-          to="/"
-          className="px-6 py-3 rounded-xl bg-(--color_primary_light) text-white text-sm font-medium hover:opacity-90 transition-opacity"
-        >
+        <ButtonLink to="/" size="lg" className="px-6">
           На главную
-        </Link>
+        </ButtonLink>
       </div>
     );
   }
@@ -154,18 +152,19 @@ export default function InviteScreen() {
                   <p className="text-xs text-(--color_text_muted) mb-3">
                     Войдите или зарегистрируйтесь, чтобы принять приглашение
                   </p>
-                  <Link
+                  <ButtonLink
                     to={`/login?invite=${token}`}
-                    className="block w-full py-3.5 rounded-2xl bg-(--color_primary_light) text-white font-semibold text-sm text-center hover:opacity-90 transition-opacity"
+                    className="font-semibold rounded-2xl py-3.5"
                   >
                     Войти
-                  </Link>
-                  <Link
+                  </ButtonLink>
+                  <ButtonLink
                     to={`/register?invite=${token}`}
-                    className="block w-full py-3 rounded-2xl bg-(--color_bg_card_hover) text-white text-sm text-center hover:opacity-90 transition-opacity border border-(--color_border)"
+                    variant="secondary"
+                    className="rounded-2xl py-3 text-center"
                   >
                     Зарегистрироваться
-                  </Link>
+                  </ButtonLink>
                 </div>
               )}
             </div>

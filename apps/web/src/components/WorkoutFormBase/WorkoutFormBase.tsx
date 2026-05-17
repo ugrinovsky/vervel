@@ -27,6 +27,7 @@ import {
   PlusIcon,
 } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
+import Button from '@/components/ui/Button';
 import AppInput from '@/components/ui/AppInput';
 import GhostButton from '@/components/ui/GhostButton';
 import TemplatePicker from '@/components/ui/TemplatePicker';
@@ -576,15 +577,16 @@ export default function WorkoutFormBase({
     <div className={rootGap}>
       {/* Draft banner */}
       {draftRestored && storageKey && (
-        <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl glass bg-amber-500/10 border border-amber-500/30">
+        <div className="draft-banner flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl">
           <span className="text-sm text-amber-300">Восстановлен черновик</span>
-          <button
+          <Button
             type="button"
+            variant="link"
             onClick={resetToInitial}
-            className="text-xs text-amber-400 hover:text-amber-200 font-medium transition-colors underline shrink-0"
+            className="text-xs text-amber-400 hover:text-amber-200 font-medium shrink-0"
           >
             Сбросить
-          </button>
+          </Button>
         </div>
       )}
 
@@ -735,26 +737,30 @@ export default function WorkoutFormBase({
                     </span>
                   </div>
                   <div className="flex gap-2">
-                    <button
+                    <Button
                       type="button"
+                      variant="subtle"
+                      size="sm"
                       onClick={() => exercisesEditorRef.current?.openExercisePicker()}
-                      className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+                      className="flex-1 gap-2 py-1.5 px-2"
                     >
                       <PlusIcon className="w-4 h-4 text-white/50" />
                       <span className="text-sm font-medium text-white">Из каталога</span>
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="subtle"
+                      size="sm"
                       onClick={() =>
                         isTrainerMode
                           ? exercisesEditorRef.current?.openCustomPicker()
                           : setAthleteCustomOpen((v) => !v)
                       }
-                      className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+                      className="flex-1 gap-2 py-1.5 px-2"
                     >
                       <span>✏️</span>
                       <span className="text-sm font-medium text-white">Свои</span>
-                    </button>
+                    </Button>
                   </div>
                 </>
               ) : lightOnboarding ? (
@@ -826,26 +832,30 @@ export default function WorkoutFormBase({
                     <div className="h-px bg-white/10 flex-1" />
                   </div>
                   <div className="flex gap-2">
-                    <button
+                    <Button
                       type="button"
+                      variant="subtle"
+                      size="sm"
                       onClick={() => exercisesEditorRef.current?.openExercisePicker()}
-                      className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+                      className="flex-1 gap-2 py-1.5 px-2"
                     >
                       <PlusIcon className="w-4 h-4 text-white/50" />
                       <span className="text-sm font-medium text-white">Из каталога</span>
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="subtle"
+                      size="sm"
                       onClick={() =>
                         isTrainerMode
                           ? exercisesEditorRef.current?.openCustomPicker()
                           : setAthleteCustomOpen((v) => !v)
                       }
-                      className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+                      className="flex-1 gap-2 py-1.5 px-2"
                     >
                       <span>✏️</span>
                       <span className="text-sm font-medium text-white">Свои</span>
-                    </button>
+                    </Button>
                   </div>
                 </>
               ) : null}
@@ -854,10 +864,12 @@ export default function WorkoutFormBase({
 
         {aiPhotoUrl && (
           <div className="rounded-xl border border-white/10 overflow-hidden mb-3">
-            <button
+            <Button
               type="button"
+              variant="unstyled"
+              fullWidth
               onClick={() => setAiPhotoExpanded((v) => !v)}
-              className="w-full flex items-center justify-between px-3 py-2 text-xs text-white/50 hover:text-white/70 transition-colors"
+              className="flex items-center justify-between px-3 py-2 text-xs text-white/50 hover:text-white/70 transition-colors"
             >
               <span className="flex items-center gap-1.5">
                 <PhotoIcon className="w-3.5 h-3.5" />
@@ -868,7 +880,7 @@ export default function WorkoutFormBase({
               ) : (
                 <ChevronDownIcon className="w-3.5 h-3.5" />
               )}
-            </button>
+            </Button>
             {aiPhotoExpanded && (
               <img
                 src={aiPhotoUrl}
@@ -894,10 +906,12 @@ export default function WorkoutFormBase({
             !showAi ? undefined : exercises.length > 0 && !aiGenerated ? (
               lightOnboarding ? (
                 <div className="glass rounded-xl overflow-hidden mb-1">
-                  <button
+                  <Button
                     type="button"
+                    variant="unstyled"
+                    fullWidth
                     onClick={() => setLiteToolbarMoreOpen((v) => !v)}
-                    className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-white/[0.04] transition-colors"
+                    className="flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-white/[0.04] transition-colors"
                   >
                     <span className="flex items-center gap-2 text-xs text-white/50">
                       <SparklesIcon className="w-3.5 h-3.5 shrink-0 text-violet-400/70" />
@@ -910,7 +924,7 @@ export default function WorkoutFormBase({
                     ) : (
                       <ChevronDownIcon className="w-3.5 h-3.5 shrink-0 text-white/30" />
                     )}
-                  </button>
+                  </Button>
                   {liteToolbarMoreOpen && (
                     <div className="px-3 pb-3">
                       <div className="h-px bg-white/[0.06] mb-3" />
@@ -932,10 +946,12 @@ export default function WorkoutFormBase({
         <div>
           {lightOnboarding ? (
             <>
-              <button
+              <Button
                 type="button"
+                variant="unstyled"
+                fullWidth
                 onClick={() => setNotesLiteOpen((v) => !v)}
-                className="flex w-full items-center justify-between gap-2 py-1 text-left"
+                className="flex items-center justify-between gap-2 py-1 text-left"
               >
                 <span className="text-[10px] font-semibold text-white/40 uppercase tracking-widest">
                   {notesLabel}
@@ -945,7 +961,7 @@ export default function WorkoutFormBase({
                 ) : (
                   <ChevronDownIcon className="w-4 h-4 text-white/40" />
                 )}
-              </button>
+              </Button>
               {notesLiteOpen && (
                 <textarea
                   value={notes}
@@ -997,14 +1013,16 @@ export default function WorkoutFormBase({
           </AccentButton>
         </div>
         {onSkipFirstWorkout && (
-          <button
+          <Button
             type="button"
+            variant="link"
+            fullWidth
             onClick={onSkipFirstWorkout}
             disabled={saving}
-            className="w-full pt-1 text-xs text-(--color_text_muted) hover:text-emerald-400/90 transition-colors disabled:opacity-40"
+            className="pt-1 text-xs hover:text-emerald-400/90 disabled:opacity-40"
           >
             Пропустить — добавлю тренировку из календаря
-          </button>
+          </Button>
         )}
       </div>
 

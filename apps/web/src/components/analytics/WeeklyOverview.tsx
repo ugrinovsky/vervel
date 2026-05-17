@@ -15,6 +15,7 @@ import {
   getAnalyticsPeriodStart,
 } from '@/util/analyticsPeriodDays';
 import { parseApiDateTime, toDateKey } from '@/utils/date';
+import { AnalyticsEmptyState } from './AnalyticsEmptyState';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 import type { RechartsTooltipContentProps } from './rechartsTooltip';
 import {
@@ -160,6 +161,20 @@ export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
     const totalVol = chartData.reduce((s, d) => s + d.volume, 0);
     return { activeDays: active.length, avg, peakDay: maxDay.label, totalVol };
   }, [chartData]);
+
+  if (!data.workoutsCount) {
+    return (
+      <AnalyticsEmptyState
+        hint={
+          period === 'week'
+            ? 'Каждый столбик — конкретная дата в выбранном окне. Паттерн «в какой день недели чаще ходите» — в блоке «Привычка по дням» при периоде месяц или год.'
+            : period === 'month'
+              ? 'По числам месяца: видно, в какие дни были тренировки и насколько они были «тяжёлыми» по оценке приложения.'
+              : 'По месяцам года: суммарный объём и усреднённая интенсивность за каждый месяц.'
+        }
+      />
+    );
+  }
 
   const periodTotals = [
     {

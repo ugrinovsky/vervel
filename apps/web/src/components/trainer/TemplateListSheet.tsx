@@ -5,6 +5,7 @@ import { normalizeExercisesForType } from '@/components/WorkoutExercisesEditor/n
 import { trainerApi, type WorkoutTemplate } from '@/api/trainer';
 import { PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
+import Button from '@/components/ui/Button';
 import WorkoutTemplateForm, {
   type WorkoutTemplateFormData,
 } from '@/components/WorkoutTemplateForm/WorkoutTemplateForm';
@@ -106,10 +107,13 @@ export default function TemplateListSheet({ open, onClose, onSaved }: Props) {
           ) : (
             <div className="space-y-2">
               {templates.map((t) => (
-                <button
+                <Button
                   key={t.id}
+                  type="button"
+                  variant="unstyled"
+                  fullWidth
                   onClick={() => openEdit(t)}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/8 transition-colors text-left"
+                  className="glass-row flex items-center gap-3 p-3 rounded-xl text-left"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-white truncate">{t.name}</div>
@@ -128,7 +132,7 @@ export default function TemplateListSheet({ open, onClose, onSaved }: Props) {
                     </div>
                   </div>
                   <PencilIcon className="w-4 h-4 text-white/30 shrink-0" />
-                </button>
+                </Button>
               ))}
             </div>
           )}

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import type { WorkoutStats } from '@/types/Analytics';
 import type { PeriodizationData } from '@/api/trainer';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
+import Button from '@/components/ui/Button';
 import WorkoutRadar from './WorkoutRadar';
 import TopMuscles from './TopMuscles';
 import StatsOverview from './StatsOverview';
@@ -56,9 +57,11 @@ function CardGrid({
       {cards.map((card, idx) => {
         const isLastOdd = cards.length % 2 !== 0 && idx === cards.length - 1;
         return (
-          <button
+          <Button
             key={`${keyPrefix}-${card.id}`}
             type="button"
+            variant="unstyled"
+            fullWidth
             onClick={() => onOpen(card.id)}
             className={`glass relative h-32.5 rounded-2xl overflow-hidden text-left flex flex-col justify-between p-4 active:scale-95 transition-transform${isLastOdd ? ' col-span-2' : ''}`}
           >
@@ -78,7 +81,7 @@ function CardGrid({
                 {card.tileSubtitle ?? 'Открыть →'}
               </div>
             </div>
-          </button>
+          </Button>
         );
       })}
     </div>

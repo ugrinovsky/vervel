@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import AccentButton from '@/components/ui/AccentButton';
+import Button from '@/components/ui/Button';
 import GhostButton from '@/components/ui/GhostButton';
 import AppInput from '@/components/ui/AppInput';
 import FormField from '@/components/FormField';
@@ -109,24 +110,29 @@ export default function CustomExercisePicker({ open, onClose, workoutType, onSel
               <p className="text-sm text-(--color_text_muted) mb-3">
                 {search.trim() ? `«${search}» не найдено` : 'Нет сохранённых упражнений'}
               </p>
-              <button
+              <Button
+                type="button"
+                variant="link"
                 onClick={() => {
                   setNewName(search.trim());
                   setShowCreate(true);
                 }}
-                className="flex items-center gap-1.5 mx-auto text-sm text-(--color_primary_light) hover:opacity-80 transition-opacity"
+                className="flex items-center gap-1.5 mx-auto !text-sm !text-(--color_primary_light) hover:opacity-80 !no-underline"
               >
                 <PlusIcon className="w-4 h-4" />
                 Создать новое
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="space-y-1">
               {filtered.map((ex) => (
-                <button
+                <Button
                   key={ex.id}
+                  type="button"
+                  variant="unstyled"
+                  fullWidth
                   onClick={() => handlePick(ex)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) text-left hover:border-(--color_primary_light) transition-colors"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) text-left hover:border-(--color_primary_light) transition-colors"
                 >
                   <span className="flex-1 min-w-0">
                     <span className="block text-sm text-white truncate">{ex.name}</span>
@@ -137,7 +143,7 @@ export default function CustomExercisePicker({ open, onClose, workoutType, onSel
                     )}
                   </span>
                   <PlusIcon className="w-4 h-4 text-(--color_text_muted) shrink-0" />
-                </button>
+                </Button>
               ))}
             </div>
           )}
@@ -182,13 +188,15 @@ export default function CustomExercisePicker({ open, onClose, workoutType, onSel
         ) : (
           filtered.length > 0 && (
             <div className="shrink-0 border-t border-(--color_border) pt-3">
-              <button
+              <Button
+                type="button"
+                variant="link"
                 onClick={() => setShowCreate(true)}
-                className="flex items-center gap-1.5 text-sm text-(--color_text_muted) hover:text-white transition-colors"
+                className="flex items-center gap-1.5 !text-sm text-(--color_text_muted) hover:!text-white !no-underline p-0"
               >
                 <PlusIcon className="w-4 h-4" />
                 Создать новое упражнение
-              </button>
+              </Button>
             </div>
           )
         )}

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { WorkoutStats } from '@/types/Analytics';
 import { computeAnalyticsInsights } from '@/util/computeAnalyticsInsights';
+import { AnalyticsEmptyState } from './AnalyticsEmptyState';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 
 interface Props {
@@ -21,14 +22,7 @@ export default function ActiveWeeksCard({ data, period }: Props) {
   const { activeWeeks } = useMemo(() => computeAnalyticsInsights(data, period), [data, period]);
 
   if (!activeWeeks) {
-    return (
-      <div className="space-y-4">
-        <AnalyticsSheetIntro>Нужна хотя бы одна тренировка.</AnalyticsSheetIntro>
-        <p className="text-sm text-(--color_text_muted) text-center py-6">
-          Пока недостаточно данных.
-        </p>
-      </div>
-    );
+    return <AnalyticsEmptyState hint="Нужна хотя бы одна тренировка." />;
   }
 
   const { consecutiveWeeks, totalActiveWeeks } = activeWeeks;

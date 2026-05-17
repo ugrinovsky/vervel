@@ -15,6 +15,8 @@ import Calendar, { type DayData } from '@/components/ui/Calendar';
 import MonthlyStats from '@/screens/ActivityScreen/MonthlyStats';
 import DayDetails from '@/screens/ActivityScreen/DayDetails';
 import AccentButton from '@/components/ui/AccentButton';
+import Button from '@/components/ui/Button';
+import ToolbarButton from '@/components/ui/ToolbarButton';
 import { useAthleteStats, type StatsPeriod } from '@/hooks/useAthleteStats';
 import { useAthleteAvatar } from '@/hooks/useAthleteAvatar';
 import { trainerApi, type PeriodizationData, type AthleteCrmStatus } from '@/api/trainer';
@@ -272,26 +274,28 @@ export default function TrainerAthleteDetailScreen() {
                       placeholder="Никнейм…"
                       className="flex-1 text-left bg-transparent border-b border-(--color_primary_light)/60 text-lg font-bold text-white focus:outline-none leading-tight"
                     />
-                    <button
+                    <ToolbarButton
                       onClick={handleSaveNickname}
                       disabled={savingNickname}
-                      className="p-0.5 text-emerald-400 hover:text-emerald-300 transition-colors shrink-0"
+                      className="p-0.5 text-emerald-400 hover:text-emerald-300 shrink-0"
                     >
                       <CheckIcon className="w-4 h-4" />
-                    </button>
-                    <button
+                    </ToolbarButton>
+                    <ToolbarButton
                       onClick={() => {
                         setEditingNickname(false);
                         setNicknameInput(nickname ?? '');
                       }}
-                      className="p-0.5 text-(--color_text_muted) hover:text-white transition-colors shrink-0"
+                      className="p-0.5 text-(--color_text_muted) hover:text-white shrink-0"
                     >
                       <XMarkIcon className="w-4 h-4" />
-                    </button>
+                    </ToolbarButton>
                   </>
                 ) : (
                   <>
-                    <button
+                    <Button
+                      type="button"
+                      variant="unstyled"
                       onClick={() => {
                         setNicknameInput(nickname ?? '');
                         setEditingNickname(true);
@@ -304,10 +308,11 @@ export default function TrainerAthleteDetailScreen() {
                         {nickname || 'Никнейм…'}
                       </span>
                       <PencilIcon className="w-3.5 h-3.5 text-(--color_text_muted) opacity-40 group-hover:opacity-100 transition-opacity shrink-0" />
-                    </button>
+                    </Button>
                     {flags.trainerCrm && (
-                      <button
+                      <Button
                         type="button"
+                        variant="unstyled"
                         onClick={() => setShowCrm(true)}
                         className={`inline-flex shrink-0 items-center gap-1.5 px-2 py-1 rounded-full border text-[11px] font-medium transition-all hover:brightness-125 active:scale-95 ${
                           crmStatus === 'active'
@@ -339,7 +344,7 @@ export default function TrainerAthleteDetailScreen() {
                           }[crmStatus]
                         }
                         <ChevronDownIcon className="w-3 h-3 opacity-50" />
-                      </button>
+                      </Button>
                     )}
                   </>
                 )}
@@ -391,9 +396,9 @@ export default function TrainerAthleteDetailScreen() {
         <div>
           <Tabs
             tabs={[
-              { id: 'analytics' as Tab, label: 'Аналитика' },
-              { id: 'activity' as Tab, label: 'Активность' },
-              { id: 'avatar' as Tab, label: 'Зоны мышц' },
+              { id: 'analytics', label: 'Аналитика' },
+              { id: 'activity', label: 'Активность' },
+              { id: 'avatar', label: 'Зоны мышц' },
             ]}
             active={tab}
             onChange={setTab}

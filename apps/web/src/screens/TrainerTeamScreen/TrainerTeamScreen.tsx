@@ -286,8 +286,8 @@ export default function TrainerTeamScreen() {
                         <ConfirmDeleteWrapper
                           key={athlete.id}
                           onConfirm={() => handleRemoveAthlete(athlete.id)}
-                          outerClassName="card-shadow"
-                          className="bg-(--color_bg_card) flex items-center gap-3 px-4 py-3 hover:bg-(--color_bg_card_hover) transition-colors"
+                          surface="glass-row"
+                          className="flex items-center gap-3 px-4 py-3"
                         >
                           <div
                             className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
@@ -347,8 +347,8 @@ export default function TrainerTeamScreen() {
                             onConfirm={() => handleRemoveAthlete(athlete.id)}
                             rounded="rounded-2xl"
                             overlayLayout="column"
-                            outerClassName="card-shadow"
-                            className="bg-(--color_bg_card) flex flex-col items-center gap-2 p-4 hover:bg-(--color_bg_card_hover) transition-colors"
+                            surface="glass-row"
+                            className="flex flex-col items-center gap-2 p-4"
                           >
                             {athleteUnread > 0 && (
                               <Badge count={athleteUnread} className="absolute top-2.5 right-2.5" />
@@ -437,8 +437,8 @@ export default function TrainerTeamScreen() {
                       <ConfirmDeleteWrapper
                         key={group.id}
                         onConfirm={() => handleDeleteGroup(group.id)}
-                        outerClassName="card-shadow"
-                        className="bg-(--color_bg_card) flex items-center gap-3 px-4 py-3 hover:bg-(--color_bg_card_hover) transition-colors"
+                        surface="glass-row"
+                        className="flex items-center gap-3 px-4 py-3"
                       >
                         <div
                           className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"

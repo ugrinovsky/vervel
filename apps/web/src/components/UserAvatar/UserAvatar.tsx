@@ -25,7 +25,7 @@ export default function UserAvatar({ photoUrl, name, size, className = '' }: Pro
   const { loaded, error, onLoad, onError } = useImageLoad();
 
   const baseStyle = { width: size, height: size };
-  const sharedClass = `rounded-full shrink-0 border border-(--color_primary_icon)/30 ${className}`;
+  const sharedClass = `rounded-full shrink-0 border border-(--color_primary_icon)/30 card-shadow ${className}`;
 
   if (src && !error) {
     return (

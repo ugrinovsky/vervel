@@ -5,6 +5,7 @@ import { UserGroupIcon, VideoCameraIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import UserAvatar from '@/components/UserAvatar/UserAvatar'
 import BackButton from '@/components/BackButton/BackButton'
+import Button from '@/components/ui/Button'
 import ChatBox from '@/components/ChatBox/ChatBox'
 import VideoCallRoom, { DisconnectReason } from '@/components/VideoCall/VideoCallRoom'
 import { useVideoCall } from '@/hooks/useVideoCall'
@@ -148,39 +149,62 @@ export default function ChatScreen({ open, dialog, onClose }: Props) {
                 <UserGroupIcon className="w-5 h-5 text-(--color_primary_icon)" />
               </div>
             ) : (
-              <div className="cursor-pointer shrink-0" onClick={handleProfileClick}>
+              <Button
+                type="button"
+                variant="unstyled"
+                onClick={handleProfileClick}
+                className="cursor-pointer shrink-0 p-0"
+                aria-label="Профиль"
+              >
                 <UserAvatar photoUrl={dialog.avatarUrl} name={dialog.name} size={36} />
+              </Button>
+            )}
+
+            {dialog.type !== 'group' ? (
+              <Button
+                type="button"
+                variant="unstyled"
+                onClick={handleProfileClick}
+                className="flex-1 min-w-0 ml-0.5 text-left p-0"
+              >
+                <div className="text-[15px] font-semibold text-white leading-tight truncate">
+                  {isTrainer && dialog.nickname ? dialog.nickname : dialog.name}
+                </div>
+                {isTrainer && dialog.nickname && (
+                  <div className="text-[12px] text-(--color_text_muted) leading-tight truncate">
+                    {dialog.name}
+                  </div>
+                )}
+              </Button>
+            ) : (
+              <div className="flex-1 min-w-0 ml-0.5">
+                <div className="text-[15px] font-semibold text-white leading-tight truncate">
+                  {isTrainer && dialog.nickname ? dialog.nickname : dialog.name}
+                </div>
+                {isTrainer && dialog.nickname && (
+                  <div className="text-[12px] text-(--color_text_muted) leading-tight truncate">
+                    {dialog.name}
+                  </div>
+                )}
+                {dialog.memberCount != null && (
+                  <div className="text-[12px] text-(--color_text_muted) leading-tight">
+                    {dialog.memberCount} участников
+                  </div>
+                )}
               </div>
             )}
 
-            <div
-              className="flex-1 min-w-0 ml-0.5"
-              onClick={dialog.type !== 'group' ? handleProfileClick : undefined}
-              style={dialog.type !== 'group' ? { cursor: 'pointer' } : undefined}
-            >
-              <div className="text-[15px] font-semibold text-white leading-tight truncate">
-                {isTrainer && dialog.nickname ? dialog.nickname : dialog.name}
-              </div>
-              {isTrainer && dialog.nickname && (
-                <div className="text-[12px] text-(--color_text_muted) leading-tight truncate">
-                  {dialog.name}
-                </div>
-              )}
-              {dialog.type === 'group' && dialog.memberCount != null && (
-                <div className="text-[12px] text-(--color_text_muted) leading-tight">
-                  {dialog.memberCount} участников
-                </div>
-              )}
-            </div>
-
             {isTrainer && (
-              <button
+              <Button
+                type="button"
+                variant="unstyled"
                 onClick={handleCall}
                 disabled={isConnecting}
                 className="p-2 rounded-full hover:bg-white/10 active:bg-white/15 transition-colors shrink-0 mr-1 disabled:opacity-40"
+                aria-label="Видеозвонок"
               >
                 <VideoCameraIcon className="w-5 h-5 text-white/70" />
-              </button>
+              </Button>
             )}
           </div>
 

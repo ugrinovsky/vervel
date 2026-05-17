@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { WorkoutStats } from '@/types/Analytics';
 import { formatVolume } from '@/constants/AnalyticsConstants';
+import { AnalyticsEmptyState } from './AnalyticsEmptyState';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 import type { RechartsTooltipContentProps, RechartsTooltipPayloadEntry } from './rechartsTooltip';
 
@@ -111,9 +112,10 @@ export default function TrendChart({ period, data }: Props) {
 
   if (!chartData.length) {
     return (
-      <div className="flex items-center justify-center h-40 text-sm text-(--color_text_muted)">
-        Нет данных за период
-      </div>
+      <AnalyticsEmptyState
+        hint="Нужна хотя бы одна тренировка с объёмом или интенсивностью за выбранный период."
+        message="Нет данных за период"
+      />
     );
   }
 

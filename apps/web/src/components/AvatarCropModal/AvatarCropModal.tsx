@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import Cropper from 'react-easy-crop';
 import type { Area } from 'react-easy-crop';
+import Button from '@/components/ui/Button';
 
 async function getCroppedBlob(imageSrc: string, pixelCrop: Area): Promise<Blob> {
   const image = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -60,20 +61,19 @@ export default function AvatarCropModal({ src, onConfirm, onClose }: Props) {
     <div className="fixed inset-0 z-[100] bg-black flex flex-col" style={{ height: '100dvh' }}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 shrink-0 safe-top">
-        <button
-          onClick={onClose}
-          className="text-white/60 text-sm px-2 py-1"
-        >
+        <Button type="button" variant="link" onClick={onClose} className="!text-white/60 !text-sm px-2 py-1 !no-underline">
           Отмена
-        </button>
+        </Button>
         <span className="text-white text-sm font-semibold">Фото профиля</span>
-        <button
+        <Button
+          type="button"
+          variant="link"
           onClick={handleConfirm}
           disabled={confirming}
-          className="text-sm font-semibold px-2 py-1 text-(--color_primary_light) disabled:opacity-50"
+          className="!text-sm font-semibold px-2 py-1 !text-(--color_primary_light) disabled:opacity-50 !no-underline"
         >
           {confirming ? '…' : 'Готово'}
-        </button>
+        </Button>
       </div>
 
       {/* Cropper */}

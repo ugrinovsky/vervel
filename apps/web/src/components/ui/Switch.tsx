@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, MouseEvent } from 'react';
+import Button from '@/components/ui/Button';
 
 export type SwitchProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type' | 'role'> & {
   checked: boolean;
@@ -36,8 +37,9 @@ export default function Switch({
       : 'top-0.5 left-0.5 ' + (checked ? 'translate-x-[18px]' : 'translate-x-0');
 
   return (
-    <button
+    <Button
       type="button"
+      variant="unstyled"
       role="switch"
       aria-checked={checked}
       disabled={disabled}
@@ -50,6 +52,6 @@ export default function Switch({
       <span
         className={`absolute w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ease-out pointer-events-none ${thumb}`}
       />
-    </button>
+    </Button>
   );
 }

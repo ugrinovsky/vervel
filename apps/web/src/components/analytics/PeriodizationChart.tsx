@@ -9,6 +9,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import type { PeriodizationData } from '@/api/trainer';
+import Button from '@/components/ui/Button';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 import type { RechartsTooltipContentProps, RechartsTooltipPayloadEntry } from './rechartsTooltip';
 
@@ -603,12 +604,15 @@ export default function PeriodizationChart({ data }: Props) {
       </div>
 
       {/* ── ДИНАМИКА 90 дней (свёрнуто) ── */}
-      <button
+      <Button
+        type="button"
+        variant="link"
+        fullWidth
         onClick={() => setShowChart((v) => !v)}
-        className="w-full text-xs text-(--color_text_muted) hover:text-white transition-colors py-1"
+        className="py-1 !text-xs text-(--color_text_muted) hover:!text-white !no-underline"
       >
         {showChart ? '▲ Скрыть динамику' : '▼ Динамика ATL / CTL / TSB за 90 дней'}
-      </button>
+      </Button>
 
       {showChart && (
         <div

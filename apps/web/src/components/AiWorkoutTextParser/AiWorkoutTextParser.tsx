@@ -9,6 +9,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useAiBalance } from '@/hooks/useAiBalance';
 import AiSheetHeader from '@/components/ui/AiSheetHeader';
 import AiCostNotice from '@/components/ui/AiCostNotice';
+import Button from '@/components/ui/Button';
 
 interface Props {
   onResult: (payload: AiTextParseUiPayload) => void;
@@ -92,12 +93,14 @@ export default function AiWorkoutTextParser({ onResult, triggerClassName, trigge
 
   return (
     <>
-      <button
+      <Button
         type="button"
+        variant="unstyled"
+        fullWidth
         onClick={() => setOpen(true)}
         className={
           triggerClassName ??
-          'w-full flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-left hover:bg-emerald-500/15 transition-colors'
+          'flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-left hover:bg-emerald-500/15 transition-colors'
         }
       >
         {triggerContent ?? (
@@ -113,7 +116,7 @@ export default function AiWorkoutTextParser({ onResult, triggerClassName, trigge
             <span className="text-emerald-400/60 text-base shrink-0">→</span>
           </>
         )}
-      </button>
+      </Button>
 
       <BottomSheet id="ai-workout-text-parser" open={open} onClose={close} header={header}>
         <AnimatePresence mode="wait">

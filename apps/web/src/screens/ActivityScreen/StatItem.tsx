@@ -9,7 +9,7 @@ interface StatItemProps {
 export default function StatItem({ value, label, icon, title, detail }: StatItemProps) {
   return (
     <div
-      className="text-center p-4 bg-(--color_bg_card) rounded-lg hover:bg-(--color_bg_card_hover) transition cursor-help"
+      className="glass-row text-center p-4 rounded-lg cursor-help"
       title={detail || title}
     >
       <div className="text-2xl mb-2">{icon}</div>

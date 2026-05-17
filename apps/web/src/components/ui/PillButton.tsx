@@ -1,4 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import Button from '@/components/ui/Button';
+import { pillColors } from '@/components/ui/buttonStyles';
 
 interface PillButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   active?: boolean;
@@ -16,30 +18,27 @@ interface PillButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export default function PillButton({
-  active,
+  active = false,
   variant = 'pill',
   size = 'sm',
   className = '',
   children,
+  type = 'button',
   ...props
 }: PillButtonProps) {
   const base =
     size === 'md'
-      ? 'flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-colors'
-      : 'px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all leading-[1.4]';
-
-  const colors =
-    variant === 'tab'
-      ? active
-        ? 'bg-(--color_primary_light) text-white'
-        : 'bg-(--color_bg_card) text-(--color_text_muted) hover:text-white'
-      : active
-        ? 'bg-(--color_primary_light) text-white'
-        : 'text-(--color_text_muted) hover:text-white';
+      ? 'inline-flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-colors'
+      : 'inline-flex px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all leading-[1.4]';
 
   return (
-    <button className={`${base} ${colors} ${className}`} {...props}>
+    <Button
+      type={type}
+      variant="unstyled"
+      className={`${base} ${pillColors(variant, active)} ${className}`}
+      {...props}
+    >
       {children}
-    </button>
+    </Button>
   );
 }

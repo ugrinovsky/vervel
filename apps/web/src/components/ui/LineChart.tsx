@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Button from '@/components/ui/Button';
 
 interface Point {
   workouts: number;
@@ -119,9 +120,10 @@ export default function LineChart({ series, valueKey, dates }: Props) {
           const isHidden = hidden.has(s.id);
           const color = COLORS[si % COLORS.length];
           return (
-            <button
+            <Button
               key={s.id}
               type="button"
+              variant="unstyled"
               onClick={() => toggle(s.id)}
               className="flex items-center gap-1"
               style={{ opacity: isHidden ? 0.35 : 1 }}
@@ -131,7 +133,7 @@ export default function LineChart({ series, valueKey, dates }: Props) {
               <span className="text-[10px] text-(--color_text_muted) truncate max-w-15">
                 {s.label}
               </span>
-            </button>
+            </Button>
           );
         })}
       </div>

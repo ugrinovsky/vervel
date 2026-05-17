@@ -37,7 +37,7 @@ export default function StatCard({
 
   return (
     <div
-      className="glass rounded-lg p-4 group hover:bg-(--color_bg_card_hover) transition cursor-help flex items-center gap-3"
+      className="glass-row rounded-lg p-4 group transition cursor-help flex items-center gap-3"
       title={detail || title}
     >
       <div

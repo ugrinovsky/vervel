@@ -187,14 +187,3 @@ g:focus,
 path:focus {
   outline: none;
 }
-
-.main-button {
-  background: var(--color_primary_light);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  border: none;
-}

@@ -8,6 +8,7 @@ import { aiApi, type AiRecognizedWorkoutResult } from '@/api/ai';
 import { useAiBalance } from '@/hooks/useAiBalance';
 import AiSheetHeader from '@/components/ui/AiSheetHeader';
 import AiCostNotice from '@/components/ui/AiCostNotice';
+import Button from '@/components/ui/Button';
 
 const MAX_FILE_SIZE_MB = 20;
 const ALLOWED_TYPES = [
@@ -151,10 +152,14 @@ export default function AiWorkoutRecognizer({ onResult, triggerClassName, trigge
 
   return (
     <>
-      <button
+      <Button
         type="button"
+        variant="link"
         onClick={() => setOpen(true)}
-        className={triggerClassName ?? 'flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors'}
+        className={
+          triggerClassName ??
+          'flex items-center gap-1.5 !text-xs !text-emerald-400 hover:!text-emerald-300 !no-underline p-0'
+        }
       >
         {triggerContent ?? (
           <>
@@ -164,7 +169,7 @@ export default function AiWorkoutRecognizer({ onResult, triggerClassName, trigge
             <span className="text-white/40">{cost}₽</span>
           </>
         )}
-      </button>
+      </Button>
 
       <BottomSheet
         id="ai-workout-recognizer"
@@ -195,10 +200,12 @@ export default function AiWorkoutRecognizer({ onResult, triggerClassName, trigge
                 </p>
               )}
 
-              <button
+              <Button
                 type="button"
+                variant="unstyled"
+                fullWidth
                 onClick={() => inputRef.current?.click()}
-                className={`w-full h-14 rounded-xl border-2 border-dashed flex items-center gap-3 px-4 transition-colors ${
+                className={`h-14 rounded-xl border-2 border-dashed flex items-center gap-3 px-4 transition-colors ${
                   selectedFile
                     ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
                     : 'border-white/20 hover:border-emerald-400/60 text-white/50 hover:text-emerald-400'
@@ -209,18 +216,20 @@ export default function AiWorkoutRecognizer({ onResult, triggerClassName, trigge
                   {selectedFile ? selectedFile.name : 'Нажмите, чтобы выбрать фото'}
                 </span>
                 {selectedFile && (
-                  <span
-                    role="button"
+                  <Button
+                    type="button"
+                    variant="unstyled"
                     onClick={(e) => {
                       e.stopPropagation();
                       clearFile();
                     }}
-                    className="shrink-0 text-white/40 hover:text-white/70 cursor-pointer"
+                    className="shrink-0 text-white/40 hover:text-white/70 p-0"
+                    aria-label="Убрать файл"
                   >
                     <XMarkIcon className="w-4 h-4" />
-                  </span>
+                  </Button>
                 )}
-              </button>
+              </Button>
 
               <input
                 ref={inputRef}
@@ -234,15 +243,17 @@ export default function AiWorkoutRecognizer({ onResult, triggerClassName, trigge
                 }}
               />
 
-              <button
+              <Button
                 type="button"
+                variant="emerald"
+                fullWidth
                 onClick={handleRecognize}
                 disabled={!selectedFile || !hasEnoughBalance}
-                className="w-full py-3 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="py-3 flex items-center justify-center gap-2"
               >
                 <SparklesIcon className="w-4 h-4" />
                 Распознать {cost}₽
-              </button>
+              </Button>
             </motion.div>
           )}
         </AnimatePresence>

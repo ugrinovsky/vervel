@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { useId } from 'react';
+import Button from '@/components/ui/Button';
 
 interface Tab<T extends string> {
   id: T;
@@ -41,8 +42,10 @@ export default function Tabs<T extends string>({
     return (
       <div className={`flex ${className}`}>
         {tabs.map((tab) => (
-          <button
+          <Button
             key={tab.id}
+            type="button"
+            variant="unstyled"
             onClick={() => onChange(tab.id)}
             className={`relative flex-1 flex items-center justify-center py-2.5 text-sm font-medium transition-colors outline-none ${active === tab.id ? 'text-white' : 'text-(--color_text_muted) hover:text-white'}`}
           >
@@ -54,7 +57,7 @@ export default function Tabs<T extends string>({
                 transition={{ type: 'spring', stiffness: 400, damping: 35 }}
               />
             )}
-          </button>
+          </Button>
         ))}
       </div>
     );
@@ -86,9 +89,10 @@ export default function Tabs<T extends string>({
       className={outerClass}
     >
       {tabs.map((tab) => (
-        <button
+        <Button
           key={tab.id}
           type="button"
+          variant="unstyled"
           role={ariaLabel ? 'tab' : undefined}
           aria-selected={ariaLabel ? active === tab.id : undefined}
           onClick={() => onChange(tab.id)}
@@ -109,7 +113,7 @@ export default function Tabs<T extends string>({
             />
           )}
           <span className={`relative z-10 ${embedded ? 'px-0.5' : ''}`}>{tab.label}</span>
-        </button>
+        </Button>
       ))}
     </motion.div>
   );

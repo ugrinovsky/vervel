@@ -8,7 +8,11 @@ import WorkoutExercisesEditor, {
   type WorkoutExercisesEditorHandle,
 } from '@/components/WorkoutExercisesEditor/WorkoutExercisesEditor';
 import { normalizeExercisesForType } from '@/components/WorkoutExercisesEditor/normalizeForWorkoutType';
-import { convertExercisesForType } from '@/components/WorkoutFormBase/workoutTypeConversion';
+import {
+  convertAiExercises,
+  convertAiResult,
+  convertExercisesForType,
+} from '@/components/WorkoutFormBase/workoutTypeConversion';
 import AiWorkoutGenerator from '@/components/AiWorkoutGenerator/AiWorkoutGenerator';
 import AiWorkoutRecognizer from '@/components/AiWorkoutRecognizer/AiWorkoutRecognizer';
 import AiWorkoutTextParser from '@/components/AiWorkoutTextParser/AiWorkoutTextParser';
@@ -60,7 +64,7 @@ export default function WorkoutTemplateForm({
 
   const handleAiGeneratedResult = (result: AiWorkoutResult) => {
     const { workoutType: newType } = result;
-    const converted = normalizeExercisesForType(newType, result.exercises as ExerciseData[]);
+    const converted = normalizeExercisesForType(newType, convertAiResult(result));
     setWorkoutType(newType);
     setExercises(converted);
     setAiGenerated(true);
@@ -68,7 +72,10 @@ export default function WorkoutTemplateForm({
   };
 
   const handleAiRecognizedResult = (result: AiRecognizedWorkoutResult) => {
-    const converted = normalizeExercisesForType(workoutType, result.exercises as ExerciseData[]);
+    const converted = normalizeExercisesForType(
+      workoutType,
+      convertAiExercises(result.exercises, workoutType)
+    );
     setExercises(converted);
     setAiGenerated(true);
     toast.success(`ИИ распознал ${converted.length} упражнений`);

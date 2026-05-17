@@ -4,6 +4,7 @@ import { isAxiosError } from 'axios';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { chatApi, type KlipyCategory, type KlipyKind, type KlipySearchItem } from '@/api/chat';
+import Button from '@/components/ui/Button';
 import CloseButton from '@/components/ui/CloseButton';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import SearchInput from '@/components/ui/SearchInput';
@@ -127,11 +128,13 @@ function KlipyPickerTile({
 
   return (
     <div className="relative w-full">
-      <button
+      <Button
         type="button"
+        variant="unstyled"
+        fullWidth
         disabled={disabled}
         onClick={() => void onPick(item)}
-        className="relative w-full rounded-lg overflow-hidden bg-white/5 border border-white/10 active:scale-[0.98] transition-transform disabled:opacity-50"
+        className="relative rounded-lg overflow-hidden bg-white/5 border border-white/10 active:scale-[0.98] transition-transform disabled:opacity-50"
         style={klipyTileAspectStyle(item)}
       >
         <img
@@ -151,10 +154,11 @@ function KlipyPickerTile({
             <LoadingSpinner size="md" variant="light" />
           </div>
         )}
-      </button>
+      </Button>
       {showRemoveFromRecent && onRemoveFromRecent && (
-        <button
+        <Button
           type="button"
+          variant="unstyled"
           aria-label="Убрать из недавних"
           disabled={disabled || picking}
           className="absolute right-1.5 top-1.5 z-[4] flex size-8 items-center justify-center rounded-full border border-white/50 bg-black/75 text-white shadow-md backdrop-blur-sm hover:bg-black/90 disabled:pointer-events-none disabled:opacity-40"
@@ -165,7 +169,7 @@ function KlipyPickerTile({
           }}
         >
           <XMarkIcon className="size-[18px] shrink-0 stroke-2" />
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -468,8 +472,9 @@ export default function KlipyPicker({ open, onClose, onPick, pickDisabled }: Pro
       <div className="shrink-0 px-3 pt-[max(12px,env(safe-area-inset-top))] pb-2 border-b border-white/10 space-y-2">
         <div className="flex items-center gap-2">
           <div className="flex rounded-xl bg-white/10 border border-white/15 p-0.5 shrink-0">
-            <button
+            <Button
               type="button"
+              variant="unstyled"
               onClick={() => {
                 setKind('gif');
                 clearSearch();
@@ -480,9 +485,10 @@ export default function KlipyPicker({ open, onClose, onPick, pickDisabled }: Pro
               }`}
             >
               GIF
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="unstyled"
               onClick={() => {
                 setKind('sticker');
                 clearSearch();
@@ -493,7 +499,7 @@ export default function KlipyPicker({ open, onClose, onPick, pickDisabled }: Pro
               }`}
             >
               Стикеры
-            </button>
+            </Button>
           </div>
           <SearchInput
             dense
@@ -557,15 +563,16 @@ export default function KlipyPicker({ open, onClose, onPick, pickDisabled }: Pro
         )}
         {nextOffset !== null && !loading && items.length > 0 && (
           <div className="flex justify-center pt-4 pb-2">
-            <button
+            <Button
               type="button"
+              variant="unstyled"
               disabled={loadingMore}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => void loadMore()}
               className="text-sm text-(--color_primary_icon) font-medium py-2 px-4 rounded-xl bg-white/5 border border-white/10 disabled:opacity-50"
             >
               {loadingMore ? 'Загрузка…' : 'Ещё'}
-            </button>
+            </Button>
           </div>
         )}
       </div>

@@ -10,6 +10,7 @@ import {
   normalizeIntensity,
   referenceVolumePerSessionKg,
 } from '@/constants/AnalyticsConstants';
+import { AnalyticsEmptyState } from './AnalyticsEmptyState';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 
 interface MetricOverviewProps {
@@ -138,6 +139,12 @@ export function MetricsOverview({ stats, period }: MetricOverviewProps) {
 
   const { overallScore } = computed;
   const overall = overallLabel(overallScore);
+
+  if (!stats.workoutsCount) {
+    return (
+      <AnalyticsEmptyState hint="Карточки ниже — производные от ваших тренировок за период. «Общий рейтинг» — внутренняя сводка из частоты, интенсивности, баланса зон и динамики объёма." />
+    );
+  }
 
   const metrics = [
     {

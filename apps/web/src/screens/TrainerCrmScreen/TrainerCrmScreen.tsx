@@ -21,6 +21,7 @@ import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import Tabs from '@/components/ui/Tabs';
 import ChipScrollRow from '@/components/ui/ChipScrollRow';
+import { MotionButton } from '@/components/ui/Button';
 import AddAthleteDrawer from '@/components/AddAthleteDrawer/AddAthleteDrawer';
 import LeadDetailSheet from '@/components/trainer/LeadDetailSheet';
 import {
@@ -511,12 +512,13 @@ export default function TrainerCrmScreen() {
                         const isOverdue =
                           hasFollowUp && parseApiDateTime(lead.nextFollowUpAt!) < now();
                         return (
-                          <motion.button
+                          <MotionButton
                             key={lead.id}
                             type="button"
+                            variant="unstyled"
                             whileTap={{ scale: 0.99 }}
                             onClick={() => setSelectedLead(lead)}
-                            className="glass rounded-xl w-full text-left p-4 hover:bg-(--color_bg_card_hover) hover:border-(--color_primary_light)/30 transition-colors"
+                            className="glass-row rounded-xl w-full text-left p-4"
                           >
                             <div className="flex items-start justify-between gap-3 mb-2">
                               <div className="text-sm font-semibold text-white truncate">
@@ -547,7 +549,7 @@ export default function TrainerCrmScreen() {
                                 {lead.note}
                               </div>
                             )}
-                          </motion.button>
+                          </MotionButton>
                         );
                       })}
                     </motion.div>

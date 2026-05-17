@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
 import { trainerApi, type CopilotAthletePriority } from '@/api/trainer';
+import Button from '@/components/ui/Button';
 import CopilotPanel from './CopilotPanel';
 
 function fatigueLabel(tsb: number): string {
@@ -49,10 +50,13 @@ function AthleteRow({
   const { dot, badge } = URGENCY_CONFIG[athlete.urgency];
 
   return (
-    <div className="rounded-2xl border border-(--color_border) overflow-hidden">
-      <button
+    <motion.div className="glass rounded-2xl overflow-hidden">
+      <Button
+        type="button"
+        variant="unstyled"
+        fullWidth
         onClick={onToggle}
-        className="w-full flex items-center gap-3 p-4 text-left bg-(--color_bg_card) hover:bg-(--color_bg_card_hover) transition-colors"
+        className="flex items-center gap-3 p-4 text-left hover:bg-(--color_bg_card_hover) transition-colors"
       >
         {/* Dot indicator */}
         <div className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
@@ -86,7 +90,7 @@ function AthleteRow({
         <ChevronDownIcon
           className={`w-4 h-4 text-white/40 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
         />
-      </button>
+      </Button>
 
       <motion.div
         initial={false}
@@ -99,7 +103,7 @@ function AthleteRow({
           <CopilotPanel athleteId={athlete.athleteId} onCommitted={onCommitted} />
         </div>
       </motion.div>
-    </div>
+    </motion.div>
   );
 }
 

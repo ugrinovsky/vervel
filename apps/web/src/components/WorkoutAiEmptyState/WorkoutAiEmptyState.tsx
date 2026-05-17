@@ -1,4 +1,5 @@
 import { PlusIcon } from '@heroicons/react/24/outline';
+import Button from '@/components/ui/Button';
 import AiWorkoutGenerator from '@/components/AiWorkoutGenerator/AiWorkoutGenerator';
 import AiWorkoutRecognizer from '@/components/AiWorkoutRecognizer/AiWorkoutRecognizer';
 import AiWorkoutTextParser from '@/components/AiWorkoutTextParser/AiWorkoutTextParser';
@@ -80,22 +81,26 @@ export default function WorkoutAiEmptyState({
         <div className="h-px bg-white/10 flex-1" />
       </div>
       <div className="flex gap-2">
-        <button
+        <Button
           type="button"
+          variant="subtle"
+          size="sm"
           onClick={onOpenCatalog}
-          className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+          className="flex-1 gap-2 py-1.5 px-2"
         >
           <PlusIcon className="w-4 h-4 text-white/50" />
           <span className="text-sm font-medium text-white">Из каталога</span>
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="subtle"
+          size="sm"
           onClick={onOpenCustom}
-          className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+          className="flex-1 gap-2 py-1.5 px-2"
         >
           <span>✏️</span>
           <span className="text-sm font-medium text-white">Свои</span>
-        </button>
+        </Button>
       </div>
     </div>
   );

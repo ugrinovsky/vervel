@@ -2,14 +2,19 @@ import { createContext, useContext, useState, useRef, useEffect, useId } from 'r
 import { AnimatePresence, motion } from 'framer-motion';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { CONFIRM_DELETE_OPEN_EVENT } from '@/components/ui/confirmDeleteOpenEvent';
+import Button, { MotionButton } from '@/components/ui/Button';
 
 const Ctx = createContext<{ trigger: () => void } | null>(null);
+
+type Surface = 'bordered' | 'glass-row';
 
 interface WrapperProps {
   onConfirm: () => void;
   label?: string;
   className?: string;
-  /** Классы для внешнего div (border + rounded + overflow-hidden) */
+  /** Оформление обёртки: bordered — рамка normalBorder; glass-row — фон, рамка и тень из design system */
+  surface?: Surface;
+  /** Доп. классы обёртки (отступы, layout) */
   outerClassName?: string;
   rounded?: string;
   overlayLayout?: 'row' | 'column';
@@ -23,6 +28,7 @@ function ConfirmDeleteWrapper({
   onConfirm,
   label = 'Удалить?',
   className = '',
+  surface = 'bordered',
   outerClassName = '',
   rounded = 'rounded-xl',
   overlayLayout = 'row',
@@ -71,11 +77,14 @@ function ConfirmDeleteWrapper({
     e.preventDefault();
   };
 
+  const surfaceClass =
+    surface === 'glass-row' ? 'glass-row' : `border ${normalBorder}`;
+
   return (
     <Ctx.Provider value={{ trigger: open }}>
-      <div
-        className={`relative ${rounded} border overflow-hidden transition-colors ${
-          confirming ? 'border-red-500/70' : normalBorder
+      <motion.div
+        className={`relative ${rounded} overflow-hidden transition-colors ${
+          confirming ? 'border border-red-500/70' : surfaceClass
         } ${outerClassName}`}
       >
         {/* Blur wrapper — carries the layout className, blurs on confirm */}
@@ -107,8 +116,9 @@ function ConfirmDeleteWrapper({
                 {label}
               </span>
               <div className="flex gap-2">
-                <motion.button
+                <MotionButton
                   type="button"
+                  variant="unstyled"
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.05 }}
@@ -121,9 +131,10 @@ function ConfirmDeleteWrapper({
                   className="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/80 hover:bg-red-500 text-white transition-colors"
                 >
                   Да
-                </motion.button>
-                <motion.button
+                </MotionButton>
+                <MotionButton
                   type="button"
+                  variant="unstyled"
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.08 }}
@@ -135,12 +146,12 @@ function ConfirmDeleteWrapper({
                   className="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors"
                 >
                   Нет
-                </motion.button>
+                </MotionButton>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
     </Ctx.Provider>
   );
 }
@@ -155,8 +166,9 @@ function Trigger({
 }) {
   const ctx = useContext(Ctx);
   return (
-    <button
+    <Button
       type="button"
+      variant="unstyled"
       title={title}
       aria-label={title}
       onPointerDown={(e) => e.stopPropagation()}
@@ -167,7 +179,7 @@ function Trigger({
       className={`p-1 text-(--color_text_muted) hover:text-red-400 transition-colors ${className}`}
     >
       <TrashIcon className="w-4 h-4" />
-    </button>
+    </Button>
   );
 }
 

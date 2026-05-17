@@ -1,3 +1,4 @@
+import Button from '@/components/ui/Button';
 import { stopDragSensorBubble } from '@/lib/workoutListDnd';
 import { InsertBetweenInline } from './WorkoutExerciseInsertControls';
 
@@ -23,8 +24,9 @@ export function WorkoutExerciseBetweenRow({
           <div className="absolute left-1 top-0 bottom-0 w-0.5 bg-amber-500/60 rounded-full" />
         )}
         <div className={`flex-1 min-w-0 ${!isLinkedToNext ? 'border-t border-(--color_border)' : ''}`} />
-        <button
+        <Button
           type="button"
+          variant="unstyled"
           onPointerDown={stopDragSensorBubble}
           onTouchStart={stopDragSensorBubble}
           onClick={onToggleSuperset}
@@ -37,7 +39,7 @@ export function WorkoutExerciseBetweenRow({
         >
           <span>⚡</span>
           <span>{isLinkedToNext ? 'суперсет' : 'суперсет?'}</span>
-        </button>
+        </Button>
         <div className={`flex-1 min-w-0 ${!isLinkedToNext ? 'border-t border-(--color_border)' : ''}`} />
         <InsertBetweenInline onClick={onInsertBetween} />
       </div>

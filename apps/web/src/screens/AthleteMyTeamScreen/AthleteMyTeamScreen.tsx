@@ -21,6 +21,8 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import IconButton from '@/components/ui/IconButton';
+import AccentButton from '@/components/ui/AccentButton';
+import { MotionButton } from '@/components/ui/Button';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/AnalyticsConstants';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
@@ -198,19 +200,20 @@ export default function AthleteMyTeamScreen() {
               animate={{ opacity: 1, y: 0 }}
               className="relative rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 pr-10"
             >
-              <button
+              <IconButton
                 type="button"
+                size="icon"
                 onClick={() => {
                   if (!user) return;
                   void dismissCoachTeamBanner(user, updateUser).then(() =>
                     setCoachConnectBannerOpen(false)
                   );
                 }}
-                className="absolute right-2 top-2 p-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/10 transition-colors"
+                className="absolute right-2 top-2 !w-auto !h-auto p-1.5 rounded-lg text-white/50 hover:text-white hover:!bg-white/10"
                 aria-label="Скрыть"
               >
                 <XMarkIcon className="w-5 h-5" />
-              </button>
+              </IconButton>
               <p className="text-sm font-semibold text-white mb-1">
                 Вы указали, что тренируетесь с тренером
               </p>
@@ -220,13 +223,9 @@ export default function AthleteMyTeamScreen() {
                 <span className="text-white/90">QR в профиле</span>.
               </p>
               <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => navigate('/profile')}
-                  className="px-3 py-2 rounded-xl text-xs font-medium bg-(--color_primary_light) text-white"
-                >
+                <AccentButton size="sm" onClick={() => navigate('/profile')}>
                   Открыть профиль / QR
-                </button>
+                </AccentButton>
               </div>
             </motion.div>
           )}
@@ -234,11 +233,13 @@ export default function AthleteMyTeamScreen() {
 
         {flags.ai && (
           <SectionGroup title="ИИ-помощник">
-            <motion.button
+            <MotionButton
+              type="button"
+              variant="unstyled"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               onClick={() => setAiChatOpen(true)}
-              className="glass rounded-2xl w-full flex items-center gap-3 p-4 hover:bg-(--color_bg_card_hover) transition-colors text-left"
+              className="glass-row rounded-2xl w-full flex items-center gap-3 p-4 text-left"
             >
               <div className="w-10 h-10 flex items-center justify-center rounded-full bg-emerald-500/20 shrink-0">
                 <SparklesIcon className="w-5 h-5 text-emerald-400" />
@@ -252,7 +253,7 @@ export default function AthleteMyTeamScreen() {
                 </p>
               </div>
               <span className="text-xs text-(--color_text_muted) shrink-0">Спросить →</span>
-            </motion.button>
+            </MotionButton>
           </SectionGroup>
         )}
 
@@ -290,7 +291,7 @@ export default function AthleteMyTeamScreen() {
                       return (
                         <div
                           key={trainer.id}
-                          className="p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors border border-white/10"
+                          className="glass-row p-3 rounded-xl"
                         >
                           <div className="flex items-start gap-3">
                             <UserAvatar
@@ -373,7 +374,7 @@ export default function AthleteMyTeamScreen() {
                       return (
                         <div
                           key={group.id}
-                          className="p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors"
+                          className="glass-row p-3 rounded-xl"
                         >
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-full bg-(--color_primary_light)/20 flex items-center justify-center shrink-0">
@@ -447,7 +448,7 @@ export default function AthleteMyTeamScreen() {
                         <div
                           key={w.id}
                           onClick={() => navigate('/calendar', { state: { date: w.date } })}
-                          className="flex items-center gap-3 p-3 rounded-xl bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors cursor-pointer"
+                          className="glass-row flex items-center gap-3 p-3 rounded-xl cursor-pointer"
                         >
                           <div
                             className={`w-2 h-2 rounded-full shrink-0 ${isToday ? 'bg-(--color_primary_light)' : 'bg-white/20'}`}

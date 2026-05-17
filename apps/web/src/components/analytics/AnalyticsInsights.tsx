@@ -6,6 +6,7 @@ import {
   LOAD_LEVEL_LABELS,
   workoutTypeLabel,
 } from '@/util/computeAnalyticsInsights';
+import { AnalyticsEmptyState } from './AnalyticsEmptyState';
 import { AnalyticsSheetIntro } from './AnalyticsSheetIntro';
 
 const LOAD_ORDER: Array<keyof typeof LOAD_LEVEL_LABELS> = ['high', 'medium', 'low', 'none'];
@@ -56,15 +57,10 @@ export default function AnalyticsInsights({ stats, period }: Props) {
 
   if (!data.hasWorkouts) {
     return (
-      <div className="space-y-4">
-        <AnalyticsSheetIntro>
-          Когда появятся тренировки в выбранном окне, здесь соберутся ритм, полнота журнала и другие
-          производные показатели.
-        </AnalyticsSheetIntro>
-        <p className="text-sm text-(--color_text_muted) text-center py-6">
-          Пока нет данных за период.
-        </p>
-      </div>
+      <AnalyticsEmptyState
+        hint="Когда появятся тренировки в выбранном окне, здесь соберутся ритм, полнота журнала и другие производные показатели."
+        message="Пока нет данных за период."
+      />
     );
   }
 

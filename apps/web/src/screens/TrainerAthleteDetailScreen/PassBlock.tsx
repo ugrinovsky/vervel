@@ -7,6 +7,8 @@ import toast from 'react-hot-toast';
 import { trainerApi, type AthletePass } from '@/api/trainer';
 import AccentButton from '@/components/ui/AccentButton';
 import GhostButton from '@/components/ui/GhostButton';
+import Button from '@/components/ui/Button';
+import IconButton from '@/components/ui/IconButton';
 import CreatePassSheet from './CreatePassSheet';
 import ConsumePassSheet from './ConsumePassSheet';
 import { CreditCardIcon, EllipsisHorizontalIcon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -128,19 +130,21 @@ export default function PassBlock({ athleteId }: Props) {
                       {activePass.title}
                     </span>
                   </div>
-                  <button
+                  <IconButton
                     type="button"
+                    variant="ghost"
+                    size="icon"
                     onClick={() =>
                       setMenuPassId(menuPassId === activePass.id ? null : activePass.id)
                     }
-                    className="p-1 -m-1 text-(--color_text_muted) hover:text-white transition-colors shrink-0"
+                    className="w-8 h-8 -m-1 shrink-0 bg-transparent"
                   >
                     {menuPassId === activePass.id ? (
                       <XMarkIcon className="w-4 h-4" />
                     ) : (
                       <EllipsisHorizontalIcon className="w-4 h-4" />
                     )}
-                  </button>
+                  </IconButton>
                 </div>
 
                 {/* Статистика */}
@@ -172,14 +176,16 @@ export default function PassBlock({ athleteId }: Props) {
                       className="overflow-hidden"
                     >
                       <div className="pt-3 flex gap-2">
-                        <button
+                        <Button
                           type="button"
+                          variant="danger"
+                          size="sm"
                           disabled={cancelling === activePass.id}
                           onClick={() => handleCancel(activePass.id)}
-                          className="flex-1 py-2 rounded-lg border border-red-500/30 text-red-400 text-xs font-medium hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                          className="flex-1 rounded-lg text-xs"
                         >
                           {cancelling === activePass.id ? 'Отменяем...' : 'Отменить абонемент'}
-                        </button>
+                        </Button>
                       </div>
                     </motion.div>
                   )}
@@ -222,13 +228,15 @@ export default function PassBlock({ athleteId }: Props) {
 
         {/* Кнопка добавить (если уже есть активный) */}
         {activePass && (
-          <button
+          <Button
             type="button"
+            variant="link"
+            fullWidth
             onClick={() => setShowCreate(true)}
-            className="w-full py-2 text-xs text-(--color_text_muted) hover:text-white transition-colors text-center"
+            className="py-2 text-xs text-center"
           >
             + Ещё абонемент
-          </button>
+          </Button>
         )}
 
         {/* Архив прошлых абонементов */}

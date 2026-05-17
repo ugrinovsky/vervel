@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeftIcon, PlusIcon } from '@heroicons/react/24/outline';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
+import Button from '@/components/ui/Button';
 import GhostButton from '@/components/ui/GhostButton';
 import { ExerciseDetailContent } from '@/components/ExerciseDetailSheet/ExerciseDetailSheet';
 import ExerciseFilterBar from '@/components/ExerciseFilterBar/ExerciseFilterBar';
@@ -118,12 +119,15 @@ export default function ExercisePicker({
   const headerContent =
     view === 'detail' && selected ? (
       <div className="flex items-center gap-2 min-w-0">
-        <button
+        <Button
+          type="button"
+          variant="unstyled"
           onClick={goBack}
-          className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+          className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors p-0"
+          aria-label="Назад"
         >
           <ChevronLeftIcon className="w-4 h-4 text-white" />
-        </button>
+        </Button>
         <span className="text-base font-bold text-white truncate">{selected.title}</span>
       </div>
     ) : (

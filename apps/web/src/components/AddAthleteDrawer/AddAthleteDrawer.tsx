@@ -7,6 +7,7 @@ import Tabs from '@/components/ui/Tabs';
 import QrScanner from '@/components/QrScanner/QrScanner';
 import { trainerApi } from '@/api/trainer';
 import AccentButton from '@/components/ui/AccentButton';
+import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AppInput from '@/components/ui/AppInput';
 import PhoneInput from '@/components/ui/PhoneInput';
@@ -238,9 +239,10 @@ export default function AddAthleteDrawer({ open, onClose, onAdded, onLeadCreated
                   { value: 'gym', label: 'Зал' },
                   { value: 'other', label: 'Другое' },
                 ].map(({ value, label }) => (
-                  <button
+                  <Button
                     key={value}
                     type="button"
+                    variant="unstyled"
                     onClick={() => setLeadSource(value)}
                     className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
                       leadSource === value
@@ -249,7 +251,7 @@ export default function AddAthleteDrawer({ open, onClose, onAdded, onLeadCreated
                     }`}
                   >
                     {label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -290,32 +292,28 @@ export default function AddAthleteDrawer({ open, onClose, onAdded, onLeadCreated
                   <div className="bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-sm text-white break-all">
                     {inviteLink}
                   </div>
-                  <button
-                    onClick={handleCopyLink}
-                    className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_bg_card_hover) text-white hover:opacity-90 transition-opacity"
-                  >
+                  <Button variant="secondary" fullWidth onClick={handleCopyLink} className="py-3">
                     Скопировать
-                  </button>
-                  <button
-                    onClick={() => setInviteLink(null)}
-                    className="w-full py-2 text-sm text-(--color_text_muted) hover:text-white transition-colors"
-                  >
+                  </Button>
+                  <Button variant="link" fullWidth onClick={() => setInviteLink(null)} className="py-2 text-sm">
                     Создать новую
-                  </button>
+                  </Button>
                 </div>
               )}
             </motion.div>
 
-            <button
+            <Button
               type="button"
+              variant="unstyled"
+              fullWidth
               onClick={() => setShowOtherMethods((v) => !v)}
-              className="flex w-full items-center justify-between gap-2 rounded-xl border border-(--color_border) bg-(--color_bg_card_hover) px-3 py-2.5 text-left text-sm text-white/80 hover:bg-white/[0.06] transition-colors"
+              className="flex items-center justify-between gap-2 rounded-xl border border-(--color_border) bg-(--color_bg_card_hover) px-3 py-2.5 text-left text-sm text-white/80 hover:bg-white/[0.06] transition-colors"
             >
               <span>Другие способы (email, QR)</span>
               <span className="text-(--color_text_muted) text-xs">
                 {showOtherMethods ? '▼' : '▶'}
               </span>
-            </button>
+            </Button>
 
             {showOtherMethods && (
               <motion.div

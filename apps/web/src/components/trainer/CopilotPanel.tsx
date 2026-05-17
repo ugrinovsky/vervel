@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { trainerApi, type CopilotDraftResult, type CopilotInsightsSummary } from '@/api/trainer';
 import { useBalance } from '@/contexts/AuthContext';
 import AccentButton from '@/components/ui/AccentButton';
+import Button from '@/components/ui/Button';
 import { SparklesIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { isRecord } from '@/utils/typeGuards';
 
@@ -337,14 +338,16 @@ export default function CopilotPanel({ athleteId, onCommitted }: Props) {
           </div>
 
           <div className="flex gap-2">
-            <button
+            <Button
+              type="button"
+              variant="link"
               onClick={handleDraft}
               disabled={loading}
-              className="text-xs text-(--color_text_muted) hover:text-white transition-colors disabled:opacity-40 flex items-center gap-1"
+              className="!text-xs text-(--color_text_muted) hover:!text-white !no-underline disabled:opacity-40 flex items-center gap-1 p-0"
             >
               <span className={loading ? 'animate-spin inline-block' : ''}>↺</span>
               Обновить
-            </button>
+            </Button>
             <div className="flex-1" />
             <AccentButton onClick={handleSend} disabled={sending || !message.trim()}>
               {sending ? 'Отправляю...' : 'Отправить сообщение'}

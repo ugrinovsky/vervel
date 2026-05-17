@@ -15,6 +15,8 @@ import {
 import { useNavigate } from 'react-router';
 import { PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
+import Button from '@/components/ui/Button';
+import ToolbarButton from '@/components/ui/ToolbarButton';
 import AppInput from '@/components/ui/AppInput';
 import FormField from '@/components/FormField';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -117,12 +119,14 @@ function TemplatesTab() {
         <ScreenHint>
           Шаблон — готовая тренировка. Создайте вручную или с помощью ИИ (фото, текст, запрос),
           затем назначайте атлетам и группам через{' '}
-          <button
+          <Button
+            type="button"
+            variant="link"
             onClick={() => navigate('/trainer/calendar')}
-            className="text-white font-medium underline underline-offset-2 hover:no-underline"
+            className="!text-white font-medium underline underline-offset-2 hover:no-underline inline p-0"
           >
             Календарь
-          </button>{' '}
+          </Button>{' '}
           — не нужно каждый раз вводить упражнения заново.
         </ScreenHint>
       </SectionGroup>
@@ -181,8 +185,8 @@ function TemplatesTab() {
                   key={template.id}
                   onConfirm={() => handleDelete(template.id)}
                   rounded="rounded-2xl"
-                  outerClassName="card-shadow"
-                  className="bg-(--color_bg_card) p-4 hover:bg-(--color_bg_card_hover) transition-colors"
+                  surface="glass-row"
+                  className="p-4"
                 >
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-xl bg-(--color_primary_light)/15 flex items-center justify-center shrink-0 mt-0.5">
@@ -217,13 +221,13 @@ function TemplatesTab() {
                           </div>
                         </div>
                         <div className="flex items-center gap-0.5 -mr-1.5 -mt-0.5 shrink-0">
-                          <button
+                          <ToolbarButton
                             onClick={() => openEdit(template)}
-                            className="p-1.5 text-(--color_text_muted) hover:text-white transition-colors rounded-lg hover:bg-white/5"
+                            className="p-1.5 text-(--color_text_muted) hover:text-white rounded-lg hover:bg-white/5"
                             title="Редактировать"
                           >
                             <PencilIcon className="w-3.5 h-3.5" />
-                          </button>
+                          </ToolbarButton>
                           <ConfirmDeleteWrapper.Trigger />
                         </div>
                       </div>
@@ -402,7 +406,8 @@ function ExercisesTab() {
                 <ConfirmDeleteWrapper
                   key={ex.id}
                   onConfirm={() => handleDelete(ex.id)}
-                  className="p-3 bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors"
+                  surface="glass-row"
+                  className="p-3"
                 >
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 flex-1">
@@ -416,13 +421,13 @@ function ExercisesTab() {
                       )}
                     </div>
                     <div className="flex items-center gap-1 ml-2 shrink-0">
-                      <button
+                      <ToolbarButton
                         onClick={() => openEdit(ex)}
-                        className="p-1.5 text-(--color_text_muted) hover:text-white transition-colors"
+                        className="p-1.5 text-(--color_text_muted) hover:text-white"
                         title="Редактировать"
                       >
                         <PencilIcon className="w-4 h-4" />
-                      </button>
+                      </ToolbarButton>
                       <ConfirmDeleteWrapper.Trigger />
                     </div>
                   </div>

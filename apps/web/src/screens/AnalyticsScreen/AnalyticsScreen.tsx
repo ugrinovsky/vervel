@@ -12,6 +12,7 @@ import { useWorkoutStats } from '@/hooks/useWorkoutsStats';
 import { athleteApi } from '@/api/athlete';
 import type { PeriodizationData } from '@/api/trainer';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
+import { MotionButton } from '@/components/ui/Button';
 
 type TimeRange = 'week' | 'month' | 'year';
 
@@ -54,8 +55,9 @@ export default function AnalyticsScreen() {
 
         {flags.progression && (
           <SectionGroup showLabel={false} showBreakAfter={false}>
-            <motion.button
+            <MotionButton
               type="button"
+              variant="unstyled"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.06 }}
@@ -80,7 +82,7 @@ export default function AnalyticsScreen() {
                 </p>
               </div>
               <ChevronRightIcon className="w-6 h-6 shrink-0 text-(--color_primary_icon) group-hover:translate-x-0.5 transition-transform" />
-            </motion.button>
+            </MotionButton>
           </SectionGroup>
         )}
 

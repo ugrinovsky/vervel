@@ -1,6 +1,7 @@
 import { useState, useRef, useLayoutEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import Button from '@/components/ui/Button';
 
 function ExerciseImage({ src, title }: { src: string; title: string }) {
   const [error, setError] = useState(false);
@@ -76,27 +77,36 @@ export default function ImageGallery({ images, title }: { images: string[]; titl
       {images.length > 1 && (
         <>
           {idx > 0 && (
-            <button
+            <Button
+              type="button"
+              variant="unstyled"
               onClick={prev}
               className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+              aria-label="Предыдущее"
             >
               <ChevronLeftIcon className="w-4 h-4" />
-            </button>
+            </Button>
           )}
           {idx < images.length - 1 && (
-            <button
+            <Button
+              type="button"
+              variant="unstyled"
               onClick={next}
               className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+              aria-label="Следующее"
             >
               <ChevronRightIcon className="w-4 h-4" />
-            </button>
+            </Button>
           )}
           <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
             {images.map((_, i) => (
-              <button
+              <Button
                 key={i}
+                type="button"
+                variant="unstyled"
                 onClick={() => setIdx(i)}
-                className={`w-1.5 h-1.5 rounded-full transition-colors ${i === idx ? 'bg-white' : 'bg-white/30'}`}
+                className={`w-1.5 h-1.5 rounded-full transition-colors p-0 ${i === idx ? 'bg-white' : 'bg-white/30'}`}
+                aria-label={`Слайд ${i + 1}`}
               />
             ))}
           </div>

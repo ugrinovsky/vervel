@@ -32,6 +32,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AccentButton from '@/components/ui/AccentButton';
 import AppInput from '@/components/ui/AppInput';
 import GhostButton from '@/components/ui/GhostButton';
+import Button from '@/components/ui/Button';
 import { useAuth, useActiveMode } from '@/contexts/AuthContext';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import type { WorkoutType } from '@/components/WorkoutTypeTabs';
@@ -500,16 +501,18 @@ export default function WorkoutInlineForm({
               className="flex items-center gap-1 px-2 py-1 rounded-lg bg-(--color_primary_light) text-white text-xs"
             >
               {a.type === 'group' ? '👥' : '🏃'} {a.name}
-              <button
+              <Button
+                type="button"
+                variant="unstyled"
                 onClick={() =>
                   setSelectedAssignees((prev) =>
                     prev.filter((x) => !(x.type === a.type && x.id === a.id))
                   )
                 }
-                className="ml-0.5 hover:opacity-70"
+                className="ml-0.5 hover:opacity-70 p-0"
               >
                 <XMarkIcon className="w-3 h-3" />
-              </button>
+              </Button>
             </span>
           ))}
         </div>
@@ -538,36 +541,32 @@ export default function WorkoutInlineForm({
             )}
             {assigneeMode === 'group' &&
               groups.map((group) => (
-                <button
+                <Button
                   key={`group-${group.id}`}
+                  type="button"
+                  variant="list-row"
+                  selected={isGroupSelected(group.id)}
                   onClick={() => toggleGroup(group)}
-                  className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left transition-colors ${
-                    isGroupSelected(group.id)
-                      ? 'bg-(--color_primary_light) text-white'
-                      : 'text-white hover:bg-white/5'
-                  }`}
                 >
                   <span>👥</span>
                   <span className="truncate font-medium">{group.name}</span>
                   <span className="ml-auto text-xs opacity-60 shrink-0">
                     {group.athleteCount} чел.
                   </span>
-                </button>
+                </Button>
               ))}
             {assigneeMode === 'athlete' &&
               athletes.map((athlete) => (
-                <button
+                <Button
                   key={`athlete-${athlete.id}`}
+                  type="button"
+                  variant="list-row"
+                  selected={isAthleteSelected(athlete.id)}
                   onClick={() => selectAthlete(athlete)}
-                  className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left transition-colors ${
-                    isAthleteSelected(athlete.id)
-                      ? 'bg-(--color_primary_light) text-white'
-                      : 'text-white hover:bg-white/5'
-                  }`}
                 >
                   <span>🏃</span>
                   <span className="truncate">{athlete.fullName || athlete.email}</span>
-                </button>
+                </Button>
               ))}
           </>
         )}
@@ -637,15 +636,16 @@ export default function WorkoutInlineForm({
             disabled={quickSaving}
             className="flex-1 bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) placeholder:text-(--color_text_muted) disabled:opacity-50"
           />
-          <button
+          <Button
             type="button"
+            variant="outline-accent"
             onClick={handleAthleteCustomExerciseAdd}
             disabled={!customExerciseName.trim() || quickSaving}
-            className="flex items-center gap-1 px-3 py-2.5 rounded-xl text-sm font-medium text-(--color_primary_light) border border-(--color_primary_light)/40 hover:bg-(--color_primary_light)/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+            className="shrink-0"
           >
             <PlusIcon className="w-4 h-4" />
             Добавить
-          </button>
+          </Button>
         </div>
       )}
 
@@ -655,11 +655,12 @@ export default function WorkoutInlineForm({
             Описание тренировки
           </p>
           {aiEnabled && (
-            <button
+            <Button
               type="button"
+              variant="link"
               onClick={() => void handleQuickAiParse()}
               disabled={quickDescription.trim().length < 5 || quickAiLoading}
-              className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-1 !text-xs !text-emerald-400 hover:!text-emerald-300 !no-underline disabled:opacity-40"
             >
               {quickAiLoading ? (
                 <LoadingSpinner size="xs" />
@@ -667,7 +668,7 @@ export default function WorkoutInlineForm({
                 <SparklesIcon className="w-3.5 h-3.5" />
               )}
               {quickAiLoading ? 'Распознаю…' : 'Распознать упражнения'}
-            </button>
+            </Button>
           )}
         </div>
         <textarea
@@ -762,13 +763,15 @@ export default function WorkoutInlineForm({
           {editWorkout ? 'Редактировать тренировку' : 'Создать тренировку'}
         </h3>
         {onCancel && (
-          <button
+          <Button
             type="button"
+            variant="unstyled"
             onClick={onCancel}
             className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+            aria-label="Закрыть"
           >
             <XMarkIcon className="w-4 h-4 text-white" />
-          </button>
+          </Button>
         )}
       </div>
       <div className="px-4 py-4">{activeForm}</div>

@@ -3,6 +3,7 @@ import { PhoneIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { VideoCameraIcon } from '@heroicons/react/24/outline';
 import type { VideoCall } from '../../api/calls';
 import AccentButton from '../ui/AccentButton';
+import Button from '../ui/Button';
 import GhostButton from '../ui/GhostButton';
 
 interface IncomingCallProps {
@@ -32,13 +33,15 @@ export default function IncomingCall({ call, onAccept, onDecline }: IncomingCall
               <p className="font-semibold text-white truncate">{callerName}</p>
               <p className="text-sm text-(--color_text_muted) truncate">{subtitle}</p>
             </div>
-            <button
+            <Button
               type="button"
+              variant="unstyled"
               onClick={onDecline}
               className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/8 hover:bg-white/15 text-white/50 hover:text-white transition-all shrink-0"
+              aria-label="Отклонить"
             >
               <XMarkIcon className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
 
           <div className="flex gap-2">

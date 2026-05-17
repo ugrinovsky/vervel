@@ -5,7 +5,9 @@ import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import AccentButton from '@/components/ui/AccentButton';
+import Button from '@/components/ui/Button';
 import GhostButton from '@/components/ui/GhostButton';
+import ToggleGroup from '@/components/ui/ToggleGroup';
 import WorkoutFormBase from '@/components/WorkoutFormBase/WorkoutFormBase';
 import { useAuth, useActiveMode } from '@/contexts/AuthContext';
 import {
@@ -144,13 +146,14 @@ export default function AthleteOnboardingScreen(): JSX.Element {
             Шаг {progress} / {totalSteps}
           </span>
           {step !== 'done' && (
-            <button
+            <Button
               type="button"
+              variant="link"
               onClick={handleSkip}
-              className="text-emerald-400/90 hover:text-emerald-300 underline-offset-2 hover:underline"
+              className="!text-emerald-400/90 hover:!text-emerald-300 !no-underline hover:underline"
             >
               Пропустить
-            </button>
+            </Button>
           )}
         </div>
 
@@ -164,8 +167,10 @@ export default function AthleteOnboardingScreen(): JSX.Element {
             />
             <p className="text-sm text-(--color_text_muted) mb-4">Как тренируетесь?</p>
             <div className="grid gap-3 mb-6">
-              <button
+              <Button
                 type="button"
+                variant="unstyled"
+                fullWidth
                 onClick={() => {
                   void (async () => {
                     try {
@@ -184,9 +189,11 @@ export default function AthleteOnboardingScreen(): JSX.Element {
                 <div className="text-xs text-(--color_text_muted) mt-1">
                   Веду дневник сам, без тренера в приложении
                 </div>
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="unstyled"
+                fullWidth
                 onClick={() => {
                   void (async () => {
                     try {
@@ -205,7 +212,7 @@ export default function AthleteOnboardingScreen(): JSX.Element {
                 <div className="text-xs text-(--color_text_muted) mt-1">
                   Тренер добавит меня в приложение — покажи как
                 </div>
-              </button>
+              </Button>
             </div>
           </>
         )}
@@ -288,30 +295,18 @@ export default function AthleteOnboardingScreen(): JSX.Element {
             />
 
             {/* Тогл AI / вручную */}
-            <div className="glass rounded-xl flex gap-1 p-1 mb-4">
-              <button
-                type="button"
-                onClick={() => setAiMode(true)}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  aiMode
-                    ? 'bg-(--color_primary_light) text-white'
-                    : 'text-(--color_text_muted) hover:text-white'
-                }`}
-              >
-                ✨ С помощью ИИ
-              </button>
-              <button
-                type="button"
-                onClick={() => setAiMode(false)}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  !aiMode
-                    ? 'bg-(--color_bg_card_hover) text-white'
-                    : 'text-(--color_text_muted) hover:text-white'
-                }`}
-              >
-                ✏️ Вручную
-              </button>
-            </div>
+            <ToggleGroup
+              joined
+              joinedCompact
+              className="glass rounded-xl gap-1 p-1 mb-4"
+              itemPy="py-1.5"
+              value={aiMode ? 'ai' : 'manual'}
+              onChange={(v) => setAiMode(v === 'ai')}
+              options={[
+                { value: 'ai', label: '✨ С помощью ИИ' },
+                { value: 'manual', label: '✏️ Вручную', activeTone: 'card' },
+              ]}
+            />
 
             <div className="min-w-0 w-full">
               <WorkoutFormBase
@@ -350,13 +345,15 @@ export default function AthleteOnboardingScreen(): JSX.Element {
               >
                 Открыть календарь
               </AccentButton>
-              <button
+              <Button
                 type="button"
+                variant="link"
+                fullWidth
                 onClick={() => navigate('/home', { replace: true })}
-                className="w-full text-sm text-(--color_text_muted) hover:text-white transition-colors py-2"
+                className="!text-sm text-(--color_text_muted) hover:!text-white py-2 !no-underline"
               >
                 На главную
-              </button>
+              </Button>
             </div>
           </div>
         )}

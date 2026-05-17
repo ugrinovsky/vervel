@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
+import Button from '@/components/ui/Button';
 import type { CopilotExplainItem } from '@/api/workouts';
 
 interface Props {
@@ -17,9 +18,12 @@ export default function ExplainWhy({ items }: Props) {
 
   return (
     <div className="rounded-xl border border-white/10 overflow-hidden">
-      <button
+      <Button
+        type="button"
+        variant="unstyled"
+        fullWidth
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-white/5 transition-colors"
+        className="flex items-center gap-2 px-3 py-2.5 text-left hover:bg-white/5 transition-colors"
       >
         <span className="text-xs text-(--color_text_muted) flex-1">
           {open ? 'Скрыть' : `▸ ${preview.title}`}
@@ -27,7 +31,7 @@ export default function ExplainWhy({ items }: Props) {
         <ChevronDownIcon
           className={`w-3.5 h-3.5 text-white/30 transition-transform shrink-0 ${open ? 'rotate-180' : ''}`}
         />
-      </button>
+      </Button>
 
       <AnimatePresence>
         {open && (

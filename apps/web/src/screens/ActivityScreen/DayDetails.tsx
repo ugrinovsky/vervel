@@ -13,6 +13,7 @@ import WorkoutIntensityBar from '@/components/WorkoutIntensityBar/WorkoutIntensi
 import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
 import toast from 'react-hot-toast';
 import AccentButton from '@/components/ui/AccentButton';
+import Button from '@/components/ui/Button';
 import type { AthleteWorkoutDraft } from '@/util/localStorageWorkoutDraft';
 
 type DraftData = AthleteWorkoutDraft;
@@ -65,8 +66,9 @@ function WorkoutTile({
   const noExercises = (workout.exercisesCount ?? workout.exercises?.length ?? -1) === 0;
 
   const openButton = (
-    <button
+    <Button
       type="button"
+      variant="unstyled"
       onClick={onClick}
       className="group flex-1 min-w-0 text-left p-4 pr-3 transition-colors hover:bg-white/[0.04] active:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-(--color_primary_light)/40 focus-visible:ring-inset"
     >
@@ -126,7 +128,7 @@ function WorkoutTile({
           <span className="text-sm font-semibold text-emerald-400">{volumeLabel}</span>
         </div>
       )}
-    </button>
+    </Button>
   );
 
   const body = (

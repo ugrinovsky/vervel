@@ -1,4 +1,5 @@
 import { MicrophoneIcon, VideoCameraIcon, PhoneXMarkIcon } from '@heroicons/react/24/outline'
+import Button from '@/components/ui/Button';
 import FloatingPanel from '../ui/FloatingPanel'
 
 interface CallControlsProps {
@@ -18,7 +19,9 @@ export default function CallControls({
 }: CallControlsProps) {
   return (
     <FloatingPanel>
-      <button
+      <Button
+        type="button"
+        variant="unstyled"
         onClick={onToggleMic}
         title={isMicEnabled ? 'Выключить микрофон' : 'Включить микрофон'}
         className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
@@ -26,17 +29,21 @@ export default function CallControls({
         }`}
       >
         <MicrophoneIcon className="w-6 h-6 text-white" />
-      </button>
+      </Button>
 
-      <button
+      <Button
+        type="button"
+        variant="unstyled"
         onClick={onLeave}
         title="Завершить звонок"
         className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center transition-colors shadow-lg"
       >
         <PhoneXMarkIcon className="w-7 h-7 text-white" />
-      </button>
+      </Button>
 
-      <button
+      <Button
+        type="button"
+        variant="unstyled"
         onClick={onToggleCamera}
         title={isCameraEnabled ? 'Выключить камеру' : 'Включить камеру'}
         className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
@@ -44,7 +51,7 @@ export default function CallControls({
         }`}
       >
         <VideoCameraIcon className="w-6 h-6 text-white" />
-      </button>
+      </Button>
     </FloatingPanel>
   )
 }

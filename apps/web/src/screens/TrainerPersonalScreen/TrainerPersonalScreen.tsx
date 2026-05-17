@@ -11,6 +11,7 @@ import FormField from '@/components/FormField';
 import AvatarCropModal from '@/components/AvatarCropModal/AvatarCropModal';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import AccentButton from '@/components/ui/AccentButton';
+import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AppInput from '@/components/ui/AppInput';
 import SectionGroup from '@/components/ui/SectionGroup';
@@ -191,10 +192,12 @@ export default function TrainerPersonalScreen() {
             className="flex flex-col items-center"
           >
             <div className="relative">
-              <button
+              <Button
+                type="button"
+                variant="unstyled"
                 onClick={() => fileRef.current?.click()}
                 disabled={uploadingPhoto}
-                className="relative block"
+                className="relative block p-0"
               >
                 <UserAvatar
                   photoUrl={photoPreview}
@@ -210,7 +213,7 @@ export default function TrainerPersonalScreen() {
                     <LoadingSpinner size="sm" variant="light" />
                   </div>
                 )}
-              </button>
+              </Button>
             </div>
             <input
               ref={fileRef}
@@ -272,12 +275,14 @@ export default function TrainerPersonalScreen() {
                         className="flex items-center gap-1 px-3 py-1 rounded-full bg-(--color_primary_light)/20 text-(--color_primary_light) text-sm"
                       >
                         {s}
-                        <button
+                        <Button
+                          type="button"
+                          variant="unstyled"
                           onClick={() => removeSpec(s)}
-                          className="hover:opacity-70 transition-opacity"
+                          className="hover:opacity-70 transition-opacity p-0"
                         >
                           <XMarkIcon className="w-3.5 h-3.5" />
-                        </button>
+                        </Button>
                       </span>
                     ))}
                   </div>

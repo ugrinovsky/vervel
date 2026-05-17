@@ -6,6 +6,7 @@ import PhoneInput from '@/components/ui/PhoneInput';
 import AppInput from '@/components/ui/AppInput';
 import AccentButton from '@/components/ui/AccentButton';
 import GhostButton from '@/components/ui/GhostButton';
+import Button from '@/components/ui/Button';
 import { trainerApi, type TrainerLead, type LeadCrmStatus } from '@/api/trainer';
 import {
   PhoneIcon,
@@ -174,15 +175,16 @@ export default function LeadDetailSheet({ lead, open, onClose, onUpdated }: Prop
               const cfg = STATUS_CONFIG[s];
               const isActive = status === s;
               return (
-                <button
+                <Button
                   key={s}
                   type="button"
+                  variant="unstyled"
                   disabled={saving}
                   onClick={() => handleStatusChange(s)}
                   className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all disabled:opacity-50 ${isActive ? cfg.activeClass : cfg.inactiveClass}`}
                 >
                   {cfg.label}
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -190,17 +192,19 @@ export default function LeadDetailSheet({ lead, open, onClose, onUpdated }: Prop
 
         {/* Link to athlete card */}
         {lead.convertedAthleteId && (
-          <button
+          <Button
             type="button"
+            variant="unstyled"
+            fullWidth
             onClick={() => {
               onClose();
               navigate(`/trainer/athletes/${lead.convertedAthleteId}`);
             }}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-green-500/30 bg-green-500/10 text-sm font-medium text-green-300 hover:bg-green-500/20 transition-colors"
+            className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-green-500/30 bg-green-500/10 text-sm font-medium text-green-300 hover:bg-green-500/20 transition-colors"
           >
             <ArrowTopRightOnSquareIcon className="w-4 h-4" />
             Открыть карточку атлета
-          </button>
+          </Button>
         )}
 
         {/* Invite to app — always show until athlete is connected */}
@@ -214,11 +218,13 @@ export default function LeadDetailSheet({ lead, open, onClose, onUpdated }: Prop
               )}
             </div>
             {!inviteLink ? (
-              <button
+              <Button
                 type="button"
+                variant="unstyled"
+                fullWidth
                 disabled={generatingInvite}
                 onClick={handleGenerateInvite}
-                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-colors disabled:opacity-50 ${
+                className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-colors disabled:opacity-50 ${
                   status === 'converted'
                     ? 'border-amber-500/40 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20'
                     : 'border-(--color_border) bg-(--color_bg_card_hover) text-white hover:border-(--color_primary_light)/40'
@@ -226,7 +232,7 @@ export default function LeadDetailSheet({ lead, open, onClose, onUpdated }: Prop
               >
                 <UserPlusIcon className="w-4 h-4" />
                 {generatingInvite ? 'Генерируем...' : 'Сгенерировать ссылку'}
-              </button>
+              </Button>
             ) : (
               <div className="space-y-2">
                 <div className="px-3 py-2.5 rounded-xl bg-(--color_bg_input) border border-(--color_border) text-xs text-white/80 break-all">
@@ -237,14 +243,16 @@ export default function LeadDetailSheet({ lead, open, onClose, onUpdated }: Prop
                   Скопировать ссылку
                 </AccentButton>
                 {status !== 'converted' && (
-                  <button
+                  <Button
                     type="button"
+                    variant="link"
+                    fullWidth
                     disabled={saving}
                     onClick={() => handleStatusChange('converted')}
-                    className="w-full py-2 text-xs text-green-400 hover:text-green-300 transition-colors disabled:opacity-50"
+                    className="py-2 !text-xs !text-green-400 hover:!text-green-300 !no-underline disabled:opacity-50"
                   >
                     Отметить как «Клиент» после отправки →
-                  </button>
+                  </Button>
                 )}
               </div>
             )}
@@ -277,18 +285,16 @@ export default function LeadDetailSheet({ lead, open, onClose, onUpdated }: Prop
 
         {/* Delete */}
         <div className="space-y-2">
-          <button
+          <Button
             type="button"
+            variant={confirmDelete ? 'danger' : 'secondary'}
+            fullWidth
             onClick={handleDelete}
-            className={`w-full py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-              confirmDelete
-                ? 'bg-red-500/20 border border-red-500/40 text-red-300 hover:bg-red-500/30'
-                : 'bg-(--color_bg_card_hover) border border-(--color_border) text-(--color_text_muted) hover:text-red-400 hover:border-red-500/30'
-            }`}
+            className={`py-2.5 gap-2 ${confirmDelete ? '' : 'hover:text-red-400 hover:border-red-500/30'}`}
           >
             <TrashIcon className="w-4 h-4" />
             {confirmDelete ? 'Подтвердите удаление' : 'Удалить заявку'}
-          </button>
+          </Button>
           {confirmDelete && (
             <GhostButton
               variant="link"
