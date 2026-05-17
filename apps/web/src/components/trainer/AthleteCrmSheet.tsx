@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { trainerApi, type AthleteCrmStatus } from '@/api/trainer';
-import AppInput from '@/components/ui/AppInput';
-import Button from '@/components/ui/Button';
+import DatePickerField from '@/components/ui/DatePickerField';
+import { parseLocalDate, toDateKey } from '@/utils/date';
+import Textarea from '@/components/ui/Textarea';
+import ChoiceChips, { type ChoiceChipOption } from '@/components/ui/ChoiceChips';
 
 interface Props {
   athleteId: number;
@@ -19,37 +21,36 @@ interface Props {
   }) => void;
 }
 
-const STATUS_CONFIG: Record<
-  AthleteCrmStatus,
-  { label: string; desc: string; activeClass: string; inactiveClass: string }
-> = {
-  active: {
+const ATHLETE_STATUS_OPTIONS: ChoiceChipOption<AthleteCrmStatus>[] = [
+  {
+    value: 'active',
     label: 'Активен',
-    desc: 'Клиент ходит и занимается',
-    activeClass: 'bg-green-500/30 border-green-400/60 text-green-200',
-    inactiveClass: 'bg-green-500/10 border-green-500/20 text-green-400/50',
+    description: 'Клиент ходит и занимается',
+    activeClass: 'border-green-400 bg-green-500/25 text-green-100',
+    inactiveClass: 'border-green-500/20 bg-green-500/10 text-green-400/70 hover:text-green-100',
   },
-  sleeping: {
+  {
+    value: 'sleeping',
     label: 'Неактивен',
-    desc: 'Давно нет активности',
-    activeClass: 'bg-amber-500/30 border-amber-400/60 text-amber-200',
-    inactiveClass: 'bg-amber-500/10 border-amber-500/20 text-amber-400/50',
+    description: 'Давно нет активности',
+    activeClass: 'border-amber-400 bg-amber-500/25 text-amber-100',
+    inactiveClass: 'border-amber-500/20 bg-amber-500/10 text-amber-400/70 hover:text-amber-100',
   },
-  paused: {
+  {
+    value: 'paused',
     label: 'Пауза',
-    desc: 'Временный перерыв',
-    activeClass: 'bg-blue-500/30 border-blue-400/60 text-blue-200',
-    inactiveClass: 'bg-blue-500/10 border-blue-500/20 text-blue-400/50',
+    description: 'Временный перерыв',
+    activeClass: 'border-blue-400 bg-blue-500/25 text-blue-100',
+    inactiveClass: 'border-blue-500/20 bg-blue-500/10 text-blue-400/70 hover:text-blue-100',
   },
-  churned: {
+  {
+    value: 'churned',
     label: 'Ушёл',
-    desc: 'Прекратил занятия',
-    activeClass: 'bg-gray-500/30 border-gray-400/60 text-gray-300',
-    inactiveClass: 'bg-gray-500/10 border-gray-500/20 text-gray-500/50',
+    description: 'Прекратил занятия',
+    activeClass: 'border-gray-400 bg-gray-500/25 text-gray-200',
+    inactiveClass: 'border-gray-500/20 bg-gray-500/10 text-gray-500/70 hover:text-gray-300',
   },
-};
-
-const STATUS_ORDER: AthleteCrmStatus[] = ['active', 'sleeping', 'paused', 'churned'];
+];
 
 export default function AthleteCrmSheet({
   athleteId,
@@ -115,52 +116,37 @@ export default function AthleteCrmSheet({
   return (
     <BottomSheet id="athlete-crm" open={open} onClose={onClose} title="CRM" emoji="📋">
       <div className="space-y-5">
-        {/* Status */}
-        <div>
-          <div className="text-xs text-(--color_text_muted) mb-2">Статус клиента</div>
-          <div className="grid grid-cols-2 gap-2">
-            {STATUS_ORDER.map((s) => {
-              const cfg = STATUS_CONFIG[s];
-              const isActive = status === s;
-              return (
-                <Button
-                  key={s}
-                  type="button"
-                  variant="unstyled"
-                  fullWidth
-                  disabled={saving}
-                  onClick={() => handleStatusChange(s)}
-                  className={`px-3 py-2.5 rounded-xl border text-left transition-all disabled:opacity-50 ${isActive ? cfg.activeClass : cfg.inactiveClass}`}
-                >
-                  <div className="text-sm font-semibold leading-tight">{cfg.label}</div>
-                  <div className="text-[11px] opacity-70 mt-0.5">{cfg.desc}</div>
-                </Button>
-              );
-            })}
-          </div>
-        </div>
+        <ChoiceChips
+          variant="tile"
+          label="Статус клиента"
+          ariaLabel="Статус клиента"
+          options={ATHLETE_STATUS_OPTIONS}
+          value={status}
+          onChange={handleStatusChange}
+          disabled={saving}
+        />
 
         {/* Reminder date */}
         <div>
           <div className="text-xs text-(--color_text_muted) mb-2">Напомнить</div>
-          <AppInput
-            type="date"
-            value={followUpDate}
-            onChange={(e) => handleFollowUpChange(e.target.value)}
-            className="scheme-dark"
+          <DatePickerField
+            selected={followUpDate ? parseLocalDate(followUpDate) : null}
+            onChange={(d) => handleFollowUpChange(d ? toDateKey(d) : '')}
+            dateFormat="d MMM yyyy"
+            isClearable
+            placeholderText="Не выбрано"
           />
         </div>
 
         {/* Note */}
         <div>
           <div className="text-xs text-(--color_text_muted) mb-2">Заметка</div>
-          <textarea
+          <Textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             onBlur={handleNoteBlur}
             placeholder="Причина паузы, договорённости, особенности клиента..."
             rows={3}
-            className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none placeholder:text-(--color_text_muted) leading-relaxed"
           />
         </div>
       </div>

@@ -7,12 +7,12 @@ import { type AthletePassSummary } from '@/api/trainer';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import ChipScrollRow from '@/components/ui/ChipScrollRow';
 import ListButton from '@/components/ui/ListButton';
+import SearchInput from '@/components/ui/SearchInput';
 import IconButton from '@/components/ui/IconButton';
 import AthletePassSheet from './AthletePassSheet';
 import {
   ExclamationTriangleIcon,
   ChevronRightIcon,
-  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -130,15 +130,14 @@ export default function PassesTab({
       </div>
 
       {summaries.length > 5 && (
-        <div className="relative">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-(--color_text_muted)" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Поиск по имени..."
-            className="w-full bg-(--color_bg_card) border border-(--color_border) rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder:text-(--color_text_muted) outline-none focus:border-(--color_primary_light)/50 transition-colors"
-          />
-        </div>
+        <SearchInput
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Поиск по имени..."
+          dense
+          clearable={false}
+          className="bg-(--color_bg_card)"
+        />
       )}
 
       <ChipScrollRow

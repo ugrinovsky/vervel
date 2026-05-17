@@ -52,6 +52,8 @@ import { InsertStartRow } from '@/components/workoutExerciseShared/WorkoutExerci
 import { SortableDragHandle } from '@/components/workoutExerciseShared/SortableDragHandle';
 import { WorkoutExerciseBetweenRow } from '@/components/workoutExerciseShared/WorkoutExerciseBetweenRow';
 import GhostButton from '@/components/ui/GhostButton';
+import Input from '@/components/ui/Input';
+import Textarea from '@/components/ui/Textarea';
 import IconButton from '@/components/ui/IconButton';
 import { useActiveMode } from '@/contexts/AuthContext';
 import { buildTrainerCustomExerciseWithSets } from '@/util/trainerCustomExerciseWithSets';
@@ -200,12 +202,12 @@ function SortableExerciseCard({
             />
           </div>
 
-          <textarea
+          <Textarea
             value={ex.notes ?? ''}
             onChange={(e) => onUpdate({ notes: e.target.value })}
             placeholder="Комментарий тренера: техника, темп..."
             rows={2}
-            className="mt-2 w-full text-xs bg-black/20 border border-white/10 rounded-lg px-2.5 py-1.5 text-white/70 placeholder:text-white/25 outline-none focus:border-white/30 resize-none transition-colors leading-relaxed"
+            className="mt-2 !text-xs !bg-black/20 !border-white/10 !rounded-lg !px-2.5 !py-1.5 !text-white/70 placeholder:!text-white/25 focus:!border-white/30"
           />
         </div>
       </div>
@@ -510,14 +512,14 @@ const WorkoutExercisesEditor = forwardRef<WorkoutExercisesEditorHandle, Props>(
               </GhostButton>
             ) : (
               <div className="flex gap-2">
-                <input
+                <Input
                   ref={customInputRef}
                   type="text"
                   value={customExerciseName}
                   onChange={(e) => setCustomExerciseName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAthleteCustomExerciseAdd()}
                   placeholder="Название упражнения..."
-                  className="flex-1 bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-(--color_primary_light) placeholder:text-(--color_text_muted)"
+                  className="flex-1 !py-2"
                 />
                 <GhostButton
                   variant="outline-accent"

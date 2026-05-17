@@ -3,10 +3,13 @@ import { useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import PhoneInput from '@/components/ui/PhoneInput';
-import AppInput from '@/components/ui/AppInput';
+import DatePickerField from '@/components/ui/DatePickerField';
+import { parseLocalDate, toDateKey } from '@/utils/date';
+import Textarea from '@/components/ui/Textarea';
 import AccentButton from '@/components/ui/AccentButton';
 import GhostButton from '@/components/ui/GhostButton';
 import Button from '@/components/ui/Button';
+import ChoiceChips, { type ChoiceChipOption } from '@/components/ui/ChoiceChips';
 import { trainerApi, type TrainerLead, type LeadCrmStatus } from '@/api/trainer';
 import {
   PhoneIcon,
@@ -23,38 +26,38 @@ interface Props {
   onUpdated: () => void;
 }
 
-const STATUS_CONFIG: Record<
-  LeadCrmStatus,
-  { label: string; activeClass: string; inactiveClass: string }
-> = {
-  new: {
+const LEAD_STATUS_OPTIONS: ChoiceChipOption<LeadCrmStatus>[] = [
+  {
+    value: 'new',
     label: 'Новый',
-    activeClass: 'bg-amber-500/30 border-amber-400/60 text-amber-200',
-    inactiveClass: 'bg-amber-500/10 border-amber-500/20 text-amber-400/50',
+    activeClass: 'border-amber-400 bg-amber-500/25 text-amber-100',
+    inactiveClass: 'border-amber-500/20 bg-amber-500/10 text-amber-400/70 hover:text-amber-100',
   },
-  contacted: {
+  {
+    value: 'contacted',
     label: 'Связался',
-    activeClass: 'bg-blue-500/30 border-blue-400/60 text-blue-200',
-    inactiveClass: 'bg-blue-500/10 border-blue-500/20 text-blue-400/50',
+    activeClass: 'border-blue-400 bg-blue-500/25 text-blue-100',
+    inactiveClass: 'border-blue-500/20 bg-blue-500/10 text-blue-400/70 hover:text-blue-100',
   },
-  trial: {
+  {
+    value: 'trial',
     label: 'Пробное',
-    activeClass: 'bg-purple-500/30 border-purple-400/60 text-purple-200',
-    inactiveClass: 'bg-purple-500/10 border-purple-500/20 text-purple-400/50',
+    activeClass: 'border-purple-400 bg-purple-500/25 text-purple-100',
+    inactiveClass: 'border-purple-500/20 bg-purple-500/10 text-purple-400/70 hover:text-purple-100',
   },
-  converted: {
+  {
+    value: 'converted',
     label: 'Клиент',
-    activeClass: 'bg-green-500/30 border-green-400/60 text-green-200',
-    inactiveClass: 'bg-green-500/10 border-green-500/20 text-green-400/50',
+    activeClass: 'border-green-400 bg-green-500/25 text-green-100',
+    inactiveClass: 'border-green-500/20 bg-green-500/10 text-green-400/70 hover:text-green-100',
   },
-  lost: {
+  {
+    value: 'lost',
     label: 'Потерян',
-    activeClass: 'bg-gray-500/30 border-gray-400/60 text-gray-300',
-    inactiveClass: 'bg-gray-500/10 border-gray-500/20 text-gray-500/50',
+    activeClass: 'border-gray-400 bg-gray-500/25 text-gray-200',
+    inactiveClass: 'border-gray-500/20 bg-gray-500/10 text-gray-500/70 hover:text-gray-300',
   },
-};
-
-const STATUS_ORDER: LeadCrmStatus[] = ['new', 'contacted', 'trial', 'converted', 'lost'];
+];
 
 export default function LeadDetailSheet({ lead, open, onClose, onUpdated }: Props) {
   const navigate = useNavigate();
@@ -167,28 +170,14 @@ export default function LeadDetailSheet({ lead, open, onClose, onUpdated }: Prop
           </a>
         </div>
 
-        {/* Status pills */}
-        <div>
-          <div className="text-xs text-(--color_text_muted) mb-2">Статус</div>
-          <div className="flex flex-wrap gap-2">
-            {STATUS_ORDER.map((s) => {
-              const cfg = STATUS_CONFIG[s];
-              const isActive = status === s;
-              return (
-                <Button
-                  key={s}
-                  type="button"
-                  variant="unstyled"
-                  disabled={saving}
-                  onClick={() => handleStatusChange(s)}
-                  className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all disabled:opacity-50 ${isActive ? cfg.activeClass : cfg.inactiveClass}`}
-                >
-                  {cfg.label}
-                </Button>
-              );
-            })}
-          </div>
-        </div>
+        <ChoiceChips
+          label="Статус"
+          ariaLabel="Статус лида"
+          options={LEAD_STATUS_OPTIONS}
+          value={status}
+          onChange={handleStatusChange}
+          disabled={saving}
+        />
 
         {/* Link to athlete card */}
         {lead.convertedAthleteId && (
@@ -218,21 +207,14 @@ export default function LeadDetailSheet({ lead, open, onClose, onUpdated }: Prop
               )}
             </div>
             {!inviteLink ? (
-              <Button
-                type="button"
-                variant="unstyled"
-                fullWidth
-                disabled={generatingInvite}
+              <AccentButton
                 onClick={handleGenerateInvite}
-                className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-colors disabled:opacity-50 ${
-                  status === 'converted'
-                    ? 'border-amber-500/40 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20'
-                    : 'border-(--color_border) bg-(--color_bg_card_hover) text-white hover:border-(--color_primary_light)/40'
-                }`}
+                disabled={generatingInvite}
+                className="py-3 gap-2"
               >
-                <UserPlusIcon className="w-4 h-4" />
+                <UserPlusIcon className="w-4 h-4 shrink-0" />
                 {generatingInvite ? 'Генерируем...' : 'Сгенерировать ссылку'}
-              </Button>
+              </AccentButton>
             ) : (
               <div className="space-y-2">
                 <div className="px-3 py-2.5 rounded-xl bg-(--color_bg_input) border border-(--color_border) text-xs text-white/80 break-all">
@@ -262,24 +244,24 @@ export default function LeadDetailSheet({ lead, open, onClose, onUpdated }: Prop
         {/* Reminder date */}
         <div>
           <div className="text-xs text-(--color_text_muted) mb-2">Напомнить</div>
-          <AppInput
-            type="date"
-            value={followUpDate}
-            onChange={(e) => handleFollowUpChange(e.target.value)}
-            className="scheme-dark"
+          <DatePickerField
+            selected={followUpDate ? parseLocalDate(followUpDate) : null}
+            onChange={(d) => handleFollowUpChange(d ? toDateKey(d) : '')}
+            dateFormat="d MMM yyyy"
+            isClearable
+            placeholderText="Не выбрано"
           />
         </div>
 
         {/* Note */}
         <div>
           <div className="text-xs text-(--color_text_muted) mb-2">Заметка</div>
-          <textarea
+          <Textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             onBlur={handleNoteBlur}
             placeholder="Цель клиента, откуда пришёл, договорённости..."
             rows={3}
-            className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none placeholder:text-(--color_text_muted) leading-relaxed"
           />
         </div>
 

@@ -29,6 +29,7 @@ const InviteScreen = lazy(() => import('@/screens/InviteScreen/InviteScreen'));
 const DocsScreen = lazy(() => import('@/screens/DocsScreen/DocsScreen'));
 const LandingScreen = lazy(() => import('@/screens/LandingScreen/LandingScreen'));
 const OnboardingScreen = lazy(() => import('@/screens/OnboardingScreen/OnboardingScreen'));
+const UIKitScreen = lazy(() => import('@/screens/UIKitScreen/UIKitScreen'));
 import { shouldShowOnboarding } from '@/util/shouldShowOnboarding';
 import { AuthProvider, useAuth, useActiveMode } from '@/contexts/AuthContext';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
@@ -84,7 +85,8 @@ function AppContent(): JSX.Element {
     location.pathname === '/select-role' ||
     location.pathname === '/onboarding' ||
     location.pathname.startsWith('/invite/') ||
-    location.pathname.startsWith('/docs/');
+    location.pathname.startsWith('/docs/') ||
+    location.pathname === '/uikit';
   const showIncomingCallWatcher =
     !!user && isAthlete && activeMode === 'athlete' && !isAuthPage && flags.videoCalls;
 
@@ -172,6 +174,16 @@ function AppContent(): JSX.Element {
             </Suspense>
           }
         />
+        {import.meta.env.DEV && (
+          <Route
+            path="/uikit"
+            element={
+              <Suspense fallback={<RouteLoading />}>
+                <UIKitScreen />
+              </Suspense>
+            }
+          />
+        )}
         <Route
           path="/"
           element={

@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react';
 import toast from 'react-hot-toast';
-import AppInput from '@/components/ui/AppInput';
+import Input from '@/components/ui/Input';
+import Textarea from '@/components/ui/Textarea';
 import AccentButton from '@/components/ui/AccentButton';
-import SectionLabel from '@/components/SectionLabel';
+import FieldLabel from '@/components/ui/FieldLabel';
 import WorkoutTypeTabs, { type WorkoutType } from '@/components/WorkoutTypeTabs';
 import WorkoutExercisesEditor, {
   type WorkoutExercisesEditorHandle,
@@ -119,8 +120,8 @@ export default function WorkoutTemplateForm({
   return (
     <div className="space-y-4">
       <div>
-        <SectionLabel>Название</SectionLabel>
-        <AppInput
+        <FieldLabel as="p" variant="section">Название</FieldLabel>
+        <Input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -129,7 +130,7 @@ export default function WorkoutTemplateForm({
       </div>
 
       <div>
-        <SectionLabel>Тип тренировки</SectionLabel>
+        <FieldLabel as="p" variant="section">Тип тренировки</FieldLabel>
         <WorkoutTypeTabs value={workoutType} onChange={handleTypeChange} />
       </div>
 
@@ -144,10 +145,10 @@ export default function WorkoutTemplateForm({
       )}
 
       <div>
-        <SectionLabel>
+        <FieldLabel as="p" variant="section">
           Упражнения
           {exercises.length > 0 && <span className="text-white/40 ml-1">({exercises.length})</span>}
-        </SectionLabel>
+        </FieldLabel>
         <WorkoutExercisesEditor
           ref={editorRef}
           workoutType={workoutType}
@@ -188,13 +189,12 @@ export default function WorkoutTemplateForm({
       </div>
 
       <div>
-        <SectionLabel>Описание (опционально)</SectionLabel>
-        <textarea
+        <FieldLabel as="p" variant="section">Описание (опционально)</FieldLabel>
+        <Textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Описание шаблона..."
           rows={2}
-          className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none placeholder:text-(--color_text_muted)"
         />
       </div>
 

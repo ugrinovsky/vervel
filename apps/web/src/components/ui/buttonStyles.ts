@@ -1,5 +1,16 @@
 /** Shared button class maps — single source of truth for all button UI. */
 
+/** Клавиатурный фокус — плавное появление кольца (все варианты кроме link). */
+/** Плавные смена состояния (hover / active / aria-pressed) и фокус-кольцо */
+export const BUTTON_TRANSITION =
+  'transition-[color,background-color,border-color,box-shadow,opacity,transform] duration-200 ease-in-out';
+
+export const BUTTON_FOCUS_RING =
+  `outline-none ${BUTTON_TRANSITION} focus-visible:ring-2 focus-visible:ring-(--color_primary_light) focus-visible:ring-offset-2 focus-visible:ring-offset-(--color_primary_dark) disabled:focus-visible:ring-0`;
+
+const BUTTON_FOCUS_LINK =
+  `outline-none ${BUTTON_TRANSITION} focus-visible:underline focus-visible:text-white focus-visible:ring-2 focus-visible:ring-(--color_primary_light)/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent`;
+
 export type ButtonVariant =
   | 'primary'
   | 'secondary'
@@ -92,12 +103,12 @@ export function buttonClasses({
 }): string {
   const layout =
     variant === 'link'
-      ? 'inline'
+      ? 'inline-flex items-center gap-1'
       : variant === 'unstyled'
         ? ''
         : `inline-flex items-center justify-center ${SIZE[size]}`;
 
-  const width = fullWidth && variant !== 'link' && variant !== 'unstyled' ? 'w-full' : '';
+  const width = fullWidth && variant !== 'link' ? 'w-full' : '';
 
   const softCompact =
     variant === 'soft' && size === 'xs'
@@ -111,8 +122,9 @@ export function buttonClasses({
 
   const resolvedLayout = variant === 'list-row' ? '' : layout;
   const resolvedBase = listRow || softCompact;
+  const focus = variant === 'link' ? BUTTON_FOCUS_LINK : BUTTON_FOCUS_RING;
 
-  return [resolvedLayout, width, resolvedBase, className].filter(Boolean).join(' ').trim();
+  return [resolvedLayout, width, resolvedBase, focus, className].filter(Boolean).join(' ').trim();
 }
 
 /** Icon-only toolbar action (duplicate / delete in forms). */
@@ -122,5 +134,5 @@ export function toolbarIconClasses(tone: 'default' | 'info' | 'danger' = 'defaul
     info: 'text-white/30 hover:text-blue-400 hover:bg-blue-500/15',
     danger: 'text-white/30 hover:text-red-400 hover:bg-red-500/15 disabled:opacity-20 disabled:cursor-not-allowed',
   };
-  return `inline-flex items-center justify-center w-6 h-6 rounded-md transition-colors ${tones[tone]}`;
+  return `inline-flex items-center justify-center w-6 h-6 rounded-md transition-colors ${BUTTON_FOCUS_RING} ${tones[tone]}`;
 }

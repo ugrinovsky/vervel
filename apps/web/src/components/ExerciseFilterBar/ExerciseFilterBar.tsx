@@ -1,9 +1,13 @@
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import AppInput from '@/components/ui/AppInput';
+import Input from '@/components/ui/Input';
 import ChipScrollRow from '@/components/ui/ChipScrollRow';
 import type { ExerciseCategory, MuscleZone } from '@/types/Exercise';
 import { getZoneLabel } from '@/util/zones';
 import { CATEGORY_LABELS, CATEGORY_LABELS_SHORT } from './exerciseFilterConstants';
+import {
+  EXERCISE_CATEGORY_CHIP_TONES,
+  EXERCISE_ZONE_CHIP_TONES,
+} from './exerciseChipStyles';
 
 function categoryFromChipKey(key: string, allowed: ExerciseCategory[]): ExerciseCategory | null {
   for (const c of allowed) {
@@ -45,20 +49,36 @@ export default function ExerciseFilterBar({
   categoryLabels = CATEGORY_LABELS,
 }: Props) {
   const catChips = [
-    { key: '__all__', label: 'Все' },
-    ...availableCategories.map((cat) => ({ key: cat, label: categoryLabels[cat] })),
+    {
+      key: '__all__',
+      label: 'Все',
+      ...EXERCISE_CATEGORY_CHIP_TONES.__all__,
+    },
+    ...availableCategories.map((cat) => ({
+      key: cat,
+      label: categoryLabels[cat],
+      ...EXERCISE_CATEGORY_CHIP_TONES[cat],
+    })),
   ];
 
   const zoneChips = [
-    { key: '__all__', label: 'Все зоны' },
-    ...availableZones.map((zone) => ({ key: zone, label: getZoneLabel(zone) })),
+    {
+      key: '__all__',
+      label: 'Все зоны',
+      ...EXERCISE_ZONE_CHIP_TONES.__all__,
+    },
+    ...availableZones.map((zone) => ({
+      key: zone,
+      label: getZoneLabel(zone),
+      ...EXERCISE_ZONE_CHIP_TONES[zone],
+    })),
   ];
 
   return (
     <div className="space-y-2.5">
       <div className="relative">
         <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none z-10" />
-        <AppInput
+        <Input
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder={`Поиск среди ${exerciseCount} упражнений...`}
@@ -67,6 +87,8 @@ export default function ExerciseFilterBar({
       </div>
 
       <ChipScrollRow
+        colored
+        edgeFade
         className="pb-0.5"
         chips={catChips}
         activeKey={categoryFilter ?? '__all__'}
@@ -76,6 +98,8 @@ export default function ExerciseFilterBar({
       />
 
       <ChipScrollRow
+        colored
+        edgeFade
         className="pb-0.5"
         chips={zoneChips}
         activeKey={zoneFilter ?? '__all__'}

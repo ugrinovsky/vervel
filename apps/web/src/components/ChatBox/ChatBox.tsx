@@ -13,7 +13,8 @@ import type { ChatMessage } from '@/api/trainer';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
 import Button from '@/components/ui/Button';
-import AppInput from '@/components/ui/AppInput';
+import Input from '@/components/ui/Input';
+import Textarea from '@/components/ui/Textarea';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/contexts/AuthContext';
 import { checkForNewAchievements } from '@/hooks/useAchievementToast';
@@ -610,7 +611,8 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
           }}
         >
           <div className="flex-1 flex items-center bg-white/8 rounded-2xl px-3 py-2.5 border border-white/10">
-            <textarea
+            <Textarea
+              bare
               ref={textareaRef}
               rows={1}
               value={newMessage}
@@ -653,7 +655,7 @@ export default function ChatBox({ chatId, className = '', glass = false, topPadd
       ) : (
         <div className="p-4 border-t border-(--color_border)">
           <div className="flex gap-2 items-center">
-            <AppInput
+            <Input
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}

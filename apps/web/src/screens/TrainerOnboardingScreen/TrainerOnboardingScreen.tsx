@@ -7,7 +7,7 @@ import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import AccentButton from '@/components/ui/AccentButton';
 import Button from '@/components/ui/Button';
 import GhostButton from '@/components/ui/GhostButton';
-import AppInput from '@/components/ui/AppInput';
+import Input from '@/components/ui/Input';
 import PhoneInput from '@/components/ui/PhoneInput';
 import { useAuth, useActiveMode } from '@/contexts/AuthContext';
 import { parseStoredAuthUserJson } from '@/util/parseStoredAuthUser';
@@ -240,7 +240,7 @@ export default function TrainerOnboardingScreen(): JSX.Element {
             />
             <div className="flex-1 min-h-0 overflow-y-auto">
               <div className="space-y-3">
-                <AppInput
+                <Input
                   value={leadName}
                   onChange={(e) => setLeadName(e.target.value)}
                   placeholder="Имя клиента"

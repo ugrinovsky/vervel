@@ -7,7 +7,7 @@ import Badge from '@/components/ui/Badge';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import AccentButton from '@/components/ui/AccentButton';
-import AppInput from '@/components/ui/AppInput';
+import Input from '@/components/ui/Input';
 import Card, { cardClass } from '@/components/ui/Card';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { trainerApi, type TrainerGroupItem, type UnreadCounts } from '@/api/trainer';
@@ -208,7 +208,7 @@ export default function TrainerGroupsListScreen() {
         title="Новая группа"
       >
         <div className="flex flex-col gap-3">
-          <AppInput
+          <Input
             type="text"
             value={newGroupName}
             onChange={(e) => setNewGroupName(e.target.value)}

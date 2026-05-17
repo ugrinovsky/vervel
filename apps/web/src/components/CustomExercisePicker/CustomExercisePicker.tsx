@@ -4,7 +4,7 @@ import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import AccentButton from '@/components/ui/AccentButton';
 import Button from '@/components/ui/Button';
 import GhostButton from '@/components/ui/GhostButton';
-import AppInput from '@/components/ui/AppInput';
+import Input from '@/components/ui/Input';
 import FormField from '@/components/FormField';
 import { trainerApi, type TrainerCustomExercise } from '@/api/trainer';
 import type { ExerciseWithSets } from '@/types/Exercise';
@@ -93,7 +93,7 @@ export default function CustomExercisePicker({ open, onClose, workoutType, onSel
       <div className="flex flex-col" style={{ maxHeight: 'calc(90dvh - 140px)' }}>
         {/* Search */}
         <div className="mb-3">
-          <AppInput
+          <Input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -154,7 +154,7 @@ export default function CustomExercisePicker({ open, onClose, workoutType, onSel
           <div className="shrink-0 border-t border-(--color_border) pt-4 space-y-3">
             <p className="text-sm font-medium text-white">Новое упражнение</p>
             <FormField label="Название">
-              <AppInput
+              <Input
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
@@ -163,7 +163,7 @@ export default function CustomExercisePicker({ open, onClose, workoutType, onSel
               />
             </FormField>
             <FormField label="Заметка (опционально)">
-              <AppInput
+              <Input
                 type="text"
                 value={newNotes}
                 onChange={(e) => setNewNotes(e.target.value)}

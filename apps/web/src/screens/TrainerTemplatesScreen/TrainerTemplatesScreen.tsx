@@ -17,7 +17,8 @@ import { PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
 import Button from '@/components/ui/Button';
 import ToolbarButton from '@/components/ui/ToolbarButton';
-import AppInput from '@/components/ui/AppInput';
+import Input from '@/components/ui/Input';
+import Textarea from '@/components/ui/Textarea';
 import FormField from '@/components/FormField';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
@@ -447,7 +448,7 @@ function ExercisesTab() {
       >
         <div className="space-y-4">
           <FormField label="Название">
-            <AppInput
+            <Input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -457,12 +458,12 @@ function ExercisesTab() {
           </FormField>
 
           <FormField label="Заметка (опционально)">
-            <textarea
+            <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Техника выполнения, особенности..."
               rows={2}
-              className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none"
+              className="!rounded-lg !py-2"
             />
           </FormField>
 

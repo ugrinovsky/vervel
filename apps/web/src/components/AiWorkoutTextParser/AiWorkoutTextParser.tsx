@@ -10,6 +10,7 @@ import { useAiBalance } from '@/hooks/useAiBalance';
 import AiSheetHeader from '@/components/ui/AiSheetHeader';
 import AiCostNotice from '@/components/ui/AiCostNotice';
 import Button from '@/components/ui/Button';
+import Textarea from '@/components/ui/Textarea';
 
 interface Props {
   onResult: (payload: AiTextParseUiPayload) => void;
@@ -143,7 +144,7 @@ export default function AiWorkoutTextParser({ onResult, triggerClassName, trigge
               )}
 
               <div className="relative">
-                <textarea
+                <Textarea
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   placeholder={`Например:
@@ -151,7 +152,7 @@ export default function AiWorkoutTextParser({ onResult, triggerClassName, trigge
 Тяга 3×12 40кг
 Подтягивания - макс`}
                   rows={6}
-                  className="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-white text-sm resize-none outline-none focus:border-emerald-400/60 transition-colors placeholder:text-white/30"
+                  className="!bg-white/5 !border-white/15 focus:!border-emerald-400/60 placeholder:!text-white/30"
                 />
               </div>
 

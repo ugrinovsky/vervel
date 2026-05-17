@@ -57,6 +57,10 @@ const loadColors: Record<LoadType, string> = {
   high: 'bg-emerald-400',
 };
 
+/** Выходной — пунктир + заливка темы (пустой день без рамки и без заливки). */
+const REST_DAY_CELL =
+  'border-2 border-dashed border-(--color_primary_light)/80 bg-(--color_primary_light)/32';
+
 const WEEK_DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
 function getMondayIndex(date: Date): number {
@@ -87,15 +91,17 @@ function TrainerDayCell({
 
   const ringClass = isActive
     ? isRest
-      ? 'ring-2 ring-slate-400 ring-offset-2 ring-offset-gray-900 scale-105'
+      ? 'scale-105 border-(--color_primary_light) shadow-[0_0_14px_rgb(var(--color_primary_light_ch)/0.35)]'
       : 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-gray-900 scale-105'
     : [
-        'hover:opacity-90 hover:scale-105',
-        isCurrentDay ? 'ring-1 ring-white/40' : '',
+        'hover:scale-105 transition-transform',
+        isRest ? 'hover:bg-(--color_primary_light)/40 hover:border-(--color_primary_light)' : 'hover:opacity-90',
+        isCurrentDay && !isRest ? 'ring-1 ring-white/40' : '',
+        isCurrentDay && isRest ? 'ring-1 ring-(--color_primary_light)/60' : '',
         !hasWorkouts && !isRest ? 'hover:bg-(--color_bg_card_hover)' : '',
       ].join(' ');
 
-  const bgClass = isRest ? 'bg-slate-700/60 ring-1 ring-inset ring-slate-500/40' : loadColors[load];
+  const bgClass = isRest ? REST_DAY_CELL : loadColors[load];
   const title = `${format(day.date, 'd MMMM yyyy', { locale: ru })}${isRest ? ' — выходной' : day.count > 0 ? ` — ${day.count} тренировок` : ''}`;
 
   return (
@@ -108,8 +114,8 @@ function TrainerDayCell({
     >
       {isRest ? (
         <>
-          <MoonIcon className="w-3.5 h-3.5 text-slate-400" />
-          <span className="text-[10px] leading-none text-slate-500 font-semibold">
+          <MoonIcon className="w-4 h-4 text-(--color_primary_light) drop-shadow-[0_0_6px_rgb(var(--color_primary_light_ch)/0.5)]" />
+          <span className="text-[10px] leading-none text-(--color_primary_light) font-bold">
             {format(day.date, 'd')}
           </span>
         </>
@@ -129,7 +135,7 @@ function TrainerDayCell({
       )}
       {isCurrentDay && (
         <div
-          className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${isRest ? 'bg-slate-400' : 'bg-emerald-400'}`}
+          className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${isRest ? 'bg-(--color_primary_light)' : 'bg-emerald-400'}`}
         />
       )}
     </Button>
@@ -137,13 +143,16 @@ function TrainerDayCell({
 }
 
 export default function Calendar(props: CalendarProps) {
-  const { selectedDate, onMonthChange, onTodayClick, month = new Date() } = props;
-  const [currentMonth, setCurrentMonth] = useState<Date>(month);
+  const { selectedDate, onMonthChange, onTodayClick } = props;
+  const monthFromProps = props.month;
+  const [currentMonth, setCurrentMonth] = useState<Date>(() => monthFromProps ?? new Date());
   const [animDir, setAnimDir] = useState<1 | -1>(1);
 
+  const monthTime = monthFromProps?.getTime();
   useEffect(() => {
-    setCurrentMonth(month);
-  }, [month]);
+    if (monthFromProps === undefined) return;
+    setCurrentMonth(monthFromProps);
+  }, [monthFromProps, monthTime]);
 
   const navigate = (delta: 1 | -1) => {
     setAnimDir(delta);
@@ -307,7 +316,9 @@ export default function Calendar(props: CalendarProps) {
                 </div>
               ))}
               <div className="flex items-center gap-2">
-                <MoonIcon className="w-3 h-3 text-slate-400" />
+                <div className={`w-3 h-3 rounded ${REST_DAY_CELL} flex items-center justify-center`}>
+                  <MoonIcon className="w-2.5 h-2.5 text-(--color_primary_light)" />
+                </div>
                 <span className="text-xs text-(--color_text_secondary)">Выходной</span>
               </div>
             </div>

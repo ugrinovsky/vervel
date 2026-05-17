@@ -1,14 +1,5 @@
 @import 'tailwindcss';
 
-/* Тач-фидбек: кнопки затемняются при нажатии на мобилках */
-@layer base {
-  button:active,
-  a:active,
-  [role="button"]:active {
-    opacity: 0.7;
-  }
-}
-
 * {
   scrollbar-width: thin;
   scrollbar-color: rgb(var(--color_primary_light_ch) / 0.3) transparent;
@@ -32,12 +23,7 @@
   background: transparent;
 }
 
-input[type="time"]::-webkit-calendar-picker-indicator,
-input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(1);
-  opacity: 0.6;
-  cursor: pointer;
-}
+/* Нативные date/time — только через DatePickerField / TimeInput. */
 
 html, body {
   background-color: var(--color_primary_dark);

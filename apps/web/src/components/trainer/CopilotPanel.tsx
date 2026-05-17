@@ -4,6 +4,7 @@ import { trainerApi, type CopilotDraftResult, type CopilotInsightsSummary } from
 import { useBalance } from '@/contexts/AuthContext';
 import AccentButton from '@/components/ui/AccentButton';
 import Button from '@/components/ui/Button';
+import Textarea from '@/components/ui/Textarea';
 import { SparklesIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { isRecord } from '@/utils/typeGuards';
 
@@ -325,14 +326,14 @@ export default function CopilotPanel({ athleteId, onCommitted }: Props) {
             <div className="text-[10px] font-semibold text-(--color_text_muted) uppercase tracking-wider px-0.5">
               Сообщение атлету
             </div>
-            <textarea
+            <Textarea
               value={message}
               onChange={(e) => {
                 setMessage(e.target.value);
                 if (draft) saveDraft(athleteId, draft, e.target.value);
               }}
               rows={3}
-              className="w-full rounded-xl px-3 py-2 text-sm text-white bg-white/5 border border-white/10 focus:outline-none focus:border-(--color_primary_light)/50 resize-none"
+              className="!bg-white/5 !border-white/10 focus:!border-(--color_primary_light)/50 !py-2"
               placeholder="Сообщение для атлета..."
             />
           </div>

@@ -5,7 +5,7 @@ import type { Exercise, ExerciseFull, ExerciseWithSets } from '@/types/Exercise'
 import { exercisesApi } from '@/api/exercises';
 import { getZoneLabel } from '@/util/zones';
 import AccentButton from '@/components/ui/AccentButton';
-import AppInput from '@/components/ui/AppInput';
+import Input from '@/components/ui/Input';
 
 const CATEGORY_LABELS: Record<string, string> = {
   strength: 'Силовые',
@@ -127,7 +127,7 @@ export function ExerciseDetailContent({
       {onAdd && (
         <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
           {workoutType === 'cardio' ? (
-            <AppInput
+            <Input
               type="number"
               label="Длительность (мин)"
               value={duration}
@@ -138,7 +138,7 @@ export function ExerciseDetailContent({
             />
           ) : (
             <div className="grid grid-cols-3 gap-2">
-              <AppInput
+              <Input
                 type="number"
                 label="Подходы"
                 value={sets}
@@ -147,7 +147,7 @@ export function ExerciseDetailContent({
                 onClick={(e) => e.currentTarget.select()}
                 className="py-2 px-3 text-center"
               />
-              <AppInput
+              <Input
                 type="number"
                 label="Повторения"
                 value={reps}
@@ -156,7 +156,7 @@ export function ExerciseDetailContent({
                 onClick={(e) => e.currentTarget.select()}
                 className="py-2 px-3 text-center"
               />
-              <AppInput
+              <Input
                 type="number"
                 label="Вес кг"
                 value={weight}

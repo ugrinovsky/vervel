@@ -28,7 +28,8 @@ import AccentButton from '@/components/ui/AccentButton';
 import Button from '@/components/ui/Button';
 import GhostButton from '@/components/ui/GhostButton';
 import ListButton from '@/components/ui/ListButton';
-import AppInput from '@/components/ui/AppInput';
+import Input from '@/components/ui/Input';
+import Textarea from '@/components/ui/Textarea';
 import ToggleGroup from '@/components/ui/ToggleGroup';
 import GenderToggle from '@/components/ui/GenderToggle';
 import {
@@ -280,14 +281,14 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
               { value: 'other', label: '📝 Другое' },
             ]}
           />
-          <textarea
+          <Textarea
             value={feedbackMessage}
             onChange={(e) => setFeedbackMessage(e.target.value)}
             placeholder="Напишите ваш отзыв, предложение или сообщение об ошибке…"
             rows={5}
-            className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm resize-none outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-white/30"
+            className="!px-4 !py-3 placeholder:!text-white/30"
           />
-          <AppInput
+          <Input
             type="text"
             value={feedbackContact}
             onChange={(e) => setFeedbackContact(e.target.value)}
@@ -308,14 +309,14 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
         <div className="glass rounded-2xl p-6">
           <h3 className="text-sm font-semibold text-white mb-4">Личные данные</h3>
           <div className="space-y-4">
-            <AppInput
+            <Input
               type="text"
               label="Имя"
               value={nameField}
               onChange={(e) => setNameField(e.target.value)}
               placeholder="Ваше имя"
             />
-            <AppInput
+            <Input
               type="email"
               label="Email"
               value={emailField}
@@ -354,7 +355,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
               <p className="text-xs text-emerald-400 mb-2">Текущий: {currentBodyWeight} кг</p>
             )}
             <div className="space-y-2">
-              <AppInput
+              <Input
                 type="number"
                 value={bodyWeightField}
                 onChange={(e) => setBodyWeightField(e.target.value)}
@@ -377,19 +378,19 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
           <div className="glass rounded-2xl p-6">
             <h3 className="text-sm font-semibold text-white mb-3">Пароль</h3>
             <div className="space-y-3">
-              <AppInput
+              <Input
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder="Текущий пароль"
               />
-              <AppInput
+              <Input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Новый пароль"
               />
-              <AppInput
+              <Input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}

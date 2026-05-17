@@ -10,6 +10,7 @@ import YandexIdButton from '@/components/YandexIdButton/YandexIdButton';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import Button, { MotionButton } from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
 
 // Генерируем ВСЕ значения для звезд ОДИН РАЗ
 const STARS = [...Array(150)].map((_, i) => ({
@@ -319,37 +320,36 @@ export default function LoginScreen() {
             {/* Email */}
             <div>
               <label className="block text-sm font-medium mb-2 text-emerald-100">Email</label>
-              <div className="relative group">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setErrors((p) => ({ ...p, email: undefined }));
-                  }}
-                  className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.email ? 'border-red-400' : 'border-white/20'}`}
-                  placeholder="your@email.com"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  onKeyDown={handleKeyDown}
-                />
-              </div>
-              {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email}</p>}
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setErrors((p) => ({ ...p, email: undefined }));
+                }}
+                error={errors.email}
+                className="!px-3 !py-2 !rounded-lg !bg-white/10 !border-white/20 placeholder:!text-white/50"
+                placeholder="your@email.com"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                onKeyDown={handleKeyDown}
+              />
             </div>
 
             {/* Пароль */}
             <div>
               <label className="block text-sm font-medium mb-2 text-emerald-100">Пароль</label>
               <div className="relative group">
-                <input
+                <Input
+                  bare
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
                     setErrors((p) => ({ ...p, password: undefined }));
                   }}
-                  className={`w-full px-3 py-2 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.password ? 'border-red-400' : 'border-white/20'}`}
+                  className={`w-full px-3 py-2 pr-10 rounded-lg bg-white/10 border text-white placeholder:text-white/50 ${errors.password ? 'border-red-400' : 'border-white/20'}`}
                   placeholder="••••••••"
                   autoCapitalize="none"
                   autoCorrect="off"

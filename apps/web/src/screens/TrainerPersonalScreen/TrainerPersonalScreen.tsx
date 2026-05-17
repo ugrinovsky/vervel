@@ -13,7 +13,8 @@ import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import AccentButton from '@/components/ui/AccentButton';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import AppInput from '@/components/ui/AppInput';
+import Input from '@/components/ui/Input';
+import Textarea from '@/components/ui/Textarea';
 import SectionGroup from '@/components/ui/SectionGroup';
 
 export default function TrainerPersonalScreen() {
@@ -232,12 +233,12 @@ export default function TrainerPersonalScreen() {
             className="glass rounded-2xl p-5"
           >
             <FormField label="О себе">
-              <textarea
+              <Textarea
                 value={bio}
                 onChange={(e) => setBio(e.target.value.slice(0, 500))}
                 rows={4}
                 placeholder="Расскажите о своём опыте, подходе к тренировкам…"
-                className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-white text-sm resize-none outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-(--color_text_muted)"
+                className="!px-4 !py-3"
               />
             </FormField>
             <p className="text-xs text-(--color_text_muted) text-right mt-1">{bio.length}/500</p>
@@ -250,7 +251,7 @@ export default function TrainerPersonalScreen() {
             className="glass rounded-2xl p-5"
           >
             <FormField label="Образование">
-              <AppInput
+              <Input
                 type="text"
                 value={education}
                 onChange={(e) => setEducation(e.target.value)}
@@ -288,7 +289,7 @@ export default function TrainerPersonalScreen() {
                   </div>
                 )}
                 <div className="flex gap-2">
-                  <AppInput
+                  <Input
                     type="text"
                     value={specInput}
                     onChange={(e) => setSpecInput(e.target.value)}
@@ -322,7 +323,7 @@ export default function TrainerPersonalScreen() {
               </p>
               <div className="space-y-3">
                 <FormField label="Телефон для СБП">
-                  <AppInput
+                  <Input
                     type="tel"
                     value={donatePhone}
                     onChange={(e) => {
@@ -349,7 +350,7 @@ export default function TrainerPersonalScreen() {
                 </FormField>
 
                 <FormField label="Номер карты">
-                  <AppInput
+                  <Input
                     type="text"
                     inputMode="numeric"
                     value={donateCard}
@@ -373,7 +374,7 @@ export default function TrainerPersonalScreen() {
                     </>
                   }
                 >
-                  <AppInput
+                  <Input
                     type="url"
                     value={donateYookassaLink}
                     onChange={(e) => {

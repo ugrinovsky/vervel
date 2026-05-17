@@ -1,20 +1,13 @@
-import type { Exercise, ExerciseCategory } from '@/types/Exercise';
+import type { Exercise } from '@/types/Exercise';
 import Button from '@/components/ui/Button';
 import { getZoneLabel } from '@/util/zones';
 import { CATEGORY_LABELS } from '@/components/ExerciseFilterBar/exerciseFilterConstants';
+import { EXERCISE_CATEGORY_TEXT_CLASS } from '@/components/ExerciseFilterBar/exerciseCategoryStyles';
 import { useImageLoad } from '@/hooks/useImageLoad';
 
 /* ------------------------------------------------------------------ */
 /* Shared image block                                                   */
 /* ------------------------------------------------------------------ */
-
-const CATEGORY_TEXT_COLORS: Record<ExerciseCategory, string> = {
-  strength: 'text-blue-400',
-  olympic: 'text-yellow-400',
-  gymnastics: 'text-purple-400',
-  functional: 'text-orange-400',
-  cardio: 'text-green-400',
-};
 
 function ExerciseImage({ exercise, aspectClass }: { exercise: Exercise; aspectClass: string }) {
   const { loaded, error, onLoad, onError } = useImageLoad();
@@ -121,7 +114,7 @@ export function ExerciseLibraryCard({
         <div className="mt-auto flex items-end justify-between gap-1">
           <div className="flex flex-col gap-1 min-w-0">
             <p
-              className={`text-[10px] leading-none truncate ${CATEGORY_TEXT_COLORS[exercise.category] ?? 'text-(--color_text_muted)'}`}
+              className={`text-[10px] leading-none truncate ${EXERCISE_CATEGORY_TEXT_CLASS[exercise.category] ?? 'text-(--color_text_muted)'}`}
             >
               {CATEGORY_LABELS[exercise.category] ?? exercise.category}
             </p>

@@ -11,6 +11,7 @@ import { trainerApi, type AthleteListItem } from '@/api/trainer';
 import { useTrainerUnreadCounts } from '@/hooks/useTrainerUnreadCounts';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import AccentButton from '@/components/ui/AccentButton';
+import SearchInput from '@/components/ui/SearchInput';
 import Tabs from '@/components/ui/Tabs';
 import {
   PlusIcon,
@@ -20,7 +21,6 @@ import {
   Squares2X2Icon,
   ViewColumnsIcon,
   Bars3Icon,
-  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 import type { AthleteCrmStatus } from '@/api/trainer';
 
@@ -155,16 +155,14 @@ export default function TrainerAthletesListScreen() {
           >
             {/* Search */}
             {athletes.length > 0 && (
-              <div className="relative">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--color_text_muted) pointer-events-none" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Поиск по имени или email…"
-                  className="w-full pl-9 pr-4 py-2 text-sm rounded-xl bg-(--color_bg_card) border border-(--color_border) text-white placeholder:text-(--color_text_muted) focus:outline-none focus:border-(--color_primary_light)/60"
-                />
-              </div>
+              <SearchInput
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Поиск по имени или email…"
+                clearable={false}
+                className="bg-(--color_bg_card)"
+              />
             )}
 
             <div className="flex flex-wrap items-center justify-end gap-2">

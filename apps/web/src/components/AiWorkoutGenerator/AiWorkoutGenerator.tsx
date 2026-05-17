@@ -9,6 +9,7 @@ import { useAiBalance } from '@/hooks/useAiBalance';
 import AiSheetHeader from '@/components/ui/AiSheetHeader';
 import AiCostNotice from '@/components/ui/AiCostNotice';
 import Button from '@/components/ui/Button';
+import Textarea from '@/components/ui/Textarea';
 
 const MAX_PROMPT_LENGTH = 600;
 
@@ -132,12 +133,12 @@ export default function AiWorkoutGenerator({ onResult, triggerClassName, trigger
               )}
 
               <div className="relative">
-                <textarea
+                <Textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value.slice(0, MAX_PROMPT_LENGTH))}
                   placeholder="Например: грудь и трицепсы, 45 мин, средний уровень…"
                   rows={4}
-                  className="w-full bg-white/5 border border-white/15 rounded-xl px-3 py-2.5 text-white text-sm resize-none outline-none focus:border-emerald-400/60 transition-colors placeholder:text-white/30"
+                  className="!bg-white/5 !border-white/15 focus:!border-emerald-400/60 placeholder:!text-white/30"
                 />
                 <span className={`absolute bottom-2 right-3 text-[10px] ${prompt.length >= MAX_PROMPT_LENGTH ? 'text-red-400' : 'text-white/25'}`}>
                   {prompt.length}/{MAX_PROMPT_LENGTH}

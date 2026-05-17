@@ -70,9 +70,9 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(function Sear
     }
   };
 
-  const pad = dense ? 'px-2 py-1 gap-1.5 rounded-lg' : 'px-3 py-2 gap-2 rounded-xl';
+  const pad = dense ? 'px-2 py-1 gap-1.5 rounded-lg' : 'px-3 py-1.5 gap-2 rounded-xl';
   const iconSz = dense ? 'w-3.5 h-3.5' : 'w-4 h-4';
-  const text = dense ? 'text-xs leading-5' : 'text-[14px]';
+  const text = dense ? 'text-xs' : 'text-sm';
 
   return (
     <div
@@ -88,7 +88,7 @@ const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(function Sear
         onChange={onChange}
         disabled={disabled}
         readOnly={readOnly}
-        className={`flex-1 min-w-0 min-h-0 bg-transparent text-white placeholder:text-(--color_text_muted) border-none focus:outline-none ${text} ${inputClassName}`}
+        className={`flex-1 min-w-0 min-h-0 py-0 leading-5 bg-transparent text-white placeholder:text-(--color_text_muted) border-none focus:outline-none ${text} ${inputClassName}`}
         style={{ outline: 'none' }}
         {...props}
       />

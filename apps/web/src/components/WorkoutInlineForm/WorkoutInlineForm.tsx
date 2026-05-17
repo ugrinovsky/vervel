@@ -13,7 +13,7 @@ import toast from 'react-hot-toast';
 import WorkoutFormBase, {
   type WorkoutFormData,
 } from '@/components/WorkoutFormBase/WorkoutFormBase';
-import SectionLabel from '@/components/SectionLabel';
+import FieldLabel from '@/components/ui/FieldLabel';
 import {
   trainerApi,
   type AssignedTo,
@@ -30,7 +30,10 @@ import type { ExerciseWithSets } from '@/types/Exercise';
 import TabCard from '@/components/ui/TabCard';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AccentButton from '@/components/ui/AccentButton';
-import AppInput from '@/components/ui/AppInput';
+import Input from '@/components/ui/Input';
+import DatePickerField from '@/components/ui/DatePickerField';
+import TimeInput from '@/components/ui/TimeInput';
+import Textarea from '@/components/ui/Textarea';
 import GhostButton from '@/components/ui/GhostButton';
 import Button from '@/components/ui/Button';
 import { useAuth, useActiveMode } from '@/contexts/AuthContext';
@@ -443,7 +446,7 @@ export default function WorkoutInlineForm({
 
   const assigneePicker = preselectedAssignee ? (
     <div>
-      <SectionLabel>Для кого</SectionLabel>
+      <FieldLabel as="p" variant="section">Для кого</FieldLabel>
       <div className="glass flex items-center gap-2 px-3 py-2.5 rounded-xl border border-(--color_border)">
         <span>{preselectedAssignee.type === 'group' ? '👥' : '🏃'}</span>
         <span className="text-sm text-white">{preselectedAssignee.name}</span>
@@ -461,7 +464,7 @@ export default function WorkoutInlineForm({
     editWorkout.workoutData.type !== 'intro' &&
     editWorkout.assignedTo.length > 0 ? (
       <div>
-        <SectionLabel>Назначено</SectionLabel>
+        <FieldLabel as="p" variant="section">Назначено</FieldLabel>
         <div className="flex flex-wrap gap-1.5 mt-1">
           {editWorkout.assignedTo.map((a) => (
             <span
@@ -479,7 +482,7 @@ export default function WorkoutInlineForm({
       </div>
     ) : (
       <div>
-        <SectionLabel>Назначение</SectionLabel>
+        <FieldLabel as="p" variant="section">Назначение</FieldLabel>
         <p className="text-xs text-(--color_text_muted) mt-1 leading-relaxed">
           Пока в настройках выключены «Атлеты и группы», тренировка остаётся только в вашем
           календаре — выбрать атлета или группу нельзя. Включите переключатель в профиле, если
@@ -490,7 +493,7 @@ export default function WorkoutInlineForm({
   ) : (
     <div>
       <div className="mb-2">
-        <SectionLabel>Кому назначить</SectionLabel>
+        <FieldLabel as="p" variant="section">Кому назначить</FieldLabel>
       </div>
 
       {selectedAssignees.length > 0 && (
@@ -587,7 +590,7 @@ export default function WorkoutInlineForm({
       {assigneePicker}
 
       <div>
-        <SectionLabel>Шаблон</SectionLabel>
+        <FieldLabel as="p" variant="section">Шаблон</FieldLabel>
         <TemplatePicker
           templates={templates}
           value={quickTemplateId}
@@ -597,21 +600,18 @@ export default function WorkoutInlineForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <SectionLabel>Дата</SectionLabel>
-          <AppInput
-            type="date"
-            value={quickDate}
-            onChange={(e) => setQuickDate(e.target.value)}
-            className="scheme-dark"
+          <FieldLabel as="p" variant="section">Дата</FieldLabel>
+          <DatePickerField
+            selected={quickDate ? parseLocalDate(quickDate) : null}
+            onChange={(d) => setQuickDate(d ? toDateKey(d) : '')}
+            dateFormat="d MMM yyyy"
           />
         </div>
         <div>
-          <SectionLabel>Время</SectionLabel>
-          <input
-            type="time"
+          <FieldLabel as="p" variant="section">Время</FieldLabel>
+          <TimeInput
             value={quickTime}
             onChange={(e) => setQuickTime(e.target.value)}
-            className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-3 text-white text-sm outline-none focus:border-(--color_primary_light)"
           />
         </div>
       </div>
@@ -627,14 +627,14 @@ export default function WorkoutInlineForm({
         </GhostButton>
       ) : (
         <div className="flex gap-2">
-          <input
+          <Input
             type="text"
             value={customExerciseName}
             onChange={(e) => setCustomExerciseName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAthleteCustomExerciseAdd()}
             placeholder="Название упражнения..."
             disabled={quickSaving}
-            className="flex-1 bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) placeholder:text-(--color_text_muted) disabled:opacity-50"
+            className="flex-1 !py-2.5"
           />
           <Button
             type="button"
@@ -660,7 +660,7 @@ export default function WorkoutInlineForm({
               variant="link"
               onClick={() => void handleQuickAiParse()}
               disabled={quickDescription.trim().length < 5 || quickAiLoading}
-              className="flex items-center gap-1 !text-xs !text-emerald-400 hover:!text-emerald-300 !no-underline disabled:opacity-40"
+              className="shrink-0 whitespace-nowrap !text-xs !text-emerald-400 hover:!text-emerald-300 !no-underline disabled:opacity-40"
             >
               {quickAiLoading ? (
                 <LoadingSpinner size="xs" />
@@ -671,7 +671,7 @@ export default function WorkoutInlineForm({
             </Button>
           )}
         </div>
-        <textarea
+        <Textarea
           value={quickDescription}
           onChange={(e) => {
             setQuickDescription(e.target.value);
@@ -683,19 +683,17 @@ export default function WorkoutInlineForm({
               : 'Опишите тренировку или укажите содержание'
           }
           rows={3}
-          className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none placeholder:text-(--color_text_muted)"
         />
         {quickAiError && <p className="text-xs text-red-400 mt-1.5">{quickAiError}</p>}
       </div>
 
       <div>
-        <SectionLabel>Комментарий атлету</SectionLabel>
-        <textarea
+        <FieldLabel as="p" variant="section">Комментарий атлету</FieldLabel>
+        <Textarea
           value={quickNotes}
           onChange={(e) => setQuickNotes(e.target.value)}
           placeholder="Опционально: что важно сказать атлету"
           rows={2}
-          className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none placeholder:text-(--color_text_muted) leading-relaxed"
         />
       </div>
 

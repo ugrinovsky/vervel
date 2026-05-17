@@ -9,8 +9,15 @@ import { trainerApi } from '@/api/trainer';
 import AccentButton from '@/components/ui/AccentButton';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import AppInput from '@/components/ui/AppInput';
+import Input from '@/components/ui/Input';
+import CollapsibleSection from '@/components/ui/CollapsibleSection';
+import Textarea from '@/components/ui/Textarea';
 import PhoneInput from '@/components/ui/PhoneInput';
+import ChoiceChips from '@/components/ui/ChoiceChips';
+import {
+  LEAD_SOURCE_CHIP_OPTIONS,
+  type LeadSourceValue,
+} from '@/components/ui/leadSourceChipStyles';
 import { UserPlusIcon } from '@heroicons/react/24/outline';
 
 interface Props {
@@ -108,12 +115,11 @@ function QrScanTab({ active, onAdded }: { active: boolean; onAdded: () => void }
 
 export default function AddAthleteDrawer({ open, onClose, onAdded, onLeadCreated }: Props) {
   const [mainTab, setMainTab] = useState<MainTab>('lead');
-  const [showOtherMethods, setShowOtherMethods] = useState(false);
   const [otherTab, setOtherTab] = useState<OtherTab>('email');
   const [email, setEmail] = useState('');
   const [leadName, setLeadName] = useState('');
   const [leadPhone, setLeadPhone] = useState('');
-  const [leadSource, setLeadSource] = useState('');
+  const [leadSource, setLeadSource] = useState<LeadSourceValue>('');
   const [leadNote, setLeadNote] = useState('');
   const [loading, setLoading] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
@@ -121,7 +127,6 @@ export default function AddAthleteDrawer({ open, onClose, onAdded, onLeadCreated
   useEffect(() => {
     if (!open) {
       setMainTab('lead');
-      setShowOtherMethods(false);
       setOtherTab('email');
       setInviteLink(null);
       setLeadName('');
@@ -219,7 +224,7 @@ export default function AddAthleteDrawer({ open, onClose, onAdded, onLeadCreated
               Быстрый CRM-режим: запишите потенциального клиента сейчас, даже если он ещё не
               зарегистрирован в приложении.
             </p>
-            <AppInput
+            <Input
               value={leadName}
               onChange={(e) => setLeadName(e.target.value)}
               placeholder="Имя клиента"
@@ -229,38 +234,19 @@ export default function AddAthleteDrawer({ open, onClose, onAdded, onLeadCreated
               onChange={setLeadPhone}
               onKeyDown={(e) => e.key === 'Enter' && handleCreateLead()}
             />
-            <div>
-              <div className="text-xs text-(--color_text_muted) mb-2">Откуда клиент</div>
-              <div className="flex flex-wrap gap-2">
-                {[
-                  { value: '', label: 'Не указано' },
-                  { value: 'referral', label: 'Сарафан' },
-                  { value: 'instagram', label: 'Instagram' },
-                  { value: 'gym', label: 'Зал' },
-                  { value: 'other', label: 'Другое' },
-                ].map(({ value, label }) => (
-                  <Button
-                    key={value}
-                    type="button"
-                    variant="unstyled"
-                    onClick={() => setLeadSource(value)}
-                    className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
-                      leadSource === value
-                        ? 'bg-(--color_primary_light)/20 border-(--color_primary_light)/50 text-white'
-                        : 'border-(--color_border) text-(--color_text_muted) hover:text-white'
-                    }`}
-                  >
-                    {label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-            <textarea
+            <ChoiceChips
+              label="Откуда клиент"
+              ariaLabel="Откуда клиент"
+              nowrap
+              options={LEAD_SOURCE_CHIP_OPTIONS}
+              value={leadSource}
+              onChange={setLeadSource}
+            />
+            <Textarea
               value={leadNote}
               onChange={(e) => setLeadNote(e.target.value)}
               placeholder="Заметка: цель, откуда пришёл, что обещали"
               rows={3}
-              className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none placeholder:text-(--color_text_muted) leading-relaxed"
             />
             <AccentButton
               onClick={handleCreateLead}
@@ -302,63 +288,50 @@ export default function AddAthleteDrawer({ open, onClose, onAdded, onLeadCreated
               )}
             </motion.div>
 
-            <Button
-              type="button"
-              variant="unstyled"
-              fullWidth
-              onClick={() => setShowOtherMethods((v) => !v)}
-              className="flex items-center justify-between gap-2 rounded-xl border border-(--color_border) bg-(--color_bg_card_hover) px-3 py-2.5 text-left text-sm text-white/80 hover:bg-white/[0.06] transition-colors"
-            >
-              <span>Другие способы (email, QR)</span>
-              <span className="text-(--color_text_muted) text-xs">
-                {showOtherMethods ? '▼' : '▶'}
-              </span>
-            </Button>
-
-            {showOtherMethods && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="glass space-y-3 rounded-xl p-3"
-              >
-                <Tabs
-                  tabs={[
-                    { id: 'email', label: 'По email' },
-                    { id: 'qr', label: 'QR-код' },
-                  ]}
-                  active={otherTab}
-                  onChange={setOtherTab}
-                />
-                {otherTab === 'email' && (
-                  <div className="space-y-3 pt-1">
-                    <AppInput
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="email@example.com"
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddByEmail()}
-                    />
-                    <AccentButton
-                      onClick={handleAddByEmail}
-                      disabled={loading || !email.trim()}
-                      loading={loading}
-                      loadingText="Добавляем..."
-                    >
-                      Добавить
-                    </AccentButton>
-                  </div>
-                )}
-                {otherTab === 'qr' && (
-                  <QrScanTab
-                    active={otherTab === 'qr' && open && showOtherMethods}
-                    onAdded={() => {
-                      onAdded();
-                      onClose();
-                    }}
+            <CollapsibleSection title="Другие способы (email, QR)">
+              {(sectionOpen) => (
+                <div className="space-y-3">
+                  <Tabs
+                    embedded
+                    ariaLabel="Способ добавления"
+                    tabs={[
+                      { id: 'email', label: 'По email' },
+                      { id: 'qr', label: 'QR-код' },
+                    ]}
+                    active={otherTab}
+                    onChange={setOtherTab}
                   />
-                )}
-              </motion.div>
-            )}
+                  {otherTab === 'email' && (
+                    <div className="space-y-3 pt-1">
+                      <Input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="email@example.com"
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddByEmail()}
+                      />
+                      <AccentButton
+                        onClick={handleAddByEmail}
+                        disabled={loading || !email.trim()}
+                        loading={loading}
+                        loadingText="Добавляем..."
+                      >
+                        Добавить
+                      </AccentButton>
+                    </div>
+                  )}
+                  {otherTab === 'qr' && (
+                    <QrScanTab
+                      active={otherTab === 'qr' && sectionOpen}
+                      onAdded={() => {
+                        onAdded();
+                        onClose();
+                      }}
+                    />
+                  )}
+                </div>
+              )}
+            </CollapsibleSection>
           </>
         )}
       </div>

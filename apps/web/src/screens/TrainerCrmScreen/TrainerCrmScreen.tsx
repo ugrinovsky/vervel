@@ -21,6 +21,12 @@ import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import Tabs from '@/components/ui/Tabs';
 import ChipScrollRow from '@/components/ui/ChipScrollRow';
+import ChipCountBadge from '@/components/ui/ChipCountBadge';
+import {
+  LEAD_CHIP_ALL_ACTIVE,
+  LEAD_CHIP_ALL_INACTIVE,
+  type LeadChipToneKey,
+} from '@/components/ui/leadChipStyles';
 import { MotionButton } from '@/components/ui/Button';
 import AddAthleteDrawer from '@/components/AddAthleteDrawer/AddAthleteDrawer';
 import LeadDetailSheet from '@/components/trainer/LeadDetailSheet';
@@ -35,18 +41,23 @@ import {
   PlusIcon,
   PhoneIcon,
   CalendarDaysIcon,
-  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 import { computeGrowthData, formatFollowUp, countLeadsByCrmStatus } from './crmUtils';
 import PassesTab from './PassesTab';
 import GhostButton from '@/components/ui/GhostButton';
+import SearchInput from '@/components/ui/SearchInput';
 import PillButton from '@/components/ui/PillButton';
 
 // ─── Leads pipeline ──────────────────────────────────────────────────────────
 
 const LEAD_STATUS_CONFIG: Record<
   LeadCrmStatus,
-  { label: string; badgeClass: string; filterActiveClass: string; color: string }
+  {
+    label: string;
+    badgeClass: string;
+    filterActiveClass: string;
+    color: string;
+  }
 > = {
   new: {
     label: 'Новый',
@@ -240,14 +251,34 @@ export default function TrainerCrmScreen() {
     return sorted;
   }, [leads, filter, search, sort]);
 
-  const filterOptions: { id: LeadFilter; label: string; count: number }[] = [
-    { id: 'all', label: 'Все', count: leadCounts.total },
-    { id: 'new', label: 'Новые', count: leadCounts.byStatus.new },
-    { id: 'contacted', label: 'Связались', count: leadCounts.byStatus.contacted },
-    { id: 'trial', label: 'Пробное', count: leadCounts.byStatus.trial },
-    { id: 'converted', label: 'Клиенты', count: leadCounts.byStatus.converted },
-    { id: 'lost', label: 'Потеряны', count: leadCounts.byStatus.lost },
-  ];
+  const filterOptions = useMemo(
+    (): { id: LeadFilter; label: string; count: number }[] => [
+      { id: 'all', label: 'Все', count: leadCounts.total },
+      { id: 'new', label: 'Новые', count: leadCounts.byStatus.new },
+      { id: 'contacted', label: 'Связались', count: leadCounts.byStatus.contacted },
+      { id: 'trial', label: 'Пробное', count: leadCounts.byStatus.trial },
+      { id: 'converted', label: 'Клиенты', count: leadCounts.byStatus.converted },
+      { id: 'lost', label: 'Потеряны', count: leadCounts.byStatus.lost },
+    ],
+    [leadCounts],
+  );
+
+  const leadFilterChips = useMemo(
+    () =>
+      filterOptions.map((f) => ({
+        key: f.id,
+        tone: f.id !== 'all' ? (f.id as LeadChipToneKey) : undefined,
+        inactiveClass: f.id === 'all' ? LEAD_CHIP_ALL_INACTIVE : undefined,
+        activeClass: f.id === 'all' ? LEAD_CHIP_ALL_ACTIVE : undefined,
+        label: (
+          <>
+            {f.label}
+            {f.count > 0 && <ChipCountBadge>{f.count}</ChipCountBadge>}
+          </>
+        ),
+      })),
+    [filterOptions],
+  );
 
   // ── Analytics computed ──────────────────────────────────────────────────────
 
@@ -411,46 +442,25 @@ export default function TrainerCrmScreen() {
                 }
               >
                 <ChipScrollRow
+                  colored
+                  edgeFade
                   activeKey={filter}
                   onChipClick={(key) => {
                     if (isLeadFilter(key)) setFilter(key);
                   }}
-                  pillClassName={(key) => {
-                    const map: Record<string, string> = {
-                      new: 'bg-amber-500',
-                      contacted: 'bg-blue-500',
-                      trial: 'bg-purple-500',
-                      converted: 'bg-green-500',
-                      lost: 'bg-gray-500',
-                    };
-                    return map[key ?? ''] ?? 'bg-(--color_primary_light)';
-                  }}
-                  chips={filterOptions.map((f) => ({
-                    key: f.id,
-                    label: (
-                      <>
-                        {f.label}
-                        {f.count > 0 && (
-                          <span className="text-[10px] rounded-full px-1.5 py-0.5 bg-white/20">
-                            {f.count}
-                          </span>
-                        )}
-                      </>
-                    ),
-                  }))}
+                  chips={leadFilterChips}
                 />
 
                 {leads.length > 3 && (
                   <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-(--color_text_muted)" />
-                      <input
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Имя или телефон..."
-                        className="w-full bg-(--color_bg_card) border border-(--color_border) rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder:text-(--color_text_muted) outline-none focus:border-(--color_primary_light)/50 transition-colors"
-                      />
-                    </div>
+                    <SearchInput
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Имя или телефон..."
+                      dense
+                      clearable={false}
+                      className="flex-1 bg-(--color_bg_card)"
+                    />
                     <div className="flex gap-1 shrink-0">
                       {(
                         [
@@ -495,14 +505,7 @@ export default function TrainerCrmScreen() {
                       </p>
                     </motion.div>
                   ) : (
-                    <motion.div
-                      key={filter}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.15 }}
-                      className="flex flex-col gap-2"
-                    >
+                    <div className="flex flex-col gap-2">
                       {filteredLeads.map((lead) => {
                         const cfg = LEAD_STATUS_CONFIG[lead.crmStatus];
                         const hasFollowUp = !!lead.nextFollowUpAt;
@@ -552,7 +555,7 @@ export default function TrainerCrmScreen() {
                           </MotionButton>
                         );
                       })}
-                    </motion.div>
+                    </div>
                   )}
                 </AnimatePresence>
               </SectionGroup>

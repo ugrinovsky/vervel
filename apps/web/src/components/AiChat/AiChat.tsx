@@ -9,6 +9,7 @@ import { checkForNewAchievements } from '@/hooks/useAchievementToast';
 import { useAuth, useActiveMode } from '@/contexts/AuthContext';
 import { useAiBalance } from '@/hooks/useAiBalance';
 import Button from '@/components/ui/Button';
+import Textarea from '@/components/ui/Textarea';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { AI_CHAT_MIN_BALANCE as MIN_BALANCE } from '@/constants/ai';
 const DISPLAY_STEP = 20;
@@ -386,7 +387,8 @@ export default function AiChat({ open, onClose }: Props) {
         <div className="shrink-0 px-4 pb-4 pt-3 border-t border-(--color_border)">
           <div className="flex items-center gap-2">
             <div className="relative flex-1 flex items-center">
-              <textarea
+              <Textarea
+                bare
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value.slice(0, MAX_INPUT_LENGTH))}

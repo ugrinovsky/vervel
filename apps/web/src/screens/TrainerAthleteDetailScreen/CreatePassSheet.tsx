@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import DatePicker, { registerLocale } from 'react-datepicker';
-import { ru } from 'date-fns/locale';
-import 'react-datepicker/dist/react-datepicker.css';
-import '@/styles/datepicker.css';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
+import DatePickerField from '@/components/ui/DatePickerField';
 import AccentButton from '@/components/ui/AccentButton';
+import Input from '@/components/ui/Input';
+import Textarea from '@/components/ui/Textarea';
 import { trainerApi, type AthletePass } from '@/api/trainer';
-
-registerLocale('ru', ru);
 
 const LS_KEY = 'trainer_pass_defaults';
 
@@ -101,7 +98,7 @@ export default function CreatePassSheet({ athleteId, open, onClose, onCreated }:
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs text-(--color_text_muted) mb-1.5">Сумма, ₽</label>
-            <input
+            <Input
               type="number"
               inputMode="numeric"
               value={priceAmount}
@@ -109,12 +106,12 @@ export default function CreatePassSheet({ athleteId, open, onClose, onCreated }:
               placeholder="5000"
               min="0"
               required
-              className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-(--color_text_muted)"
+              className="!py-2.5 !text-sm"
             />
           </div>
           <div>
             <label className="block text-xs text-(--color_text_muted) mb-1.5">Занятий</label>
-            <input
+            <Input
               type="number"
               inputMode="numeric"
               value={sessionsTotal}
@@ -122,7 +119,7 @@ export default function CreatePassSheet({ athleteId, open, onClose, onCreated }:
               placeholder="8"
               min="1"
               required
-              className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-(--color_text_muted)"
+              className="!py-2.5 !text-sm"
             />
           </div>
         </div>
@@ -132,19 +129,13 @@ export default function CreatePassSheet({ athleteId, open, onClose, onCreated }:
           <label className="block text-xs text-(--color_text_muted) mb-1.5">
             Действует до <span className="opacity-50">(необязательно)</span>
           </label>
-          <DatePicker
+          <DatePickerField
             selected={validUntil}
             onChange={(d: Date | null) => setValidUntil(d)}
             dateFormat="d MMM yyyy"
-            locale="ru"
             placeholderText="Без ограничения"
             isClearable
             minDate={new Date()}
-            wrapperClassName="w-full"
-            className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-(--color_text_muted)"
-            calendarClassName="dark-datepicker"
-            popperPlacement="bottom-start"
-            portalId="datepicker-portal"
           />
         </div>
 
@@ -153,13 +144,13 @@ export default function CreatePassSheet({ athleteId, open, onClose, onCreated }:
           <label className="block text-xs text-(--color_text_muted) mb-1.5">
             Название <span className="opacity-50">(необязательно)</span>
           </label>
-          <input
+          <Input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             maxLength={255}
             placeholder="Абонемент"
-            className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-(--color_primary_light) transition-colors placeholder:text-(--color_text_muted)"
+            className="!py-2.5 !text-sm"
           />
         </div>
 
@@ -168,12 +159,11 @@ export default function CreatePassSheet({ athleteId, open, onClose, onCreated }:
           <label className="block text-xs text-(--color_text_muted) mb-1.5">
             Заметка <span className="opacity-50">(необязательно)</span>
           </label>
-          <textarea
+          <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Оплатил наличными, перенос с прошлого пакета..."
             rows={2}
-            className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none placeholder:text-(--color_text_muted) leading-relaxed"
           />
         </div>
 

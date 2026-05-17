@@ -8,7 +8,8 @@ import Button from '@/components/ui/Button';
 import CloseButton from '@/components/ui/CloseButton';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import SearchInput from '@/components/ui/SearchInput';
-import ChipScrollRow, { type ChipScrollItem } from '@/components/ui/ChipScrollRow';
+import ChipScrollRow from '@/components/ui/ChipScrollRow';
+import type { ChipScrollItem } from '@/components/ui/chipScrollRowStyles';
 import { klipyCategoryLabelRu } from '@/util/klipyCategoryRu';
 import { loadKlipyRecent, pushKlipyRecent, removeKlipyRecentById } from '@/util/klipyRecent';
 

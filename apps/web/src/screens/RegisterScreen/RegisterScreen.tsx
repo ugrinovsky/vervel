@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { authApi, type UserRole } from '@/api/auth';
 import { useAuth } from '@/contexts/AuthContext';
-import AppInput from '@/components/ui/AppInput';
+import Input from '@/components/ui/Input';
 import GenderToggle from '@/components/ui/GenderToggle';
 import Button from '@/components/ui/Button';
 
@@ -145,7 +145,7 @@ export default function RegisterScreen() {
               style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0 }}
               aria-hidden="true"
             />
-            <AppInput
+            <Input
               label="Имя"
               value={fullName}
               onChange={(e) => { setFullName(e.target.value); setErrors((p) => ({ ...p, fullName: undefined })); }}
@@ -153,7 +153,7 @@ export default function RegisterScreen() {
               error={errors.fullName}
               onKeyDown={handleKeyDown}
             />
-            <AppInput
+            <Input
               label="Email"
               type="email"
               value={email}
@@ -165,7 +165,7 @@ export default function RegisterScreen() {
               spellCheck={false}
               onKeyDown={handleKeyDown}
             />
-            <AppInput
+            <Input
               label="Пароль"
               type="password"
               value={password}
@@ -177,7 +177,7 @@ export default function RegisterScreen() {
               spellCheck={false}
               onKeyDown={handleKeyDown}
             />
-            <AppInput
+            <Input
               label="Подтвердите пароль"
               type="password"
               value={confirmPassword}

@@ -12,7 +12,7 @@ import { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import WorkoutTypeTabs, { type WorkoutType } from '@/components/WorkoutTypeTabs';
 import WorkoutDateTimeRow from '@/components/WorkoutDateTimeRow';
-import SectionLabel from '@/components/SectionLabel';
+import FieldLabel from '@/components/ui/FieldLabel';
 import WorkoutExercisesEditor, {
   type WorkoutExercisesEditorHandle,
 } from '@/components/WorkoutExercisesEditor/WorkoutExercisesEditor';
@@ -28,7 +28,8 @@ import {
 } from '@heroicons/react/24/outline';
 import AccentButton from '@/components/ui/AccentButton';
 import Button from '@/components/ui/Button';
-import AppInput from '@/components/ui/AppInput';
+import Input from '@/components/ui/Input';
+import Textarea from '@/components/ui/Textarea';
 import GhostButton from '@/components/ui/GhostButton';
 import TemplatePicker from '@/components/ui/TemplatePicker';
 import type { ExerciseData, WorkoutTemplate } from '@/api/trainer';
@@ -632,7 +633,7 @@ export default function WorkoutFormBase({
       ) : (
         <>
           <div>
-            <SectionLabel>Когда</SectionLabel>
+            <FieldLabel as="p" variant="section">Когда</FieldLabel>
             <WorkoutDateTimeRow
               date={date}
               time={time}
@@ -642,7 +643,7 @@ export default function WorkoutFormBase({
           </div>
 
           <div>
-            <SectionLabel>Тип тренировки</SectionLabel>
+            <FieldLabel as="p" variant="section">Тип тренировки</FieldLabel>
             {showWorkoutTypeTabs ? (
               <WorkoutTypeTabs
                 value={aiPhotoNeedsTypePick ? null : workoutType}
@@ -671,7 +672,7 @@ export default function WorkoutFormBase({
       {/* Шаблон */}
       {templates && templates.length > 0 && (
         <div>
-          <SectionLabel>Шаблон</SectionLabel>
+          <FieldLabel as="p" variant="section">Шаблон</FieldLabel>
           <TemplatePicker
             templates={templates}
             value={selectedTemplateId}
@@ -963,24 +964,23 @@ export default function WorkoutFormBase({
                 )}
               </Button>
               {notesLiteOpen && (
-                <textarea
+                <Textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder={notesPlaceholder}
                   rows={3}
-                  className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none placeholder:text-(--color_text_muted) leading-relaxed mt-1"
+                  className="mt-1"
                 />
               )}
             </>
           ) : (
             <>
-              <SectionLabel>{notesLabel}</SectionLabel>
-              <textarea
+              <FieldLabel as="p" variant="section">{notesLabel}</FieldLabel>
+              <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder={notesPlaceholder}
                 rows={4}
-                className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none placeholder:text-(--color_text_muted) leading-relaxed"
               />
             </>
           )}
@@ -1041,7 +1041,7 @@ export default function WorkoutFormBase({
             <p className="text-xs text-(--color_text_muted)">
               Введите название — упражнение добавится в тренировку.
             </p>
-            <AppInput
+            <Input
               autoFocus
               value={athleteCustomName}
               onChange={(e) => setAthleteCustomName(e.target.value)}

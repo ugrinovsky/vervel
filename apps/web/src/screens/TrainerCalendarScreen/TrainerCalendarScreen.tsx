@@ -17,7 +17,7 @@ import type { DragEndEvent, DragStartEvent, Modifier } from '@dnd-kit/core';
 import Screen from '@/components/Screen/Screen';
 import AccentButton from '@/components/ui/AccentButton';
 import Button from '@/components/ui/Button';
-import AppInput from '@/components/ui/AppInput';
+import Input from '@/components/ui/Input';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import WorkoutInlineForm from '@/components/WorkoutInlineForm/WorkoutInlineForm';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
@@ -36,6 +36,7 @@ import {
   UserPlusIcon,
   PhoneIcon,
   MoonIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
@@ -506,7 +507,7 @@ function IntroSessionForm({
       {/* Name */}
       <div>
         <label className="block text-xs text-(--color_text_muted) mb-1.5">Имя клиента *</label>
-        <AppInput
+        <Input
           type="text"
           value={clientName}
           onChange={(e) => setClientName(e.target.value)}
@@ -522,7 +523,7 @@ function IntroSessionForm({
           <PhoneIcon className="w-3.5 h-3.5 inline mr-1 -mt-0.5" />
           Телефон
         </label>
-        <AppInput
+        <Input
           type="tel"
           inputMode="numeric"
           value={clientPhone}
@@ -1087,19 +1088,29 @@ export default function TrainerCalendarScreen() {
                 )}
               </div>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 shrink-0">
-                <GhostButton
-                  variant="outline-accent"
-                  onClick={toggleRestDay}
-                  disabled={togglingRest}
-                  className={
-                    isRestDay
-                      ? 'bg-slate-600/70 !text-slate-300 !border-slate-500/50 hover:!bg-slate-500/70'
-                      : '!text-(--color_text_muted) hover:!text-white'
-                  }
-                >
-                  <MoonIcon className="w-3.5 h-3.5" />
-                  {isRestDay ? 'Снять выходной' : 'Выходной'}
-                </GhostButton>
+                {isRestDay ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleRestDay}
+                    disabled={togglingRest}
+                    className="shrink-0"
+                  >
+                    <XMarkIcon className="w-3.5 h-3.5" />
+                    Снять выходной
+                  </Button>
+                ) : (
+                  <GhostButton
+                    variant="outline-accent"
+                    onClick={toggleRestDay}
+                    disabled={togglingRest}
+                    className="!text-(--color_text_muted) hover:!text-white shrink-0"
+                  >
+                    <MoonIcon className="w-3.5 h-3.5" />
+                    Выходной
+                  </GhostButton>
+                )}
                 {selectedTime === null && !isRestDay && (
                   <AccentButton size="sm" onClick={() => openFormAt(currentHourString())}>
                     <PlusIcon className="w-4 h-4" />
@@ -1114,26 +1125,17 @@ export default function TrainerCalendarScreen() {
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="my-4 rounded-2xl bg-slate-700/50 ring-1 ring-slate-500/40 px-5 py-6 flex flex-col items-center gap-3 text-center"
+                className="my-4 rounded-2xl glass ring-1 ring-(--color_primary_light)/45 px-5 py-6 flex flex-col items-center gap-3 text-center"
               >
-                <div className="w-12 h-12 rounded-2xl bg-slate-600/60 flex items-center justify-center">
-                  <MoonIcon className="w-6 h-6 text-slate-300" />
+                <div className="grid size-12 shrink-0 place-items-center rounded-2xl bg-(--color_primary_light)/12 ring-1 ring-(--color_primary_light)/40">
+                  <MoonIcon className="size-6 shrink-0 text-(--color_primary_light)" aria-hidden />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-200">Выходной день</p>
+                  <p className="text-sm font-semibold text-white">Выходной день</p>
                   <p className="text-xs text-(--color_text_muted) mt-0.5">
                     Запись на тренировки недоступна
                   </p>
                 </div>
-                <Button
-                  type="button"
-                  variant="unstyled"
-                  onClick={toggleRestDay}
-                  disabled={togglingRest}
-                  className="mt-1 px-4 py-2 rounded-xl text-xs font-medium text-slate-300 bg-slate-600/50 ring-1 ring-slate-500/40 hover:bg-slate-500/50 disabled:opacity-40"
-                >
-                  Отменить выходной
-                </Button>
               </motion.div>
             )}
 

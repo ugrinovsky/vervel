@@ -13,7 +13,7 @@ import ToggleGroup from '@/components/ui/ToggleGroup';
 import BackButton from '@/components/BackButton/BackButton';
 import AccentButton from '@/components/ui/AccentButton';
 import { buttonClasses } from '@/components/ui/buttonStyles';
-import AppInput from '@/components/ui/AppInput';
+import Input from '@/components/ui/Input';
 
 const DONATION_AMOUNTS = [100, 300, 500, 1000];
 
@@ -186,7 +186,7 @@ export default function TrainerPublicProfileScreen() {
                 options={DONATION_AMOUNTS.map((amount) => ({ value: amount, label: `${amount}₽` }))}
                 className="mb-3"
               />
-              <AppInput
+              <Input
                 type="number"
                 value={customAmount}
                 onChange={(e) => {

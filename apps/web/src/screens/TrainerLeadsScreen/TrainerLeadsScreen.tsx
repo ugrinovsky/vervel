@@ -5,50 +5,46 @@ import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import SectionGroup from '@/components/ui/SectionGroup';
 import AccentButton from '@/components/ui/AccentButton';
-import Button, { MotionButton } from '@/components/ui/Button';
+import { MotionButton } from '@/components/ui/Button';
+import ChipScrollRow from '@/components/ui/ChipScrollRow';
+import ChipCountBadge from '@/components/ui/ChipCountBadge';
+import { LEAD_CHIP_ALL_ACTIVE, LEAD_CHIP_ALL_INACTIVE } from '@/components/ui/leadChipStyles';
 import AddAthleteDrawer from '@/components/AddAthleteDrawer/AddAthleteDrawer';
 import LeadDetailSheet from '@/components/trainer/LeadDetailSheet';
 import { trainerApi, type TrainerLead, type LeadCrmStatus } from '@/api/trainer';
 import { countLeadsByCrmStatus } from '@/screens/TrainerCrmScreen/crmUtils';
 import { PlusIcon, PhoneIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 
-const STATUS_CONFIG: Record<
-  LeadCrmStatus,
-  { label: string; badgeClass: string; filterClass: string; filterActiveClass: string }
-> = {
+const STATUS_CONFIG: Record<LeadCrmStatus, { label: string; badgeClass: string }> = {
   new: {
     label: 'Новый',
     badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-    filterClass: 'border-(--color_border) text-(--color_text_muted)',
-    filterActiveClass: 'bg-amber-500/20 border-amber-400/40 text-amber-200',
   },
   contacted: {
     label: 'Связался',
     badgeClass: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-    filterClass: 'border-(--color_border) text-(--color_text_muted)',
-    filterActiveClass: 'bg-blue-500/20 border-blue-400/40 text-blue-200',
   },
   trial: {
     label: 'Пробное',
     badgeClass: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-    filterClass: 'border-(--color_border) text-(--color_text_muted)',
-    filterActiveClass: 'bg-purple-500/20 border-purple-400/40 text-purple-200',
   },
   converted: {
     label: 'Клиент',
     badgeClass: 'bg-green-500/20 text-green-300 border-green-500/30',
-    filterClass: 'border-(--color_border) text-(--color_text_muted)',
-    filterActiveClass: 'bg-green-500/20 border-green-400/40 text-green-200',
   },
   lost: {
     label: 'Потерян',
     badgeClass: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
-    filterClass: 'border-(--color_border) text-(--color_text_muted)',
-    filterActiveClass: 'bg-gray-500/20 border-gray-400/40 text-gray-300',
   },
 };
 
 type Filter = 'all' | LeadCrmStatus;
+
+const LEAD_FILTERS: Filter[] = ['all', 'new', 'contacted', 'trial', 'converted', 'lost'];
+
+function isLeadFilter(key: string): key is Filter {
+  return (LEAD_FILTERS as string[]).includes(key);
+}
 
 function formatFollowUp(dateStr: string) {
   const date = new Date(dateStr);
@@ -105,14 +101,31 @@ export default function TrainerLeadsScreen() {
     return leads.filter((l) => l.crmStatus === filter);
   }, [leads, filter]);
 
-  const filters: { id: Filter; label: string; count: number }[] = [
-    { id: 'all', label: 'Все', count: counts.total },
-    { id: 'new', label: 'Новые', count: counts.byStatus.new },
-    { id: 'contacted', label: 'Связались', count: counts.byStatus.contacted },
-    { id: 'trial', label: 'Пробное', count: counts.byStatus.trial },
-    { id: 'converted', label: 'Клиенты', count: counts.byStatus.converted },
-    { id: 'lost', label: 'Потеряны', count: counts.byStatus.lost },
-  ];
+  const filterChips = useMemo(
+    () => {
+      const filters: { id: Filter; label: string; count: number }[] = [
+        { id: 'all', label: 'Все', count: counts.total },
+        { id: 'new', label: 'Новые', count: counts.byStatus.new },
+        { id: 'contacted', label: 'Связались', count: counts.byStatus.contacted },
+        { id: 'trial', label: 'Пробное', count: counts.byStatus.trial },
+        { id: 'converted', label: 'Клиенты', count: counts.byStatus.converted },
+        { id: 'lost', label: 'Потеряны', count: counts.byStatus.lost },
+      ];
+      return filters.map((f) => ({
+        key: f.id,
+        tone: f.id !== 'all' ? f.id : undefined,
+        inactiveClass: f.id === 'all' ? LEAD_CHIP_ALL_INACTIVE : undefined,
+        activeClass: f.id === 'all' ? LEAD_CHIP_ALL_ACTIVE : undefined,
+        label: (
+          <>
+            {f.label}
+            {f.count > 0 && <ChipCountBadge>{f.count}</ChipCountBadge>}
+          </>
+        ),
+      }));
+    },
+    [counts],
+  );
 
   return (
     <Screen loading={loading} className="trainer-leads-screen">
@@ -172,37 +185,16 @@ export default function TrainerLeadsScreen() {
         </SectionGroup>
 
         <SectionGroup title="Пайплайн" showBreakAfter={false}>
-          {/* Filter chips */}
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-4 px-4">
-            {filters.map((f) => {
-              const isActive = filter === f.id;
-              const statusCfg = f.id !== 'all' ? STATUS_CONFIG[f.id] : null;
-              return (
-                <Button
-                  key={f.id}
-                  type="button"
-                  variant="unstyled"
-                  onClick={() => setFilter(f.id)}
-                  className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
-                    isActive
-                      ? (statusCfg?.filterActiveClass ??
-                        'bg-(--color_primary_light)/20 border-(--color_primary_light)/40 text-white')
-                      : (statusCfg?.filterClass ??
-                        'border-(--color_border) text-(--color_text_muted)')
-                  }`}
-                >
-                  {f.label}
-                  {f.count > 0 && (
-                    <span
-                      className={`text-[10px] rounded-full px-1.5 py-0.5 ${isActive ? 'bg-white/20' : 'bg-(--color_bg_card_hover)'}`}
-                    >
-                      {f.count}
-                    </span>
-                  )}
-                </Button>
-              );
-            })}
-          </div>
+          <ChipScrollRow
+            colored
+            edgeFade
+            className="-mx-4 px-4 pb-1"
+            activeKey={filter}
+            onChipClick={(key) => {
+              if (isLeadFilter(key)) setFilter(key);
+            }}
+            chips={filterChips}
+          />
 
           <AnimatePresence mode="wait">
             {filtered.length === 0 ? (
@@ -217,7 +209,7 @@ export default function TrainerLeadsScreen() {
                 <div className="text-sm font-medium text-white mb-1">
                   {filter === 'all'
                     ? 'Пока нет заявок'
-                    : `Нет в статусе «${filters.find((f) => f.id === filter)?.label}»`}
+                    : `Нет в статусе «${STATUS_CONFIG[filter].label}»`}
                 </div>
                 <p className="text-xs text-(--color_text_muted)">
                   {filter === 'all'

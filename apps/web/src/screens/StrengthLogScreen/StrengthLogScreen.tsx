@@ -19,6 +19,7 @@ import AnimatedBlock from '@/components/ui/AnimatedBlock';
 import { cardClass } from '@/components/ui/Card';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
 import GhostButton from '@/components/ui/GhostButton';
 import PillButton from '@/components/ui/PillButton';
 import ListButton from '@/components/ui/ListButton';
@@ -1454,12 +1455,12 @@ export default function StrengthLogScreen({
         <p className="text-xs text-(--color_text_muted) mb-3">
           Все движения за год, где был указан вес — в том числе занесённые по фото через ИИ.
         </p>
-        <input
+        <Input
           type="text"
           value={historySearch}
           onChange={(e) => setHistorySearch(e.target.value)}
           placeholder="Поиск…"
-          className="w-full px-3 py-2 rounded-lg bg-(--color_bg_card) border border-(--color_border) text-sm text-white mb-3 outline-none"
+          className="!px-3 !py-2 !rounded-lg !bg-(--color_bg_card) !text-sm mb-3"
         />
         <div className="max-h-[50dvh] overflow-y-auto space-y-1 pb-4">
           {historyFiltered.length === 0 ? (
@@ -1515,11 +1516,11 @@ export default function StrengthLogScreen({
               <label className="block text-[11px] text-(--color_text_muted) mb-1">
                 Название эталона
               </label>
-              <input
+              <Input
                 type="text"
                 value={standardsLabelDraft}
                 onChange={(e) => setStandardsLabelDraft(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-(--color_bg_card) border border-(--color_border) text-white text-sm outline-none"
+                className="!px-3 !py-2 !rounded-lg !bg-(--color_bg_card) !text-sm"
               />
             </div>
 
@@ -1603,12 +1604,12 @@ export default function StrengthLogScreen({
                   <div className="text-[11px] text-(--color_text_muted) mb-2">
                     Добавить ещё вариант из вашей истории (то же движение под другим названием)
                   </div>
-                  <input
+                  <Input
                     type="text"
                     value={standardsAliasSearch}
                     onChange={(e) => setStandardsAliasSearch(e.target.value)}
                     placeholder="Поиск…"
-                    className="w-full px-3 py-2 rounded-lg bg-(--color_bg_card) border border-(--color_border) text-sm text-white mb-2 outline-none"
+                    className="!px-3 !py-2 !rounded-lg !bg-(--color_bg_card) !text-sm mb-2"
                   />
                   <div className="max-h-[40dvh] overflow-y-auto space-y-1">
                     {standardsAliasFiltered.length === 0 ? (
@@ -1651,12 +1652,12 @@ export default function StrengthLogScreen({
       />
 
       {!isStandardsHubTab && entries.length > 4 && (
-        <input
+        <Input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Поиск упражнения..."
-          className="w-full px-4 py-2.5 rounded-xl bg-(--color_bg_card) border border-(--color_border) text-sm text-white placeholder-text-(--color_text_muted) outline-none focus:border-(--color_primary_light)/50"
+          className="!px-4 !py-2.5 !rounded-xl !bg-(--color_bg_card) !text-sm placeholder:text-(--color_text_muted)"
         />
       )}
 

@@ -8,7 +8,8 @@ import ScreenHint from '@/components/ScreenHint/ScreenHint';
 import Tabs from '@/components/ui/Tabs';
 import Badge from '@/components/ui/Badge';
 import AccentButton from '@/components/ui/AccentButton';
-import AppInput from '@/components/ui/AppInput';
+import Input from '@/components/ui/Input';
+import SearchInput from '@/components/ui/SearchInput';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import AddAthleteDrawer from '@/components/AddAthleteDrawer/AddAthleteDrawer';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
@@ -19,7 +20,6 @@ import {
   PlusIcon,
   UserGroupIcon,
   UserPlusIcon,
-  MagnifyingGlassIcon,
   Squares2X2Icon,
   ViewColumnsIcon,
   Bars3Icon,
@@ -161,7 +161,7 @@ export default function TrainerTeamScreen() {
         title="Новая группа"
       >
         <div className="flex flex-col gap-3">
-          <AppInput
+          <Input
             type="text"
             value={newGroupName}
             onChange={(e) => setNewGroupName(e.target.value)}
@@ -232,16 +232,15 @@ export default function TrainerTeamScreen() {
           >
             <SectionGroup title="Атлеты" bodyClassName="space-y-3">
               <div className="flex items-center gap-2 pb-2">
-                <div className="relative flex-1">
-                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-(--color_text_muted) pointer-events-none" />
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Поиск…"
-                    className="w-full pl-9 pr-4 py-2 text-sm glass rounded-xl text-white placeholder:text-(--color_text_muted) focus:outline-none focus:border-(--color_primary_light)/60"
-                  />
-                </div>
+                <SearchInput
+                  dense
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Поиск…"
+                  clearable={false}
+                  className="flex-1 glass !bg-(--color_bg_card)"
+                />
                 <Tabs
                   size="sm"
                   active={view}
