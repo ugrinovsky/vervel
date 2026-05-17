@@ -51,9 +51,10 @@ export default function ToggleGroup<T extends string | number>({
               className={`flex-1 ${itemPy} text-sm font-medium transition-all border relative
                 ${isFirst ? 'rounded-l-xl' : '-ml-px'}
                 ${isLast ? 'rounded-r-xl' : ''}
-                ${active
-                  ? 'bg-(--color_primary_light) border-(--color_primary_light) text-white z-10'
-                  : 'bg-(--color_bg_card_hover) border-(--color_border) text-(--color_text_muted) hover:text-white'
+                ${
+                  active
+                    ? 'bg-(--color_primary_light) border-(--color_primary_light) text-white z-10'
+                    : 'glass border-(--color_border) text-(--color_text_muted) hover:text-white'
                 }`}
             >
               {opt.label}

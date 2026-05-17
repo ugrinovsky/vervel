@@ -6,6 +6,8 @@ import { ru } from 'date-fns/locale';
 import { type AthletePassSummary } from '@/api/trainer';
 import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import ChipScrollRow from '@/components/ui/ChipScrollRow';
+import ListButton from '@/components/ui/ListButton';
+import IconButton from '@/components/ui/IconButton';
 import AthletePassSheet from './AthletePassSheet';
 import {
   ExclamationTriangleIcon,
@@ -91,10 +93,7 @@ export default function PassesTab({
     return (
       <div className="space-y-2 pt-2">
         {[...Array(4)].map((_, i) => (
-          <div
-            key={i}
-            className="h-16 rounded-xl bg-(--color_bg_card) border border-(--color_border) animate-pulse"
-          />
+          <div key={i} className="h-16 glass rounded-xl animate-pulse" />
         ))}
       </div>
     );
@@ -104,7 +103,7 @@ export default function PassesTab({
     <div className="space-y-4">
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1">
+        <div className="glass rounded-xl p-3 flex flex-col items-center gap-1">
           <div className="text-xl font-bold text-white">{activeCount}</div>
           <div className="text-[11px] text-(--color_text_muted) text-center">Активных</div>
         </div>
@@ -122,7 +121,7 @@ export default function PassesTab({
           </div>
           <div className="text-[11px] text-(--color_text_muted) text-center">Внимание</div>
         </div>
-        <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1">
+        <div className="glass rounded-xl p-3 flex flex-col items-center gap-1">
           <div className="text-xl font-bold text-white">
             {totalRevenue > 0 ? `${Math.round(totalRevenue / 1000)}к` : '—'}
           </div>
@@ -144,7 +143,9 @@ export default function PassesTab({
 
       <ChipScrollRow
         activeKey={filter}
-        onChipClick={(key) => { if (isFilterTab(key)) setFilter(key); }}
+        onChipClick={(key) => {
+          if (isFilterTab(key)) setFilter(key);
+        }}
         chips={(
           [
             { id: 'all', label: 'Все', count: enriched.length },
@@ -194,15 +195,12 @@ export default function PassesTab({
             const name = s.athleteName || s.athleteEmail || '—';
 
             return (
-              <div
-                key={s.trainerAthleteId}
-                className="flex rounded-xl bg-(--color_bg_card) border border-(--color_border) overflow-hidden"
-              >
+              <div key={s.trainerAthleteId} className="glass rounded-xl flex overflow-hidden">
                 {/* Левая часть — открыть шит с абонементом */}
-                <button
-                  type="button"
+                <ListButton
+                  variant="flat"
                   onClick={() => setPassSheetSummary(s)}
-                  className="flex-1 min-w-0 text-left p-3.5 hover:bg-(--color_bg_card_hover) transition-colors"
+                  className="flex-1 min-w-0 p-3.5 hover:bg-(--color_bg_card_hover)"
                 >
                   <div className="flex items-center gap-3">
                     <UserAvatar
@@ -261,17 +259,16 @@ export default function PassesTab({
                       />
                     </div>
                   )}
-                </button>
+                </ListButton>
 
                 {/* Правая часть — перейти в карточку атлета */}
                 {s.athleteId && (
-                  <button
-                    type="button"
+                  <IconButton
+                    variant="row-action"
                     onClick={() => navigate(`/trainer/athletes/${s.athleteId}`)}
-                    className="shrink-0 flex items-center justify-center w-10 border-l border-(--color_border) text-(--color_text_muted) hover:text-white hover:bg-(--color_bg_card_hover) transition-colors"
                   >
                     <ChevronRightIcon className="w-4 h-4" />
-                  </button>
+                  </IconButton>
                 )}
               </div>
             );

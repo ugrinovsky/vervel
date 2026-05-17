@@ -47,7 +47,7 @@ export default function UiModeCard({
   const baseClass =
     mode === 'pro'
       ? 'rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-left hover:bg-emerald-500/15 transition-colors'
-      : 'rounded-2xl border border-(--color_border) bg-(--color_bg_card) p-4 text-left hover:border-emerald-500/40 transition-colors';
+      : 'glass rounded-2xl p-4 text-left hover:border-emerald-500/40 transition-colors';
 
   return (
     <button type="button" onClick={onClick} className={baseClass}>
@@ -66,4 +66,3 @@ export default function UiModeCard({
     </button>
   );
 }
-

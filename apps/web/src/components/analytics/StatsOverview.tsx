@@ -30,7 +30,8 @@ const calcAvgIntensity = (data: WorkoutStats): number => {
   }
   if (!data.timeline?.length) return 0;
   const sum = data.timeline.reduce((acc, item) => {
-    const val = typeof item.intensity === 'string' ? parseFloat(item.intensity) : item.intensity || 0;
+    const val =
+      typeof item.intensity === 'string' ? parseFloat(item.intensity) : item.intensity || 0;
     return acc + normalizeIntensity(val);
   }, 0);
   return Math.round(sum / data.timeline.length);
@@ -44,7 +45,9 @@ function SparklineTooltip({ active, payload }: RechartsTooltipContentProps) {
   return (
     <div className="bg-gray-900/95 border border-white/10 rounded-lg px-2 py-1.5 text-xs shadow-xl">
       <p className="text-white/50">{label}</p>
-      <p className="font-semibold" style={{ color: 'var(--color_primary_icon)' }}>{formatVolume(vol)}</p>
+      <p className="font-semibold" style={{ color: 'var(--color_primary_icon)' }}>
+        {formatVolume(vol)}
+      </p>
     </div>
   );
 }
@@ -73,8 +76,9 @@ export default function StatsOverview({ period, data }: StatsOverviewProps) {
   return (
     <div className="space-y-4">
       <AnalyticsSheetIntro>
-        Сколько раз вы тренировались, какой суммарный тоннаж и насколько тяжёлыми были сеты в среднем.
-        График объёма — по дням с тренировками в выбранном периоде; блок типов — доля силовых/кроссфита и т.д.
+        Сколько раз вы тренировались, какой суммарный тоннаж и насколько тяжёлыми были сеты в
+        среднем. График объёма — по дням с тренировками в выбранном периоде; блок типов — доля
+        силовых/кроссфита и т.д.
       </AnalyticsSheetIntro>
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -86,23 +90,25 @@ export default function StatsOverview({ period, data }: StatsOverviewProps) {
 
       {/* Main metrics */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) text-center">
+        <div className="glass rounded-xl p-3 text-center">
           <div className="text-2xl font-bold text-white">{data.workoutsCount}</div>
           <div className="text-xs text-(--color_text_muted) mt-0.5">тренировок</div>
         </div>
-        <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) text-center">
+        <div className="glass rounded-xl p-3 text-center">
           <div className="text-2xl font-bold text-amber-400">{formatVolume(data.totalVolume)}</div>
           <div className="text-xs text-(--color_text_muted) mt-0.5">объём</div>
         </div>
-        <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) text-center">
-          <div className="text-2xl font-bold" style={{ color: 'var(--color-rose-400)' }}>{avgIntensity}%</div>
+        <div className="glass rounded-xl p-3 text-center">
+          <div className="text-2xl font-bold" style={{ color: 'var(--color-rose-400)' }}>
+            {avgIntensity}%
+          </div>
           <div className="text-xs text-(--color_text_muted) mt-0.5">интенсивность</div>
         </div>
       </div>
 
       {/* Volume sparkline */}
       {sparklineData.length > 1 && (
-        <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border)">
+        <div className="glass rounded-xl p-3">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wide">
               Тренд объёма
@@ -140,7 +146,7 @@ export default function StatsOverview({ period, data }: StatsOverviewProps) {
 
       {/* Type breakdown */}
       {typeTotal > 0 && (
-        <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border)">
+        <div className="glass rounded-xl p-3">
           <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wide mb-3">
             Типы тренировок
           </p>

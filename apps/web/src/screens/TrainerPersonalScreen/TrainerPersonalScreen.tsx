@@ -165,7 +165,7 @@ export default function TrainerPersonalScreen() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-(--color_bg_card) rounded-xl px-4 py-3 border border-(--color_border) flex items-start gap-3"
+            className="glass rounded-xl px-4 py-3 flex items-start gap-3"
           >
             <span className="text-xl shrink-0">💡</span>
             <p className="text-xs text-(--color_text_muted) leading-relaxed">
@@ -226,7 +226,7 @@ export default function TrainerPersonalScreen() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
+            className="glass rounded-2xl p-5"
           >
             <FormField label="О себе">
               <textarea
@@ -244,7 +244,7 @@ export default function TrainerPersonalScreen() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
+            className="glass rounded-2xl p-5"
           >
             <FormField label="Образование">
               <AppInput
@@ -260,7 +260,7 @@ export default function TrainerPersonalScreen() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
+            className="glass rounded-2xl p-5"
           >
             <FormField label="Специализации">
               <>
@@ -309,7 +309,7 @@ export default function TrainerPersonalScreen() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
-            className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
+            className="glass rounded-2xl p-5"
           >
             <FormField label="Реквизиты для поддержки">
               <p className="text-xs text-(--color_text_muted) mb-4">

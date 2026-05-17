@@ -144,7 +144,7 @@ export default function ActivityScreen() {
               <motion.div
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30"
+                className="card-shadow flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-amber-300">Незаконченная тренировка</p>
@@ -185,7 +185,7 @@ export default function ActivityScreen() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) space-y-4"
+              className="glass rounded-2xl p-5 space-y-4"
             >
               <div className="text-center">
                 <div className="text-4xl mb-2">📅</div>

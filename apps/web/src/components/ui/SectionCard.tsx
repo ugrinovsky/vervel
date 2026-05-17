@@ -12,9 +12,7 @@ type SectionCardProps = {
  */
 export function SectionCard({ title, children, className = '' }: SectionCardProps) {
   return (
-    <div
-      className={`bg-(--color_bg_card) rounded-2xl border border-(--color_border) overflow-hidden mb-2 ${className}`.trim()}
-    >
+    <div className={`glass rounded-2xl overflow-hidden mb-2 ${className}`.trim()}>
       <p className="text-[11px] font-semibold text-(--color_text_muted) uppercase tracking-wider px-4 pt-3 pb-2">
         {title}
       </p>
@@ -52,7 +50,9 @@ export function SectionCardRow({
       <div className="min-w-0">
         <div className="text-sm text-white leading-snug">{label}</div>
         {description ? (
-          <div className="text-[11px] text-(--color_text_muted) mt-0.5 leading-snug">{description}</div>
+          <div className="text-[11px] text-(--color_text_muted) mt-0.5 leading-snug">
+            {description}
+          </div>
         ) : null}
       </div>
       {trailing}

@@ -109,10 +109,7 @@ export function MetricsOverview({ stats, period }: MetricOverviewProps) {
     /** В общий рейтинг при отсутствии тренда объёма — нейтральные 50%, чтобы не занижать оценку */
     const progressScoreForOverall = progressScore ?? 50;
     const overallScore = Math.round(
-      intensityScore * 0.3 +
-        freqScore * 0.3 +
-        balanceScore * 0.2 +
-        progressScoreForOverall * 0.2
+      intensityScore * 0.3 + freqScore * 0.3 + balanceScore * 0.2 + progressScoreForOverall * 0.2
     );
 
     return {
@@ -182,8 +179,7 @@ export function MetricsOverview({ stats, period }: MetricOverviewProps) {
       score: computed.progressScore,
       color: 'var(--color-emerald-500)',
       delta: computed.showWeightVolumeDelta ? computed.weightChange : null,
-      desc:
-        'Сравнение среднего тоннажа за период: вторая половина тренировок с ненулевым объёмом (по датам) против первой. Нужно минимум две такие сессии.',
+      desc: 'Сравнение среднего тоннажа за период: вторая половина тренировок с ненулевым объёмом (по датам) против первой. Нужно минимум две такие сессии.',
     },
     {
       title: 'Объём/тренировку',
@@ -208,20 +204,22 @@ export function MetricsOverview({ stats, period }: MetricOverviewProps) {
   return (
     <div className="space-y-4">
       <AnalyticsSheetIntro>
-        Карточки ниже — производные от ваших тренировок за период. «Общий рейтинг» — внутренняя сводка из
-        частоты, интенсивности, баланса зон и динамики объёма; это не оценка здоровья. Точные веса и прогресс
-        по упражнениям — в разделе «Сила и прогресс».
+        Карточки ниже — производные от ваших тренировок за период. «Общий рейтинг» — внутренняя
+        сводка из частоты, интенсивности, баланса зон и динамики объёма; это не оценка здоровья.
+        Точные веса и прогресс по упражнениям — в разделе «Сила и прогресс».
       </AnalyticsSheetIntro>
       {/* Overall score */}
       <div
-        className="rounded-2xl p-4 border border-(--color_border) flex items-center gap-4"
+        className="rounded-2xl p-4 glass border border-(--color_border) flex items-center gap-4"
         style={{ backgroundColor: overall.color + '14' }}
       >
         <div className="relative w-14 h-14 shrink-0 flex items-center justify-center">
           <svg className="absolute inset-0" width="56" height="56" viewBox="0 0 64 64">
             <circle cx="32" cy="32" r="26" fill="none" className="stroke-white/6" strokeWidth="6" />
             <circle
-              cx="32" cy="32" r="26"
+              cx="32"
+              cy="32"
+              r="26"
               fill="none"
               stroke={overall.color}
               strokeWidth="6"
@@ -231,10 +229,14 @@ export function MetricsOverview({ stats, period }: MetricOverviewProps) {
               style={{ transition: 'stroke-dasharray 0.8s ease' }}
             />
           </svg>
-          <span className="text-base font-bold" style={{ color: overall.color }}>{overallScore}</span>
+          <span className="text-base font-bold" style={{ color: overall.color }}>
+            {overallScore}
+          </span>
         </div>
         <div>
-          <div className="text-xs text-(--color_text_muted) uppercase tracking-wide">Общий рейтинг</div>
+          <div className="text-xs text-(--color_text_muted) uppercase tracking-wide">
+            Общий рейтинг
+          </div>
           <div className="text-lg font-bold text-white mt-0.5">{overall.text}</div>
           <div className="text-xs text-(--color_text_muted) mt-0.5">
             частота, интенсивность, баланс зон, динамика объёма
@@ -247,10 +249,7 @@ export function MetricsOverview({ stats, period }: MetricOverviewProps) {
         {metrics.map((m) => {
           const b = metricCardBadge(m.score);
           return (
-            <div
-              key={m.title}
-              className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col gap-1"
-            >
+            <div key={m.title} className="glass rounded-xl p-3 flex flex-col gap-1">
               <div className="flex items-center justify-between">
                 <span className="text-sm">{m.icon}</span>
                 <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${b.cls}`}>
@@ -263,7 +262,8 @@ export function MetricsOverview({ stats, period }: MetricOverviewProps) {
                   <span
                     className={`text-xs font-semibold mb-0.5 ${m.delta > 0 ? 'text-emerald-400' : 'text-red-400'}`}
                   >
-                    {m.delta > 0 ? '↑' : '↓'}{Math.abs(m.delta)}%
+                    {m.delta > 0 ? '↑' : '↓'}
+                    {Math.abs(m.delta)}%
                   </span>
                 )}
               </div>
@@ -285,8 +285,10 @@ export function MetricsOverview({ stats, period }: MetricOverviewProps) {
       </div>
 
       {/* Metric descriptions */}
-      <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) space-y-2">
-        <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wide">О показателях</p>
+      <div className="glass rounded-xl p-3 space-y-2">
+        <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wide">
+          О показателях
+        </p>
         {metrics.map((m) => (
           <div key={m.title} className="flex gap-2">
             <span className="text-sm shrink-0">{m.icon}</span>

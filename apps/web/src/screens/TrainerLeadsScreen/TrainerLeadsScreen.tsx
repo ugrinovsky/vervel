@@ -145,11 +145,11 @@ export default function TrainerLeadsScreen() {
             animate={{ opacity: 1, y: 0 }}
             className="grid grid-cols-3 gap-3"
           >
-            <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1">
+            <div className="glass rounded-xl p-3 flex flex-col items-center gap-1">
               <div className="text-xl font-bold text-white">{counts.total}</div>
               <div className="text-[11px] text-(--color_text_muted) text-center">Всего</div>
             </div>
-            <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1">
+            <div className="glass rounded-xl p-3 flex flex-col items-center gap-1">
               <div className="text-xl font-bold text-amber-300">{counts.active}</div>
               <div className="text-[11px] text-(--color_text_muted) text-center">Активных</div>
             </div>
@@ -243,7 +243,7 @@ export default function TrainerLeadsScreen() {
                       type="button"
                       whileTap={{ scale: 0.99 }}
                       onClick={() => setSelectedLead(lead)}
-                      className="w-full text-left p-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) hover:border-(--color_primary_light)/30 transition-colors"
+                      className="glass rounded-xl w-full text-left p-4 hover:bg-(--color_bg_card_hover) hover:border-(--color_primary_light)/30 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <div className="text-sm font-semibold text-white truncate">{lead.name}</div>

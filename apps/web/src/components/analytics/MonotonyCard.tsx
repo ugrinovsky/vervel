@@ -69,7 +69,7 @@ export default function MonotonyCard({ data, period }: Props) {
       </div>
 
       {/* Gauge bar */}
-      <div className="bg-(--color_bg_card) rounded-xl border border-(--color_border) p-3 space-y-2">
+      <div className="glass rounded-xl p-3 space-y-2">
         <div className="flex justify-between text-xs mb-1">
           <span className="text-(--color_text_muted)">Монотонность</span>
           <span className={`font-semibold ${cfg.color}`}>{cfg.label}</span>
@@ -86,7 +86,7 @@ export default function MonotonyCard({ data, period }: Props) {
         </div>
       </div>
 
-      <div className="bg-(--color_bg_card) rounded-xl border border-(--color_border) p-3 space-y-2">
+      <div className="glass rounded-xl p-3 space-y-2">
         <div className="flex justify-between text-xs">
           <span className="text-(--color_text_muted)">Порог умеренного риска</span>
           <span className="text-white font-medium">&gt; 1.5</span>

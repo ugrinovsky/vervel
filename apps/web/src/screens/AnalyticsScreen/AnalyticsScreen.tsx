@@ -65,7 +65,8 @@ export default function AnalyticsScreen() {
                 background:
                   'linear-gradient(135deg, rgb(var(--color_primary_light_ch) / 0.28) 0%, rgb(var(--color_primary_ch) / 0.12) 100%)',
                 borderColor: 'rgb(var(--color_primary_light_ch) / 0.45)',
-                boxShadow: '0 8px 28px rgb(var(--color_primary_ch) / 0.18)',
+                boxShadow:
+                  '0 8px 28px rgb(var(--color_primary_ch) / 0.18), 0 10px 15px -3px rgb(0 0 0 / 0.2), 0 4px 6px -4px rgb(0 0 0 / 0.2)',
               }}
             >
               <span className="text-3xl shrink-0" aria-hidden>

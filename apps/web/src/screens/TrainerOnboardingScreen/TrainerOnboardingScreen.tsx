@@ -165,7 +165,7 @@ export default function TrainerOnboardingScreen(): JSX.Element {
                   key={o.id}
                   type="button"
                   onClick={() => void selectWorkStyle(o.id)}
-                  className="rounded-xl border border-(--color_border) bg-(--color_bg_card) p-3 text-left w-full transition-colors hover:border-emerald-500/40"
+                  className="glass rounded-xl p-3 text-left w-full transition-colors hover:border-emerald-500/40"
                 >
                   <div className="text-2xl mb-1">{o.emoji}</div>
                   <div className="font-semibold text-white">{o.title}</div>
@@ -203,10 +203,7 @@ export default function TrainerOnboardingScreen(): JSX.Element {
                     desc: 'Воронка заявок, конверсия, откуда приходят клиенты и кто требует внимания.',
                   },
                 ].map(({ emoji, title, desc }) => (
-                  <div
-                    key={title}
-                    className="flex gap-3 rounded-xl border border-(--color_border) bg-(--color_bg_card) p-3"
-                  >
+                  <div key={title} className="glass rounded-xl flex gap-3 p-3">
                     <span className="text-2xl shrink-0 mt-0.5">{emoji}</span>
                     <div>
                       <div className="text-sm font-semibold text-white mb-0.5">{title}</div>

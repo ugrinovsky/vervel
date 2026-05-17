@@ -1,19 +1,19 @@
-import { motion, AnimatePresence } from 'framer-motion'
-import { PhoneIcon, XMarkIcon } from '@heroicons/react/24/outline'
-import { VideoCameraIcon } from '@heroicons/react/24/outline'
-import type { VideoCall } from '../../api/calls'
-import AccentButton from '../ui/AccentButton'
-import GhostButton from '../ui/GhostButton'
+import { motion, AnimatePresence } from 'framer-motion';
+import { PhoneIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { VideoCameraIcon } from '@heroicons/react/24/outline';
+import type { VideoCall } from '../../api/calls';
+import AccentButton from '../ui/AccentButton';
+import GhostButton from '../ui/GhostButton';
 
 interface IncomingCallProps {
-  call: VideoCall
-  onAccept: () => void
-  onDecline: () => void
+  call: VideoCall;
+  onAccept: () => void;
+  onDecline: () => void;
 }
 
 export default function IncomingCall({ call, onAccept, onDecline }: IncomingCallProps) {
-  const callerName = call.trainer?.fullName ?? 'Тренер'
-  const subtitle = call.group ? `Групповая тренировка · ${call.group.name}` : 'Личный звонок'
+  const callerName = call.trainer?.fullName ?? 'Тренер';
+  const subtitle = call.group ? `Групповая тренировка · ${call.group.name}` : 'Личный звонок';
 
   return (
     <AnimatePresence>
@@ -23,7 +23,7 @@ export default function IncomingCall({ call, onAccept, onDecline }: IncomingCall
         exit={{ opacity: 0, y: -16, scale: 0.95 }}
         className="w-[calc(100vw-32px)] sm:max-w-sm"
       >
-        <div className="bg-(--color_bg_card) backdrop-blur-xl rounded-2xl p-4 border border-(--color_border) shadow-[inset_0_-1px_0_var(--color_border),0_8px_40px_rgba(0,0,0,0.5)]">
+        <div className="glass backdrop-blur-xl rounded-2xl p-4 shadow-[inset_0_-1px_0_var(--color_border),0_8px_40px_rgba(0,0,0,0.5)]">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-(--color_primary_light) flex items-center justify-center shrink-0">
               <VideoCameraIcon className="w-5 h-5 text-white" />
@@ -54,5 +54,5 @@ export default function IncomingCall({ call, onAccept, onDecline }: IncomingCall
         </div>
       </motion.div>
     </AnimatePresence>
-  )
+  );
 }

@@ -77,9 +77,7 @@ export default function PassBlock({ athleteId }: Props) {
   };
 
   if (loading) {
-    return (
-      <div className="h-14 rounded-2xl bg-(--color_bg_card) border border-(--color_border) animate-pulse" />
-    );
+    return <div className="h-14 glass rounded-2xl animate-pulse" />;
   }
 
   return (
@@ -109,7 +107,7 @@ export default function PassBlock({ athleteId }: Props) {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
-              className="rounded-2xl bg-(--color_bg_card) border border-(--color_border) overflow-hidden"
+              className="glass rounded-2xl overflow-hidden"
             >
               {/* Прогресс-бар */}
               <div className="h-1 bg-(--color_border)">
@@ -200,7 +198,7 @@ export default function PassBlock({ athleteId }: Props) {
               key="empty"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-(--color_bg_card) border border-(--color_border)"
+              className="glass rounded-2xl flex items-center justify-between gap-3 px-4 py-3"
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <CreditCardIcon className="w-4 h-4 text-(--color_text_muted) shrink-0" />

@@ -63,8 +63,8 @@ export default function Tabs<T extends string>({
   const outerClass = embedded
     ? `flex w-full gap-1 p-1 ${className}`
     : isCompact
-      ? `flex items-center rounded-lg bg-(--color_bg_card) border border-(--color_border) overflow-hidden ${className}`
-      : `flex gap-1 bg-(--color_bg_card) rounded-2xl p-1 border border-(--color_border) ${className}`;
+      ? `glass flex items-center rounded-lg overflow-hidden ${className}`
+      : `glass flex gap-1 rounded-2xl p-1 ${className}`;
 
   const btnClass = (isActive: boolean) => {
     if (isCompact) {

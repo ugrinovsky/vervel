@@ -38,6 +38,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { computeGrowthData, formatFollowUp, countLeadsByCrmStatus } from './crmUtils';
 import PassesTab from './PassesTab';
+import GhostButton from '@/components/ui/GhostButton';
+import PillButton from '@/components/ui/PillButton';
 
 // ─── Leads pipeline ──────────────────────────────────────────────────────────
 
@@ -87,7 +89,7 @@ const ATHLETE_CRM_CONFIG = {
     text: 'text-green-300',
   },
   sleeping: {
-    label: 'Тихо',
+    label: 'Неактивен',
     hint: 'Давно не появлялся',
     dot: 'bg-amber-400',
     bar: 'bg-amber-400',
@@ -114,7 +116,8 @@ const ATHLETE_CRM_CONFIG = {
 
 type MainTab = 'leads' | 'passes' | 'analytics';
 const MAIN_TABS: MainTab[] = ['leads', 'passes', 'analytics'];
-const isMainTab = (s: string | null): s is MainTab => s !== null && (MAIN_TABS as string[]).includes(s);
+const isMainTab = (s: string | null): s is MainTab =>
+  s !== null && (MAIN_TABS as string[]).includes(s);
 
 type LeadFilter = 'all' | LeadCrmStatus;
 const LEAD_FILTERS: LeadFilter[] = ['all', 'new', 'contacted', 'trial', 'converted', 'lost'];
@@ -139,7 +142,7 @@ function ChartTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-(--color_bg_card) border border-(--color_border) rounded-xl px-3 py-2 text-xs text-white shadow-lg">
+    <div className="glass rounded-xl px-3 py-2 text-xs text-white shadow-lg">
       {payload[0].value} чел.
     </div>
   );
@@ -148,9 +151,10 @@ function ChartTooltip({
 // ─── Main screen ─────────────────────────────────────────────────────────────
 
 export default function TrainerCrmScreen() {
-  const [tab, setTab] = useState<MainTab>(
-    () => { const s = localStorage.getItem('crm_tab'); return isMainTab(s) ? s : 'leads'; }
-  );
+  const [tab, setTab] = useState<MainTab>(() => {
+    const s = localStorage.getItem('crm_tab');
+    return isMainTab(s) ? s : 'leads';
+  });
 
   const [lastLoadedAt, setLastLoadedAt] = useState(0);
 
@@ -202,8 +206,9 @@ export default function TrainerCrmScreen() {
     return {
       total: leads.length,
       active: leads.filter((l) => l.crmStatus !== 'converted' && l.crmStatus !== 'lost').length,
-      followUpToday: leads.filter((l) => l.nextFollowUpAt && parseApiDateTime(l.nextFollowUpAt) <= endOfToday)
-        .length,
+      followUpToday: leads.filter(
+        (l) => l.nextFollowUpAt && parseApiDateTime(l.nextFollowUpAt) <= endOfToday
+      ).length,
       byStatus,
     };
   }, [leads]);
@@ -216,14 +221,19 @@ export default function TrainerCrmScreen() {
     }
     const sorted = [...arr];
     if (sort === 'created_desc') {
-      sorted.sort((a, b) => parseApiDateTime(b.createdAt).getTime() - parseApiDateTime(a.createdAt).getTime());
+      sorted.sort(
+        (a, b) => parseApiDateTime(b.createdAt).getTime() - parseApiDateTime(a.createdAt).getTime()
+      );
     } else if (sort === 'name_asc') {
       sorted.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
     } else if (sort === 'followup_asc') {
       sorted.sort((a, b) => {
         if (!a.nextFollowUpAt) return 1;
         if (!b.nextFollowUpAt) return -1;
-        return parseApiDateTime(a.nextFollowUpAt).getTime() - parseApiDateTime(b.nextFollowUpAt).getTime();
+        return (
+          parseApiDateTime(a.nextFollowUpAt).getTime() -
+          parseApiDateTime(b.nextFollowUpAt).getTime()
+        );
       });
     }
     return sorted;
@@ -355,11 +365,11 @@ export default function TrainerCrmScreen() {
 
               <SectionGroup title="Сводка" showBreakAfter>
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1">
+                  <div className="glass rounded-xl p-3 flex flex-col items-center gap-1">
                     <div className="text-xl font-bold text-white">{leadCounts.total}</div>
                     <div className="text-[11px] text-(--color_text_muted) text-center">Всего</div>
                   </div>
-                  <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1">
+                  <div className="glass rounded-xl p-3 flex flex-col items-center gap-1">
                     <div className="text-xl font-bold text-amber-300">{leadCounts.active}</div>
                     <div className="text-[11px] text-(--color_text_muted) text-center">
                       В работе
@@ -389,19 +399,21 @@ export default function TrainerCrmScreen() {
                 showBreakAfter={false}
                 bodyClassName="space-y-3"
                 action={
-                  <button
-                    type="button"
+                  <GhostButton
+                    variant="outline-accent"
                     onClick={() => setShowAddClient(true)}
-                    className="flex items-center gap-1 text-xs text-(--color_primary_light) hover:opacity-80 transition-opacity"
+                    className="text-xs py-1 px-2"
                   >
                     <PlusIcon className="w-3.5 h-3.5" />
                     Добавить
-                  </button>
+                  </GhostButton>
                 }
               >
                 <ChipScrollRow
                   activeKey={filter}
-                  onChipClick={(key) => { if (isLeadFilter(key)) setFilter(key); }}
+                  onChipClick={(key) => {
+                    if (isLeadFilter(key)) setFilter(key);
+                  }}
                   pillClassName={(key) => {
                     const map: Record<string, string> = {
                       new: 'bg-amber-500',
@@ -446,18 +458,15 @@ export default function TrainerCrmScreen() {
                           { id: 'name_asc', label: 'А–Я' },
                         ] as { id: typeof sort; label: string }[]
                       ).map((s) => (
-                        <button
+                        <PillButton
                           key={s.id}
-                          type="button"
+                          variant="tab"
+                          active={sort === s.id}
                           onClick={() => setSort(s.id)}
-                          className={`px-2 py-1.5 rounded-lg text-xs transition-colors ${
-                            sort === s.id
-                              ? 'bg-(--color_bg_card) text-white border border-(--color_border)'
-                              : 'text-(--color_text_muted) hover:text-white'
-                          }`}
+                          className="px-2 py-1.5 rounded-lg text-xs"
                         >
                           {s.label}
-                        </button>
+                        </PillButton>
                       ))}
                     </div>
                   </div>
@@ -507,7 +516,7 @@ export default function TrainerCrmScreen() {
                             type="button"
                             whileTap={{ scale: 0.99 }}
                             onClick={() => setSelectedLead(lead)}
-                            className="w-full text-left p-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) hover:border-(--color_primary_light)/30 transition-colors"
+                            className="glass rounded-xl w-full text-left p-4 hover:bg-(--color_bg_card_hover) hover:border-(--color_primary_light)/30 transition-colors"
                           >
                             <div className="flex items-start justify-between gap-3 mb-2">
                               <div className="text-sm font-semibold text-white truncate">
@@ -584,7 +593,7 @@ export default function TrainerCrmScreen() {
 
               {/* Сводные цифры */}
               <SectionGroup title="Ключевые показатели" showBreakAfter>
-                <div className="bg-(--color_bg_card) rounded-2xl border border-(--color_border) overflow-hidden">
+                <div className="glass rounded-2xl overflow-hidden">
                   <div className="px-4 pt-2.5 pb-2">
                     <div className="text-[11px] font-semibold text-(--color_text_muted) uppercase tracking-wider mb-1.5">
                       Заявки
@@ -679,7 +688,7 @@ export default function TrainerCrmScreen() {
               {/* Рост базы */}
               {growthData.length >= 1 && (
                 <SectionGroup title="Рост базы" showBreakAfter>
-                  <div className="bg-(--color_bg_card) rounded-2xl p-4 border border-(--color_border)">
+                  <div className="glass rounded-2xl p-4">
                     <p className="text-xs text-(--color_text_muted) mb-4">
                       Накоплено заявок и клиентов
                     </p>
@@ -747,7 +756,7 @@ export default function TrainerCrmScreen() {
 
               {/* Воронка */}
               <SectionGroup title="Воронка заявок" showBreakAfter={sourceData.length > 0}>
-                <div className="bg-(--color_bg_card) rounded-2xl p-4 border border-(--color_border)">
+                <div className="glass rounded-2xl p-4">
                   {leads.length === 0 ? (
                     <div className="text-center py-6 text-xs text-(--color_text_muted)">
                       Добавьте заявки, чтобы увидеть воронку
@@ -788,7 +797,7 @@ export default function TrainerCrmScreen() {
               {/* Источники */}
               {sourceData.length > 0 && (
                 <SectionGroup title="Откуда клиенты" showBreakAfter>
-                  <div className="bg-(--color_bg_card) rounded-2xl p-4 border border-(--color_border)">
+                  <div className="glass rounded-2xl p-4">
                     <ResponsiveContainer width="100%" height={sourceData.length * 44 + 16}>
                       <BarChart
                         data={sourceData}
@@ -842,7 +851,7 @@ export default function TrainerCrmScreen() {
                     showBreakAfter={false}
                     description={total > 0 ? `${total} всего` : undefined}
                   >
-                    <div className="bg-(--color_bg_card) rounded-2xl p-4 border border-(--color_border)">
+                    <div className="glass rounded-2xl p-4">
                       {total > 0 ? (
                         <div className="flex rounded-full overflow-hidden h-1.5 mb-4 gap-px">
                           {rows.map(([status, count]) => {

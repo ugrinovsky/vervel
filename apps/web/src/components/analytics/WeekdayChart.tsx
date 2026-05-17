@@ -93,27 +93,34 @@ export default function WeekdayChart({ data }: Props) {
   return (
     <div className="space-y-4">
       <AnalyticsSheetIntro>
-        Все тренировки за период свёрнуты в семь слотов «пн … вс»: не календарная лента, а ответ на вопрос, в
-        какие дни недели вы обычно выходите на тренировку и как делится объём между буднями и выходными.
+        Все тренировки за период свёрнуты в семь слотов «пн … вс»: не календарная лента, а ответ на
+        вопрос, в какие дни недели вы обычно выходите на тренировку и как делится объём между
+        буднями и выходными.
       </AnalyticsSheetIntro>
       {/* Summary stats */}
       <div className="grid grid-cols-3 gap-2">
-        <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) text-center">
-          <div className="text-xl font-bold" style={{ color: 'var(--color-yellow-400)' }}>{DAYS[favIdx]}</div>
+        <div className="glass rounded-xl p-3 text-center">
+          <div className="text-xl font-bold" style={{ color: 'var(--color-yellow-400)' }}>
+            {DAYS[favIdx]}
+          </div>
           <div className="text-xs text-(--color_text_muted) mt-0.5">любимый день</div>
         </div>
-        <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) text-center">
-          <div className="text-xl font-bold" style={{ color: 'var(--color_primary_icon)' }}>{weekdayLoad}</div>
+        <div className="glass rounded-xl p-3 text-center">
+          <div className="text-xl font-bold" style={{ color: 'var(--color_primary_icon)' }}>
+            {weekdayLoad}
+          </div>
           <div className="text-xs text-(--color_text_muted) mt-0.5">пн–пт</div>
         </div>
-        <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) text-center">
-          <div className="text-xl font-bold" style={{ color: 'var(--color_primary_icon)' }}>{weekendPct}%</div>
+        <div className="glass rounded-xl p-3 text-center">
+          <div className="text-xl font-bold" style={{ color: 'var(--color_primary_icon)' }}>
+            {weekendPct}%
+          </div>
           <div className="text-xs text-(--color_text_muted) mt-0.5">сб–вс</div>
         </div>
       </div>
 
       {/* Bar chart */}
-      <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border)">
+      <div className="glass rounded-xl p-3">
         <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wide mb-3">
           Число тренировок по дню недели (за весь период)
         </p>
@@ -135,12 +142,14 @@ export default function WeekdayChart({ data }: Props) {
       </div>
 
       {/* Per-day breakdown */}
-      <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border)">
+      <div className="glass rounded-xl p-3">
         <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wide mb-1">
           Детали по дням
         </p>
         <p className="text-[11px] text-(--color_text_muted) leading-snug mb-3">
-          Сортировка по числу тренировок. Полоска — насколько этот день недели близок к самому частому (не процент от всех тренировок). Колонка «Ср. инт.» — средняя интенсивность тренировок в этот день недели; «—» если интенсивность в данных не заполнена.
+          Сортировка по числу тренировок. Полоска — насколько этот день недели близок к самому
+          частому (не процент от всех тренировок). Колонка «Ср. инт.» — средняя интенсивность
+          тренировок в этот день недели; «—» если интенсивность в данных не заполнена.
         </p>
         <div className="flex items-center gap-2 mb-1.5 text-[10px] font-medium uppercase tracking-wide text-(--color_text_muted)">
           <span className="w-5 shrink-0" aria-hidden />
@@ -169,7 +178,9 @@ export default function WeekdayChart({ data }: Props) {
                       }}
                     />
                   </div>
-                  <span className="text-xs text-white/60 w-7 shrink-0 text-right tabular-nums">{d.workouts}</span>
+                  <span className="text-xs text-white/60 w-7 shrink-0 text-right tabular-nums">
+                    {d.workouts}
+                  </span>
                   <span className="text-[11px] text-(--color_text_muted) w-[3.25rem] shrink-0 text-right tabular-nums">
                     {d.avgIntensity > 0 ? `${d.avgIntensity}%` : '—'}
                   </span>
@@ -180,11 +191,14 @@ export default function WeekdayChart({ data }: Props) {
       </div>
 
       {/* Insight */}
-      <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex gap-3 items-start">
+      <div className="glass rounded-xl p-3 flex gap-3 items-start">
         <span className="text-xl shrink-0">💡</span>
         <p className="text-xs text-(--color_text_muted) leading-relaxed">
           Чаще всего вы тренируетесь в{' '}
-          <span className="font-semibold" style={{ color: 'var(--color-yellow-400)' }}>{DAYS_FULL[favIdx]}</span>.{' '}
+          <span className="font-semibold" style={{ color: 'var(--color-yellow-400)' }}>
+            {DAYS_FULL[favIdx]}
+          </span>
+          .{' '}
           {weekendPct > 50
             ? 'Большинство тренировок — на выходных. Попробуйте добавить будни для лучшего восстановления.'
             : weekendPct < 15

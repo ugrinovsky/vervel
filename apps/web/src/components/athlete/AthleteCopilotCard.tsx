@@ -18,7 +18,7 @@ const WORKOUT_TYPE_LABEL: Record<string, string> = {
 function ColdStartCard({ message }: { message: string }) {
   const navigate = useNavigate();
   return (
-    <div className="rounded-2xl p-4 bg-(--color_bg_card) border border-(--color_border)">
+    <div className="glass rounded-2xl p-4">
       <div className="flex items-start gap-3">
         <SparklesIcon className="w-5 h-5 text-(--color_primary_icon) shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
@@ -38,7 +38,7 @@ function ColdStartCard({ message }: { message: string }) {
 
 function RestDayCard() {
   return (
-    <div className="rounded-2xl p-4 bg-(--color_bg_card) border border-(--color_border)">
+    <div className="glass rounded-2xl p-4">
       <div className="flex items-center gap-3">
         <span className="text-2xl">🛋️</span>
         <div>
@@ -137,7 +137,7 @@ export default function AthleteCopilotCard({ onDraftCreated }: Props) {
     );
   }
 
-  const isFromTrainer = todaySuggestion.source === 'trainer'
+  const isFromTrainer = todaySuggestion.source === 'trainer';
   const hasTrainerWorkouts = weekItems.some((i) => i.source === 'trainer');
 
   return (
@@ -148,7 +148,7 @@ export default function AthleteCopilotCard({ onDraftCreated }: Props) {
         className="space-y-3"
       >
         {/* Главная карточка */}
-        <div className="rounded-2xl p-4 bg-(--color_bg_card) border border-(--color_border) space-y-3">
+        <div className="glass rounded-2xl p-4 space-y-3">
           {/* Заголовок + источник */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -185,7 +185,7 @@ export default function AthleteCopilotCard({ onDraftCreated }: Props) {
 
         {/* Неделя */}
         {weekItems.length > 0 && (
-          <div className="rounded-2xl p-4 bg-(--color_bg_card) border border-(--color_border) space-y-3">
+          <div className="glass rounded-2xl p-4 space-y-3">
             <button
               onClick={() => setShowWeek((v) => !v)}
               className="flex items-center justify-between w-full"

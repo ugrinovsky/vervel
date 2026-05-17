@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import PhoneInput from '@/components/ui/PhoneInput';
+import AppInput from '@/components/ui/AppInput';
 import AccentButton from '@/components/ui/AccentButton';
 import GhostButton from '@/components/ui/GhostButton';
 import { trainerApi, type TrainerLead, type LeadCrmStatus } from '@/api/trainer';
@@ -253,11 +254,11 @@ export default function LeadDetailSheet({ lead, open, onClose, onUpdated }: Prop
         {/* Reminder date */}
         <div>
           <div className="text-xs text-(--color_text_muted) mb-2">Напомнить</div>
-          <input
+          <AppInput
             type="date"
             value={followUpDate}
             onChange={(e) => handleFollowUpChange(e.target.value)}
-            className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-(--color_primary_light) transition-colors [color-scheme:dark]"
+            className="scheme-dark"
           />
         </div>
 

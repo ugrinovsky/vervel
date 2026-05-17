@@ -4,13 +4,13 @@
  */
 
 /** Фон/бордер по умолчанию в редакторе упражнений */
-export const SORTABLE_EXERCISE_IDLE_EDITOR_DEFAULT = 'bg-white/[0.07] border-white/10';
+export const SORTABLE_EXERCISE_IDLE_EDITOR_DEFAULT = 'glass';
 
 /** Общий для редактора и шита — блок суперсета */
-export const SORTABLE_EXERCISE_IDLE_SUPERSET = 'bg-amber-500/10 border-amber-500/40';
+export const SORTABLE_EXERCISE_IDLE_SUPERSET = 'card-shadow bg-amber-500/10 border-amber-500/40';
 
 /** Карточка в шите деталей тренировки (не редактор) */
-export const SORTABLE_EXERCISE_IDLE_DETAIL_DEFAULT = 'bg-(--color_bg_card) border-(--color_border)';
+export const SORTABLE_EXERCISE_IDLE_DETAIL_DEFAULT = 'glass';
 
 type SortableShellOpts = {
   isDragging: boolean;

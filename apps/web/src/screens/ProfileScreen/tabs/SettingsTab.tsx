@@ -303,7 +303,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
       </BottomSheet>
 
       <SectionGroup title="Аккаунт">
-        <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
+        <div className="glass rounded-2xl p-6">
           <h3 className="text-sm font-semibold text-white mb-4">Личные данные</h3>
           <div className="space-y-4">
             <AppInput
@@ -343,7 +343,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
         </div>
 
         {!isTrainer && (
-          <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
+          <div className="glass rounded-2xl p-6">
             <h3 className="text-sm font-semibold text-white mb-1">Вес тела</h3>
             <p className="text-xs text-(--color_text_muted) mb-3 leading-relaxed">
               Для расчёта нагрузки в упражнениях с весом тела и рейтинга. История сохраняется.
@@ -372,7 +372,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
         )}
 
         {!isPasswordlessOAuth && (
-          <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
+          <div className="glass rounded-2xl p-6">
             <h3 className="text-sm font-semibold text-white mb-3">Пароль</h3>
             <div className="space-y-3">
               <AppInput
@@ -407,7 +407,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
       </SectionGroup>
 
       <SectionGroup title="Оформление">
-        <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
+        <div className="glass rounded-2xl p-6">
           <h3 className="text-sm font-semibold text-white mb-4">Тема</h3>
           <div className="grid grid-cols-8 gap-3">
             <button
@@ -506,7 +506,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
       <FeatureSettingsSection user={user} updateUser={updateUser} isTrainer={isTrainer} />
 
       <SectionGroup title="Уведомления">
-        <div className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)">
+        <div className="glass rounded-2xl p-5">
           <h3 className="text-sm font-semibold text-white mb-2">Push в браузере</h3>
           {!isStandalone && (isMobileBrowser() || !pushSupported) ? (
             <PwaInstructions platform={pwaPlatform} />
@@ -541,7 +541,7 @@ export default function SettingsTab({ data, onProfileUpdate }: Props) {
       </SectionGroup>
 
       <SectionGroup title="Помощь и документы">
-        <div className="bg-(--color_bg_card) rounded-2xl border border-(--color_border) overflow-hidden">
+        <div className="glass rounded-2xl overflow-hidden">
           <button
             type="button"
             onClick={() => setFeedbackOpen(true)}
@@ -841,7 +841,7 @@ function FeatureSettingsSection({
   return (
     <SectionGroup title="Функции приложения">
       {/* Mode switcher */}
-      <div className="bg-(--color_bg_card) rounded-2xl border border-(--color_border) p-4 mb-3">
+      <div className="glass rounded-2xl p-4 mb-3">
         <p className="text-sm font-semibold text-white mb-1">Режим интерфейса</p>
         <p className="text-xs text-(--color_text_muted) mb-3">
           {currentMode ? uiModeLabel(currentMode, isTrainer ? 'trainer' : 'athlete') : 'Не выбран'}
@@ -863,7 +863,7 @@ function FeatureSettingsSection({
                 className={`rounded-xl px-4 py-3 text-left text-sm transition-colors flex items-start justify-between gap-3 ${
                   isActive
                     ? 'border border-emerald-500/40 bg-emerald-500/10 text-white'
-                    : 'border border-(--color_border) bg-(--color_bg_card_hover) text-(--color_text_muted) hover:text-white'
+                    : 'glass text-(--color_text_muted) hover:text-white'
                 }`}
               >
                 <div className="min-w-0 flex-1">

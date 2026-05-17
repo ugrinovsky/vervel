@@ -19,6 +19,8 @@ import AnimatedBlock from '@/components/ui/AnimatedBlock';
 import { cardClass } from '@/components/ui/Card';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import GhostButton from '@/components/ui/GhostButton';
+import PillButton from '@/components/ui/PillButton';
+import ListButton from '@/components/ui/ListButton';
 import {
   BookmarkIcon,
   BookmarkSlashIcon,
@@ -43,10 +45,7 @@ import { aiApi } from '@/api/ai';
 import { useBalance } from '@/contexts/AuthContext';
 import ExercisePicker from '@/components/ExercisePicker/ExercisePicker';
 import type { ExerciseWithSets } from '@/types/Exercise';
-import {
-  buildStrengthLogChartRowsWithTrend,
-  strengthLogProgressPercent,
-} from './strengthLogChart';
+import { buildStrengthLogChartRowsWithTrend, strengthLogProgressPercent } from './strengthLogChart';
 import { getApiErrorData, getApiErrorMessage } from '@/utils/apiError';
 import { isRecord } from '@/utils/typeGuards';
 import { WORKOUT_TYPE_CONFIG } from '@/constants/workoutTypes';
@@ -66,14 +65,17 @@ function strengthLogBaseGroupKey(exerciseId: string): string {
 
 type StrengthLogWtFilter = 'bodybuilding' | 'crossfit' | 'cardio';
 
-function strengthLogCompositePinKey(baseExerciseId: string, workoutType: StrengthLogWtFilter): string {
+function strengthLogCompositePinKey(
+  baseExerciseId: string,
+  workoutType: StrengthLogWtFilter
+): string {
   return `${baseExerciseId}${STRENGTH_LOG_WT_SEP}${workoutType}`;
 }
 
 function resolveStandardIdForRawExerciseId(
   exerciseId: string,
   standards: ExerciseStandardDTO[],
-  aliases: ExerciseStandardAliasDTO[],
+  aliases: ExerciseStandardAliasDTO[]
 ): number | null {
   if (exerciseId.startsWith(GROUP_STD_PREFIX)) {
     const rest = exerciseId.slice(GROUP_STD_PREFIX.length);
@@ -98,7 +100,7 @@ function resolveStandardIdForRawExerciseId(
 function resolveStandardIdForStrengthEntry(
   entry: StrengthLogEntry,
   standards: ExerciseStandardDTO[],
-  aliases: ExerciseStandardAliasDTO[],
+  aliases: ExerciseStandardAliasDTO[]
 ): number | null {
   if (entry.standardId != null) {
     const n = Number(entry.standardId);
@@ -197,7 +199,10 @@ const MONTH_ABBR_RU = [
 ] as const;
 
 /** Заголовок колонки: если в этой карточке несколько сессий в один день — добавляем время. */
-function formatSessionColumnHeader(s: StrengthLogSession, sessionsOnLocalDay: Map<string, number>): string {
+function formatSessionColumnHeader(
+  s: StrengthLogSession,
+  sessionsOnLocalDay: Map<string, number>
+): string {
   const d = parseApiDateTime(s.date);
   const day = d.getDate();
   const mon = MONTH_ABBR_RU[d.getMonth()];
@@ -225,7 +230,9 @@ function StrengthLogChartTooltip({
   const rows = payload
     .filter((p) => p.value != null && Number.isFinite(Number(p.value)))
     .map((p) => ({
-      title: p.name ?? (p.dataKey === 'trend' ? 'Тренд' : p.dataKey === 'kg' ? 'Факт' : String(p.dataKey)),
+      title:
+        p.name ??
+        (p.dataKey === 'trend' ? 'Тренд' : p.dataKey === 'kg' ? 'Факт' : String(p.dataKey)),
       v: Number(p.value),
       muted: p.dataKey === 'trend',
     }));
@@ -261,9 +268,7 @@ function StrengthLogChartLegend({ showTrend }: { showTrend: boolean }) {
       className="mt-2 rounded-xl border border-(--color_border) bg-(--color_bg_card)/80 px-3 py-2.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]"
       aria-label="Обозначения графика"
     >
-      <div
-        className={`grid gap-3 ${showTrend ? 'sm:grid-cols-2 sm:gap-4' : ''}`}
-      >
+      <div className={`grid gap-3 ${showTrend ? 'sm:grid-cols-2 sm:gap-4' : ''}`}>
         <div className="flex gap-3 min-w-0">
           <div className="flex shrink-0 flex-col justify-center pt-0.5" aria-hidden>
             <span className="h-0.5 w-8 rounded-full bg-(--color_primary_light)" />
@@ -338,7 +343,7 @@ function ExerciseCard({
   const maxSets = Math.max(...sessions.map((s) => s.sets.length), 0);
   const chartData = useMemo(
     () => buildStrengthLogChartRowsWithTrend(entry, { extrapolateNext: exercisePinned }),
-    [entry, exercisePinned],
+    [entry, exercisePinned]
   );
   const showTrendLine = exercisePinned && chartData.some((d) => d.trend != null);
   const progressPct = useMemo(() => strengthLogProgressPercent(entry), [entry]);
@@ -388,16 +393,12 @@ function ExerciseCard({
           )}
         </div>
         <div className="flex items-center gap-0.5 shrink-0">
-          {modeBtn(
-            'table',
-            <TableCellsIcon className="w-5 h-5 shrink-0" />,
-            'Таблица подходов',
-          )}
+          {modeBtn('table', <TableCellsIcon className="w-5 h-5 shrink-0" />, 'Таблица подходов')}
           {modeBtn('chart', <ChartBarIcon className="w-5 h-5 shrink-0" />, 'График')}
           {modeBtn(
             'dashboard',
             <PresentationChartLineIcon className="w-5 h-5 shrink-0" />,
-            'Сводка 30 дней',
+            'Сводка 30 дней'
           )}
           <button
             type="button"
@@ -463,7 +464,10 @@ function ExerciseCard({
                     width={36}
                     domain={['auto', 'auto']}
                   />
-                  <Tooltip content={<StrengthLogChartTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.15)' }} />
+                  <Tooltip
+                    content={<StrengthLogChartTooltip />}
+                    cursor={{ stroke: 'rgba(255,255,255,0.15)' }}
+                  />
                   <Line
                     type="monotone"
                     dataKey="kg"
@@ -616,7 +620,9 @@ export default function StrengthLogScreen({
   const [standardsBusy, setStandardsBusy] = useState(false);
   const [standardsAliasSearch, setStandardsAliasSearch] = useState('');
   const [aiSuggestOpen, setAiSuggestOpen] = useState(false);
-  const [aiSuggestPhase, setAiSuggestPhase] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [aiSuggestPhase, setAiSuggestPhase] = useState<'idle' | 'loading' | 'ready' | 'error'>(
+    'idle'
+  );
   const [aiSuggestError, setAiSuggestError] = useState<string | null>(null);
   const [aiSuggestItems, setAiSuggestItems] = useState<StandardLinkSuggestionDTO[]>([]);
   const [aiSuggestSelected, setAiSuggestSelected] = useState<Record<string, boolean>>({});
@@ -660,43 +666,36 @@ export default function StrengthLogScreen({
       .catch(() => {});
   }, [payload]);
 
-  const {
-    entries,
-    pinnedExerciseIds,
-    suggestedPins,
-    weightedExerciseOptions,
-    standards,
-    aliases,
-  } = useMemo(
-    () => ({
-      entries: payload?.entries ?? [],
-      pinnedExerciseIds: payload?.pinnedExerciseIds ?? [],
-      suggestedPins: payload?.suggestedPins ?? [],
-      weightedExerciseOptions: payload?.weightedExerciseOptions ?? [],
-      standards: payload?.standards ?? [],
-      aliases: payload?.aliases ?? [],
-    }),
-    [payload],
-  );
+  const { entries, pinnedExerciseIds, suggestedPins, weightedExerciseOptions, standards, aliases } =
+    useMemo(
+      () => ({
+        entries: payload?.entries ?? [],
+        pinnedExerciseIds: payload?.pinnedExerciseIds ?? [],
+        suggestedPins: payload?.suggestedPins ?? [],
+        weightedExerciseOptions: payload?.weightedExerciseOptions ?? [],
+        standards: payload?.standards ?? [],
+        aliases: payload?.aliases ?? [],
+      }),
+      [payload]
+    );
 
   const aiSuggestCap = payload?.aiStandardLinkSuggestMaxCandidates ?? 60;
 
   const unlinkedTotalCount = useMemo(
     () =>
       weightedExerciseOptions.filter(
-        (o) => resolveStandardIdForRawExerciseId(o.exerciseId, standards, aliases) === null,
+        (o) => resolveStandardIdForRawExerciseId(o.exerciseId, standards, aliases) === null
       ).length,
-    [weightedExerciseOptions, standards, aliases],
+    [weightedExerciseOptions, standards, aliases]
   );
 
   const isStandardsHubTab = progressionHubTab === 'advanced';
   const showAiSuggestToolbar =
-    progressionHubTab === 'advanced' ||
-    (progressionHubTab === undefined && showStandardsAiBatch);
+    progressionHubTab === 'advanced' || (progressionHubTab === undefined && showStandardsAiBatch);
 
   const standardsSorted = useMemo(
     () => [...standards].sort((a, b) => a.displayLabel.localeCompare(b.displayLabel, 'ru')),
-    [standards],
+    [standards]
   );
 
   const aliasCountByStandardId = useMemo(() => {
@@ -718,7 +717,9 @@ export default function StrengthLogScreen({
   }, [entries, standards, aliases]);
 
   const exerciseNameById = (id: string) => {
-    const fromEntry = entries.find((e) => strengthLogBaseGroupKey(e.exerciseId) === id)?.exerciseName;
+    const fromEntry = entries.find(
+      (e) => strengthLogBaseGroupKey(e.exerciseId) === id
+    )?.exerciseName;
     if (fromEntry) return exerciseIdForDisplay(fromEntry);
     return exerciseIdForDisplay(id);
   };
@@ -745,7 +746,7 @@ export default function StrengthLogScreen({
       setStandardsPickerOpen(false);
       setStandardsOpen(true);
     },
-    [standards, aliases],
+    [standards, aliases]
   );
 
   const closeStandardsSheet = () => {
@@ -776,7 +777,7 @@ export default function StrengthLogScreen({
         setAiSuggestPhase('ready');
       } else {
         setAiSuggestError(
-          typeof res.data.message === 'string' ? res.data.message : 'Не удалось получить подсказки',
+          typeof res.data.message === 'string' ? res.data.message : 'Не удалось получить подсказки'
         );
         setAiSuggestPhase('error');
       }
@@ -787,7 +788,7 @@ export default function StrengthLogScreen({
         const balance = d && typeof d.balance === 'number' ? d.balance : undefined;
         setAiSuggestError(
           message ??
-            (balance != null ? `Недостаточно средств (баланс ${balance}₽)` : 'Недостаточно средств'),
+            (balance != null ? `Недостаточно средств (баланс ${balance}₽)` : 'Недостаточно средств')
         );
       } else if (isAxiosError(e) && e.response?.status === 403) {
         setAiSuggestError('ИИ временно недоступен');
@@ -817,7 +818,7 @@ export default function StrengthLogScreen({
       const res = await athleteApi.postApplyStandardAliasBatch(links);
       if (!res.data.success || !res.data.data) {
         toast.error(
-          typeof res.data.message === 'string' ? res.data.message : 'Не удалось применить',
+          typeof res.data.message === 'string' ? res.data.message : 'Не удалось применить'
         );
         return;
       }
@@ -833,8 +834,8 @@ export default function StrengthLogScreen({
           (t) => (
             <div className="rounded-xl border border-white/15 bg-[#1a1a1a] px-4 py-3 text-sm text-white shadow-xl max-w-[min(100vw-2rem,20rem)]">
               <p className="mb-2">Связали {applied} вариант(ов) с эталонами.</p>
-              <button
-                type="button"
+              <GhostButton
+                variant="link"
                 className="text-(--color_primary_light) underline underline-offset-2 font-medium"
                 onClick={async () => {
                   toast.dismiss(t.id);
@@ -847,7 +848,7 @@ export default function StrengthLogScreen({
                       toast.error(
                         typeof rev.data.message === 'string'
                           ? rev.data.message
-                          : 'Не удалось откатить',
+                          : 'Не удалось откатить'
                       );
                     }
                   } catch {
@@ -856,10 +857,10 @@ export default function StrengthLogScreen({
                 }}
               >
                 Откатить
-              </button>
+              </GhostButton>
             </div>
           ),
-          { duration: 20000 },
+          { duration: 20000 }
         );
       } else {
         toast.success(`Применено связей: ${applied}`);
@@ -874,7 +875,7 @@ export default function StrengthLogScreen({
   const effectiveStandardIdForSheet = useMemo(
     () =>
       standardsEntry ? resolveStandardIdForStrengthEntry(standardsEntry, standards, aliases) : null,
-    [standardsEntry, standards, aliases],
+    [standardsEntry, standards, aliases]
   );
 
   const saveStandardLabel = async () => {
@@ -998,7 +999,7 @@ export default function StrengthLogScreen({
     ? standardsAliasCandidates.filter((o) =>
         exerciseIdForDisplay(o.exerciseName)
           .toLowerCase()
-          .includes(standardsAliasSearch.trim().toLowerCase()),
+          .includes(standardsAliasSearch.trim().toLowerCase())
       )
     : standardsAliasCandidates;
   const standardsLinkedSources =
@@ -1010,9 +1011,11 @@ export default function StrengthLogScreen({
   }, [pinnedExerciseIds, wtFilter]);
 
   const applyPinsForType = async (nextBaseIds: string[], successToast?: string) => {
-    const otherPins = pinnedExerciseIds.filter((id) => !id.endsWith(`${STRENGTH_LOG_WT_SEP}${wtFilter}`));
+    const otherPins = pinnedExerciseIds.filter(
+      (id) => !id.endsWith(`${STRENGTH_LOG_WT_SEP}${wtFilter}`)
+    );
     const nextPinsForType = Array.from(new Set(nextBaseIds)).map((baseId) =>
-      strengthLogCompositePinKey(baseId, wtFilter),
+      strengthLogCompositePinKey(baseId, wtFilter)
     );
     const nextAll = [...otherPins, ...nextPinsForType];
     setPinsBusy(true);
@@ -1022,7 +1025,7 @@ export default function StrengthLogScreen({
         setPayload(res.data.data);
         toast.success(
           successToast ??
-            (nextPinsForType.length === 0 ? 'Закрепления сняты' : 'Список закреплений обновлён'),
+            (nextPinsForType.length === 0 ? 'Закрепления сняты' : 'Список закреплений обновлён')
         );
       }
     } catch {
@@ -1048,7 +1051,9 @@ export default function StrengthLogScreen({
       .filter((id) => id !== baseExerciseId);
     void applyPinsForType(
       nextBase,
-      nextBase.length === 0 ? 'Закрепления сняты — показаны все упражнения' : 'Убрано из закреплённых',
+      nextBase.length === 0
+        ? 'Закрепления сняты — показаны все упражнения'
+        : 'Убрано из закреплённых'
     );
   };
 
@@ -1060,9 +1065,11 @@ export default function StrengthLogScreen({
     setPinsBusy(true);
     try {
       const nextBase = [...pinsForType.map((id) => strengthLogBaseGroupKey(id)), opt.exerciseId];
-      const otherPins = pinnedExerciseIds.filter((id) => !id.endsWith(`${STRENGTH_LOG_WT_SEP}${wtFilter}`));
+      const otherPins = pinnedExerciseIds.filter(
+        (id) => !id.endsWith(`${STRENGTH_LOG_WT_SEP}${wtFilter}`)
+      );
       const nextPinsForType = Array.from(new Set(nextBase)).map((baseId) =>
-        strengthLogCompositePinKey(baseId, wtFilter),
+        strengthLogCompositePinKey(baseId, wtFilter)
       );
       const res = await athleteApi.putStrengthLogPins([...otherPins, ...nextPinsForType]);
       if (res.data.success) {
@@ -1082,7 +1089,7 @@ export default function StrengthLogScreen({
     ? weightedExerciseOptions.filter((o) =>
         exerciseIdForDisplay(o.exerciseName)
           .toLowerCase()
-          .includes(historySearch.trim().toLowerCase()),
+          .includes(historySearch.trim().toLowerCase())
       )
     : weightedExerciseOptions;
 
@@ -1097,586 +1104,601 @@ export default function StrengthLogScreen({
 
   const inner = (
     <div className={`w-full space-y-4 ${embedded ? '' : 'p-4 max-w-lg mx-auto'}`}>
-        {!embedded && (
-          <>
-            <div className="flex items-center justify-between mb-2">
-              <BackButton onClick={() => navigate(-1)} />
-            </div>
-            <ScreenHeader
-              icon="📒"
-              title="Силовой журнал"
-              description="История подходов с весом — последние 6 сессий. WOD и силовые учитываются вместе."
-            />
-          </>
-        )}
+      {!embedded && (
+        <>
+          <div className="flex items-center justify-between mb-2">
+            <BackButton onClick={() => navigate(-1)} />
+          </div>
+          <ScreenHeader
+            icon="📒"
+            title="Силовой журнал"
+            description="История подходов с весом — последние 6 сессий. WOD и силовые учитываются вместе."
+          />
+        </>
+      )}
 
-        {!loading && payload && (
-          <div className="space-y-2 text-xs text-(--color_text_muted)">
-            {isStandardsHubTab ? (
-              <>
-                <div className={`${cardClass} rounded-xl p-4 space-y-3`}>
-                  <div className="text-sm font-semibold text-white">Список эталонов</div>
-                  <p className="text-xs text-(--color_text_muted) leading-relaxed">
-                    Строка открывает то же окно, что и звёздочка ⭐ на карточке в журнале: название группы,
-                    синонимы и привязка к каталогу.
-                  </p>
-                  {standardsSorted.length === 0 ? (
-                    <p className="text-xs text-(--color_text_secondary) leading-relaxed">
-                      Пока нет эталонов. Перейдите во вкладку «Журнал», откройте упражнение с весом и
-                      нажмите ⭐.
-                    </p>
-                  ) : (
-                    <ul className="rounded-xl border border-(--color_border) divide-y divide-(--color_border)/60 overflow-hidden">
-                      {standardsSorted.map((s) => {
-                        const aliasN = aliasCountByStandardId.get(s.id) ?? 0;
-                        const rep = representativeEntryByStandardId.get(s.id);
-                        return (
-                          <li key={s.id}>
-                            <button
-                              type="button"
-                              disabled={!rep}
-                              onClick={() => rep && openStandardsFor(rep)}
-                              className="w-full flex items-center gap-3 px-3 py-3.5 text-left hover:bg-white/5 active:bg-white/10 transition-colors disabled:opacity-45 disabled:cursor-not-allowed"
-                            >
-                              <span className="flex-1 min-w-0">
-                                <span className="block text-sm font-medium text-white">{s.displayLabel}</span>
-                                <span className="block text-[11px] text-(--color_text_muted) mt-0.5">
-                                  {aliasN > 0 ? `${aliasN} доп. названий` : 'без доп. названий'}
-                                  {s.catalogExerciseId ? ' · каталог' : ''}
-                                  {!rep ? ' · нет карточки в журнале' : ''}
-                                </span>
-                              </span>
-                              {rep ? (
-                                <ChevronRightIcon
-                                  className="w-5 h-5 shrink-0 text-(--color_text_muted)"
-                                  aria-hidden
-                                />
-                              ) : null}
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                  {standardsSorted.length > 0 && unlinkedTotalCount === 0 && (
-                    <p className="text-[11px] text-(--color_text_muted) leading-snug">
-                      Все варианты из истории уже привязаны к эталонам — запрос ИИ к сопоставлению нечего
-                      предлагать.
-                    </p>
-                  )}
-                  {standardsSorted.length > 0 &&
-                    unlinkedTotalCount > 0 &&
-                    aiFeatureStatusReady &&
-                    !aiFeatureEnabled && (
-                      <p className="text-[11px] text-(--color_text_muted) leading-snug">
-                        Платное сопоставление через ИИ сейчас недоступно — связи можно добавить вручную со
-                        звёздочки на карточке в журнале.
-                      </p>
-                    )}
-                </div>
-                {showAiSuggestToolbar &&
-                  standards.length > 0 &&
-                  unlinkedTotalCount > 0 &&
-                  aiFeatureEnabled && (
-                    <div className="space-y-1.5">
-                      <GhostButton
-                        variant="outline-accent"
-                        disabled={
-                          pinsBusy || (balance !== null && balance < suggestLinksCost)
-                        }
-                        onClick={() => openAiSuggestSheet()}
-                        className="w-full py-2 rounded-xl"
-                      >
-                        ИИ: предложить связи с эталонами
-                      </GhostButton>
-                      <p className="text-[11px] text-white/30 leading-snug px-0.5">
-                        Стоимость: <span className="text-white/50">{suggestLinksCost}₽</span> — списывается
-                        после отправки
-                      </p>
-                      <p className="text-[11px] text-(--color_text_muted) leading-snug px-0.5">
-                        В один запрос для анализа уходит не более {aiSuggestCap} шт.
-                        {unlinkedTotalCount > aiSuggestCap
-                          ? ` Сейчас несвязанных ${unlinkedTotalCount} — в этот запрос попадут первые ${aiSuggestCap} по приоритету сервера (сначала кастомные и нестандартные id).`
-                          : ''}
-                      </p>
-                    </div>
-                  )}
-                <p className="text-[11px] text-(--color_text_muted) leading-relaxed px-0.5">
-                  Графики веса и закрепления — во вкладке «Журнал».
+      {!loading && payload && (
+        <div className="space-y-2 text-xs text-(--color_text_muted)">
+          {isStandardsHubTab ? (
+            <>
+              <div className={`${cardClass} rounded-xl p-4 space-y-3`}>
+                <div className="text-sm font-semibold text-white">Список эталонов</div>
+                <p className="text-xs text-(--color_text_muted) leading-relaxed">
+                  Строка открывает то же окно, что и звёздочка ⭐ на карточке в журнале: название
+                  группы, синонимы и привязка к каталогу.
                 </p>
-              </>
-            ) : (
-              <>
-                {pinsForType.length > 0 ? (
-                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                    <span className="text-(--color_text_muted)">
-                      Показаны только закреплённые упражнения.
-                    </span>
+                {standardsSorted.length === 0 ? (
+                  <p className="text-xs text-(--color_text_secondary) leading-relaxed">
+                    Пока нет эталонов. Перейдите во вкладку «Журнал», откройте упражнение с весом и
+                    нажмите ⭐.
+                  </p>
+                ) : (
+                  <ul className="rounded-xl border border-(--color_border) divide-y divide-(--color_border)/60 overflow-hidden">
+                    {standardsSorted.map((s) => {
+                      const aliasN = aliasCountByStandardId.get(s.id) ?? 0;
+                      const rep = representativeEntryByStandardId.get(s.id);
+                      return (
+                        <li key={s.id}>
+                          <ListButton
+                            variant="flat"
+                            disabled={!rep}
+                            onClick={() => rep && openStandardsFor(rep)}
+                            className="w-full px-3 py-3.5 hover:bg-white/5 active:bg-white/10 disabled:opacity-45 disabled:cursor-not-allowed"
+                          >
+                            <span className="flex-1 min-w-0">
+                              <span className="block text-sm font-medium text-white">
+                                {s.displayLabel}
+                              </span>
+                              <span className="block text-[11px] text-(--color_text_muted) mt-0.5">
+                                {aliasN > 0 ? `${aliasN} доп. названий` : 'без доп. названий'}
+                                {s.catalogExerciseId ? ' · каталог' : ''}
+                                {!rep ? ' · нет карточки в журнале' : ''}
+                              </span>
+                            </span>
+                            {rep ? (
+                              <ChevronRightIcon
+                                className="w-5 h-5 shrink-0 text-(--color_text_muted)"
+                                aria-hidden
+                              />
+                            ) : null}
+                          </ListButton>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                {standardsSorted.length > 0 && unlinkedTotalCount === 0 && (
+                  <p className="text-[11px] text-(--color_text_muted) leading-snug">
+                    Все варианты из истории уже привязаны к эталонам — запрос ИИ к сопоставлению
+                    нечего предлагать.
+                  </p>
+                )}
+                {standardsSorted.length > 0 &&
+                  unlinkedTotalCount > 0 &&
+                  aiFeatureStatusReady &&
+                  !aiFeatureEnabled && (
+                    <p className="text-[11px] text-(--color_text_muted) leading-snug">
+                      Платное сопоставление через ИИ сейчас недоступно — связи можно добавить
+                      вручную со звёздочки на карточке в журнале.
+                    </p>
+                  )}
+              </div>
+              {showAiSuggestToolbar &&
+                standards.length > 0 &&
+                unlinkedTotalCount > 0 &&
+                aiFeatureEnabled && (
+                  <div className="space-y-1.5">
                     <GhostButton
                       variant="outline-accent"
-                      disabled={pinsBusy}
-                      onClick={() => applyPinsForType([])}
-                      className="w-full shrink-0 sm:w-auto whitespace-nowrap py-2"
+                      disabled={pinsBusy || (balance !== null && balance < suggestLinksCost)}
+                      onClick={() => openAiSuggestSheet()}
+                      className="w-full py-2 rounded-xl"
                     >
-                      Снять закрепления
+                      ИИ: предложить связи с эталонами
                     </GhostButton>
-                  </div>
-                ) : (
-                  <>
-                    <p>
-                      Сейчас отображаются все упражнения, где был указан вес. Закрепите частые — журнал
-                      станет короче.
+                    <p className="text-[11px] text-white/30 leading-snug px-0.5">
+                      Стоимость: <span className="text-white/50">{suggestLinksCost}₽</span> —
+                      списывается после отправки
                     </p>
-                    {suggestedPins.length > 0 && (
-                      <GhostButton
-                        variant="accent-soft"
-                        disabled={pinsBusy}
-                        onClick={() => applyPinsForType(suggestedPins)}
-                        className="bg-(--color_primary)/20 border-(--color_primary_light)/30"
-                      >
-                        Закрепить топ‑{suggestedPins.length} по частоте
-                      </GhostButton>
-                    )}
-                    {weightedExerciseOptions.length > 0 && (
-                      <GhostButton
-                        variant="solid"
-                        disabled={pinsBusy}
-                        onClick={() => setHistoryOpen(true)}
-                        className="w-full py-2.5 text-(--color_text_secondary) hover:text-white"
-                      >
-                        Выбрать из истории
-                      </GhostButton>
-                    )}
-                  </>
+                    <p className="text-[11px] text-(--color_text_muted) leading-snug px-0.5">
+                      В один запрос для анализа уходит не более {aiSuggestCap} шт.
+                      {unlinkedTotalCount > aiSuggestCap
+                        ? ` Сейчас несвязанных ${unlinkedTotalCount} — в этот запрос попадут первые ${aiSuggestCap} по приоритету сервера (сначала кастомные и нестандартные id).`
+                        : ''}
+                    </p>
+                  </div>
                 )}
-                {pinsForType.length > 0 && weightedExerciseOptions.length > 0 && (
+              <p className="text-[11px] text-(--color_text_muted) leading-relaxed px-0.5">
+                Графики веса и закрепления — во вкладке «Журнал».
+              </p>
+            </>
+          ) : (
+            <>
+              {pinsForType.length > 0 ? (
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                  <span className="text-(--color_text_muted)">
+                    Показаны только закреплённые упражнения.
+                  </span>
                   <GhostButton
-                    variant="solid"
+                    variant="outline-accent"
                     disabled={pinsBusy}
-                    onClick={() => setHistoryOpen(true)}
-                    className="w-full py-2.5 text-(--color_text_secondary) hover:text-white"
+                    onClick={() => applyPinsForType([])}
+                    className="w-full shrink-0 sm:w-auto whitespace-nowrap py-2"
                   >
-                    Выбрать из истории
+                    Снять закрепления
                   </GhostButton>
-                )}
-                {showAiSuggestToolbar &&
-                  standards.length > 0 &&
-                  unlinkedTotalCount > 0 &&
-                  aiFeatureEnabled && (
-                    <div className="space-y-1.5">
-                      <GhostButton
-                        variant="outline-accent"
-                        disabled={
-                          pinsBusy || (balance !== null && balance < suggestLinksCost)
-                        }
-                        onClick={() => openAiSuggestSheet()}
-                        className="w-full py-2 rounded-xl"
-                      >
-                        ИИ: предложить связи с эталонами
-                      </GhostButton>
-                      <p className="text-[11px] text-white/30 leading-snug px-0.5">
-                        Стоимость: <span className="text-white/50">{suggestLinksCost}₽</span> — списывается
-                        после отправки
-                      </p>
-                      <p className="text-[11px] text-(--color_text_muted) leading-snug px-0.5">
-                        В один запрос для анализа уходит не более {aiSuggestCap} шт.
-                        {unlinkedTotalCount > aiSuggestCap
-                          ? ` Сейчас несвязанных ${unlinkedTotalCount} — в этот запрос попадут первые ${aiSuggestCap} по приоритету сервера (сначала кастомные и нестандартные id).`
-                          : ''}
-                      </p>
-                    </div>
+                </div>
+              ) : (
+                <>
+                  <p>
+                    Сейчас отображаются все упражнения, где был указан вес. Закрепите частые —
+                    журнал станет короче.
+                  </p>
+                  {suggestedPins.length > 0 && (
+                    <GhostButton
+                      variant="accent-soft"
+                      disabled={pinsBusy}
+                      onClick={() => applyPinsForType(suggestedPins)}
+                      className="bg-(--color_primary)/20 border-(--color_primary_light)/30"
+                    >
+                      Закрепить топ‑{suggestedPins.length} по частоте
+                    </GhostButton>
                   )}
-              </>
-            )}
-          </div>
-        )}
+                  {weightedExerciseOptions.length > 0 && (
+                    <GhostButton
+                      variant="solid"
+                      disabled={pinsBusy}
+                      onClick={() => setHistoryOpen(true)}
+                      className="w-full py-2.5 text-(--color_text_secondary) hover:text-white"
+                    >
+                      Выбрать из истории
+                    </GhostButton>
+                  )}
+                </>
+              )}
+              {pinsForType.length > 0 && weightedExerciseOptions.length > 0 && (
+                <GhostButton
+                  variant="solid"
+                  disabled={pinsBusy}
+                  onClick={() => setHistoryOpen(true)}
+                  className="w-full py-2.5 text-(--color_text_secondary) hover:text-white"
+                >
+                  Выбрать из истории
+                </GhostButton>
+              )}
+              {showAiSuggestToolbar &&
+                standards.length > 0 &&
+                unlinkedTotalCount > 0 &&
+                aiFeatureEnabled && (
+                  <div className="space-y-1.5">
+                    <GhostButton
+                      variant="outline-accent"
+                      disabled={pinsBusy || (balance !== null && balance < suggestLinksCost)}
+                      onClick={() => openAiSuggestSheet()}
+                      className="w-full py-2 rounded-xl"
+                    >
+                      ИИ: предложить связи с эталонами
+                    </GhostButton>
+                    <p className="text-[11px] text-white/30 leading-snug px-0.5">
+                      Стоимость: <span className="text-white/50">{suggestLinksCost}₽</span> —
+                      списывается после отправки
+                    </p>
+                    <p className="text-[11px] text-(--color_text_muted) leading-snug px-0.5">
+                      В один запрос для анализа уходит не более {aiSuggestCap} шт.
+                      {unlinkedTotalCount > aiSuggestCap
+                        ? ` Сейчас несвязанных ${unlinkedTotalCount} — в этот запрос попадут первые ${aiSuggestCap} по приоритету сервера (сначала кастомные и нестандартные id).`
+                        : ''}
+                    </p>
+                  </div>
+                )}
+            </>
+          )}
+        </div>
+      )}
 
-        {!isStandardsHubTab && !loading && payload && entries.length > 0 && (
-          <div className="grid grid-cols-3 gap-1.5">
-            {(['bodybuilding', 'crossfit', 'cardio'] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setWtFilter(t)}
-                className={`py-2 px-1.5 sm:px-2 rounded-xl text-[11px] sm:text-xs font-medium transition-colors ${
-                  wtFilter === t
-                    ? 'bg-(--color_primary_light) text-white'
-                    : 'bg-(--color_bg_card_hover) text-(--color_text_muted) hover:text-white border border-(--color_border)'
-                }`}
-              >
-                {WORKOUT_TYPE_CONFIG[t]}
-              </button>
-            ))}
-          </div>
-        )}
+      {!isStandardsHubTab && !loading && payload && entries.length > 0 && (
+        <div className="grid grid-cols-3 gap-1.5">
+          {(['bodybuilding', 'crossfit', 'cardio'] as const).map((t) => (
+            <PillButton
+              key={t}
+              variant="tab"
+              size="md"
+              active={wtFilter === t}
+              onClick={() => setWtFilter(t)}
+              className="py-2 px-1.5 sm:px-2 rounded-xl text-[11px] sm:text-xs justify-center"
+            >
+              {WORKOUT_TYPE_CONFIG[t]}
+            </PillButton>
+          ))}
+        </div>
+      )}
 
-        <BottomSheet
-          id="strength-log-ai-suggest-links"
-          open={aiSuggestOpen}
-          onClose={closeAiSuggestSheet}
-          emoji="✨"
-          title="Подсказка ИИ для эталонов"
-        >
-          <div className="space-y-3 pb-4 text-sm">
-            <p className="text-xs text-(--color_text_muted) leading-relaxed">
-              ИИ сопоставляет названия из вашей истории с уже созданными эталонами. Проверьте каждую
-              строку и снимите галочки с сомнительных — модель может ошибаться. После применения можно
-              откатить весь пакет одной кнопкой в уведомлении.
-            </p>
-            <p className="text-[11px] text-white/30 text-center">
-              Стоимость: <span className="text-white/50">{suggestLinksCost}₽</span> — списывается после
-              отправки
-            </p>
-            <p className="text-[11px] text-(--color_text_muted) text-center">
-              В один запрос для анализа уходит не более {aiSuggestCap} шт.
-            </p>
+      <BottomSheet
+        id="strength-log-ai-suggest-links"
+        open={aiSuggestOpen}
+        onClose={closeAiSuggestSheet}
+        emoji="✨"
+        title="Подсказка ИИ для эталонов"
+      >
+        <div className="space-y-3 pb-4 text-sm">
+          <p className="text-xs text-(--color_text_muted) leading-relaxed">
+            ИИ сопоставляет названия из вашей истории с уже созданными эталонами. Проверьте каждую
+            строку и снимите галочки с сомнительных — модель может ошибаться. После применения можно
+            откатить весь пакет одной кнопкой в уведомлении.
+          </p>
+          <p className="text-[11px] text-white/30 text-center">
+            Стоимость: <span className="text-white/50">{suggestLinksCost}₽</span> — списывается
+            после отправки
+          </p>
+          <p className="text-[11px] text-(--color_text_muted) text-center">
+            В один запрос для анализа уходит не более {aiSuggestCap} шт.
+          </p>
 
-            {aiSuggestPhase === 'idle' && (
+          {aiSuggestPhase === 'idle' && (
+            <GhostButton
+              variant="accent-soft"
+              type="button"
+              disabled={balance !== null && balance < suggestLinksCost}
+              className="w-full py-2.5"
+              onClick={() => void requestAiSuggestLinks()}
+            >
+              Запросить подсказки {suggestLinksCost}₽
+            </GhostButton>
+          )}
+          {aiSuggestPhase === 'loading' && (
+            <p className="text-(--color_text_muted) py-6 text-center">Запрос к ИИ…</p>
+          )}
+          {aiSuggestPhase === 'error' && aiSuggestError && (
+            <div className="space-y-3">
+              <p className="text-rose-300 text-sm">{aiSuggestError}</p>
               <GhostButton
                 variant="accent-soft"
                 type="button"
-                disabled={balance !== null && balance < suggestLinksCost}
-                className="w-full py-2.5"
                 onClick={() => void requestAiSuggestLinks()}
               >
-                Запросить подсказки {suggestLinksCost}₽
+                Повторить {suggestLinksCost}₽
               </GhostButton>
-            )}
-            {aiSuggestPhase === 'loading' && (
-              <p className="text-(--color_text_muted) py-6 text-center">Запрос к ИИ…</p>
-            )}
-            {aiSuggestPhase === 'error' && aiSuggestError && (
-              <div className="space-y-3">
-                <p className="text-rose-300 text-sm">{aiSuggestError}</p>
-                <GhostButton variant="accent-soft" type="button" onClick={() => void requestAiSuggestLinks()}>
-                  Повторить {suggestLinksCost}₽
+            </div>
+          )}
+          {aiSuggestPhase === 'ready' && aiSuggestItems.length === 0 && (
+            <p className="text-(--color_text_muted) text-sm leading-relaxed">
+              Уверенных совпадений не нашлось. Связать вручную можно через звёздочку на карточке
+              упражнения.
+            </p>
+          )}
+          {aiSuggestPhase === 'ready' && aiSuggestItems.length > 0 && (
+            <>
+              <div className="flex flex-wrap gap-2">
+                <GhostButton
+                  variant="link"
+                  type="button"
+                  className="text-xs"
+                  onClick={() =>
+                    setAiSuggestSelected(
+                      Object.fromEntries(aiSuggestItems.map((s) => [s.sourceExerciseId, true]))
+                    )
+                  }
+                >
+                  Выбрать все
+                </GhostButton>
+                <GhostButton
+                  variant="link"
+                  type="button"
+                  className="text-xs"
+                  onClick={() =>
+                    setAiSuggestSelected(
+                      Object.fromEntries(aiSuggestItems.map((s) => [s.sourceExerciseId, false]))
+                    )
+                  }
+                >
+                  Снять все
+                </GhostButton>
+              </div>
+              <div className="max-h-[45dvh] overflow-y-auto space-y-2 border border-(--color_border) rounded-xl p-2">
+                {aiSuggestItems.map((s) => (
+                  <label
+                    key={s.sourceExerciseId}
+                    className="flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-white/5 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      className="mt-1 shrink-0"
+                      checked={aiSuggestSelected[s.sourceExerciseId] !== false}
+                      onChange={() =>
+                        setAiSuggestSelected((prev) => {
+                          const cur = prev[s.sourceExerciseId] !== false;
+                          return { ...prev, [s.sourceExerciseId]: !cur };
+                        })
+                      }
+                    />
+                    <span className="min-w-0">
+                      <span className="text-white block">
+                        {exerciseIdForDisplay(s.exerciseName)}
+                      </span>
+                      <span className="text-[11px] text-(--color_text_muted)">
+                        → эталон «{s.standardLabel}»
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <GhostButton
+                variant="accent-soft"
+                type="button"
+                disabled={aiSuggestApplyBusy}
+                className="w-full py-2.5"
+                onClick={() => void applyAiSuggestBatch()}
+              >
+                {aiSuggestApplyBusy ? 'Применяем…' : 'Применить выбранные'}
+              </GhostButton>
+            </>
+          )}
+        </div>
+      </BottomSheet>
+
+      <BottomSheet
+        id="strength-log-history-pins"
+        open={historyOpen}
+        onClose={() => {
+          setHistoryOpen(false);
+          setHistorySearch('');
+        }}
+        emoji="🏋️"
+        title="Упражнения из ваших тренировок"
+      >
+        <p className="text-xs text-(--color_text_muted) mb-3">
+          Все движения за год, где был указан вес — в том числе занесённые по фото через ИИ.
+        </p>
+        <input
+          type="text"
+          value={historySearch}
+          onChange={(e) => setHistorySearch(e.target.value)}
+          placeholder="Поиск…"
+          className="w-full px-3 py-2 rounded-lg bg-(--color_bg_card) border border-(--color_border) text-sm text-white mb-3 outline-none"
+        />
+        <div className="max-h-[50dvh] overflow-y-auto space-y-1 pb-4">
+          {historyFiltered.length === 0 ? (
+            <p className="text-sm text-(--color_text_muted) py-6 text-center">Ничего не найдено</p>
+          ) : (
+            historyFiltered.map((o) => (
+              <ListButton
+                key={o.exerciseId}
+                variant="flat"
+                disabled={
+                  pinsBusy ||
+                  pinnedExerciseIds.includes(strengthLogCompositePinKey(o.exerciseId, wtFilter))
+                }
+                onClick={() => addPinFromHistory(o)}
+                className="w-full px-3 py-2.5 rounded-lg hover:bg-white/5 disabled:opacity-40"
+              >
+                <div className="text-sm text-white">{exerciseIdForDisplay(o.exerciseName)}</div>
+                {o.isCustom && (
+                  <div className="text-[10px] text-(--color_text_muted) mt-0.5">Не из каталога</div>
+                )}
+              </ListButton>
+            ))
+          )}
+        </div>
+      </BottomSheet>
+
+      <BottomSheet
+        id="strength-log-standards"
+        open={standardsOpen && standardsEntry != null}
+        onClose={closeStandardsSheet}
+        emoji="⭐"
+        title={
+          standardsEntry ? `Эталон: ${exerciseIdForDisplay(standardsEntry.exerciseName)}` : 'Эталон'
+        }
+      >
+        {standardsEntry && (
+          <div className="space-y-4 pb-4 text-sm">
+            <div className="text-xs text-(--color_text_muted) leading-relaxed space-y-2">
+              <p className="text-(--color_text_secondary)">
+                Одно и то же упражнение в приложении может называться по-разному: из каталога, своим
+                именем, после ИИ-распознавания по фото и т.д.
+              </p>
+              <p>
+                <span className="text-white font-medium">Эталон</span> — это общее «имя группы»: вы
+                связываете все нужные варианты с одним эталоном, и журнал показывает{' '}
+                <span className="text-white font-medium">одну карточку</span> с полной историей,
+                графиком и <span className="text-white font-medium">сводкой за 30 дней</span> по
+                всему движению целиком.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-[11px] text-(--color_text_muted) mb-1">
+                Название эталона
+              </label>
+              <input
+                type="text"
+                value={standardsLabelDraft}
+                onChange={(e) => setStandardsLabelDraft(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg bg-(--color_bg_card) border border-(--color_border) text-white text-sm outline-none"
+              />
+            </div>
+
+            {standardsSid == null && (
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <GhostButton
+                    variant="outline-accent"
+                    disabled={standardsBusy}
+                    onClick={() => setStandardsPickerOpen(true)}
+                  >
+                    {standardsCatalogId
+                      ? 'Сменить из каталога'
+                      : 'Привязать к каталогу (необязательно)'}
+                  </GhostButton>
+                  {standardsCatalogId && (
+                    <GhostButton
+                      variant="link"
+                      disabled={standardsBusy}
+                      onClick={() => setStandardsCatalogId(null)}
+                    >
+                      Сбросить каталог
+                    </GhostButton>
+                  )}
+                </div>
+                {standardsCatalogId && (
+                  <p className="text-[11px] text-(--color_text_muted)">
+                    Выбрано упражнение из каталога — так проще сопоставлять с базой движений.
+                  </p>
+                )}
+                <GhostButton
+                  variant="accent-soft"
+                  disabled={standardsBusy}
+                  onClick={() => void createStandardForEntry()}
+                >
+                  Создать эталон и привязать эту карточку
                 </GhostButton>
               </div>
             )}
-            {aiSuggestPhase === 'ready' && aiSuggestItems.length === 0 && (
-              <p className="text-(--color_text_muted) text-sm leading-relaxed">
-                Уверенных совпадений не нашлось. Связать вручную можно через звёздочку на карточке
-                упражнения.
-              </p>
-            )}
-            {aiSuggestPhase === 'ready' && aiSuggestItems.length > 0 && (
+
+            {standardsSid != null && (
               <>
-                <div className="flex flex-wrap gap-2">
-                  <GhostButton
-                    variant="link"
-                    type="button"
-                    className="text-xs"
-                    onClick={() =>
-                      setAiSuggestSelected(Object.fromEntries(aiSuggestItems.map((s) => [s.sourceExerciseId, true])))
-                    }
-                  >
-                    Выбрать все
-                  </GhostButton>
-                  <GhostButton
-                    variant="link"
-                    type="button"
-                    className="text-xs"
-                    onClick={() =>
-                      setAiSuggestSelected(Object.fromEntries(aiSuggestItems.map((s) => [s.sourceExerciseId, false])))
-                    }
-                  >
-                    Снять все
-                  </GhostButton>
-                </div>
-                <div className="max-h-[45dvh] overflow-y-auto space-y-2 border border-(--color_border) rounded-xl p-2">
-                  {aiSuggestItems.map((s) => (
-                    <label
-                      key={s.sourceExerciseId}
-                      className="flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-white/5 cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        className="mt-1 shrink-0"
-                        checked={aiSuggestSelected[s.sourceExerciseId] !== false}
-                        onChange={() =>
-                          setAiSuggestSelected((prev) => {
-                            const cur = prev[s.sourceExerciseId] !== false;
-                            return { ...prev, [s.sourceExerciseId]: !cur };
-                          })
-                        }
-                      />
-                      <span className="min-w-0">
-                        <span className="text-white block">{exerciseIdForDisplay(s.exerciseName)}</span>
-                        <span className="text-[11px] text-(--color_text_muted)">
-                          → эталон «{s.standardLabel}»
-                        </span>
-                      </span>
-                    </label>
-                  ))}
-                </div>
                 <GhostButton
-                  variant="accent-soft"
-                  type="button"
-                  disabled={aiSuggestApplyBusy}
-                  className="w-full py-2.5"
-                  onClick={() => void applyAiSuggestBatch()}
+                  variant="solid"
+                  disabled={standardsBusy}
+                  onClick={() => void saveStandardLabel()}
+                  className="w-full py-2 text-(--color_text_secondary)"
                 >
-                  {aiSuggestApplyBusy ? 'Применяем…' : 'Применить выбранные'}
+                  Сохранить название
                 </GhostButton>
+
+                {standardsLinkedSources.length > 0 && (
+                  <div>
+                    <div className="text-[11px] text-(--color_text_muted) mb-2">
+                      Варианты, которые уже входят в эту группу
+                    </div>
+                    <ul className="space-y-1 max-h-28 overflow-y-auto text-xs">
+                      {standardsLinkedSources.map((a) => (
+                        <li
+                          key={a.sourceExerciseId}
+                          className="flex items-center justify-between gap-2 text-white/90"
+                        >
+                          <span className="min-w-0 break-words">
+                            {exerciseNameById(a.sourceExerciseId)}
+                          </span>
+                          <GhostButton
+                            variant="link"
+                            disabled={standardsBusy}
+                            onClick={() => void removeAliasFromCurrentStandard(a.sourceExerciseId)}
+                            className="shrink-0 text-[10px] text-(--color_primary_light) underline underline-offset-2 disabled:opacity-40"
+                          >
+                            Открепить
+                          </GhostButton>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div>
+                  <div className="text-[11px] text-(--color_text_muted) mb-2">
+                    Добавить ещё вариант из вашей истории (то же движение под другим названием)
+                  </div>
+                  <input
+                    type="text"
+                    value={standardsAliasSearch}
+                    onChange={(e) => setStandardsAliasSearch(e.target.value)}
+                    placeholder="Поиск…"
+                    className="w-full px-3 py-2 rounded-lg bg-(--color_bg_card) border border-(--color_border) text-sm text-white mb-2 outline-none"
+                  />
+                  <div className="max-h-[40dvh] overflow-y-auto space-y-1">
+                    {standardsAliasFiltered.length === 0 ? (
+                      <p className="text-xs text-(--color_text_muted) py-4 text-center">
+                        Нет доступных вариантов
+                      </p>
+                    ) : (
+                      standardsAliasFiltered.map((o) => (
+                        <ListButton
+                          key={o.exerciseId}
+                          variant="flat"
+                          disabled={standardsBusy}
+                          onClick={() => void addAliasToCurrentStandard(o.exerciseId, standardsSid)}
+                          className="w-full px-3 py-2 rounded-lg hover:bg-white/5 disabled:opacity-40"
+                        >
+                          <div className="text-sm text-white">
+                            {exerciseIdForDisplay(o.exerciseName)}
+                          </div>
+                          {o.isCustom && (
+                            <div className="text-[10px] text-(--color_text_muted)">
+                              Не из каталога
+                            </div>
+                          )}
+                        </ListButton>
+                      ))
+                    )}
+                  </div>
+                </div>
               </>
             )}
           </div>
-        </BottomSheet>
+        )}
+      </BottomSheet>
 
-        <BottomSheet
-          id="strength-log-history-pins"
-          open={historyOpen}
-          onClose={() => {
-            setHistoryOpen(false);
-            setHistorySearch('');
-          }}
-          emoji="🏋️"
-          title="Упражнения из ваших тренировок"
-        >
-          <p className="text-xs text-(--color_text_muted) mb-3">
-            Все движения за год, где был указан вес — в том числе занесённые по фото через ИИ.
-          </p>
-          <input
-            type="text"
-            value={historySearch}
-            onChange={(e) => setHistorySearch(e.target.value)}
-            placeholder="Поиск…"
-            className="w-full px-3 py-2 rounded-lg bg-(--color_bg_card) border border-(--color_border) text-sm text-white mb-3 outline-none"
-          />
-          <div className="max-h-[50dvh] overflow-y-auto space-y-1 pb-4">
-            {historyFiltered.length === 0 ? (
-              <p className="text-sm text-(--color_text_muted) py-6 text-center">Ничего не найдено</p>
-            ) : (
-              historyFiltered.map((o) => (
-                <button
-                  key={o.exerciseId}
-                  type="button"
-                        disabled={
-                          pinsBusy ||
-                          pinnedExerciseIds.includes(strengthLogCompositePinKey(o.exerciseId, wtFilter))
-                        }
-                  onClick={() => addPinFromHistory(o)}
-                  className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-white/5 disabled:opacity-40"
-                >
-                  <div className="text-sm text-white">{exerciseIdForDisplay(o.exerciseName)}</div>
-                  {o.isCustom && (
-                    <div className="text-[10px] text-(--color_text_muted) mt-0.5">
-                      Не из каталога
-                    </div>
-                  )}
-                </button>
-              ))
-            )}
-          </div>
-        </BottomSheet>
+      <ExercisePicker
+        open={standardsPickerOpen}
+        onClose={() => setStandardsPickerOpen(false)}
+        workoutType="strength"
+        onSelect={onCatalogPickedForStandard}
+      />
 
-        <BottomSheet
-          id="strength-log-standards"
-          open={standardsOpen && standardsEntry != null}
-          onClose={closeStandardsSheet}
-          emoji="⭐"
-          title={
-            standardsEntry ? `Эталон: ${exerciseIdForDisplay(standardsEntry.exerciseName)}` : 'Эталон'
-          }
-        >
-          {standardsEntry && (
-            <div className="space-y-4 pb-4 text-sm">
-              <div className="text-xs text-(--color_text_muted) leading-relaxed space-y-2">
-                <p className="text-(--color_text_secondary)">
-                  Одно и то же упражнение в приложении может называться по-разному: из каталога, своим
-                  именем, после ИИ-распознавания по фото и т.д.
-                </p>
-                <p>
-                  <span className="text-white font-medium">Эталон</span> — это общее «имя группы»:
-                  вы связываете все нужные варианты с одним эталоном, и журнал показывает{' '}
-                  <span className="text-white font-medium">одну карточку</span> с полной историей,
-                  графиком и <span className="text-white font-medium">сводкой за 30 дней</span> по всему
-                  движению целиком.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-[11px] text-(--color_text_muted) mb-1">Название эталона</label>
-                <input
-                  type="text"
-                  value={standardsLabelDraft}
-                  onChange={(e) => setStandardsLabelDraft(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-(--color_bg_card) border border-(--color_border) text-white text-sm outline-none"
-                />
-              </div>
-
-              {standardsSid == null && (
-                <div className="space-y-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <GhostButton
-                      variant="outline-accent"
-                      disabled={standardsBusy}
-                      onClick={() => setStandardsPickerOpen(true)}
-                    >
-                      {standardsCatalogId ? 'Сменить из каталога' : 'Привязать к каталогу (необязательно)'}
-                    </GhostButton>
-                    {standardsCatalogId && (
-                      <GhostButton
-                        variant="link"
-                        disabled={standardsBusy}
-                        onClick={() => setStandardsCatalogId(null)}
-                      >
-                        Сбросить каталог
-                      </GhostButton>
-                    )}
-                  </div>
-                  {standardsCatalogId && (
-                    <p className="text-[11px] text-(--color_text_muted)">
-                      Выбрано упражнение из каталога — так проще сопоставлять с базой движений.
-                    </p>
-                  )}
-                  <GhostButton
-                    variant="accent-soft"
-                    disabled={standardsBusy}
-                    onClick={() => void createStandardForEntry()}
-                  >
-                    Создать эталон и привязать эту карточку
-                  </GhostButton>
-                </div>
-              )}
-
-              {standardsSid != null && (
-                <>
-                  <GhostButton
-                    variant="solid"
-                    disabled={standardsBusy}
-                    onClick={() => void saveStandardLabel()}
-                    className="w-full py-2 text-(--color_text_secondary)"
-                  >
-                    Сохранить название
-                  </GhostButton>
-
-                  {standardsLinkedSources.length > 0 && (
-                    <div>
-                      <div className="text-[11px] text-(--color_text_muted) mb-2">
-                        Варианты, которые уже входят в эту группу
-                      </div>
-                      <ul className="space-y-1 max-h-28 overflow-y-auto text-xs">
-                        {standardsLinkedSources.map((a) => (
-                          <li
-                            key={a.sourceExerciseId}
-                            className="flex items-center justify-between gap-2 text-white/90"
-                          >
-                            <span className="min-w-0 break-words">
-                              {exerciseNameById(a.sourceExerciseId)}
-                            </span>
-                            <button
-                              type="button"
-                              disabled={standardsBusy}
-                              onClick={() => void removeAliasFromCurrentStandard(a.sourceExerciseId)}
-                              className="shrink-0 text-[10px] text-(--color_primary_light) underline underline-offset-2 disabled:opacity-40"
-                            >
-                              Открепить
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  <div>
-                    <div className="text-[11px] text-(--color_text_muted) mb-2">
-                      Добавить ещё вариант из вашей истории (то же движение под другим названием)
-                    </div>
-                    <input
-                      type="text"
-                      value={standardsAliasSearch}
-                      onChange={(e) => setStandardsAliasSearch(e.target.value)}
-                      placeholder="Поиск…"
-                      className="w-full px-3 py-2 rounded-lg bg-(--color_bg_card) border border-(--color_border) text-sm text-white mb-2 outline-none"
-                    />
-                    <div className="max-h-[40dvh] overflow-y-auto space-y-1">
-                      {standardsAliasFiltered.length === 0 ? (
-                        <p className="text-xs text-(--color_text_muted) py-4 text-center">
-                          Нет доступных вариантов
-                        </p>
-                      ) : (
-                        standardsAliasFiltered.map((o) => (
-                          <button
-                            key={o.exerciseId}
-                            type="button"
-                            disabled={standardsBusy}
-                            onClick={() => void addAliasToCurrentStandard(o.exerciseId, standardsSid)}
-                            className="w-full text-left px-3 py-2 rounded-lg hover:bg-white/5 disabled:opacity-40"
-                          >
-                            <div className="text-sm text-white">{exerciseIdForDisplay(o.exerciseName)}</div>
-                            {o.isCustom && (
-                              <div className="text-[10px] text-(--color_text_muted)">Не из каталога</div>
-                            )}
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-        </BottomSheet>
-
-        <ExercisePicker
-          open={standardsPickerOpen}
-          onClose={() => setStandardsPickerOpen(false)}
-          workoutType="strength"
-          onSelect={onCatalogPickedForStandard}
+      {!isStandardsHubTab && entries.length > 4 && (
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Поиск упражнения..."
+          className="w-full px-4 py-2.5 rounded-xl bg-(--color_bg_card) border border-(--color_border) text-sm text-white placeholder-text-(--color_text_muted) outline-none focus:border-(--color_primary_light)/50"
         />
+      )}
 
-        {!isStandardsHubTab && entries.length > 4 && (
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Поиск упражнения..."
-            className="w-full px-4 py-2.5 rounded-xl bg-(--color_bg_card) border border-(--color_border) text-sm text-white placeholder-text-(--color_text_muted) outline-none focus:border-(--color_primary_light)/50"
-          />
-        )}
+      {!isStandardsHubTab && filtered.length === 0 && !loading && (
+        <div className="text-center py-16 text-(--color_text_muted) text-sm">
+          {search.trim()
+            ? 'Упражнение не найдено'
+            : entries.length > 0
+              ? 'Нет карточек для выбранного типа тренировки'
+              : 'Нет данных с указанным весом за год'}
+        </div>
+      )}
 
-        {!isStandardsHubTab && filtered.length === 0 && !loading && (
-          <div className="text-center py-16 text-(--color_text_muted) text-sm">
-            {search.trim()
-              ? 'Упражнение не найдено'
-              : entries.length > 0
-                ? 'Нет карточек для выбранного типа тренировки'
-                : 'Нет данных с указанным весом за год'}
-          </div>
-        )}
+      {!isStandardsHubTab && (
+        <div className="space-y-3">
+          {filtered.map((entry, i) => (
+            <AnimatedBlock key={entry.exerciseId} delay={i * 0.03}>
+              <ExerciseCard
+                entry={entry}
+                linkedToStandard={
+                  resolveStandardIdForStrengthEntry(entry, standards, aliases) !== null
+                }
+                pinnedOnly={pinsForType.length > 0}
+                exercisePinned={pinsForType.some(
+                  (pid) =>
+                    strengthLogBaseGroupKey(pid) === strengthLogBaseGroupKey(entry.exerciseId)
+                )}
+                pinsBusy={pinsBusy}
+                onPin={pinExercise}
+                onUnpin={unpinExercise}
+                onOpenStandards={openStandardsFor}
+              />
+            </AnimatedBlock>
+          ))}
+        </div>
+      )}
 
-        {!isStandardsHubTab && (
-          <div className="space-y-3">
-            {filtered.map((entry, i) => (
-              <AnimatedBlock key={entry.exerciseId} delay={i * 0.03}>
-                <ExerciseCard
-                  entry={entry}
-                  linkedToStandard={resolveStandardIdForStrengthEntry(entry, standards, aliases) !== null}
-                  pinnedOnly={pinsForType.length > 0}
-                  exercisePinned={pinsForType.some(
-                    (pid) => strengthLogBaseGroupKey(pid) === strengthLogBaseGroupKey(entry.exerciseId),
-                  )}
-                  pinsBusy={pinsBusy}
-                  onPin={pinExercise}
-                  onUnpin={unpinExercise}
-                  onOpenStandards={openStandardsFor}
-                />
-              </AnimatedBlock>
+      {!isStandardsHubTab && !loading && pinsForType.length === 0 && suggestedPins.length > 0 && (
+        <div className={`${cardClass} rounded-xl p-3 text-xs text-(--color_text_muted)`}>
+          <div className="font-medium text-white/90 mb-2">Часто встречаются</div>
+          <ul className="space-y-1">
+            {suggestedPins.map((id) => (
+              <li key={id}>{exerciseNameById(id)}</li>
             ))}
-          </div>
-        )}
-
-        {!isStandardsHubTab && !loading && pinsForType.length === 0 && suggestedPins.length > 0 && (
-          <div className={`${cardClass} rounded-xl p-3 text-xs text-(--color_text_muted)`}>
-            <div className="font-medium text-white/90 mb-2">Часто встречаются</div>
-            <ul className="space-y-1">
-              {suggestedPins.map((id) => (
-                <li key={id}>{exerciseNameById(id)}</li>
-              ))}
-            </ul>
-          </div>
-        )}
+          </ul>
+        </div>
+      )}
     </div>
   );
 

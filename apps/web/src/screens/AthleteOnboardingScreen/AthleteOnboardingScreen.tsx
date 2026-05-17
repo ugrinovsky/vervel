@@ -177,7 +177,7 @@ export default function AthleteOnboardingScreen(): JSX.Element {
                     }
                   })();
                 }}
-                className="rounded-2xl border border-(--color_border) bg-(--color_bg_card) p-4 text-left transition-colors hover:border-emerald-500/40"
+                className="glass rounded-2xl p-4 text-left transition-colors hover:border-emerald-500/40"
               >
                 <div className="text-2xl mb-1">🏠</div>
                 <div className="font-semibold text-white">Самостоятельно</div>
@@ -198,7 +198,7 @@ export default function AthleteOnboardingScreen(): JSX.Element {
                     }
                   })();
                 }}
-                className="rounded-2xl border border-(--color_border) bg-(--color_bg_card) p-4 text-left transition-colors hover:border-emerald-500/40"
+                className="glass rounded-2xl p-4 text-left transition-colors hover:border-emerald-500/40"
               >
                 <div className="text-2xl mb-1">🤝</div>
                 <div className="font-semibold text-white">С тренером</div>
@@ -220,7 +220,7 @@ export default function AthleteOnboardingScreen(): JSX.Element {
             />
             <div className="flex-1 min-h-0 overflow-y-auto pb-4">
               <div className="space-y-2">
-                <div className="flex gap-3 rounded-xl border border-(--color_border) bg-(--color_bg_card) p-3">
+                <div className="glass rounded-xl flex gap-3 p-3">
                   <span className="text-xl shrink-0">📧</span>
                   <div>
                     <div className="text-sm font-semibold text-white mb-0.5">
@@ -234,7 +234,7 @@ export default function AthleteOnboardingScreen(): JSX.Element {
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-3 rounded-xl border border-(--color_border) bg-(--color_bg_card) p-3">
+                <div className="glass rounded-xl flex gap-3 p-3">
                   <span className="text-xl shrink-0">🔗</span>
                   <div>
                     <div className="text-sm font-semibold text-white mb-0.5">
@@ -246,7 +246,7 @@ export default function AthleteOnboardingScreen(): JSX.Element {
                   </div>
                 </div>
                 {teams && (
-                  <div className="flex gap-3 rounded-xl border border-(--color_border) bg-(--color_bg_card) p-3">
+                  <div className="glass rounded-xl flex gap-3 p-3">
                     <span className="text-xl shrink-0">📷</span>
                     <div>
                       <div className="text-sm font-semibold text-white mb-0.5">
@@ -288,7 +288,7 @@ export default function AthleteOnboardingScreen(): JSX.Element {
             />
 
             {/* Тогл AI / вручную */}
-            <div className="flex gap-1 bg-(--color_bg_card) border border-(--color_border) rounded-xl p-1 mb-4">
+            <div className="glass rounded-xl flex gap-1 p-1 mb-4">
               <button
                 type="button"
                 onClick={() => setAiMode(true)}

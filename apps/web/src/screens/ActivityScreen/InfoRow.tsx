@@ -7,7 +7,7 @@ interface InfoRowProps {
 
 export default function InfoRow({ icon, value, label, className = '' }: InfoRowProps) {
   return (
-    <div className={`flex-1 flex items-center gap-2 px-3 py-2 bg-(--color_bg_card) rounded-lg border border-white/10 ${className}`}>
+    <div className={`glass rounded-lg flex-1 flex items-center gap-2 px-3 py-2 ${className}`}>
       {icon}
       <div>
         <div className="text-sm font-semibold text-white">{value}</div>

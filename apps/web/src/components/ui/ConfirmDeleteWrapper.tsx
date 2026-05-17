@@ -9,6 +9,8 @@ interface WrapperProps {
   onConfirm: () => void;
   label?: string;
   className?: string;
+  /** Классы для внешнего div (border + rounded + overflow-hidden) */
+  outerClassName?: string;
   rounded?: string;
   overlayLayout?: 'row' | 'column';
   normalBorder?: string;
@@ -21,6 +23,7 @@ function ConfirmDeleteWrapper({
   onConfirm,
   label = 'Удалить?',
   className = '',
+  outerClassName = '',
   rounded = 'rounded-xl',
   overlayLayout = 'row',
   normalBorder = 'border-(--color_border)',
@@ -32,7 +35,12 @@ function ConfirmDeleteWrapper({
   const [contentBlocked, setContentBlocked] = useState(false);
   const unblockTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => () => { if (unblockTimer.current) clearTimeout(unblockTimer.current); }, []);
+  useEffect(
+    () => () => {
+      if (unblockTimer.current) clearTimeout(unblockTimer.current);
+    },
+    []
+  );
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -68,10 +76,12 @@ function ConfirmDeleteWrapper({
       <div
         className={`relative ${rounded} border overflow-hidden transition-colors ${
           confirming ? 'border-red-500/70' : normalBorder
-        }`}
+        } ${outerClassName}`}
       >
         {/* Blur wrapper — carries the layout className, blurs on confirm */}
-        <div className={`w-full min-w-0 ${className} ${contentBlocked ? 'blur-[2px] pointer-events-none select-none' : ''}`}>
+        <div
+          className={`w-full min-w-0 ${className} ${contentBlocked ? 'blur-[2px] pointer-events-none select-none' : ''}`}
+        >
           {children}
         </div>
 
@@ -91,7 +101,9 @@ function ConfirmDeleteWrapper({
                 overlayLayout === 'column' ? 'flex-col' : ''
               }`}
             >
-              <span className={`text-white font-medium ${overlayLayout === 'column' ? 'text-xs' : 'text-sm'}`}>
+              <span
+                className={`text-white font-medium ${overlayLayout === 'column' ? 'text-xs' : 'text-sm'}`}
+              >
                 {label}
               </span>
               <div className="flex gap-2">
@@ -101,7 +113,11 @@ function ConfirmDeleteWrapper({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.05 }}
                   onPointerDown={stopAll}
-                  onClick={(e) => { stopAll(e); onConfirm(); close(); }}
+                  onClick={(e) => {
+                    stopAll(e);
+                    onConfirm();
+                    close();
+                  }}
                   className="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/80 hover:bg-red-500 text-white transition-colors"
                 >
                   Да
@@ -112,7 +128,10 @@ function ConfirmDeleteWrapper({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.08 }}
                   onPointerDown={stopAll}
-                  onClick={(e) => { stopAll(e); close(); }}
+                  onClick={(e) => {
+                    stopAll(e);
+                    close();
+                  }}
                   className="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors"
                 >
                   Нет
@@ -141,7 +160,10 @@ function Trigger({
       title={title}
       aria-label={title}
       onPointerDown={(e) => e.stopPropagation()}
-      onClick={(e) => { e.stopPropagation(); ctx?.trigger(); }}
+      onClick={(e) => {
+        e.stopPropagation();
+        ctx?.trigger();
+      }}
       className={`p-1 text-(--color_text_muted) hover:text-red-400 transition-colors ${className}`}
     >
       <TrashIcon className="w-4 h-4" />

@@ -7,7 +7,15 @@ interface MuscleBalanceProps {
 }
 
 // Группировка зон по паттернам движения
-const UPPER_ZONES = ['chests', 'triceps', 'shoulders', 'biceps', 'backMuscles', 'trapezoids', 'forearms'];
+const UPPER_ZONES = [
+  'chests',
+  'triceps',
+  'shoulders',
+  'biceps',
+  'backMuscles',
+  'trapezoids',
+  'forearms',
+];
 const LOWER_ZONES = ['legMuscles', 'calfMuscles', 'glutes'];
 const FRONT_ZONES = ['chests', 'triceps', 'shoulders', 'abdominalPress', 'obliquePress', 'core'];
 const BACK_ZONES = ['backMuscles', 'trapezoids', 'biceps', 'glutes'];
@@ -18,7 +26,10 @@ function sumZones(zones: Record<string, number>, keys: string[]) {
   return keys.reduce((s, k) => s + (zones[k] ?? 0), 0);
 }
 
-function calcBalance(a: number, b: number): { pct: number; aShare: number; bShare: number; status: 'good' | 'warning' | 'bad' } {
+function calcBalance(
+  a: number,
+  b: number
+): { pct: number; aShare: number; bShare: number; status: 'good' | 'warning' | 'bad' } {
   const total = a + b;
   if (total === 0) return { pct: 100, aShare: 50, bShare: 50, status: 'good' };
   const aShare = Math.round((a / total) * 100);
@@ -71,13 +82,14 @@ export default function MuscleBalance({ period, data }: MuscleBalanceProps) {
     },
   ];
 
-
   if (noData) {
     return (
       <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
         <span className="text-4xl">⚖️</span>
         <p className="text-sm text-(--color_text_muted)">Недостаточно данных для анализа баланса</p>
-        <p className="text-xs text-(--color_text_muted)/60">Добавьте больше тренировок с разными группами мышц</p>
+        <p className="text-xs text-(--color_text_muted)/60">
+          Добавьте больше тренировок с разными группами мышц
+        </p>
       </div>
     );
   }
@@ -85,8 +97,8 @@ export default function MuscleBalance({ period, data }: MuscleBalanceProps) {
   return (
     <div className="space-y-4">
       <AnalyticsSheetIntro>
-        Три пары: верх/низ, перед/зад, толкание/тяга. Проценты показывают, насколько близко к 50/50 было
-        распределение объёма за период — не диагноз, а подсказка для планирования.
+        Три пары: верх/низ, перед/зад, толкание/тяга. Проценты показывают, насколько близко к 50/50
+        было распределение объёма за период — не диагноз, а подсказка для планирования.
       </AnalyticsSheetIntro>
       {/* Overall */}
       <div className="flex items-center justify-between">
@@ -104,12 +116,20 @@ export default function MuscleBalance({ period, data }: MuscleBalanceProps) {
               <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                 <path
                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none" className="stroke-white/7" strokeWidth="3"
+                  fill="none"
+                  className="stroke-white/7"
+                  strokeWidth="3"
                 />
                 <path
                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   fill="none"
-                  stroke={metric.status === 'good' ? 'var(--color_primary_light)' : metric.status === 'warning' ? '#fbbf24' : '#f87171'}
+                  stroke={
+                    metric.status === 'good'
+                      ? 'var(--color_primary_light)'
+                      : metric.status === 'warning'
+                        ? '#fbbf24'
+                        : '#f87171'
+                  }
                   strokeWidth="3"
                   strokeLinecap="round"
                   strokeDasharray={`${metric.pct}, 100`}
@@ -132,26 +152,40 @@ export default function MuscleBalance({ period, data }: MuscleBalanceProps) {
       {/* Details */}
       <div className="space-y-2">
         {metrics.map((metric) => (
-          <div key={metric.id} className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border)">
+          <div key={metric.id} className="glass rounded-xl p-3">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-white">{metric.label}</span>
-              <span className={`text-xs font-semibold ${metric.status === 'good' ? 'text-emerald-400' : metric.status === 'warning' ? 'text-amber-400' : 'text-red-400'}`}>
+              <span
+                className={`text-xs font-semibold ${metric.status === 'good' ? 'text-emerald-400' : metric.status === 'warning' ? 'text-amber-400' : 'text-red-400'}`}
+              >
                 {metric.pct}%
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-(--color_text_muted) w-12 text-right">{metric.details.left} {metric.details.leftValue}%</span>
+              <span className="text-[11px] text-(--color_text_muted) w-12 text-right">
+                {metric.details.left} {metric.details.leftValue}%
+              </span>
               <div className="flex-1 flex h-2 rounded-full overflow-hidden gap-0.5">
                 <div
                   className="h-full rounded-l-full"
-                  style={{ width: `${metric.details.leftValue}%`, backgroundColor: 'var(--color_primary_light)', opacity: 0.8 }}
+                  style={{
+                    width: `${metric.details.leftValue}%`,
+                    backgroundColor: 'var(--color_primary_light)',
+                    opacity: 0.8,
+                  }}
                 />
                 <div
                   className="h-full rounded-r-full"
-                  style={{ width: `${metric.details.rightValue}%`, backgroundColor: 'var(--color-amber-400)', opacity: 0.8 }}
+                  style={{
+                    width: `${metric.details.rightValue}%`,
+                    backgroundColor: 'var(--color-amber-400)',
+                    opacity: 0.8,
+                  }}
                 />
               </div>
-              <span className="text-[11px] text-(--color_text_muted) w-12">{metric.details.right} {metric.details.rightValue}%</span>
+              <span className="text-[11px] text-(--color_text_muted) w-12">
+                {metric.details.right} {metric.details.rightValue}%
+              </span>
             </div>
           </div>
         ))}
@@ -160,9 +194,18 @@ export default function MuscleBalance({ period, data }: MuscleBalanceProps) {
       {/* Legend + overall */}
       <div className="flex items-center justify-between pt-1">
         <div className="flex gap-3 text-xs text-(--color_text_muted)">
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />Хорошо</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />Норма</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400 inline-block" />Слабо</span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+            Хорошо
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+            Норма
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-red-400 inline-block" />
+            Слабо
+          </span>
         </div>
         <div className="text-sm font-bold text-emerald-400">{overallBalance}%</div>
       </div>

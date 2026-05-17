@@ -71,7 +71,7 @@ export default function WalletTab({ balance, inTrainerMode }: Props) {
       <AiChat open={aiChatOpen && flags.ai} onClose={() => setAiChatOpen(false)} />
 
       <SectionGroup title="Баланс" description="ИИ-функции и донаты тренерам">
-        <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
+        <div className="glass rounded-2xl p-6">
           <div className="text-center mb-4">
             <div className="text-3xl font-bold text-white tabular-nums">
               {balance !== null ? `${balance}₽` : '—'}
@@ -133,13 +133,15 @@ export default function WalletTab({ balance, inTrainerMode }: Props) {
       )}
 
       <SectionGroup title="История" showBreakAfter={false}>
-        <div className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)">
+        <div className="glass rounded-2xl p-5">
           {txLoading && transactions.length === 0 ? (
             <div className="flex justify-center py-2">
               <LoadingSpinner size="xs" />
             </div>
           ) : transactions.length === 0 ? (
-            <p className="text-xs text-(--color_text_muted) text-center py-2">Операций пока не было</p>
+            <p className="text-xs text-(--color_text_muted) text-center py-2">
+              Операций пока не было
+            </p>
           ) : (
             <div className="space-y-2">
               {transactions.map((tx) => {

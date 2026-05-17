@@ -47,6 +47,7 @@ import { parseTrainerWorkoutDraft } from '@/util/localStorageWorkoutDraft';
 import { isRecord } from '@/utils/typeGuards';
 import { noPullRefreshProps } from '@/lib/noPullRefresh';
 import SectionGroup from '@/components/ui/SectionGroup';
+import Select from '@/components/ui/Select';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 
 function isScheduledWorkoutDragPayload(v: unknown): v is ScheduledWorkout {
@@ -476,22 +477,22 @@ function IntroSessionForm({
           <label className="block text-xs text-(--color_text_muted) mb-1.5">
             Лид из CRM <span className="text-white/35">необязательно</span>
           </label>
-          <select
-            value={selectedLeadId ?? ''}
-            onChange={(e) => onLeadChange(e.target.value)}
-            className="w-full py-2.5 px-3 rounded-xl bg-(--color_bg_card_hover) text-white text-sm border border-transparent focus:border-sky-400/40 focus:ring-1 focus:ring-sky-400/30 outline-none appearance-none bg-[length:14px_10px] bg-[right_14px_center] bg-no-repeat"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-            }}
-          >
-            <option value="">Без привязки к лиду</option>
-            {leadOptions.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name}
-                {LEAD_PIPELINE_LABEL[l.crmStatus] ? ` · ${LEAD_PIPELINE_LABEL[l.crmStatus]}` : ''}
-              </option>
-            ))}
-          </select>
+          <Select
+            value={selectedLeadId != null ? String(selectedLeadId) : ''}
+            onChange={onLeadChange}
+            placeholder="Без привязки к лиду"
+            options={[
+              { value: '', label: 'Без привязки к лиду' },
+              ...leadOptions.map((l) => ({
+                value: String(l.id),
+                label:
+                  l.name +
+                  (LEAD_PIPELINE_LABEL[l.crmStatus]
+                    ? ` · ${LEAD_PIPELINE_LABEL[l.crmStatus]}`
+                    : ''),
+              })),
+            ]}
+          />
           {leadOptions.length === 0 && leads.filter(isLeadSelectableForIntro).length === 0 && (
             <p className="text-[11px] text-(--color_text_muted) mt-1.5 leading-snug">
               Нет лидов в воронке. Добавьте клиента на экране CRM или продолжайте только с именем

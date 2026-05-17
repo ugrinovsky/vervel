@@ -4,6 +4,7 @@ import { format, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
+import ListButton from '@/components/ui/ListButton';
 import { trainerApi, type AthletePass, type AthleteWorkoutEntry } from '@/api/trainer';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 
@@ -58,7 +59,9 @@ export default function ConsumePassSheet({ athleteId, pass, open, onClose, onCon
       );
       onClose();
     } catch (err: unknown) {
-      const msg = axios.isAxiosError(err) ? (err.response?.data?.message ?? 'Не удалось списать занятие') : 'Не удалось списать занятие';
+      const msg = axios.isAxiosError(err)
+        ? (err.response?.data?.message ?? 'Не удалось списать занятие')
+        : 'Не удалось списать занятие';
       toast.error(msg);
     } finally {
       setConsuming(null);
@@ -77,11 +80,11 @@ export default function ConsumePassSheet({ athleteId, pass, open, onClose, onCon
         </div>
 
         {/* Manual deduction — always available */}
-        <button
-          type="button"
+        <ListButton
+          variant="compact"
           disabled={consuming !== null}
           onClick={() => handleConsume()}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-(--color_primary_light)/10 border border-(--color_primary_light)/30 hover:bg-(--color_primary_light)/20 transition-all disabled:opacity-50 text-left"
+          className="px-3 py-2.5 bg-(--color_primary_light)/10 border-(--color_primary_light)/30 hover:bg-(--color_primary_light)/20 hover:border-(--color_primary_light)/50"
         >
           <div className="flex-1 text-sm font-medium text-white">Списать вручную</div>
           {consuming === 'manual' ? (
@@ -89,7 +92,7 @@ export default function ConsumePassSheet({ athleteId, pass, open, onClose, onCon
           ) : (
             <CheckCircleIcon className="w-5 h-5 text-(--color_primary_light) shrink-0" />
           )}
-        </button>
+        </ListButton>
 
         <div className="text-xs text-(--color_text_muted) px-1">
           Или выберите конкретную тренировку
@@ -106,12 +109,12 @@ export default function ConsumePassSheet({ athleteId, pass, open, onClose, onCon
             {workouts.map((w) => {
               const isConsuming = consuming === w.id;
               return (
-                <button
+                <ListButton
                   key={w.id}
-                  type="button"
+                  variant="compact"
                   disabled={consuming !== null}
                   onClick={() => handleConsume(w.id)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-(--color_bg_card) border border-(--color_border) hover:border-(--color_primary_light)/40 transition-all disabled:opacity-50 text-left group"
+                  className="px-3 py-2.5 group"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -129,7 +132,7 @@ export default function ConsumePassSheet({ athleteId, pass, open, onClose, onCon
                   ) : (
                     <CheckCircleIcon className="w-5 h-5 text-(--color_text_muted) group-hover:text-(--color_primary_light) transition-colors shrink-0" />
                   )}
-                </button>
+                </ListButton>
               );
             })}
           </div>

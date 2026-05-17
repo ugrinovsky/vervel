@@ -28,7 +28,7 @@ export default function AnalyticsPeriodToggle({
   return (
     <div
       className={`
-        rounded-2xl border border-(--color_border) bg-(--color_bg_card) backdrop-blur-md
+        glass rounded-2xl backdrop-blur-md
         shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] overflow-hidden
         ${className}
       `}
@@ -49,12 +49,13 @@ export default function AnalyticsPeriodToggle({
               💡
             </span>
             <p className="text-xs text-(--color_text_muted) leading-relaxed min-w-0">
-              <span className="text-white font-medium">Неделя</span> — оперативный контроль нагрузки.
+              <span className="text-white font-medium">Неделя</span> — оперативный контроль
+              нагрузки.
               <br />
               <span className="text-white font-medium">Месяц</span> — видите тренды и объём работы.
               <br />
-              <span className="text-white font-medium">Год</span> — оцениваете долгосрочный прогресс и
-              периодизацию.
+              <span className="text-white font-medium">Год</span> — оцениваете долгосрочный прогресс
+              и периодизацию.
             </p>
           </div>
         </>

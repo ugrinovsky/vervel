@@ -153,7 +153,7 @@ export default function AvatarScreen() {
         />
 
         <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
-          <AnimatedBlock className="w-full rounded-2xl p-4 border border-(--color_primary_light)/30 bg-(--color_primary_light)/10">
+          <AnimatedBlock className="card-shadow w-full rounded-2xl p-4 border border-(--color_primary_light)/30 bg-(--color_primary_light)/10">
             <div className="flex items-center gap-3">
               <div className="text-2xl">
                 {getCurrentHour() < 12 ? '☀️' : getCurrentHour() < 18 ? '🌤️' : '🌙'}
@@ -173,7 +173,7 @@ export default function AvatarScreen() {
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30"
+              className="card-shadow flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/30"
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium text-amber-300">Незаконченная тренировка</p>
@@ -232,7 +232,7 @@ export default function AvatarScreen() {
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="rounded-2xl p-4 bg-(--color_bg_card) border border-(--color_border)"
+                className="glass rounded-2xl p-4"
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-semibold text-white">Эта неделя</span>
@@ -331,7 +331,7 @@ export default function AvatarScreen() {
                 <motion.div
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="rounded-2xl overflow-hidden border border-white/10"
+                  className="card-shadow rounded-2xl overflow-hidden border border-white/10"
                 >
                   {items.map((item, idx) => {
                     const c = colorMap[item.color];
@@ -376,7 +376,7 @@ export default function AvatarScreen() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-2xl p-5 bg-(--color_bg_card) border border-(--color_border) space-y-4"
+              className="glass rounded-2xl p-5 space-y-4"
             >
               <div className="text-center">
                 <div className="text-4xl mb-2">👋</div>

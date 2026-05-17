@@ -49,7 +49,9 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
 
   const refKg = RADAR_VOLUME_REF_KG[period];
   const volumeScore =
-    refKg > 0 ? Math.min(RADAR.MAX_VALUE, Math.round((totalVolume / refKg) * DISPLAY.PERCENT_MULTIPLIER)) : 0;
+    refKg > 0
+      ? Math.min(RADAR.MAX_VALUE, Math.round((totalVolume / refKg) * DISPLAY.PERCENT_MULTIPLIER))
+      : 0;
 
   const balanceScore = computeMuscleBalancePercent(zones);
 
@@ -57,7 +59,10 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
   const rhythmTarget = weeks * IDEAL_WORKOUTS_PER_WEEK;
   const rhythmScore =
     rhythmTarget > 0
-      ? Math.min(RADAR.MAX_VALUE, Math.round((workoutsCount / rhythmTarget) * DISPLAY.PERCENT_MULTIPLIER))
+      ? Math.min(
+          RADAR.MAX_VALUE,
+          Math.round((workoutsCount / rhythmTarget) * DISPLAY.PERCENT_MULTIPLIER)
+        )
       : 0;
 
   const metrics: RadarMetric[] = [
@@ -132,9 +137,9 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
       `}</style>
 
       <AnalyticsSheetIntro>
-        Четыре шкалы на одной сетке 0–100%: насколько период выглядит «собранным» по интенсивности, объёму,
-        разнообразию зон и частоте. Это не абсолютная сила в килограммах — за весами и прогрессом по
-        упражнениям откройте «Сила и прогресс».
+        Четыре шкалы на одной сетке 0–100%: насколько период выглядит «собранным» по интенсивности,
+        объёму, разнообразию зон и частоте. Это не абсолютная сила в килограммах — за весами и
+        прогрессом по упражнениям откройте «Сила и прогресс».
       </AnalyticsSheetIntro>
 
       <div className="mb-5">
@@ -172,10 +177,7 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
                   const line2 = pct;
                   const charW = 6.5;
                   const rectWidth =
-                    Math.max(
-                      line1.length * charW,
-                      line2.length * charW * 0.85
-                    ) + paddingX * 2;
+                    Math.max(line1.length * charW, line2.length * charW * 0.85) + paddingX * 2;
                   const lineHeight = 13;
                   const rectHeight = lineHeight * 2 + paddingY * 2;
                   const offsetY = 18;
@@ -250,9 +252,10 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
 
         <div className="flex flex-col gap-2 min-w-0 w-full lg:w-auto">
           <p className="text-[10px] text-(--color_text_muted) leading-snug lg:mb-0.5">
-            Сравнение четырёх шкал между собой: где балл выше или ниже остальных (не «хорошо/плохо»).
+            Сравнение четырёх шкал между собой: где балл выше или ниже остальных (не
+            «хорошо/плохо»).
           </p>
-          <div className="rounded-lg border border-(--color_border) bg-(--color_bg_card) px-2.5 py-2 flex items-center justify-between gap-2 min-w-0">
+          <div className="glass rounded-lg px-2.5 py-2 flex items-center justify-between gap-2 min-w-0">
             <div className="min-w-0">
               <div className="text-[10px] text-(--color_text_muted) leading-none uppercase tracking-wide">
                 Самый высокий балл
@@ -261,9 +264,11 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
                 {strongest.fullName}
               </div>
             </div>
-            <div className="text-base font-bold text-emerald-400 tabular-nums shrink-0">{strongest.value}%</div>
+            <div className="text-base font-bold text-emerald-400 tabular-nums shrink-0">
+              {strongest.value}%
+            </div>
           </div>
-          <div className="rounded-lg border border-(--color_border) bg-(--color_bg_card) px-2.5 py-2 flex items-center justify-between gap-2 min-w-0">
+          <div className="glass rounded-lg px-2.5 py-2 flex items-center justify-between gap-2 min-w-0">
             <div className="min-w-0">
               <div className="text-[10px] text-(--color_text_muted) leading-none uppercase tracking-wide">
                 Самый низкий балл
@@ -272,10 +277,12 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
                 {weakest.fullName}
               </div>
             </div>
-            <div className="text-base font-bold text-amber-400 tabular-nums shrink-0">{weakest.value}%</div>
+            <div className="text-base font-bold text-amber-400 tabular-nums shrink-0">
+              {weakest.value}%
+            </div>
           </div>
           <div
-            className="rounded-lg border px-2.5 py-2 flex items-center justify-between gap-2 min-w-0"
+            className="glass rounded-lg border px-2.5 py-2 flex items-center justify-between gap-2 min-w-0"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--color_primary_icon) 10%, transparent)',
               borderColor: 'color-mix(in srgb, var(--color_primary_icon) 28%, transparent)',
@@ -285,9 +292,14 @@ export default function WorkoutRadar({ period, data = {} }: WorkoutRadarProps) {
               <div className="text-[10px] text-(--color_text_muted) leading-none uppercase tracking-wide">
                 Среднее четырёх
               </div>
-              <div className="text-xs text-white/70 mt-1 leading-snug">одинаковый вес у всех четырёх шкал</div>
+              <div className="text-xs text-white/70 mt-1 leading-snug">
+                одинаковый вес у всех четырёх шкал
+              </div>
             </div>
-            <div className="text-base font-bold tabular-nums shrink-0" style={{ color: 'var(--color_primary_icon)' }}>
+            <div
+              className="text-base font-bold tabular-nums shrink-0"
+              style={{ color: 'var(--color_primary_icon)' }}
+            >
               {averageValue}%
             </div>
           </div>

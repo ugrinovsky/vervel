@@ -60,8 +60,7 @@ function CardGrid({
             key={`${keyPrefix}-${card.id}`}
             type="button"
             onClick={() => onOpen(card.id)}
-            className={`relative h-32.5 rounded-2xl overflow-hidden text-left flex flex-col justify-between p-4 border active:scale-95 transition-transform${isLastOdd ? ' col-span-2' : ''}`}
-            style={{ backgroundColor: 'var(--color_bg_card)', borderColor: 'var(--color_border)' }}
+            className={`glass relative h-32.5 rounded-2xl overflow-hidden text-left flex flex-col justify-between p-4 active:scale-95 transition-transform${isLastOdd ? ' col-span-2' : ''}`}
           >
             <div
               className="absolute -top-6 -left-6 w-20 h-20 rounded-full blur-2xl pointer-events-none"

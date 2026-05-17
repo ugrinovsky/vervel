@@ -28,7 +28,7 @@ import type { AthleteCrmStatus } from '@/api/trainer';
 
 const CRM_STATUS_CONFIG: Record<AthleteCrmStatus, { label: string; dot: string; pill: string }> = {
   active: { label: 'Активен', dot: 'bg-green-400', pill: 'text-green-300 bg-green-500/10' },
-  sleeping: { label: 'Тихо', dot: 'bg-amber-400', pill: 'text-amber-300 bg-amber-500/10' },
+  sleeping: { label: 'Неактивен', dot: 'bg-amber-400', pill: 'text-amber-300 bg-amber-500/10' },
   paused: { label: 'Пауза', dot: 'bg-blue-400', pill: 'text-blue-300 bg-blue-500/10' },
   churned: { label: 'Ушёл', dot: 'bg-gray-500', pill: 'text-gray-400 bg-gray-500/10' },
 };
@@ -239,7 +239,7 @@ export default function TrainerTeamScreen() {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Поиск…"
-                    className="w-full pl-9 pr-4 py-2 text-sm rounded-xl bg-(--color_bg_card) border border-(--color_border) text-white placeholder:text-(--color_text_muted) focus:outline-none focus:border-(--color_primary_light)/60"
+                    className="w-full pl-9 pr-4 py-2 text-sm glass rounded-xl text-white placeholder:text-(--color_text_muted) focus:outline-none focus:border-(--color_primary_light)/60"
                   />
                 </div>
                 <Tabs
@@ -286,7 +286,8 @@ export default function TrainerTeamScreen() {
                         <ConfirmDeleteWrapper
                           key={athlete.id}
                           onConfirm={() => handleRemoveAthlete(athlete.id)}
-                          className="flex items-center gap-3 px-4 py-3 bg-(--color_bg_card) hover:bg-(--color_bg_card_hover) transition-colors"
+                          outerClassName="card-shadow"
+                          className="bg-(--color_bg_card) flex items-center gap-3 px-4 py-3 hover:bg-(--color_bg_card_hover) transition-colors"
                         >
                           <div
                             className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
@@ -346,7 +347,8 @@ export default function TrainerTeamScreen() {
                             onConfirm={() => handleRemoveAthlete(athlete.id)}
                             rounded="rounded-2xl"
                             overlayLayout="column"
-                            className="flex flex-col items-center gap-2 p-4 bg-(--color_bg_card) hover:bg-(--color_bg_card_hover) transition-colors"
+                            outerClassName="card-shadow"
+                            className="bg-(--color_bg_card) flex flex-col items-center gap-2 p-4 hover:bg-(--color_bg_card_hover) transition-colors"
                           >
                             {athleteUnread > 0 && (
                               <Badge count={athleteUnread} className="absolute top-2.5 right-2.5" />
@@ -435,7 +437,8 @@ export default function TrainerTeamScreen() {
                       <ConfirmDeleteWrapper
                         key={group.id}
                         onConfirm={() => handleDeleteGroup(group.id)}
-                        className="flex items-center gap-3 px-4 py-3 bg-(--color_bg_card) hover:bg-(--color_bg_card_hover) transition-colors"
+                        outerClassName="card-shadow"
+                        className="bg-(--color_bg_card) flex items-center gap-3 px-4 py-3 hover:bg-(--color_bg_card_hover) transition-colors"
                       >
                         <div
                           className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"

@@ -52,6 +52,7 @@ import { InsertStartRow } from '@/components/workoutExerciseShared/WorkoutExerci
 import { SortableDragHandle } from '@/components/workoutExerciseShared/SortableDragHandle';
 import { WorkoutExerciseBetweenRow } from '@/components/workoutExerciseShared/WorkoutExerciseBetweenRow';
 import GhostButton from '@/components/ui/GhostButton';
+import IconButton from '@/components/ui/IconButton';
 import { useActiveMode } from '@/contexts/AuthContext';
 import { buildTrainerCustomExerciseWithSets } from '@/util/trainerCustomExerciseWithSets';
 
@@ -161,14 +162,14 @@ function SortableExerciseCard({
             <p className="flex-1 text-sm font-medium text-white leading-snug min-w-0 truncate">
               {exerciseIdForDisplay(ex.name)}
             </p>
-            <button
-              type="button"
+            <IconButton
+              size="icon"
               onClick={onReplace}
-              className="text-white/30 hover:text-emerald-400 transition-colors shrink-0"
               title="Заменить упражнение"
+              className="text-white/30 hover:text-emerald-400 bg-transparent w-7 h-7 shrink-0"
             >
               <ArrowsRightLeftIcon className="w-4 h-4" />
-            </button>
+            </IconButton>
             <ConfirmDeleteButton
               icon="x"
               variant="overlay"
@@ -503,14 +504,10 @@ const WorkoutExercisesEditor = forwardRef<WorkoutExercisesEditorHandle, Props>(
               Добавить упражнение
             </GhostButton>
             {isTrainerMode ? (
-              <button
-                type="button"
-                onClick={() => setCustomPickerOpen(true)}
-                className="w-full flex items-center justify-center gap-1.5 text-sm text-(--color_text_muted) hover:text-white transition-colors py-1"
-              >
+              <GhostButton onClick={() => setCustomPickerOpen(true)} className="text-sm">
                 <span>✏️</span>
                 Свои упражнения
-              </button>
+              </GhostButton>
             ) : (
               <div className="flex gap-2">
                 <input
@@ -522,15 +519,15 @@ const WorkoutExercisesEditor = forwardRef<WorkoutExercisesEditorHandle, Props>(
                   placeholder="Название упражнения..."
                   className="flex-1 bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2 text-white text-sm outline-none focus:border-(--color_primary_light) placeholder:text-(--color_text_muted)"
                 />
-                <button
-                  type="button"
+                <GhostButton
+                  variant="outline-accent"
                   onClick={handleAthleteCustomExerciseAdd}
                   disabled={!customExerciseName.trim()}
-                  className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-medium text-(--color_primary_light) border border-(--color_primary_light)/40 hover:bg-(--color_primary_light)/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+                  className="shrink-0"
                 >
                   <PlusIcon className="w-4 h-4" />
                   Добавить
-                </button>
+                </GhostButton>
               </div>
             )}
           </div>

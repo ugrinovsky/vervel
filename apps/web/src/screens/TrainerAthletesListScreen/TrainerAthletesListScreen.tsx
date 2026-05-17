@@ -26,7 +26,7 @@ import type { AthleteCrmStatus } from '@/api/trainer';
 
 const CRM_STATUS_CONFIG: Record<AthleteCrmStatus, { label: string; dot: string; pill: string }> = {
   active: { label: 'Активен', dot: 'bg-green-400', pill: 'text-green-300 bg-green-500/10' },
-  sleeping: { label: 'Тихо', dot: 'bg-amber-400', pill: 'text-amber-300 bg-amber-500/10' },
+  sleeping: { label: 'Неактивен', dot: 'bg-amber-400', pill: 'text-amber-300 bg-amber-500/10' },
   paused: { label: 'Пауза', dot: 'bg-blue-400', pill: 'text-blue-300 bg-blue-500/10' },
   churned: { label: 'Ушёл', dot: 'bg-gray-500', pill: 'text-gray-400 bg-gray-500/10' },
 };
@@ -116,12 +116,12 @@ export default function TrainerAthletesListScreen() {
             animate={{ opacity: 1, y: 0 }}
             className="grid grid-cols-3 gap-3"
           >
-            <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
+            <div className="glass rounded-xl p-3 flex flex-col items-center gap-1.5">
               <UsersIcon className="w-5 h-5 text-(--color_primary_icon)" />
               <div className="text-xl font-bold text-white">{athletes.length}</div>
               <div className="text-[11px] text-(--color_text_muted) text-center">Всего</div>
             </div>
-            <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
+            <div className="glass rounded-xl p-3 flex flex-col items-center gap-1.5">
               <ClockIcon
                 className={`w-5 h-5 ${athletes.filter((a) => a.status === 'pending').length > 0 ? 'text-amber-400' : 'text-(--color_text_muted)'}`}
               />
@@ -132,7 +132,7 @@ export default function TrainerAthletesListScreen() {
               </div>
               <div className="text-[11px] text-(--color_text_muted) text-center">Ожидают</div>
             </div>
-            <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex flex-col items-center gap-1.5">
+            <div className="glass rounded-xl p-3 flex flex-col items-center gap-1.5">
               <ChatBubbleLeftEllipsisIcon
                 className={`w-5 h-5 ${(unreadCounts?.athletes.reduce((s, a) => s + a.unread, 0) ?? 0) > 0 ? 'text-red-400' : 'text-(--color_text_muted)'}`}
               />
@@ -242,7 +242,8 @@ export default function TrainerAthletesListScreen() {
                         <motion.div key={athlete.id} whileTap={{ scale: 0.99 }}>
                           <ConfirmDeleteWrapper
                             onConfirm={() => handleRemoveAthlete(athlete.id)}
-                            className="flex items-center gap-3 px-4 py-3 bg-(--color_bg_card) hover:bg-(--color_bg_card_hover) transition-colors"
+                            outerClassName="card-shadow"
+                            className="bg-(--color_bg_card) flex items-center gap-3 px-4 py-3 hover:bg-(--color_bg_card_hover) transition-colors"
                           >
                             <div
                               className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
@@ -301,7 +302,8 @@ export default function TrainerAthletesListScreen() {
                             onConfirm={() => handleRemoveAthlete(athlete.id)}
                             rounded="rounded-2xl"
                             overlayLayout="column"
-                            className="flex flex-col items-center gap-2 p-4 bg-(--color_bg_card) hover:bg-(--color_bg_card_hover) transition-colors"
+                            outerClassName="card-shadow"
+                            className="bg-(--color_bg_card) flex flex-col items-center gap-2 p-4 hover:bg-(--color_bg_card_hover) transition-colors"
                           >
                             {unread > 0 && (
                               <Badge count={unread} className="absolute top-2.5 right-2.5" />

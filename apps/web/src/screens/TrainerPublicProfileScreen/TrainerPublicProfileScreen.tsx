@@ -68,7 +68,6 @@ export default function TrainerPublicProfileScreen() {
   const hasDonateDetails =
     profile?.donatePhone || profile?.donateCard || profile?.donateYookassaLink;
 
-
   if (!profile) return <Screen loading={loading} className="trainer-public-profile-screen" />;
 
   return (
@@ -89,7 +88,12 @@ export default function TrainerPublicProfileScreen() {
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-center mb-6"
         >
-          <UserAvatar photoUrl={profile.photoUrl} name={profile.fullName} size={112} className="mb-3 shadow-lg" />
+          <UserAvatar
+            photoUrl={profile.photoUrl}
+            name={profile.fullName}
+            size={112}
+            className="mb-3 shadow-lg"
+          />
           <h1 className="text-xl font-bold text-white mb-1">{profile.fullName || 'Тренер'}</h1>
           {profile.specializations && profile.specializations.length > 0 && (
             <div className="flex flex-wrap justify-center gap-1.5 mt-2">
@@ -130,7 +134,7 @@ export default function TrainerPublicProfileScreen() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) mb-4"
+            className="glass rounded-2xl p-5 mb-4"
           >
             <h2 className="text-sm font-semibold text-white mb-2">О тренере</h2>
             <p className="text-sm text-(--color_text_muted) leading-relaxed whitespace-pre-wrap">
@@ -145,7 +149,7 @@ export default function TrainerPublicProfileScreen() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) mb-4"
+            className="glass rounded-2xl p-5 mb-4"
           >
             <h2 className="text-sm font-semibold text-white mb-2">Образование</h2>
             <p className="text-sm text-(--color_text_muted)">{profile.education}</p>
@@ -157,7 +161,7 @@ export default function TrainerPublicProfileScreen() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
+          className="glass rounded-2xl p-5"
         >
           <h2 className="text-sm font-semibold text-white mb-1">Поддержать тренера</h2>
 
@@ -174,7 +178,10 @@ export default function TrainerPublicProfileScreen() {
               <ToggleGroup
                 cols={4}
                 value={customAmount ? null : selectedAmount}
-                onChange={(v) => { setSelectedAmount(v); setCustomAmount(''); }}
+                onChange={(v) => {
+                  setSelectedAmount(v);
+                  setCustomAmount('');
+                }}
                 options={DONATION_AMOUNTS.map((amount) => ({ value: amount, label: `${amount}₽` }))}
                 className="mb-3"
               />
@@ -192,7 +199,10 @@ export default function TrainerPublicProfileScreen() {
               <div className="space-y-2">
                 {/* SBP */}
                 {profile.donatePhone && (
-                  <ListButton variant="compact" onClick={() => copyToClipboard(profile.donatePhone!, 'phone')}>
+                  <ListButton
+                    variant="compact"
+                    onClick={() => copyToClipboard(profile.donatePhone!, 'phone')}
+                  >
                     <div className="text-left">
                       <p className="text-xs text-(--color_text_muted)">Перевод по СБП</p>
                       <p className="text-sm text-white font-medium">{profile.donatePhone}</p>
@@ -207,7 +217,10 @@ export default function TrainerPublicProfileScreen() {
 
                 {/* Card */}
                 {profile.donateCard && (
-                  <ListButton variant="compact" onClick={() => copyToClipboard(profile.donateCard!, 'card')}>
+                  <ListButton
+                    variant="compact"
+                    onClick={() => copyToClipboard(profile.donateCard!, 'card')}
+                  >
                     <div className="text-left">
                       <p className="text-xs text-(--color_text_muted)">Номер карты</p>
                       <p className="text-sm text-white font-medium">{profile.donateCard}</p>

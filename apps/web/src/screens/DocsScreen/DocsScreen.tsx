@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import GhostButton from '@/components/ui/GhostButton';
+import IconButton from '@/components/ui/IconButton';
 
 const DOCS: Record<string, { title: string; content: React.ReactNode }> = {
   '/docs/privacy': {
@@ -124,8 +126,8 @@ const DOCS: Record<string, { title: string; content: React.ReactNode }> = {
           <p>
             Настоящий документ является публичной офертой (предложением) Угриновского Назария
             Васильевича, ИНН 861714148460, самозанятый (далее — «Исполнитель»), о заключении
-            договора на оказание информационных и сервисных услуг по доступу к веб-приложению
-            Vervel (далее — «Сервис»).
+            договора на оказание информационных и сервисных услуг по доступу к веб-приложению Vervel
+            (далее — «Сервис»).
           </p>
           <p className="mt-2">
             Акцептом (принятием) оферты считается регистрация в Сервисе или пополнение баланса
@@ -330,9 +332,13 @@ export default function DocsScreen() {
       >
         <div className="text-center">
           <p className="text-white text-lg font-semibold mb-2">Документ не найден</p>
-          <button onClick={() => navigate(-1)} className="text-(--color_primary_light) text-sm">
+          <GhostButton
+            variant="link"
+            onClick={() => navigate(-1)}
+            className="text-(--color_primary_light) text-sm"
+          >
             ← Назад
-          </button>
+          </GhostButton>
         </div>
       </div>
     );
@@ -348,19 +354,14 @@ export default function DocsScreen() {
       >
         {/* Header */}
         <div className="flex items-center gap-3 mb-6 pt-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-9 h-9 flex items-center justify-center rounded-xl bg-(--color_bg_card) border border-(--color_border) text-white hover:bg-(--color_bg_card_hover) transition-colors shrink-0"
-          >
+          <IconButton size="icon" onClick={() => navigate(-1)} className="shrink-0">
             <ArrowLeftIcon className="w-4 h-4" />
-          </button>
+          </IconButton>
           <h1 className="text-xl font-bold text-white">{doc.title}</h1>
         </div>
 
         {/* Content */}
-        <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
-          {doc.content}
-        </div>
+        <div className="glass rounded-2xl p-6">{doc.content}</div>
 
         <p className="text-xs text-(--color_text_muted) text-center mt-6">
           Vervel · nazar9505@yandex.ru

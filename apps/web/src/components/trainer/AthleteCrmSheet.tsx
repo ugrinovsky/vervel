@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import { trainerApi, type AthleteCrmStatus } from '@/api/trainer';
+import AppInput from '@/components/ui/AppInput';
 
 interface Props {
   athleteId: number;
@@ -28,7 +29,7 @@ const STATUS_CONFIG: Record<
     inactiveClass: 'bg-green-500/10 border-green-500/20 text-green-400/50',
   },
   sleeping: {
-    label: 'Тихо',
+    label: 'Неактивен',
     desc: 'Давно нет активности',
     activeClass: 'bg-amber-500/30 border-amber-400/60 text-amber-200',
     inactiveClass: 'bg-amber-500/10 border-amber-500/20 text-amber-400/50',
@@ -139,11 +140,11 @@ export default function AthleteCrmSheet({
         {/* Reminder date */}
         <div>
           <div className="text-xs text-(--color_text_muted) mb-2">Напомнить</div>
-          <input
+          <AppInput
             type="date"
             value={followUpDate}
             onChange={(e) => handleFollowUpChange(e.target.value)}
-            className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-sm text-white outline-none focus:border-(--color_primary_light) transition-colors [color-scheme:dark]"
+            className="scheme-dark"
           />
         </div>
 

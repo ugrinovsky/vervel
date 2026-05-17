@@ -15,7 +15,6 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import type { WorkoutTimelineEntry } from '@/types/Analytics';
 import { ZONE_NORMALIZE } from './avatarViewZoneNormalize';
 
-
 type Phase = 'destroyed' | 'recovering' | 'almost_ready' | 'recovered' | 'untrained';
 
 function getPhase(zone: ZoneState): Phase {
@@ -28,44 +27,46 @@ function getPhase(zone: ZoneState): Phase {
   return 'recovered';
 }
 
-const PHASE_CONFIG: Record<Phase, { label: string; color: string; barColor: string; dotBg: string | null; tip: string }> =
-  {
-    destroyed: {
-      label: 'Перегружено',
-      color: 'text-red-400',
-      barColor: 'from-red-600 to-red-400',
-      dotBg: 'bg-red-500/70',
-      tip: 'Мышца получила серьёзную нагрузку. Не тренируйте её минимум 48 часов.',
-    },
-    recovering: {
-      label: 'Отдых',
-      color: 'text-emerald-400',
-      barColor: 'from-emerald-600 to-emerald-400',
-      dotBg: 'bg-emerald-500/80',
-      tip: 'Мышца ещё восстанавливается. Лучше поработать с другими группами.',
-    },
-    almost_ready: {
-      label: 'Почти готово',
-      color: 'text-amber-300',
-      barColor: 'from-amber-500 to-yellow-300',
-      dotBg: 'bg-amber-400/85',
-      tip: 'Почти восстановилась. Лёгкая нагрузка допустима.',
-    },
-    recovered: {
-      label: 'Готово',
-      color: 'text-cyan-400',
-      barColor: 'from-cyan-500 to-green-400',
-      dotBg: 'bg-cyan-500/70',
-      tip: 'Мышца полностью восстановилась. Можно нагружать.',
-    },
-    untrained: {
-      label: 'Без нагрузки',
-      color: 'text-(--color_text_muted)',
-      barColor: 'from-gray-600 to-gray-500',
-      dotBg: null,
-      tip: 'Эта группа мышц не получала нагрузки. Обратите на неё внимание.',
-    },
-  };
+const PHASE_CONFIG: Record<
+  Phase,
+  { label: string; color: string; barColor: string; dotBg: string | null; tip: string }
+> = {
+  destroyed: {
+    label: 'Перегружено',
+    color: 'text-red-400',
+    barColor: 'from-red-600 to-red-400',
+    dotBg: 'bg-red-500/70',
+    tip: 'Мышца получила серьёзную нагрузку. Не тренируйте её минимум 48 часов.',
+  },
+  recovering: {
+    label: 'Отдых',
+    color: 'text-emerald-400',
+    barColor: 'from-emerald-600 to-emerald-400',
+    dotBg: 'bg-emerald-500/80',
+    tip: 'Мышца ещё восстанавливается. Лучше поработать с другими группами.',
+  },
+  almost_ready: {
+    label: 'Почти готово',
+    color: 'text-amber-300',
+    barColor: 'from-amber-500 to-yellow-300',
+    dotBg: 'bg-amber-400/85',
+    tip: 'Почти восстановилась. Лёгкая нагрузка допустима.',
+  },
+  recovered: {
+    label: 'Готово',
+    color: 'text-cyan-400',
+    barColor: 'from-cyan-500 to-green-400',
+    dotBg: 'bg-cyan-500/70',
+    tip: 'Мышца полностью восстановилась. Можно нагружать.',
+  },
+  untrained: {
+    label: 'Без нагрузки',
+    color: 'text-(--color_text_muted)',
+    barColor: 'from-gray-600 to-gray-500',
+    dotBg: null,
+    tip: 'Эта группа мышц не получала нагрузки. Обратите на неё внимание.',
+  },
+};
 
 function getDaysAgoText(days: number | null): string {
   if (days === null) return 'Нет тренировок';
@@ -193,7 +194,6 @@ export default function AvatarView({
     return result;
   }, [normalizedZones]);
 
-
   const summary = useMemo(() => {
     const entries = Object.entries(normalizedZones);
     const loaded = entries.filter(([, z]) => z.intensity > 0);
@@ -300,17 +300,17 @@ export default function AvatarView({
           </div>
 
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-(--color_bg_card) rounded-xl p-3">
+            <div className="glass rounded-xl p-3">
               <div className="text-lg font-bold text-white">{totalWorkouts}</div>
               <div className="text-xs text-(--color_text_muted)">За 14 дней</div>
             </div>
-            <div className="bg-(--color_bg_card) rounded-xl p-3">
+            <div className="glass rounded-xl p-3">
               <div className="text-lg font-bold text-white">
                 {summary.loadedCount}/{summary.totalCount}
               </div>
               <div className="text-xs text-(--color_text_muted)">Зон нагружено</div>
             </div>
-            <div className="bg-(--color_bg_card) rounded-xl p-3">
+            <div className="glass rounded-xl p-3">
               <div className="text-lg font-bold text-white">
                 {Math.round(summary.avgIntensity * 100)}%
               </div>
@@ -348,18 +348,23 @@ export default function AvatarView({
           {Object.keys(zones).length === 0 ? (
             <div className="space-y-5 py-2">
               <p className="text-sm text-(--color_text_muted) leading-relaxed">
-                Здесь появится карта восстановления мышц после первых тренировок. Вот как работать с системой:
+                Здесь появится карта восстановления мышц после первых тренировок. Вот как работать с
+                системой:
               </p>
 
               <div className="space-y-3">
                 <div className="flex gap-3 items-start">
                   <span className="text-base leading-snug">1️⃣</span>
                   <div className="flex flex-col">
-                    <Link to="/workouts/new" className="text-sm font-medium text-white underline underline-offset-2 decoration-(--color_primary) inline-flex items-center gap-1 mb-1 after:content-['→']">
+                    <Link
+                      to="/workouts/new"
+                      className="text-sm font-medium text-white underline underline-offset-2 decoration-(--color_primary) inline-flex items-center gap-1 mb-1 after:content-['→']"
+                    >
                       Залогируй тренировку
                     </Link>
                     <p className="text-xs text-(--color_text_muted) mt-0.5">
-                      После каждой тренировки добавляй упражнения, веса и повторения. Система рассчитает нагрузку по зонам.
+                      После каждой тренировки добавляй упражнения, веса и повторения. Система
+                      рассчитает нагрузку по зонам.
                     </p>
                   </div>
                 </div>
@@ -367,9 +372,12 @@ export default function AvatarView({
                 <div className="flex gap-3 items-start">
                   <span className="text-base leading-snug">2️⃣</span>
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium text-white mb-1">Смотри карту восстановления</span>
+                    <span className="text-sm font-medium text-white mb-1">
+                      Смотри карту восстановления
+                    </span>
                     <p className="text-xs text-(--color_text_muted) mt-0.5">
-                      Кликай на мышцы на аватаре — увидишь усталость и когда можно снова нагружать. Красный = отдыхай, зелёный = готово.
+                      Кликай на мышцы на аватаре — увидишь усталость и когда можно снова нагружать.
+                      Красный = отдыхай, зелёный = готово.
                     </p>
                   </div>
                 </div>
@@ -377,11 +385,15 @@ export default function AvatarView({
                 <div className="flex gap-3 items-start">
                   <span className="text-base leading-snug">3️⃣</span>
                   <div className="flex flex-col">
-                    <Link to="/calendar" className="text-sm font-medium text-white underline underline-offset-2 decoration-(--color_primary) inline-flex items-center gap-1 mb-1 after:content-['→']">
+                    <Link
+                      to="/calendar"
+                      className="text-sm font-medium text-white underline underline-offset-2 decoration-(--color_primary) inline-flex items-center gap-1 mb-1 after:content-['→']"
+                    >
                       Планируй по календарю
                     </Link>
                     <p className="text-xs text-(--color_text_muted) mt-0.5">
-                      Тренируйся 3–4 раза в неделю, чередуй группы мышц. Система сама покажет что уже готово к нагрузке.
+                      Тренируйся 3–4 раза в неделю, чередуй группы мышц. Система сама покажет что
+                      уже готово к нагрузке.
                     </p>
                   </div>
                 </div>
@@ -389,47 +401,55 @@ export default function AvatarView({
                 <div className="flex gap-3 items-start">
                   <span className="text-base leading-snug">4️⃣</span>
                   <div className="flex flex-col">
-                    <Link to="/analytics" className="text-sm font-medium text-white underline underline-offset-2 decoration-(--color_primary) inline-flex items-center gap-1 mb-1 after:content-['→']">
+                    <Link
+                      to="/analytics"
+                      className="text-sm font-medium text-white underline underline-offset-2 decoration-(--color_primary) inline-flex items-center gap-1 mb-1 after:content-['→']"
+                    >
                       Следи за прогрессом
                     </Link>
                     <p className="text-xs text-(--color_text_muted) mt-0.5">
-                      В аналитике виден прогресс по весам, объёму и частоте. Раз в месяц сверяй — есть ли рост.
+                      В аналитике виден прогресс по весам, объёму и частоте. Раз в месяц сверяй —
+                      есть ли рост.
                     </p>
                   </div>
                 </div>
               </div>
             </div>
           ) : (
-          <div className="space-y-2">
-            {Object.entries(zones)
-              .sort((a, b) => b[1].intensity - a[1].intensity)
-              .map(([name, zoneState]) => {
-                const phase = getPhase(zoneState);
-                const cfg = PHASE_CONFIG[phase];
-                return (
-                  <button
-                    key={name}
-                    onClick={() => handleZoneClick(ZONE_NORMALIZE[name] ?? name)}
-                    className={`w-full flex items-center gap-3 p-2.5 rounded-lg transition-all text-left ${
-                      selectedZone === (ZONE_NORMALIZE[name] ?? name)
-                        ? 'bg-(--color_primary_light)/15 ring-1 ring-(--color_primary_light)/30'
-                        : 'hover:bg-(--color_bg_card_hover)'
-                    }`}
-                  >
-                    <span className="text-sm text-white flex-1 min-w-0 truncate">{getZoneLabel(name)}</span>
-                    <div className="w-24 h-1.5 bg-(--color_border) rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full bg-gradient-to-r ${getBarColorByIntensity(zoneState.intensity)}`}
-                        style={{ width: `${Math.max(Math.round(zoneState.intensity * 100), 2)}%` }}
-                      />
-                    </div>
-                    <span className={`text-xs w-20 text-right font-medium ${cfg.color}`}>
-                      {cfg.label}
-                    </span>
-                  </button>
-                );
-              })}
-          </div>
+            <div className="space-y-2">
+              {Object.entries(zones)
+                .sort((a, b) => b[1].intensity - a[1].intensity)
+                .map(([name, zoneState]) => {
+                  const phase = getPhase(zoneState);
+                  const cfg = PHASE_CONFIG[phase];
+                  return (
+                    <button
+                      key={name}
+                      onClick={() => handleZoneClick(ZONE_NORMALIZE[name] ?? name)}
+                      className={`w-full flex items-center gap-3 p-2.5 rounded-lg transition-all text-left ${
+                        selectedZone === (ZONE_NORMALIZE[name] ?? name)
+                          ? 'bg-(--color_primary_light)/15 ring-1 ring-(--color_primary_light)/30'
+                          : 'hover:bg-(--color_bg_card_hover)'
+                      }`}
+                    >
+                      <span className="text-sm text-white flex-1 min-w-0 truncate">
+                        {getZoneLabel(name)}
+                      </span>
+                      <div className="w-24 h-1.5 bg-(--color_border) rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full bg-gradient-to-r ${getBarColorByIntensity(zoneState.intensity)}`}
+                          style={{
+                            width: `${Math.max(Math.round(zoneState.intensity * 100), 2)}%`,
+                          }}
+                        />
+                      </div>
+                      <span className={`text-xs w-20 text-right font-medium ${cfg.color}`}>
+                        {cfg.label}
+                      </span>
+                    </button>
+                  );
+                })}
+            </div>
           )}
         </div>
 
@@ -446,7 +466,8 @@ export default function AvatarView({
               <div className="mt-4 pt-4 border-t border-white/10">
                 {avatarContext === 'trainer_view' ? (
                   <p className="text-[11px] text-(--color_text_muted) leading-relaxed">
-                    Список упражнений по зоне и открытие карточки тренировки доступны атлету в разделе «Карта нагрузки» в его приложении.
+                    Список упражнений по зоне и открытие карточки тренировки доступны атлету в
+                    разделе «Карта нагрузки» в его приложении.
                   </p>
                 ) : (
                   <>
@@ -454,7 +475,8 @@ export default function AvatarView({
                       Недавние тренировки
                     </h4>
                     <p className="text-[11px] text-(--color_text_muted) mb-3">
-                      Только упражнения, которые нагрузили эту зону. Нажмите строку — откроется карточка, как в календаре.
+                      Только упражнения, которые нагрузили эту зону. Нажмите строку — откроется
+                      карточка, как в календаре.
                     </p>
                     {zoneWorkoutsLoading && (
                       <div className="flex items-center gap-2 text-xs text-(--color_text_muted)">
@@ -463,7 +485,9 @@ export default function AvatarView({
                       </div>
                     )}
                     {!zoneWorkoutsLoading && zoneWorkouts?.length === 0 && (
-                      <p className="text-xs text-(--color_text_muted)">Нет тренировок для этой зоны</p>
+                      <p className="text-xs text-(--color_text_muted)">
+                        Нет тренировок для этой зоны
+                      </p>
                     )}
                     {!zoneWorkoutsLoading && zoneWorkouts && zoneWorkouts.length > 0 && (
                       <div className="flex flex-col gap-2 max-w-full">
@@ -482,7 +506,10 @@ export default function AvatarView({
                                   year: 'numeric',
                                 })}
                               </span>
-                              <span className="text-(--color_text_muted) text-xs shrink-0" aria-hidden>
+                              <span
+                                className="text-(--color_text_muted) text-xs shrink-0"
+                                aria-hidden
+                              >
                                 ·
                               </span>
                               <span className="text-[10px] text-(--color_text_muted) min-w-0 truncate">
@@ -500,13 +527,16 @@ export default function AvatarView({
                                     key={ex.exerciseId}
                                     className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.07] text-white/80"
                                   >
-                                    {exerciseIdForDisplay(ex.name?.trim() ? ex.name : ex.exerciseId)}
+                                    {exerciseIdForDisplay(
+                                      ex.name?.trim() ? ex.name : ex.exerciseId
+                                    )}
                                   </span>
                                 ))}
                               </div>
                             ) : (
                               <p className="text-[10px] text-(--color_text_muted) leading-snug max-w-full">
-                                В упражнениях нет сохранённой разметки этой зоны — откройте тренировку, чтобы увидеть полный состав.
+                                В упражнениях нет сохранённой разметки этой зоны — откройте
+                                тренировку, чтобы увидеть полный состав.
                               </p>
                             )}
                           </button>

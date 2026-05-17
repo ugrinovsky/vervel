@@ -33,19 +33,20 @@ export default function OnboardingPwaPushSection() {
         По желанию
       </p>
       {!isStandalone && (isMobileBrowser() || !pushSupported) ? (
-        <div className="rounded-2xl border border-(--color_border) bg-(--color_bg_card) p-4">
+        <div className="glass rounded-2xl p-4">
           <p className="text-sm font-semibold text-white mb-1">Иконка на главном экране</p>
           <PwaInstructions platform={pwaPlatform} />
         </div>
       ) : pushSupported ? (
-        <div className="rounded-2xl border border-(--color_border) bg-(--color_bg_card) p-4">
+        <div className="glass rounded-2xl p-4">
           <p className="text-sm font-semibold text-white mb-1">Уведомления</p>
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs text-(--color_text_muted) flex-1 min-w-0">
               {pushPermission === 'granted' && 'Включены — напоминания о сообщениях и тренировках'}
               {pushPermission === 'default' &&
                 'Напоминания о сообщениях и тренировках — можно включить сейчас'}
-              {pushPermission === 'denied' && 'Заблокированы в браузере — разрешите в настройках сайта'}
+              {pushPermission === 'denied' &&
+                'Заблокированы в браузере — разрешите в настройках сайта'}
             </p>
             {pushPermission !== 'denied' && (
               <button
@@ -68,7 +69,8 @@ export default function OnboardingPwaPushSection() {
         </div>
       ) : (
         <p className="text-xs text-(--color_text_muted) px-1">
-          Уведомления в этом браузере недоступны. Откройте приложение в Chrome или Safari с телефона.
+          Уведомления в этом браузере недоступны. Откройте приложение в Chrome или Safari с
+          телефона.
         </p>
       )}
     </div>

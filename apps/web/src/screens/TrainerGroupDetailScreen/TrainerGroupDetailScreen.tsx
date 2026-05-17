@@ -16,8 +16,10 @@ import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
 import BackButton from '@/components/BackButton/BackButton';
 import AccentButton from '@/components/ui/AccentButton';
 import IconButton from '@/components/ui/IconButton';
+import PillButton from '@/components/ui/PillButton';
 import { cardClass } from '@/components/ui/Card';
 import SectionGroup from '@/components/ui/SectionGroup';
+import ListButton from '@/components/ui/ListButton';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { useTrainerTeamsFeatureRedirect } from '@/hooks/useTrainerTeamsFeatureRedirect';
 
@@ -108,28 +110,24 @@ export default function TrainerGroupDetailScreen() {
           />
 
           <div className="flex flex-wrap gap-2">
-            <button
+            <PillButton
+              variant="tab"
+              size="md"
+              active={activeTab === 'members'}
               onClick={() => setActiveTab('members')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-colors ${
-                activeTab === 'members'
-                  ? 'bg-(--color_primary_light) text-white'
-                  : 'bg-(--color_bg_card) text-(--color_text_muted) hover:text-white'
-              }`}
             >
               <UsersIcon className="w-4 h-4" />
               Участники
-            </button>
-            <button
+            </PillButton>
+            <PillButton
+              variant="tab"
+              size="md"
+              active={activeTab === 'chat'}
               onClick={() => setActiveTab('chat')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium text-sm transition-colors ${
-                activeTab === 'chat'
-                  ? 'bg-(--color_primary_light) text-white'
-                  : 'bg-(--color_bg_card) text-(--color_text_muted) hover:text-white'
-              }`}
             >
               <ChatBubbleLeftIcon className="w-4 h-4" />
               Чат
-            </button>
+            </PillButton>
             <IconButton
               size="icon"
               onClick={() => setShowCreateSheet(true)}
@@ -173,21 +171,22 @@ export default function TrainerGroupDetailScreen() {
                     Выберите атлета для добавления:
                   </p>
                   {availableAthletes.map((a) => (
-                    <button
+                    <ListButton
                       key={a.id}
+                      variant="compact"
                       onClick={() => handleAddToGroup(a.id)}
-                      className="w-full flex items-center gap-3 p-2.5 rounded-lg bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors text-left"
+                      className="p-2.5 rounded-lg"
                     >
                       <span className="text-sm text-white">{a.fullName || a.email}</span>
                       <span className="text-xs text-(--color_text_muted)">{a.email}</span>
-                    </button>
+                    </ListButton>
                   ))}
                 </div>
               )}
 
               {/* Мини-аватары нагрузки */}
               {athletes.length > 0 && (
-                <div className="mb-4 p-3 bg-(--color_bg_card_hover) rounded-xl">
+                <div className="glass mb-4 p-3 rounded-xl">
                   <p className="text-[10px] text-(--color_text_muted) mb-2 uppercase tracking-wider">
                     Нагрузка зон мышц
                   </p>
@@ -209,7 +208,8 @@ export default function TrainerGroupDetailScreen() {
                       trigger={
                         <ConfirmDeleteWrapper.Trigger className="absolute top-2 right-2 z-[1]" />
                       }
-                      className="bg-(--color_bg_card_hover) hover:bg-(--color_border) transition-colors cursor-pointer"
+                      outerClassName="card-shadow"
+                      className="bg-(--color_bg_card) hover:bg-(--color_border) transition-colors cursor-pointer"
                     >
                       <div
                         className="flex flex-col items-center gap-1.5 p-3"

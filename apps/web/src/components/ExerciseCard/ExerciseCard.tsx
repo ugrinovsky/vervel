@@ -8,11 +8,11 @@ import { useImageLoad } from '@/hooks/useImageLoad';
 /* ------------------------------------------------------------------ */
 
 const CATEGORY_TEXT_COLORS: Record<ExerciseCategory, string> = {
-  strength:   'text-blue-400',
-  olympic:    'text-yellow-400',
+  strength: 'text-blue-400',
+  olympic: 'text-yellow-400',
   gymnastics: 'text-purple-400',
   functional: 'text-orange-400',
-  cardio:     'text-green-400',
+  cardio: 'text-green-400',
 };
 
 function ExerciseImage({ exercise, aspectClass }: { exercise: Exercise; aspectClass: string }) {
@@ -55,7 +55,7 @@ export function ExercisePickerCard({
   onQuickAdd: () => void;
 }) {
   return (
-    <div className="flex flex-col rounded-xl overflow-hidden border border-(--color_border) bg-(--color_bg_card) hover:bg-(--color_bg_card_hover) transition-all text-left">
+    <div className="glass flex flex-col rounded-xl overflow-hidden hover:bg-(--color_bg_card_hover) transition-all text-left">
       <button onClick={onClick} className="w-full focus:outline-none">
         <ExerciseImage exercise={exercise} aspectClass="aspect-video" />
       </button>
@@ -72,7 +72,10 @@ export function ExercisePickerCard({
       </div>
 
       <button
-        onClick={(e) => { e.stopPropagation(); onQuickAdd(); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onQuickAdd();
+        }}
         className="mx-2 mb-2 py-1 rounded-lg text-xs font-semibold transition-all active:scale-95 bg-(--color_primary_light)/15 hover:bg-(--color_primary_light)/25 text-(--color_primary_light)"
       >
         + Добавить
@@ -95,7 +98,7 @@ export function ExerciseLibraryCard({
   return (
     <button
       onClick={onClick}
-      className="flex flex-col rounded-2xl overflow-hidden border border-white/10 bg-white/5 hover:bg-white/10 active:scale-[0.98] transition-all text-left w-full"
+      className="glass flex flex-col rounded-2xl overflow-hidden border border-white/10 hover:bg-white/10 active:scale-[0.98] transition-all text-left w-full"
     >
       <ExerciseImage exercise={exercise} aspectClass="aspect-3/2" />
 
@@ -105,7 +108,9 @@ export function ExerciseLibraryCard({
         </p>
         <div className="mt-auto flex items-end justify-between gap-1">
           <div className="flex flex-col gap-1 min-w-0">
-            <p className={`text-[10px] leading-none truncate ${CATEGORY_TEXT_COLORS[exercise.category] ?? 'text-(--color_text_muted)'}`}>
+            <p
+              className={`text-[10px] leading-none truncate ${CATEGORY_TEXT_COLORS[exercise.category] ?? 'text-(--color_text_muted)'}`}
+            >
               {CATEGORY_LABELS[exercise.category] ?? exercise.category}
             </p>
             {exercise.zones.length > 0 && (

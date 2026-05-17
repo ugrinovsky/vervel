@@ -1,33 +1,33 @@
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import AiChat from '@/components/AiChat/AiChat'
-import ChatScreen from '@/components/ChatScreen/ChatScreen'
-import Screen from '@/components/Screen/Screen'
-import Badge from '@/components/ui/Badge'
-import Tabs from '@/components/ui/Tabs'
-import UserAvatar from '@/components/UserAvatar/UserAvatar'
-import { type DialogItem } from '@/api/chat'
-import { useActiveMode } from '@/contexts/AuthContext'
-import { useDialogs } from '@/hooks/useDialogs'
-import { useFeatureFlags } from '@/hooks/useFeatureFlags'
-import { SparklesIcon, UserGroupIcon } from '@heroicons/react/24/outline'
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import AiChat from '@/components/AiChat/AiChat';
+import ChatScreen from '@/components/ChatScreen/ChatScreen';
+import Screen from '@/components/Screen/Screen';
+import Badge from '@/components/ui/Badge';
+import Tabs from '@/components/ui/Tabs';
+import UserAvatar from '@/components/UserAvatar/UserAvatar';
+import { type DialogItem } from '@/api/chat';
+import { useActiveMode } from '@/contexts/AuthContext';
+import { useDialogs } from '@/hooks/useDialogs';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
+import { SparklesIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import { parseWorkoutPreview } from '@/components/ChatBox/workoutPreviewParse';
-import { isKlipyMessageContent } from '@/util/klipyMessage'
-import { formatDialogTime } from '@/utils/date'
-import SearchInput from '@/components/ui/SearchInput'
-import SectionGroup from '@/components/ui/SectionGroup'
+import { isKlipyMessageContent } from '@/util/klipyMessage';
+import { formatDialogTime } from '@/utils/date';
+import SearchInput from '@/components/ui/SearchInput';
+import SectionGroup from '@/components/ui/SectionGroup';
 
-type DialogTab = 'all' | 'personal' | 'group'
+type DialogTab = 'all' | 'personal' | 'group';
 
 function DialogRow({ dialog, onOpen }: { dialog: DialogItem; onOpen: () => void }) {
-  const rawContent = dialog.lastMessage?.content ?? ''
-  const isWorkout = !!parseWorkoutPreview(rawContent)
-  const isGif = isKlipyMessageContent(rawContent)
+  const rawContent = dialog.lastMessage?.content ?? '';
+  const isWorkout = !!parseWorkoutPreview(rawContent);
+  const isGif = isKlipyMessageContent(rawContent);
   const preview = dialog.lastMessage
     ? (dialog.lastMessage.isOwnMessage ? 'Вы: ' : '') +
       (isWorkout ? '🏋️ Тренировка' : isGif ? '🎬 GIF' : rawContent)
-    : 'Нет сообщений'
-  const displayName = dialog.nickname || dialog.name
+    : 'Нет сообщений';
+  const displayName = dialog.nickname || dialog.name;
 
   return (
     <div
@@ -66,31 +66,31 @@ function DialogRow({ dialog, onOpen }: { dialog: DialogItem; onOpen: () => void 
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export default function DialogsScreen() {
-  const { isTrainer } = useActiveMode()
-  const flags = useFeatureFlags()
-  const { data: dialogs, refresh } = useDialogs(30_000)
-  const loading = dialogs === null
-  const [activeDialog, setActiveDialog] = useState<DialogItem | null>(null)
-  const [aiChatOpen, setAiChatOpen] = useState(false)
+  const { isTrainer } = useActiveMode();
+  const flags = useFeatureFlags();
+  const { data: dialogs, refresh } = useDialogs(30_000);
+  const loading = dialogs === null;
+  const [activeDialog, setActiveDialog] = useState<DialogItem | null>(null);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
 
   useEffect(() => {
-    if (!flags.ai) setAiChatOpen(false)
-  }, [flags.ai])
-  const [search, setSearch] = useState('')
-  const [activeTab, setActiveTab] = useState<DialogTab>('all')
+    if (!flags.ai) setAiChatOpen(false);
+  }, [flags.ai]);
+  const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState<DialogTab>('all');
 
   const filteredDialogs = dialogs?.filter((d) => {
-    const searchLower = search.toLowerCase()
-    const matchesSearch = (d.nickname || d.name).toLowerCase().includes(searchLower)
-    if (!matchesSearch) return false
-    if (activeTab === 'personal') return d.type === 'personal'
-    if (activeTab === 'group') return d.type === 'group'
-    return true
-  })
+    const searchLower = search.toLowerCase();
+    const matchesSearch = (d.nickname || d.name).toLowerCase().includes(searchLower);
+    if (!matchesSearch) return false;
+    if (activeTab === 'personal') return d.type === 'personal';
+    if (activeTab === 'group') return d.type === 'group';
+    return true;
+  });
 
   useEffect(() => {
     if (!dialogs) void refresh();
@@ -100,24 +100,24 @@ export default function DialogsScreen() {
 
   // Restore active chat after page refresh
   useEffect(() => {
-    if (!dialogs || activeDialog) return
-    const savedId = sessionStorage.getItem('activeChatId')
-    if (!savedId) return
-    const found = dialogs.find((d) => d.chatId === Number(savedId))
-    if (found) setActiveDialog(found)
-  }, [dialogs, activeDialog])
+    if (!dialogs || activeDialog) return;
+    const savedId = sessionStorage.getItem('activeChatId');
+    if (!savedId) return;
+    const found = dialogs.find((d) => d.chatId === Number(savedId));
+    if (found) setActiveDialog(found);
+  }, [dialogs, activeDialog]);
 
   const openChat = (dialog: DialogItem) => {
-    setActiveDialog(dialog)
-    sessionStorage.setItem('activeChatId', String(dialog.chatId))
-  }
+    setActiveDialog(dialog);
+    sessionStorage.setItem('activeChatId', String(dialog.chatId));
+  };
 
   const closeChat = () => {
-    setActiveDialog(null)
-    sessionStorage.removeItem('activeChatId')
-  }
+    setActiveDialog(null);
+    sessionStorage.removeItem('activeChatId');
+  };
 
-  const SPRING = { type: 'spring', damping: 28, stiffness: 260 } as const
+  const SPRING = { type: 'spring', damping: 28, stiffness: 260 } as const;
 
   return (
     <Screen
@@ -125,11 +125,7 @@ export default function DialogsScreen() {
       className="dialogs-screen overflow-hidden"
       enablePullToRefresh={!activeDialog}
     >
-      <ChatScreen
-        open={!!activeDialog}
-        dialog={activeDialog}
-        onClose={closeChat}
-      />
+      <ChatScreen open={!!activeDialog} dialog={activeDialog} onClose={closeChat} />
       <AiChat open={aiChatOpen && flags.ai} onClose={() => setAiChatOpen(false)} />
 
       <motion.h1
@@ -141,7 +137,9 @@ export default function DialogsScreen() {
         <span className="flex items-center justify-center w-12 h-12 rounded-2xl bg-linear-to-br from-(--color_primary_light)/20 to-(--color_primary)/20 border border-(--color_border)">
           <span className="text-2xl">💬</span>
         </span>
-        <span className="bg-linear-to-r from-white to-(--color_text_secondary) bg-clip-text text-transparent">Сообщения</span>
+        <span className="bg-linear-to-r from-white to-(--color_text_secondary) bg-clip-text text-transparent">
+          Сообщения
+        </span>
       </motion.h1>
 
       <motion.div
@@ -189,7 +187,9 @@ export default function DialogsScreen() {
               </div>
               <div className="flex-1 min-w-0 flex items-center py-3 border-b border-(--color_border)/50">
                 <div className="flex-1 min-w-0">
-                  <div className="text-[15px] font-semibold text-white leading-snug">ИИ-помощник</div>
+                  <div className="text-[15px] font-semibold text-white leading-snug">
+                    ИИ-помощник
+                  </div>
                   <div className="text-[13px] text-(--color_text_muted) leading-snug mt-0.5">
                     Тренировки, питание, восстановление
                   </div>
@@ -202,7 +202,7 @@ export default function DialogsScreen() {
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mx-4 mt-4 bg-(--color_bg_card) rounded-2xl p-10 border border-(--color_border) text-center"
+              className="glass rounded-2xl mx-4 mt-4 p-10 text-center"
             >
               <div className="text-4xl mb-3">{search ? '🔍' : isTrainer ? '🏋️' : '🤝'}</div>
               <p className="text-white font-medium mb-1">
@@ -234,5 +234,5 @@ export default function DialogsScreen() {
         </SectionGroup>
       </motion.div>
     </Screen>
-  )
+  );
 }

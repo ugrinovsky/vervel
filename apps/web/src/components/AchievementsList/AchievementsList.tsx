@@ -6,7 +6,9 @@ import { LockClosedIcon, CheckBadgeIcon } from '@heroicons/react/24/outline';
 import { streakApi, type AchievementsData } from '@/api/streak';
 import toast from 'react-hot-toast';
 
-type AchievementItem = AchievementsData['unlocked'][number] | (AchievementsData['locked'][number] & { locked: true });
+type AchievementItem =
+  | AchievementsData['unlocked'][number]
+  | (AchievementsData['locked'][number] & { locked: true });
 
 const CATEGORY_META: Record<string, { label: string; emoji: string }> = {
   streak: { label: 'Серии тренировок', emoji: '🔥' },
@@ -29,9 +31,7 @@ export default function AchievementsList() {
       if (response.data.success) {
         setData(response.data.data);
 
-        const unseenIds = response.data.data.unlocked
-          .filter((a) => !a.isSeen)
-          .map((a) => a.id);
+        const unseenIds = response.data.data.unlocked.filter((a) => !a.isSeen).map((a) => a.id);
 
         if (unseenIds.length > 0) {
           await streakApi.markAchievementsSeen(unseenIds);
@@ -50,7 +50,7 @@ export default function AchievementsList() {
 
   if (loading || !data) {
     return (
-      <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border) flex justify-center">
+      <div className="glass rounded-2xl p-6 flex justify-center">
         <LoadingSpinner size="md" />
       </div>
     );
@@ -93,7 +93,7 @@ export default function AchievementsList() {
   };
 
   return (
-    <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
+    <div className="glass rounded-2xl p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -123,11 +123,13 @@ export default function AchievementsList() {
 
       {/* Filters */}
       <div className="flex gap-2 mb-6">
-        {([
-          { key: 'all', label: 'Все' },
-          { key: 'unlocked', label: 'Получено' },
-          { key: 'locked', label: 'Не получено' },
-        ] as { key: Filter; label: string }[]).map(({ key, label }) => (
+        {(
+          [
+            { key: 'all', label: 'Все' },
+            { key: 'unlocked', label: 'Получено' },
+            { key: 'locked', label: 'Не получено' },
+          ] as { key: Filter; label: string }[]
+        ).map(({ key, label }) => (
           <PillButton
             key={key}
             active={filter === key}
@@ -142,9 +144,7 @@ export default function AchievementsList() {
       {/* Empty state */}
       {categories.length === 0 && (
         <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
-          <div className="text-4xl">
-            {filter === 'unlocked' ? '🏅' : '🔒'}
-          </div>
+          <div className="text-4xl">{filter === 'unlocked' ? '🏅' : '🔒'}</div>
           <p className="text-sm text-[var(--color_text_muted)]">
             {filter === 'unlocked'
               ? 'Пока нет полученных достижений. Тренируйтесь, чтобы разблокировать первое!'

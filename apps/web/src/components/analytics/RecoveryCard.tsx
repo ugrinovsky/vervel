@@ -62,7 +62,7 @@ export default function RecoveryCard({ data, period }: Props) {
         ~15 т).
       </AnalyticsSheetIntro>
 
-      <div className="bg-(--color_bg_card) rounded-xl border border-(--color_border) overflow-hidden">
+      <div className="glass rounded-xl overflow-hidden">
         <div className="grid grid-cols-3 px-3 py-2 border-b border-(--color_border)">
           <span className="text-[11px] font-semibold text-(--color_text_muted) uppercase tracking-wide">
             Класс

@@ -10,6 +10,7 @@ import AccentButton from '@/components/ui/AccentButton';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AppInput from '@/components/ui/AppInput';
 import PhoneInput from '@/components/ui/PhoneInput';
+import { UserPlusIcon } from '@heroicons/react/24/outline';
 
 interface Props {
   open: boolean;
@@ -186,7 +187,17 @@ export default function AddAthleteDrawer({ open, onClose, onAdded, onLeadCreated
   };
 
   return (
-    <BottomSheet id="add-athlete" open={open} onClose={onClose} title="Добавить клиента" emoji="➕">
+    <BottomSheet
+      id="add-athlete"
+      open={open}
+      onClose={onClose}
+      header={
+        <div className="flex items-center gap-2">
+          <UserPlusIcon className="w-5 h-5 text-white/60" />
+          <span className="text-lg font-bold text-white">Добавить клиента</span>
+        </div>
+      }
+    >
       <div className="space-y-4">
         <Tabs
           tabs={[
@@ -310,7 +321,7 @@ export default function AddAthleteDrawer({ open, onClose, onAdded, onLeadCreated
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="space-y-3 rounded-xl border border-(--color_border) bg-(--color_bg_card) p-3"
+                className="glass space-y-3 rounded-xl p-3"
               >
                 <Tabs
                   tabs={[

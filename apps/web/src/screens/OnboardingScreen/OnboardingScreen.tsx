@@ -765,7 +765,7 @@ function AthleteCoachInfoStep({
       />
       <div className="flex-1 min-h-0 overflow-y-auto pb-4 space-y-3">
         {teams && (
-          <div className="rounded-2xl border border-(--color_border) bg-(--color_bg_card) p-4 flex flex-col items-center gap-3">
+          <div className="glass rounded-2xl p-4 flex flex-col items-center gap-3">
             <p className="text-xs text-(--color_text_muted) self-start">
               QR-код — тренер сканирует при добавлении
             </p>
@@ -774,7 +774,7 @@ function AthleteCoachInfoStep({
         )}
 
         {/* Email — copy button */}
-        <div className="rounded-2xl border border-(--color_border) bg-(--color_bg_card) p-4 flex items-center justify-between gap-3">
+        <div className="glass rounded-2xl p-4 flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-semibold text-white">Email аккаунта</p>
             <p className="text-xs text-(--color_text_muted) mt-0.5">{user.email}</p>
@@ -846,11 +846,11 @@ function AthleteTeamInfoStep({
       />
       <div className="flex-1 min-h-0 overflow-y-auto pb-4 space-y-3">
         {teams && (
-          <div className="rounded-2xl border border-(--color_border) bg-(--color_bg_card) p-4 flex flex-col items-center gap-3">
+          <div className="glass rounded-2xl p-4 flex flex-col items-center gap-3">
             <AthleteQrCode athleteId={user.id} name={user.fullName} email={user.email} />
           </div>
         )}
-        <div className="rounded-2xl border border-(--color_border) bg-(--color_bg_card) p-4 flex items-center justify-between gap-3">
+        <div className="glass rounded-2xl p-4 flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-semibold text-white">Email</p>
             <p className="text-xs text-(--color_text_muted) mt-0.5">{user.email}</p>
@@ -972,7 +972,7 @@ function FeatureSpoiler({
       : 'Это не реклама. Это просто то, что здесь уже есть.';
 
   return (
-    <div className="rounded-2xl border border-(--color_border) bg-(--color_bg_card) overflow-hidden mt-3">
+    <div className="glass rounded-2xl overflow-hidden mt-3">
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -1115,7 +1115,7 @@ function AthleteWorkoutChoiceStep({
           <button
             type="button"
             onClick={onSelectManual}
-            className="rounded-xl border border-(--color_border) bg-(--color_bg_card) p-3 text-left flex gap-3 items-start w-full transition-colors hover:border-white/25"
+            className="glass rounded-xl p-3 text-left flex gap-3 items-start w-full transition-colors hover:border-white/25"
           >
             <span className="text-xl shrink-0 leading-none pt-0.5">✏️</span>
             <div className="min-w-0 flex-1">
@@ -1236,10 +1236,7 @@ function TrainerActionStep({
         />
         <div className="space-y-2">
           {steps.map((s) => (
-            <div
-              key={s.step}
-              className="rounded-2xl border border-(--color_border) bg-(--color_bg_card) p-3.5 text-left"
-            >
+            <div key={s.step} className="glass rounded-2xl p-3.5 text-left">
               <div className="flex items-start gap-2">
                 <span className="text-xs font-bold text-emerald-400/90 tabular-nums shrink-0 mt-0.5">
                   {s.step}.
@@ -1381,7 +1378,7 @@ function ScenarioCard({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-2xl border border-(--color_border) bg-(--color_bg_card) p-4 text-left w-full transition-colors hover:border-emerald-500/40 hover:bg-emerald-500/5 active:scale-[0.98]"
+      className="glass rounded-2xl p-4 text-left w-full transition-colors hover:border-emerald-500/40 hover:bg-emerald-500/5 active:scale-[0.98]"
     >
       <div className="text-2xl mb-1">{emoji}</div>
       <div className="font-semibold text-white">{title}</div>

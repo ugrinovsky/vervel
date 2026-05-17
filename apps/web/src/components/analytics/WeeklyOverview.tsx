@@ -2,7 +2,11 @@ import { WorkoutStats } from '@/types/Analytics';
 import { useMemo } from 'react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { WORKOUT_TYPE_CONFIG, formatVolume, normalizeIntensity } from '@/constants/AnalyticsConstants';
+import {
+  WORKOUT_TYPE_CONFIG,
+  formatVolume,
+  normalizeIntensity,
+} from '@/constants/AnalyticsConstants';
 import {
   aggregateTimelineDay,
   entriesForDateKey,
@@ -30,7 +34,20 @@ interface WeeklyOverviewProps {
 }
 
 const WEEK_DAYS_MON = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-const MONTH_NAMES = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+const MONTH_NAMES = [
+  'Янв',
+  'Фев',
+  'Мар',
+  'Апр',
+  'Май',
+  'Июн',
+  'Июл',
+  'Авг',
+  'Сен',
+  'Окт',
+  'Ноя',
+  'Дек',
+];
 
 function labelWeekdayAndDay(d: Date): string {
   const js = d.getDay();
@@ -44,8 +61,6 @@ const TYPE_COLORS: Record<string, string> = {
   cardio: 'var(--color-sky-400)',
   mixed: 'var(--color-amber-400)',
 };
-
-
 
 type WeeklyBarPayload = {
   type?: string;
@@ -138,13 +153,20 @@ export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
     const avg = active.length
       ? Math.round(active.reduce((s, d) => s + d.intensity, 0) / active.length)
       : 0;
-    const maxDay = active.reduce((m, d) => (d.intensity > m.intensity ? d : m), { label: '—', intensity: 0 });
+    const maxDay = active.reduce((m, d) => (d.intensity > m.intensity ? d : m), {
+      label: '—',
+      intensity: 0,
+    });
     const totalVol = chartData.reduce((s, d) => s + d.volume, 0);
     return { activeDays: active.length, avg, peakDay: maxDay.label, totalVol };
   }, [chartData]);
 
   const periodTotals = [
-    { label: 'Активных', value: `${summaryStats.activeDays}`, sub: period === 'year' ? 'мес' : 'дн' },
+    {
+      label: 'Активных',
+      value: `${summaryStats.activeDays}`,
+      sub: period === 'year' ? 'мес' : 'дн',
+    },
     { label: 'Ср. интенс.', value: `${summaryStats.avg}%`, sub: 'в активные дни' },
     { label: 'Пик', value: summaryStats.peakDay, sub: 'самый нагруженный' },
     { label: 'Объём', value: formatVolume(summaryStats.totalVol), sub: 'всего за период' },
@@ -155,21 +177,25 @@ export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
       <AnalyticsSheetIntro>
         {period === 'week' &&
           'Хронология: каждый столбик — конкретная дата в выбранном окне (день недели + число). Это не «все понедельники подряд», а реальные дни подряд. Паттерн «в какой день недели чаще ходите» — в блоке «Привычка по дням» при периоде месяц или год.'}
-        {period === 'month' && 'По числам месяца: видно, в какие дни были тренировки и насколько они были «тяжёлыми» по оценке приложения.'}
-        {period === 'year' && 'По месяцам года: суммарный объём и усреднённая интенсивность за каждый месяц.'}
+        {period === 'month' &&
+          'По числам месяца: видно, в какие дни были тренировки и насколько они были «тяжёлыми» по оценке приложения.'}
+        {period === 'year' &&
+          'По месяцам года: суммарный объём и усреднённая интенсивность за каждый месяц.'}
       </AnalyticsSheetIntro>
       {/* Summary row */}
       <div className="grid grid-cols-4 gap-2">
         {periodTotals.map((s) => (
-          <div key={s.label} className="bg-(--color_bg_card) rounded-xl p-2.5 text-center border border-(--color_border)">
+          <div key={s.label} className="glass rounded-xl p-2.5 text-center">
             <div className="text-base font-bold text-white">{s.value}</div>
-            <div className="text-[11px] text-(--color_text_muted) leading-tight mt-0.5">{s.label}</div>
+            <div className="text-[11px] text-(--color_text_muted) leading-tight mt-0.5">
+              {s.label}
+            </div>
           </div>
         ))}
       </div>
 
       {/* Bar chart */}
-      <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border)">
+      <div className="glass rounded-xl p-3">
         <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wide mb-3">
           Интенсивность по {period === 'week' ? 'датам' : period === 'month' ? 'числам' : 'месяцам'}
         </p>
@@ -216,7 +242,9 @@ export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
                   className="w-2.5 h-2.5 rounded-full"
                   style={{ backgroundColor: TYPE_COLORS[type] ?? 'var(--color_primary_icon)' }}
                 />
-                <span className="text-xs text-(--color_text_muted)">{WORKOUT_TYPE_CONFIG[type] ?? type}</span>
+                <span className="text-xs text-(--color_text_muted)">
+                  {WORKOUT_TYPE_CONFIG[type] ?? type}
+                </span>
               </div>
             ))}
           </div>
@@ -225,7 +253,7 @@ export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
 
       {/* Volume bars — if available */}
       {summaryStats.totalVol > 0 && (
-        <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border)">
+        <div className="glass rounded-xl p-3">
           <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wide mb-3">
             Объём ({formatVolume(summaryStats.totalVol)} всего)
           </p>
@@ -239,7 +267,9 @@ export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
                 const pct = maxVol > 0 ? (d.volume / maxVol) * 100 : 0;
                 return (
                   <div key={d.label} className="flex items-center gap-2">
-                    <span className="text-xs text-(--color_text_muted) w-8 shrink-0">{d.label}</span>
+                    <span className="text-xs text-(--color_text_muted) w-8 shrink-0">
+                      {d.label}
+                    </span>
                     <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full"
@@ -250,7 +280,9 @@ export default function WeeklyOverview({ period, data }: WeeklyOverviewProps) {
                         }}
                       />
                     </div>
-                    <span className="text-xs text-white/60 w-10 text-right">{formatVolume(d.volume)}</span>
+                    <span className="text-xs text-white/60 w-10 text-right">
+                      {formatVolume(d.volume)}
+                    </span>
                   </div>
                 );
               })}

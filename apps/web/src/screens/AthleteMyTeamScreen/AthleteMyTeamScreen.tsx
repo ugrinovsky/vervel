@@ -238,7 +238,7 @@ export default function AthleteMyTeamScreen() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               onClick={() => setAiChatOpen(true)}
-              className="w-full flex items-center gap-3 p-4 bg-(--color_bg_card) rounded-2xl border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
+              className="glass rounded-2xl w-full flex items-center gap-3 p-4 hover:bg-(--color_bg_card_hover) transition-colors text-left"
             >
               <div className="w-10 h-10 flex items-center justify-center rounded-full bg-emerald-500/20 shrink-0">
                 <SparklesIcon className="w-5 h-5 text-emerald-400" />
@@ -261,7 +261,7 @@ export default function AthleteMyTeamScreen() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-(--color_bg_card) rounded-2xl p-10 border border-(--color_border) text-center"
+              className="glass rounded-2xl p-10 text-center"
             >
               <div className="text-4xl mb-3">🏋️</div>
               <p className="text-white font-medium mb-1">Пока нет тренера или группы</p>
@@ -276,7 +276,7 @@ export default function AthleteMyTeamScreen() {
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
+                  className="glass rounded-2xl p-5"
                 >
                   <div className="flex items-center gap-2 mb-4">
                     <UsersIcon className="w-5 h-5 text-(--color_primary_icon)" />
@@ -361,7 +361,7 @@ export default function AthleteMyTeamScreen() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 }}
-                  className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
+                  className="glass rounded-2xl p-5"
                 >
                   <div className="flex items-center gap-2 mb-4">
                     <UserGroupIcon className="w-5 h-5 text-(--color_primary_icon)" />
@@ -428,7 +428,7 @@ export default function AthleteMyTeamScreen() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
+                  className="glass rounded-2xl p-5"
                 >
                   <div className="flex items-center gap-2 mb-4">
                     <CalendarDaysIcon className="w-5 h-5 text-(--color_primary_icon)" />

@@ -107,7 +107,7 @@ export default function InviteScreen() {
             className="w-full max-w-sm"
           >
             {/* Card */}
-            <div className="bg-(--color_bg_card) rounded-3xl p-8 border border-(--color_border) text-center mb-4">
+            <div className="glass rounded-3xl p-8 text-center mb-4">
               {/* Trainer photo */}
               <div className="flex justify-center mb-4">
                 <div className="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-(--color_primary_light) to-(--color_primary) flex items-center justify-center text-3xl font-bold text-white shadow-lg">

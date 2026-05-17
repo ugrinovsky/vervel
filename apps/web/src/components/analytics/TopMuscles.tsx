@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { FireIcon } from '@heroicons/react/24/outline';
+import PillButton from '@/components/ui/PillButton';
 import { WorkoutStats } from '@/types/Analytics';
 import {
   DISPLAY,
@@ -58,8 +59,7 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
         const secondHalfPct = Math.round(
           (Number(secondHalfZones[zone]) || 0) * DISPLAY.PERCENT_MULTIPLIER
         );
-        const change =
-          timeline.length >= 2 ? secondHalfPct - firstHalfPct : 0;
+        const change = timeline.length >= 2 ? secondHalfPct - firstHalfPct : 0;
         const trend = getTrendDirection(change);
 
         // Относительная нагрузка (для отображения вместо объёма)
@@ -108,10 +108,10 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
   return (
     <>
       <AnalyticsSheetIntro>
-        Доля нагрузки по зонам за период: после суммирования по тренировкам каждая зона делится на пиковую
-        за период (топ = 100%, остальные — доля от этого пика). Стрелка — сдвиг между первой и второй
-        половиной периода на той же логике. «Уровень» — текстовая шкала относительно %, не сравнение с
-        другими людьми.
+        Доля нагрузки по зонам за период: после суммирования по тренировкам каждая зона делится на
+        пиковую за период (топ = 100%, остальные — доля от этого пика). Стрелка — сдвиг между первой
+        и второй половиной периода на той же логике. «Уровень» — текстовая шкала относительно %, не
+        сравнение с другими людьми.
       </AnalyticsSheetIntro>
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -121,24 +121,22 @@ export default function TopMuscles({ period, data }: TopMusclesProps) {
         </div>
 
         <div className="flex gap-1 bg-[var(--color_bg_card)] rounded-lg p-1">
-          <button
+          <PillButton
+            variant="tab"
+            active={viewMode === 'percentage'}
             onClick={() => setViewMode('percentage')}
-            className={`px-3 py-1 text-sm rounded-md transition ${
-              viewMode === 'percentage'
-                ? 'bg-[var(--color_bg_card_hover)] text-white'
-                : 'text-[var(--color_text_muted)] hover:text-white'
-            }`}
+            className="px-3 py-1 rounded-md"
           >
             %
-          </button>
-          <button
+          </PillButton>
+          <PillButton
+            variant="tab"
+            active={viewMode === 'relative'}
             onClick={() => setViewMode('relative')}
-            className={`px-3 py-1 text-sm rounded-md transition ${
-              viewMode === 'relative' ? 'bg-[var(--color_bg_card_hover)] text-white' : 'text-[var(--color_text_muted)] hover:text-white'
-            }`}
+            className="px-3 py-1 rounded-md"
           >
             Уровень
-          </button>
+          </PillButton>
         </div>
       </div>
 

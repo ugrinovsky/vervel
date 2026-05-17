@@ -27,9 +27,10 @@ import {
 import { XMarkIcon, SparklesIcon, PlusIcon } from '@heroicons/react/24/outline';
 import CustomExercisePicker from '@/components/CustomExercisePicker/CustomExercisePicker';
 import type { ExerciseWithSets } from '@/types/Exercise';
-import Tabs from '@/components/ui/Tabs';
+import TabCard from '@/components/ui/TabCard';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AccentButton from '@/components/ui/AccentButton';
+import AppInput from '@/components/ui/AppInput';
 import GhostButton from '@/components/ui/GhostButton';
 import { useAuth, useActiveMode } from '@/contexts/AuthContext';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
@@ -39,6 +40,7 @@ import { exerciseIdForDisplay } from '@/utils/exerciseIdForDisplay';
 import { normalizeExercisesForType } from '@/components/WorkoutExercisesEditor/normalizeForWorkoutType';
 import { convertExercisesForType } from '@/components/WorkoutFormBase/workoutTypeConversion';
 import { buildTrainerCustomExerciseWithSets } from '@/util/trainerCustomExerciseWithSets';
+import TemplatePicker from '@/components/ui/TemplatePicker';
 
 function isEditableWorkoutType(t: WorkoutData['type']): t is WorkoutType {
   return t === 'crossfit' || t === 'bodybuilding' || t === 'cardio';
@@ -214,7 +216,7 @@ export default function WorkoutInlineForm({
 
   const [quickDate, setQuickDate] = useState(() => toDateKey(initialDate ?? new Date()));
   const [quickTime, setQuickTime] = useState(() => toTimeKey(initialTime));
-  const [quickTemplateId, setQuickTemplateId] = useState('');
+  const [quickTemplateId, setQuickTemplateId] = useState<number | null>(null);
   const [quickNotes, setQuickNotes] = useState('');
 
   // ── Submit ────────────────────────────────────────────────────────
@@ -302,8 +304,8 @@ export default function WorkoutInlineForm({
       return;
     }
     const assignedTo = getAssignedTo();
-    const templateId = quickTemplateId ? Number(quickTemplateId) : undefined;
-    const template = templateId ? templates.find((t) => t.id === templateId) : undefined;
+    const template =
+      quickTemplateId != null ? templates.find((t) => t.id === quickTemplateId) : undefined;
     const date = parseLocalDate(quickDate);
     const time = parseTimeString(quickTime);
     const scheduledDate = toApiDateTime(date, time);
@@ -322,7 +324,7 @@ export default function WorkoutInlineForm({
         workoutData,
         assignedTo,
         notes: quickNotes.trim() || undefined,
-        templateId,
+        templateId: quickTemplateId ?? undefined,
       });
       const previewMessage = buildWorkoutPreviewMessage(
         date,
@@ -441,7 +443,7 @@ export default function WorkoutInlineForm({
   const assigneePicker = preselectedAssignee ? (
     <div>
       <SectionLabel>Для кого</SectionLabel>
-      <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-(--color_bg_card_hover) border border-(--color_border)">
+      <div className="glass flex items-center gap-2 px-3 py-2.5 rounded-xl border border-(--color_border)">
         <span>{preselectedAssignee.type === 'group' ? '👥' : '🏃'}</span>
         <span className="text-sm text-white">{preselectedAssignee.name}</span>
       </div>
@@ -513,64 +515,63 @@ export default function WorkoutInlineForm({
         </div>
       )}
 
-      <Tabs
-        className="mb-2.5"
-        size="sm"
-        active={assigneeMode}
-        onChange={(v) => switchMode(v)}
+      <TabCard
         tabs={[
           { id: 'group', label: '👥 Группа' },
           { id: 'athlete', label: '🏃 Персональная' },
         ]}
-      />
-
-      {loadingAssignees ? (
-        <div className="rounded-xl bg-(--color_bg_card_hover) border border-(--color_border) flex items-center justify-center py-2.5">
-          <LoadingSpinner size="xs" />
-        </div>
-      ) : (
-        <div className="max-h-44 overflow-y-auto rounded-xl bg-(--color_bg_card_hover) divide-y divide-(--color_border) border border-(--color_border)">
-          {assigneeMode === 'group' && groups.length === 0 && (
-            <div className="text-xs text-(--color_text_muted) text-center py-4">Нет групп</div>
-          )}
-          {assigneeMode === 'athlete' && athletes.length === 0 && (
-            <div className="text-xs text-(--color_text_muted) text-center py-4">Нет атлетов</div>
-          )}
-          {assigneeMode === 'group' &&
-            groups.map((group) => (
-              <button
-                key={`group-${group.id}`}
-                onClick={() => toggleGroup(group)}
-                className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left transition-colors ${
-                  isGroupSelected(group.id)
-                    ? 'bg-(--color_primary_light) text-white'
-                    : 'text-white hover:bg-(--color_border)'
-                }`}
-              >
-                <span>👥</span>
-                <span className="truncate font-medium">{group.name}</span>
-                <span className="ml-auto text-xs opacity-60 shrink-0">
-                  {group.athleteCount} чел.
-                </span>
-              </button>
-            ))}
-          {assigneeMode === 'athlete' &&
-            athletes.map((athlete) => (
-              <button
-                key={`athlete-${athlete.id}`}
-                onClick={() => selectAthlete(athlete)}
-                className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left transition-colors ${
-                  isAthleteSelected(athlete.id)
-                    ? 'bg-(--color_primary_light) text-white'
-                    : 'text-white hover:bg-(--color_border)'
-                }`}
-              >
-                <span>🏃</span>
-                <span className="truncate">{athlete.fullName || athlete.email}</span>
-              </button>
-            ))}
-        </div>
-      )}
+        active={assigneeMode}
+        onChange={(v) => switchMode(v)}
+        bodyClassName="max-h-44 overflow-y-auto divide-y divide-(--color_border)"
+      >
+        {loadingAssignees ? (
+          <div className="flex items-center justify-center py-2.5">
+            <LoadingSpinner size="xs" />
+          </div>
+        ) : (
+          <>
+            {assigneeMode === 'group' && groups.length === 0 && (
+              <div className="text-xs text-(--color_text_muted) text-center py-4">Нет групп</div>
+            )}
+            {assigneeMode === 'athlete' && athletes.length === 0 && (
+              <div className="text-xs text-(--color_text_muted) text-center py-4">Нет атлетов</div>
+            )}
+            {assigneeMode === 'group' &&
+              groups.map((group) => (
+                <button
+                  key={`group-${group.id}`}
+                  onClick={() => toggleGroup(group)}
+                  className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left transition-colors ${
+                    isGroupSelected(group.id)
+                      ? 'bg-(--color_primary_light) text-white'
+                      : 'text-white hover:bg-white/5'
+                  }`}
+                >
+                  <span>👥</span>
+                  <span className="truncate font-medium">{group.name}</span>
+                  <span className="ml-auto text-xs opacity-60 shrink-0">
+                    {group.athleteCount} чел.
+                  </span>
+                </button>
+              ))}
+            {assigneeMode === 'athlete' &&
+              athletes.map((athlete) => (
+                <button
+                  key={`athlete-${athlete.id}`}
+                  onClick={() => selectAthlete(athlete)}
+                  className={`w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left transition-colors ${
+                    isAthleteSelected(athlete.id)
+                      ? 'bg-(--color_primary_light) text-white'
+                      : 'text-white hover:bg-white/5'
+                  }`}
+                >
+                  <span>🏃</span>
+                  <span className="truncate">{athlete.fullName || athlete.email}</span>
+                </button>
+              ))}
+          </>
+        )}
+      </TabCard>
       {!editWorkout && selectedAssignees.length > 0 && (
         <p className="text-xs text-(--color_text_muted) mt-2.5 leading-relaxed">
           После создания тренировки выбранные атлеты получат в чате сообщение с планом — как только
@@ -587,29 +588,22 @@ export default function WorkoutInlineForm({
       {assigneePicker}
 
       <div>
-        <SectionLabel>Шаблон или пресет</SectionLabel>
-        <select
+        <SectionLabel>Шаблон</SectionLabel>
+        <TemplatePicker
+          templates={templates}
           value={quickTemplateId}
-          onChange={(e) => setQuickTemplateId(e.target.value)}
-          className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-3 text-white text-sm outline-none focus:border-(--color_primary_light)"
-        >
-          <option value="">Быстрая тренировка без шаблона</option>
-          {templates.map((template) => (
-            <option key={template.id} value={template.id}>
-              {template.name}
-            </option>
-          ))}
-        </select>
+          onChange={setQuickTemplateId}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
           <SectionLabel>Дата</SectionLabel>
-          <input
+          <AppInput
             type="date"
             value={quickDate}
             onChange={(e) => setQuickDate(e.target.value)}
-            className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-3 text-white text-sm outline-none focus:border-(--color_primary_light)"
+            className="scheme-dark"
           />
         </div>
         <div>
@@ -656,8 +650,10 @@ export default function WorkoutInlineForm({
       )}
 
       <div>
-        <div className="flex items-center justify-between mb-1">
-          <SectionLabel>Описание тренировки</SectionLabel>
+        <div className="flex items-center justify-between mb-1.5">
+          <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest">
+            Описание тренировки
+          </p>
           {aiEnabled && (
             <button
               type="button"
@@ -682,11 +678,11 @@ export default function WorkoutInlineForm({
           }}
           placeholder={
             aiEnabled
-              ? 'Опишите тренировку — ИИ разберёт упражнения, подходы и веса\nНапример: жим лёжа 3×10 60кг, приседания 4×8 80кг'
+              ? 'Опишите тренировку: жим лёжа 3×10 60кг, приседания 4×8 80кг — ИИ разберёт упражнения, подходы и веса'
               : 'Опишите тренировку или укажите содержание'
           }
           rows={3}
-          className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none placeholder:text-(--color_text_muted) leading-relaxed"
+          className="w-full bg-(--color_bg_input) border border-(--color_border) rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-(--color_primary_light) transition-colors resize-none placeholder:text-(--color_text_muted)"
         />
         {quickAiError && <p className="text-xs text-red-400 mt-1.5">{quickAiError}</p>}
       </div>

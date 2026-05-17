@@ -62,7 +62,7 @@ export default function ActiveWeeksCard({ data, period }: Props) {
       </AnalyticsSheetIntro>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-(--color_bg_card) rounded-xl border border-(--color_border) p-4 text-center">
+        <div className="glass rounded-xl p-4 text-center">
           <div className={`text-4xl font-bold tabular-nums leading-none ${streakColor}`}>
             {consecutiveWeeks}
           </div>
@@ -71,7 +71,7 @@ export default function ActiveWeeksCard({ data, period }: Props) {
           </div>
           <div className={`text-[11px] mt-1 font-medium ${streakColor}`}>{streakLabel}</div>
         </div>
-        <div className="bg-(--color_bg_card) rounded-xl border border-(--color_border) p-4 text-center">
+        <div className="glass rounded-xl p-4 text-center">
           <div className="text-4xl font-bold tabular-nums leading-none text-white">
             {totalActiveWeeks}
           </div>
@@ -83,7 +83,7 @@ export default function ActiveWeeksCard({ data, period }: Props) {
       </div>
 
       {/* Visual strip */}
-      <div className="bg-(--color_bg_card) rounded-xl border border-(--color_border) p-3 space-y-2">
+      <div className="glass rounded-xl p-3 space-y-2">
         <div className="text-[11px] font-semibold text-(--color_text_muted) uppercase tracking-wide">
           Последние {DISPLAY_WEEKS} недель
         </div>

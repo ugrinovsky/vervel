@@ -1,9 +1,9 @@
 import { motion } from 'framer-motion';
 
 const MILESTONES = [
-  { weeks: 1,  emoji: '🥉', label: '1 нед' },
-  { weeks: 4,  emoji: '🥈', label: '4 нед' },
-  { weeks: 8,  emoji: '🥇', label: '8 нед' },
+  { weeks: 1, emoji: '🥉', label: '1 нед' },
+  { weeks: 4, emoji: '🥈', label: '4 нед' },
+  { weeks: 8, emoji: '🥇', label: '8 нед' },
   { weeks: 16, emoji: '🏆', label: '16 нед' },
   { weeks: 52, emoji: '💎', label: '52 нед' },
 ];
@@ -45,9 +45,7 @@ export default function StreakCard({
   const progressPct = weeklyRequired > 0 ? (weekProgress / weeklyRequired) * 100 : 0;
 
   return (
-    <motion.div
-      className="w-full bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border) text-left relative overflow-hidden"
-    >
+    <motion.div className="glass w-full rounded-2xl p-6 text-left relative overflow-hidden">
       {/* Subtle background tint */}
       <div
         className="absolute inset-0 opacity-5"
@@ -75,7 +73,9 @@ export default function StreakCard({
               </div>
             )}
             {isRecord && currentStreak > 1 && (
-              <div className="text-xs text-(--color_primary_icon) mt-0.5 font-medium">⚡ Это ваш рекорд!</div>
+              <div className="text-xs text-(--color_primary_icon) mt-0.5 font-medium">
+                ⚡ Это ваш рекорд!
+              </div>
             )}
           </div>
 
@@ -126,7 +126,11 @@ export default function StreakCard({
             return (
               <div key={m.weeks} className="flex items-center gap-1.5">
                 {i > 0 && (
-                  <span className={`text-xs ${active ? 'text-emerald-500/60' : 'text-(--color_text_muted) opacity-40'}`}>›</span>
+                  <span
+                    className={`text-xs ${active ? 'text-emerald-500/60' : 'text-(--color_text_muted) opacity-40'}`}
+                  >
+                    ›
+                  </span>
                 )}
                 <div
                   className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${
@@ -144,7 +148,6 @@ export default function StreakCard({
             );
           })}
         </div>
-
       </div>
     </motion.div>
   );

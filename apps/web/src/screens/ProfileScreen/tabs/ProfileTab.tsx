@@ -171,7 +171,7 @@ export default function ProfileTab({ data, trainerStats }: Props) {
       />
 
       <SectionGroup showLabel={false} showBreakAfter={false}>
-        <div className="bg-(--color_bg_card) rounded-2xl border border-(--color_border) overflow-hidden">
+        <div className="glass rounded-2xl overflow-hidden">
           <div className="flex items-center gap-4 p-6">
             <button
               type="button"
@@ -231,17 +231,17 @@ export default function ProfileTab({ data, trainerStats }: Props) {
       {inTrainerMode && (
         <SectionGroup title="Показатели">
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+            <div className="glass rounded-xl p-4 text-center">
               <div className="text-2xl font-bold text-white">
                 {trainerStats?.athleteCount ?? '—'}
               </div>
               <div className="text-xs text-(--color_text_muted) mt-1">Атлетов</div>
             </div>
-            <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+            <div className="glass rounded-xl p-4 text-center">
               <div className="text-2xl font-bold text-white">{trainerStats?.groupCount ?? '—'}</div>
               <div className="text-xs text-(--color_text_muted) mt-1">Групп</div>
             </div>
-            <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+            <div className="glass rounded-xl p-4 text-center">
               <div className="text-2xl font-bold text-white">
                 {trainerStats?.totalScheduledWorkouts ?? '—'}
               </div>
@@ -264,7 +264,7 @@ export default function ProfileTab({ data, trainerStats }: Props) {
                   navigate('/streak');
                 }
               }}
-              className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border) cursor-pointer hover:bg-(--color_bg_card_hover) transition-colors flex items-center justify-between"
+              className="glass rounded-2xl p-5 cursor-pointer hover:bg-(--color_bg_card_hover) transition-colors flex items-center justify-between"
             >
               <div>
                 <div className="text-base font-semibold text-white mb-0.5">Ачивки и серия</div>
@@ -341,7 +341,7 @@ export default function ProfileTab({ data, trainerStats }: Props) {
 
       {isTrainer && !isAthlete && (
         <SectionGroup title="Режим атлета" showBreakAfter={false}>
-          <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
+          <div className="glass rounded-2xl p-6">
             <div className="flex items-start gap-4">
               <div className="text-3xl">🏃</div>
               <div className="flex-1">
@@ -366,7 +366,7 @@ export default function ProfileTab({ data, trainerStats }: Props) {
 
       {isAthlete && !isTrainer && (
         <SectionGroup title="Режим тренера" showBreakAfter={false}>
-          <div className="bg-(--color_bg_card) rounded-2xl p-6 border border-(--color_border)">
+          <div className="glass rounded-2xl p-6">
             <div className="flex items-start gap-4">
               <div className="text-3xl">🏋️</div>
               <div className="flex-1">

@@ -29,6 +29,7 @@ import {
 import AccentButton from '@/components/ui/AccentButton';
 import AppInput from '@/components/ui/AppInput';
 import GhostButton from '@/components/ui/GhostButton';
+import TemplatePicker from '@/components/ui/TemplatePicker';
 import type { ExerciseData, WorkoutTemplate } from '@/api/trainer';
 import type {
   AiParsedWorkoutExercisePayload,
@@ -36,6 +37,7 @@ import type {
   AiTextParseUiPayload,
   AiWorkoutResult,
 } from '@/api/ai';
+import WorkoutAiEmptyState from '@/components/WorkoutAiEmptyState/WorkoutAiEmptyState';
 import { WORKOUT_TYPE_CONFIG, DEFAULT_WORKOUT_TYPE } from '@/constants/workoutTypes';
 import type { ClientPreferences } from '@/types/clientPreferences';
 import { workoutTypeForAthletePrimaryGoal } from '@/util/athletePrimaryGoalWorkoutType';
@@ -216,7 +218,6 @@ export default function WorkoutFormBase({
   const [saving, setSaving] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
   const [profileWeight, setProfileWeight] = useState<number | undefined>();
-  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [aiGenerated, setAiGenerated] = useState(false);
   const [aiPhotoUrl, setAiPhotoUrl] = useState<string | null>(null);
   const [aiPhotoExpanded, setAiPhotoExpanded] = useState(false);
@@ -491,7 +492,6 @@ export default function WorkoutFormBase({
     );
     setAiGenerated(false);
     setSelectedTemplateId(template.id);
-    setShowTemplatePicker(false);
   };
 
   // ── Submit ────────────────────────────────────────────────────────
@@ -538,29 +538,37 @@ export default function WorkoutFormBase({
     !aiPhotoNeedsTypePick && (!athletePrimaryGoal || athletePrimaryGoal === 'general');
 
   const aiToolbarBlock = showAi ? (
-    <div className="flex flex-wrap gap-3 mb-1">
+    <div className="grid grid-cols-3 gap-2">
       <AiWorkoutRecognizer
         onResult={handleAiRecognizedResult}
+        triggerClassName="flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl bg-white/[0.04] border border-white/[0.07] text-white/55 hover:text-white/80 hover:bg-white/[0.07] transition-colors text-[11px] text-center w-full"
         triggerContent={
           <>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="text-[13px] leading-none">📸</span>
-              <span>Распознать по фото</span>
-            </span>
+            <span className="text-base leading-none">📸</span>
+            <span>По фото</span>
           </>
         }
       />
       <AiWorkoutTextParser
         onResult={handleAiTextParsed}
-        triggerClassName="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+        triggerClassName="flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl bg-white/[0.04] border border-white/[0.07] text-white/55 hover:text-white/80 hover:bg-white/[0.07] transition-colors text-[11px] text-center w-full"
         triggerContent={
           <>
-            <span>📝</span>
-            Распознать по тексту
+            <span className="text-base leading-none">📝</span>
+            <span>По тексту</span>
           </>
         }
       />
-      <AiWorkoutGenerator onResult={handleAiGeneratedResult} />
+      <AiWorkoutGenerator
+        onResult={handleAiGeneratedResult}
+        triggerClassName="flex flex-col items-center gap-1.5 py-3 px-1 rounded-xl bg-white/[0.04] border border-white/[0.07] text-white/55 hover:text-white/80 hover:bg-white/[0.07] transition-colors text-[11px] text-center w-full"
+        triggerContent={
+          <>
+            <SparklesIcon className="w-4 h-4" />
+            <span>Генерация</span>
+          </>
+        }
+      />
     </div>
   ) : null;
 
@@ -568,7 +576,7 @@ export default function WorkoutFormBase({
     <div className={rootGap}>
       {/* Draft banner */}
       {draftRestored && storageKey && (
-        <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
+        <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl glass bg-amber-500/10 border border-amber-500/30">
           <span className="text-sm text-amber-300">Восстановлен черновик</span>
           <button
             type="button"
@@ -661,64 +669,20 @@ export default function WorkoutFormBase({
       {/* Шаблон */}
       {templates && templates.length > 0 && (
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <SectionLabel>Шаблон</SectionLabel>
-            {selectedTemplateId && (
-              <button
-                onClick={() => {
-                  setSelectedTemplateId(null);
-                  setExercises([]);
-                }}
-                className="text-[10px] text-(--color_text_muted) hover:text-white transition-colors"
-              >
-                Сбросить
-              </button>
-            )}
-          </div>
-          <button
-            onClick={() => setShowTemplatePicker((v) => !v)}
-            className={`w-full flex items-center justify-between py-2.5 px-3 rounded-xl text-sm text-left transition-colors border ${
-              selectedTemplateId
-                ? 'bg-(--color_primary_light)/10 border-(--color_primary_light) text-white'
-                : 'bg-(--color_bg_card_hover) border-(--color_border) text-(--color_text_muted) hover:text-white'
-            }`}
-          >
-            <span>
-              {selectedTemplateId
-                ? `📋 ${templates.find((t) => t.id === selectedTemplateId)?.name}`
-                : '📋 Выбрать шаблон'}
-            </span>
-            {showTemplatePicker ? (
-              <ChevronUpIcon className="w-4 h-4 shrink-0 opacity-50" />
-            ) : (
-              <ChevronDownIcon className="w-4 h-4 shrink-0 opacity-50" />
-            )}
-          </button>
-          {showTemplatePicker && (
-            <div className="mt-1 rounded-xl bg-(--color_bg_card_hover) divide-y divide-(--color_border) border border-(--color_border)">
-              {templates.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => applyTemplate(t)}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-left text-white hover:bg-(--color_border) transition-colors"
-                >
-                  <span className="shrink-0 text-xs px-1.5 py-0.5 rounded bg-(--color_primary_light)">
-                    {t.workoutType === 'crossfit'
-                      ? 'CF'
-                      : t.workoutType === 'bodybuilding'
-                        ? 'Сил'
-                        : 'Кард'}
-                  </span>
-                  <span className="flex-1 truncate">{t.name}</span>
-                  {t.exercises?.length > 0 && (
-                    <span className="text-xs text-(--color_text_muted) shrink-0">
-                      {t.exercises.length} упр.
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
+          <SectionLabel>Шаблон</SectionLabel>
+          <TemplatePicker
+            templates={templates}
+            value={selectedTemplateId}
+            onChange={(id) => {
+              if (!id) {
+                setSelectedTemplateId(null);
+                setExercises([]);
+              } else {
+                const t = templates.find((t) => t.id === id);
+                if (t) applyTemplate(t);
+              }
+            }}
+          />
         </div>
       )}
 
@@ -737,234 +701,156 @@ export default function WorkoutFormBase({
         </div>
 
         {/* Пустое состояние: ИИ или короткая подсказка */}
-        {exercises.length === 0 && !aiPhotoUrl && (
-          <div
-            className={`rounded-2xl mb-3 space-y-2 ${
-              lightOnboarding && !!showAi
-                ? 'relative overflow-hidden border border-emerald-400/20 bg-gradient-to-br from-emerald-500/15 via-(--color_bg_card) to-violet-500/10 p-4 shadow-[0_0_40px_-12px_rgba(16,185,129,0.35)]'
-                : lightOnboarding && !showAi
-                  ? 'border border-white/10 bg-white/[0.02] p-3.5'
-                  : 'bg-(--color_bg_card) border border-(--color_border) p-4'
-            }`}
-          >
-            {!showAi ? (
-              <>
-                <div className={`flex items-center gap-3 ${lightOnboarding ? 'p-1' : 'p-2'}`}>
-                  <span className="text-xl shrink-0">✏️</span>
-                  <span className="flex-1 min-w-0 text-sm text-(--color_text_muted) leading-snug">
-                    {lightOnboarding
-                      ? 'Выберите упражнения в списке ниже — пара штук достаточно, чтобы увидеть прогресс.'
-                      : 'Добавьте одно или два упражнения из каталога ниже — так вы быстрее увидите прогресс в календаре.'}
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => exercisesEditorRef.current?.openExercisePicker()}
-                    className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
-                  >
-                    <PlusIcon className="w-4 h-4 text-white/50" />
-                    <span className="text-sm font-medium text-white">Из каталога</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      isTrainerMode
-                        ? exercisesEditorRef.current?.openCustomPicker()
-                        : setAthleteCustomOpen((v) => !v)
-                    }
-                    className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
-                  >
-                    <span>✏️</span>
-                    <span className="text-sm font-medium text-white">Свои</span>
-                  </button>
-                </div>
-              </>
-            ) : lightOnboarding ? (
-              <>
-                <p className="text-[11px] font-medium text-emerald-200/90 tracking-wide">
-                  Через ИИ
-                </p>
-                <AiWorkoutTextParser
-                  onResult={handleAiTextParsed}
-                  triggerClassName="w-full flex items-center gap-3 py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500/25 to-teal-500/15 border border-emerald-400/35 text-left shadow-md shadow-emerald-950/40 hover:from-emerald-500/35 hover:border-emerald-300/45 transition-all"
-                  triggerContent={
-                    <>
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/25 text-lg">
-                        📝
-                      </span>
-                      <span className="flex-1 min-w-0 text-left">
-                        <span className="block text-sm font-semibold text-white">
-                          Вставить текст программы
-                        </span>
-                        <span className="block text-xs text-white/60 mt-0.5">
-                          ИИ разберёт упражнения и подходы
-                        </span>
-                      </span>
-                      <span className="text-emerald-300/80 text-lg shrink-0">→</span>
-                    </>
-                  }
-                />
-                <div className="space-y-2">
-                  <AiWorkoutRecognizer
-                    onResult={handleAiRecognizedResult}
-                    triggerClassName="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/5 border border-white/10 text-left hover:bg-white/[0.07] transition-colors"
+        {exercises.length === 0 &&
+          !aiPhotoUrl &&
+          (showAi && !lightOnboarding ? (
+            <WorkoutAiEmptyState
+              onAiGenerated={handleAiGeneratedResult}
+              onAiRecognized={handleAiRecognizedResult}
+              onAiTextParsed={handleAiTextParsed}
+              onOpenCatalog={() => exercisesEditorRef.current?.openExercisePicker()}
+              onOpenCustom={() =>
+                isTrainerMode
+                  ? exercisesEditorRef.current?.openCustomPicker()
+                  : setAthleteCustomOpen((v) => !v)
+              }
+              className="mb-3"
+            />
+          ) : (
+            <div
+              className={`rounded-2xl mb-3 space-y-2 ${
+                lightOnboarding && !!showAi
+                  ? 'relative overflow-hidden border border-emerald-400/20 bg-gradient-to-br from-emerald-500/15 via-(--color_bg_card) to-violet-500/10 p-4 shadow-[0_0_40px_-12px_rgba(16,185,129,0.35)]'
+                  : 'border border-white/10 bg-white/[0.02] p-3.5'
+              }`}
+            >
+              {!showAi ? (
+                <>
+                  <div className={`flex items-center gap-3 ${lightOnboarding ? 'p-1' : 'p-2'}`}>
+                    <span className="text-xl shrink-0">✏️</span>
+                    <span className="flex-1 min-w-0 text-sm text-(--color_text_muted) leading-snug">
+                      {lightOnboarding
+                        ? 'Выберите упражнения в списке ниже — пара штук достаточно, чтобы увидеть прогресс.'
+                        : 'Добавьте одно или два упражнения из каталога ниже — так вы быстрее увидите прогресс в календаре.'}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => exercisesEditorRef.current?.openExercisePicker()}
+                      className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+                    >
+                      <PlusIcon className="w-4 h-4 text-white/50" />
+                      <span className="text-sm font-medium text-white">Из каталога</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        isTrainerMode
+                          ? exercisesEditorRef.current?.openCustomPicker()
+                          : setAthleteCustomOpen((v) => !v)
+                      }
+                      className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+                    >
+                      <span>✏️</span>
+                      <span className="text-sm font-medium text-white">Свои</span>
+                    </button>
+                  </div>
+                </>
+              ) : lightOnboarding ? (
+                <>
+                  <p className="text-[11px] font-medium text-emerald-200/90 tracking-wide">
+                    Через ИИ
+                  </p>
+                  <AiWorkoutTextParser
+                    onResult={handleAiTextParsed}
+                    triggerClassName="w-full flex items-center gap-3 py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500/25 to-teal-500/15 border border-emerald-400/35 text-left shadow-md shadow-emerald-950/40 hover:from-emerald-500/35 hover:border-emerald-300/45 transition-all"
                     triggerContent={
                       <>
-                        <span className="text-lg shrink-0">📸</span>
-                        <span className="flex-1 min-w-0">
-                          <span className="block text-sm font-medium text-white">
-                            Распознать по фото
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/25 text-lg">
+                          📝
+                        </span>
+                        <span className="flex-1 min-w-0 text-left">
+                          <span className="block text-sm font-semibold text-white">
+                            Вставить текст программы
                           </span>
-                          <span className="block text-xs text-(--color_text_muted)">
-                            Загрузите снимок программы
+                          <span className="block text-xs text-white/60 mt-0.5">
+                            ИИ разберёт упражнения и подходы
                           </span>
                         </span>
-                        <span className="text-emerald-400/60 text-base shrink-0">→</span>
+                        <span className="text-emerald-300/80 text-lg shrink-0">→</span>
                       </>
                     }
                   />
-                  <AiWorkoutGenerator
-                    onResult={handleAiGeneratedResult}
-                    triggerClassName="w-full flex items-center gap-3 p-2.5 rounded-xl bg-violet-500/10 border border-violet-500/25 text-left hover:bg-violet-500/15 transition-colors"
-                    triggerContent={
-                      <>
-                        <span className="text-lg shrink-0">✨</span>
-                        <span className="flex-1 min-w-0">
-                          <span className="block text-sm font-medium text-white">
-                            Сгенерировать по описанию
+                  <div className="space-y-2">
+                    <AiWorkoutRecognizer
+                      onResult={handleAiRecognizedResult}
+                      triggerClassName="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/5 border border-white/10 text-left hover:bg-white/[0.07] transition-colors"
+                      triggerContent={
+                        <>
+                          <span className="text-lg shrink-0">📸</span>
+                          <span className="flex-1 min-w-0">
+                            <span className="block text-sm font-medium text-white">
+                              Распознать по фото
+                            </span>
+                            <span className="block text-xs text-(--color_text_muted)">
+                              Загрузите снимок программы
+                            </span>
                           </span>
-                          <span className="block text-xs text-(--color_text_muted)">
-                            Опишите желаемую тренировку
+                          <span className="text-emerald-400/60 text-base shrink-0">→</span>
+                        </>
+                      }
+                    />
+                    <AiWorkoutGenerator
+                      onResult={handleAiGeneratedResult}
+                      triggerClassName="w-full flex items-center gap-3 p-2.5 rounded-xl bg-violet-500/10 border border-violet-500/25 text-left hover:bg-violet-500/15 transition-colors"
+                      triggerContent={
+                        <>
+                          <span className="text-lg shrink-0">✨</span>
+                          <span className="flex-1 min-w-0">
+                            <span className="block text-sm font-medium text-white">
+                              Сгенерировать по описанию
+                            </span>
+                            <span className="block text-xs text-(--color_text_muted)">
+                              Опишите желаемую тренировку
+                            </span>
                           </span>
-                        </span>
-                        <span className="text-violet-400/60 text-base shrink-0">→</span>
-                      </>
-                    }
-                  />
-                </div>
-                <div className="flex items-center gap-2 my-1">
-                  <div className="h-px bg-white/10 flex-1" />
-                  <span className="text-[10px] text-white/30 shrink-0">или выбрать вручную</span>
-                  <div className="h-px bg-white/10 flex-1" />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => exercisesEditorRef.current?.openExercisePicker()}
-                    className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
-                  >
-                    <PlusIcon className="w-4 h-4 text-white/50" />
-                    <span className="text-sm font-medium text-white">Из каталога</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      isTrainerMode
-                        ? exercisesEditorRef.current?.openCustomPicker()
-                        : setAthleteCustomOpen((v) => !v)
-                    }
-                    className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
-                  >
-                    <span>✏️</span>
-                    <span className="text-sm font-medium text-white">Свои</span>
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-3">
-                  Как добавить упражнения?
-                </p>
-
-                <AiWorkoutRecognizer
-                  onResult={handleAiRecognizedResult}
-                  triggerClassName="w-full flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-left hover:bg-emerald-500/15 transition-colors"
-                  triggerContent={
-                    <>
-                      <span className="text-xl shrink-0">📸</span>
-                      <span className="flex-1 min-w-0">
-                        <span className="block text-sm font-medium text-white">
-                          Распознать изображение
-                        </span>
-                        <span className="block text-xs text-(--color_text_muted)">
-                          ИИ распознает по фото
-                        </span>
-                      </span>
-                      <span className="text-emerald-400/60 text-base shrink-0">→</span>
-                    </>
-                  }
-                />
-
-                <AiWorkoutTextParser
-                  onResult={handleAiTextParsed}
-                  triggerClassName="w-full flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-left hover:bg-emerald-500/15 transition-colors"
-                  triggerContent={
-                    <>
-                      <span className="text-xl shrink-0">📝</span>
-                      <span className="flex-1 min-w-0">
-                        <span className="block text-sm font-medium text-white">
-                          Распознать по тексту
-                        </span>
-                        <span className="block text-xs text-(--color_text_muted)">
-                          ИИ распознает по тексту
-                        </span>
-                      </span>
-                      <span className="text-emerald-400/60 text-base shrink-0">→</span>
-                    </>
-                  }
-                />
-
-                <AiWorkoutGenerator
-                  onResult={handleAiGeneratedResult}
-                  triggerClassName="w-full flex items-center gap-3 p-3 rounded-xl bg-violet-500/10 border border-violet-500/20 text-left hover:bg-violet-500/15 transition-colors"
-                  triggerContent={
-                    <>
-                      <span className="text-xl shrink-0">✨</span>
-                      <span className="flex-1 min-w-0">
-                        <span className="block text-sm font-medium text-white">
-                          Сгенерировать по описанию
-                        </span>
-                        <span className="block text-xs text-(--color_text_muted)">
-                          ИИ сам подберёт упражнения, подходы и веса
-                        </span>
-                      </span>
-                      <span className="text-violet-400/60 text-base shrink-0">→</span>
-                    </>
-                  }
-                />
-
-                <div className="flex items-center gap-2 my-1">
-                  <div className="h-px bg-white/10 flex-1" />
-                  <span className="text-[10px] text-white/30 shrink-0">или выбрать вручную</span>
-                  <div className="h-px bg-white/10 flex-1" />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => exercisesEditorRef.current?.openExercisePicker()}
-                    className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
-                  >
-                    <PlusIcon className="w-4 h-4 text-white/50" />
-                    <span className="text-sm font-medium text-white">Из каталога</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      isTrainerMode
-                        ? exercisesEditorRef.current?.openCustomPicker()
-                        : setAthleteCustomOpen((v) => !v)
-                    }
-                    className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
-                  >
-                    <span>✏️</span>
-                    <span className="text-sm font-medium text-white">Свои</span>
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
+                          <span className="text-violet-400/60 text-base shrink-0">→</span>
+                        </>
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 my-1">
+                    <div className="h-px bg-white/10 flex-1" />
+                    <span className="text-[10px] text-white/30 shrink-0">или выбрать вручную</span>
+                    <div className="h-px bg-white/10 flex-1" />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => exercisesEditorRef.current?.openExercisePicker()}
+                      className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+                    >
+                      <PlusIcon className="w-4 h-4 text-white/50" />
+                      <span className="text-sm font-medium text-white">Из каталога</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        isTrainerMode
+                          ? exercisesEditorRef.current?.openCustomPicker()
+                          : setAthleteCustomOpen((v) => !v)
+                      }
+                      className="flex-1 flex items-center justify-center gap-2 py-1.5 px-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/[0.08] hover:border-white/20 transition-colors"
+                    >
+                      <span>✏️</span>
+                      <span className="text-sm font-medium text-white">Свои</span>
+                    </button>
+                  </div>
+                </>
+              ) : null}
+            </div>
+          ))}
 
         {aiPhotoUrl && (
           <div className="rounded-xl border border-white/10 overflow-hidden mb-3">
@@ -1007,20 +893,30 @@ export default function WorkoutFormBase({
           toolbar={
             !showAi ? undefined : exercises.length > 0 && !aiGenerated ? (
               lightOnboarding ? (
-                <div className="mb-1">
+                <div className="glass rounded-xl overflow-hidden mb-1">
                   <button
                     type="button"
                     onClick={() => setLiteToolbarMoreOpen((v) => !v)}
-                    className="flex w-full items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-left text-xs text-white/55 hover:text-white/75 transition-colors"
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-white/[0.04] transition-colors"
                   >
-                    <span>Добавить ещё через ИИ (фото, текст, генерация · 10₽)</span>
+                    <span className="flex items-center gap-2 text-xs text-white/50">
+                      <SparklesIcon className="w-3.5 h-3.5 shrink-0 text-violet-400/70" />
+                      <span>Добавить через ИИ</span>
+                      <span className="text-white/25">·</span>
+                      <span className="text-white/30">от 10₽</span>
+                    </span>
                     {liteToolbarMoreOpen ? (
-                      <ChevronUpIcon className="w-3.5 h-3.5 shrink-0 opacity-60" />
+                      <ChevronUpIcon className="w-3.5 h-3.5 shrink-0 text-white/30" />
                     ) : (
-                      <ChevronDownIcon className="w-3.5 h-3.5 shrink-0 opacity-60" />
+                      <ChevronDownIcon className="w-3.5 h-3.5 shrink-0 text-white/30" />
                     )}
                   </button>
-                  {liteToolbarMoreOpen ? aiToolbarBlock : null}
+                  {liteToolbarMoreOpen && (
+                    <div className="px-3 pb-3">
+                      <div className="h-px bg-white/[0.06] mb-3" />
+                      {aiToolbarBlock}
+                    </div>
+                  )}
                 </div>
               ) : (
                 aiToolbarBlock

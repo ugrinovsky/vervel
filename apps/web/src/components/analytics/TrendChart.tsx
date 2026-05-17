@@ -20,14 +20,26 @@ interface Props {
   data: WorkoutStats;
 }
 
-const RU_MONTHS = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+const RU_MONTHS = [
+  'янв',
+  'фев',
+  'мар',
+  'апр',
+  'май',
+  'июн',
+  'июл',
+  'авг',
+  'сен',
+  'окт',
+  'ноя',
+  'дек',
+];
 
 function formatDate(iso: string, period: string) {
   const [, m, d] = iso.slice(0, 10).split('-').map(Number);
   if (period === 'year') return RU_MONTHS[m - 1];
   return `${d} ${RU_MONTHS[m - 1]}`;
 }
-
 
 function CustomTooltip({ active, payload, label }: RechartsTooltipContentProps) {
   if (!active || !payload?.length) return null;
@@ -91,7 +103,11 @@ export default function TrendChart({ period, data }: Props) {
       )
     : 0;
 
-  const peakVol = chartData.reduce((m, d) => (d.volume > m.volume ? d : m), { label: '—', volume: 0, intensity: 0 });
+  const peakVol = chartData.reduce((m, d) => (d.volume > m.volume ? d : m), {
+    label: '—',
+    volume: 0,
+    intensity: 0,
+  });
 
   if (!chartData.length) {
     return (
@@ -104,33 +120,39 @@ export default function TrendChart({ period, data }: Props) {
   return (
     <div className="space-y-4">
       <AnalyticsSheetIntro>
-        Каждая точка — тренировка (или месяц за год). Столбики — объём, линия — средняя интенсивность сетов в
-        этой точке (0–100%, не путать с весом на штанге).
+        Каждая точка — тренировка (или месяц за год). Столбики — объём, линия — средняя
+        интенсивность сетов в этой точке (0–100%, не путать с весом на штанге).
       </AnalyticsSheetIntro>
       {/* Summary row */}
       <div className="grid grid-cols-3 gap-2">
-        <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) text-center">
+        <div className="glass rounded-xl p-3 text-center">
           <div className="text-lg font-bold text-emerald-400">{formatVolume(totalVol)}</div>
           <div className="text-xs text-(--color_text_muted) mt-0.5">суммарный объём</div>
         </div>
-        <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) text-center">
-          <div className="text-lg font-bold" style={{ color: 'var(--color-rose-400)' }}>{avgInt}%</div>
+        <div className="glass rounded-xl p-3 text-center">
+          <div className="text-lg font-bold" style={{ color: 'var(--color-rose-400)' }}>
+            {avgInt}%
+          </div>
           <div className="text-xs text-(--color_text_muted) mt-0.5">ср. интенсивность</div>
         </div>
-        <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) text-center">
+        <div className="glass rounded-xl p-3 text-center">
           <div className="text-lg font-bold text-emerald-400">{peakVol.label}</div>
           <div className="text-xs text-(--color_text_muted) mt-0.5">пиковый день</div>
         </div>
       </div>
 
       {/* Combined chart */}
-      <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border)">
+      <div className="glass rounded-xl p-3">
         <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wide mb-3">
           Объём и интенсивность
         </p>
         <ResponsiveContainer width="100%" height={170}>
           <ComposedChart data={chartData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--color_border_light)" vertical={false} />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="var(--color_border_light)"
+              vertical={false}
+            />
             <XAxis
               dataKey="label"
               tick={{ fontSize: 11, fill: 'var(--color_text_muted)' }}
@@ -177,7 +199,10 @@ export default function TrendChart({ period, data }: Props) {
         {/* Legend */}
         <div className="flex items-center gap-4 mt-2">
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: 'var(--color_primary_icon)', opacity: 0.6 }} />
+            <div
+              className="w-3 h-3 rounded-sm"
+              style={{ backgroundColor: 'var(--color_primary_icon)', opacity: 0.6 }}
+            />
             <span className="text-xs text-(--color_text_muted)">Объём</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -189,7 +214,7 @@ export default function TrendChart({ period, data }: Props) {
 
       {/* Top days by volume */}
       {totalVol > 0 && (
-        <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border)">
+        <div className="glass rounded-xl p-3">
           <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wide mb-3">
             Топ дней по объёму
           </p>
@@ -212,7 +237,9 @@ export default function TrendChart({ period, data }: Props) {
                       }}
                     />
                   </div>
-                  <span className="text-xs w-12 text-right text-emerald-400">{formatVolume(d.volume)}</span>
+                  <span className="text-xs w-12 text-right text-emerald-400">
+                    {formatVolume(d.volume)}
+                  </span>
                 </div>
               ))}
           </div>

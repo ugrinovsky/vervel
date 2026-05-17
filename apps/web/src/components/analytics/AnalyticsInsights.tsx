@@ -33,7 +33,7 @@ function trainingsNoun(count: number): string {
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="rounded-xl border border-(--color_border) bg-(--color_bg_card) p-3 space-y-2">
+    <div className="glass rounded-xl p-3 space-y-2">
       <div className="text-[11px] font-semibold text-(--color_text_muted) uppercase tracking-wide">
         {title}
       </div>
@@ -61,7 +61,9 @@ export default function AnalyticsInsights({ stats, period }: Props) {
           Когда появятся тренировки в выбранном окне, здесь соберутся ритм, полнота журнала и другие
           производные показатели.
         </AnalyticsSheetIntro>
-        <p className="text-sm text-(--color_text_muted) text-center py-6">Пока нет данных за период.</p>
+        <p className="text-sm text-(--color_text_muted) text-center py-6">
+          Пока нет данных за период.
+        </p>
       </div>
     );
   }
@@ -73,8 +75,9 @@ export default function AnalyticsInsights({ stats, period }: Props) {
   return (
     <div className="space-y-4">
       <AnalyticsSheetIntro>
-        Дополнительные выводы из таймлайна тренировок: ритм, полнота записей, распределение «тяжёлых» сессий
-        и простой ориентир по темпу. Не медицинское заключение и не прогноз результатов.
+        Дополнительные выводы из таймлайна тренировок: ритм, полнота записей, распределение
+        «тяжёлых» сессий и простой ориентир по темпу. Не медицинское заключение и не прогноз
+        результатов.
       </AnalyticsSheetIntro>
 
       {softOverloadHint && (
@@ -117,15 +120,15 @@ export default function AnalyticsInsights({ stats, period }: Props) {
 
       <Section title="Тоннаж за сессию (классы приложения)">
         <p className="text-[11px] text-(--color_text_muted) leading-snug -mt-1">
-          Как в календаре: в основном по суммарному тоннажу за сессию (пороги ~10 т и ~15 т). Если объёма нет,
-          но в записи есть упражнения или учтённая интенсивность — тоже нижний класс. Это не «легко/тяжело
-          на ощущениях». Часто почти все сессии в первой строке — нормально. Проценты — сколько тренировок
-          попало в каждый класс за период.
+          Как в календаре: в основном по суммарному тоннажу за сессию (пороги ~10 т и ~15 т). Если
+          объёма нет, но в записи есть упражнения или учтённая интенсивность — тоже нижний класс.
+          Это не «легко/тяжело на ощущениях». Часто почти все сессии в первой строке — нормально.
+          Проценты — сколько тренировок попало в каждый класс за период.
         </p>
         {(loadLevels.none ?? 0) > 0 && (
           <p className="text-[11px] text-(--color_text_muted) leading-snug">
-            «Нет тоннажа и упражнений» — сохранённая запись без подходов и без посчитанного объёма (не черновик
-            из редактора).
+            «Нет тоннажа и упражнений» — сохранённая запись без подходов и без посчитанного объёма
+            (не черновик из редактора).
           </p>
         )}
         {loadTotal === 0 ? (
@@ -170,8 +173,8 @@ export default function AnalyticsInsights({ stats, period }: Props) {
       {zoneShift && (
         <Section title="Сдвиг акцента по зонам">
           <p className="text-[11px] text-(--color_text_muted) leading-snug -mt-0.5">
-            Вторая половина выбранного периода по датам сравнивается с первой: как изменилась доля нагрузки
-            по группам мышц (по сумме по сессиям в каждой половине).
+            Вторая половина выбранного периода по датам сравнивается с первой: как изменилась доля
+            нагрузки по группам мышц (по сумме по сессиям в каждой половине).
           </p>
           <div className="grid grid-cols-2 gap-2.5">
             <div
@@ -185,7 +188,9 @@ export default function AnalyticsInsights({ stats, period }: Props) {
                 <ArrowTrendingUpIcon className="w-3.5 h-3.5 shrink-0" aria-hidden />
                 Больше
               </div>
-              <div className="text-base font-bold text-white mt-1.5 leading-tight">{zoneShift.upLabel}</div>
+              <div className="text-base font-bold text-white mt-1.5 leading-tight">
+                {zoneShift.upLabel}
+              </div>
               <div className="text-lg font-bold tabular-nums text-emerald-400 mt-auto pt-2">
                 +{zoneShift.upDeltaPct} п.п.
               </div>
@@ -194,14 +199,17 @@ export default function AnalyticsInsights({ stats, period }: Props) {
               className="rounded-xl p-3 border min-h-[5.25rem] flex flex-col"
               style={{
                 borderColor: 'rgba(251,113,133,0.28)',
-                background: 'linear-gradient(160deg, rgba(251,113,133,0.08) 0%, rgba(0,0,0,0) 100%)',
+                background:
+                  'linear-gradient(160deg, rgba(251,113,133,0.08) 0%, rgba(0,0,0,0) 100%)',
               }}
             >
               <div className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-rose-300/90">
                 <ArrowTrendingDownIcon className="w-3.5 h-3.5 shrink-0" aria-hidden />
                 Меньше
               </div>
-              <div className="text-base font-bold text-white mt-1.5 leading-tight">{zoneShift.downLabel}</div>
+              <div className="text-base font-bold text-white mt-1.5 leading-tight">
+                {zoneShift.downLabel}
+              </div>
               <div className="text-lg font-bold tabular-nums text-rose-300 mt-auto pt-2">
                 −{zoneShift.downDeltaPct} п.п.
               </div>
@@ -264,8 +272,8 @@ export default function AnalyticsInsights({ stats, period }: Props) {
             </div>
           </div>
           <p className="text-[11px] text-(--color_text_muted) leading-relaxed pt-1 border-t border-(--color_border) mt-2">
-            Если сохранить текущий ритм, за период около 30 дней выйдет примерно столько же сессий. Расчёт
-            упрощённый: отпуска, болезни и срывы не учитываются. Источник данных —{' '}
+            Если сохранить текущий ритм, за период около 30 дней выйдет примерно столько же сессий.
+            Расчёт упрощённый: отпуска, болезни и срывы не учитываются. Источник данных —{' '}
             <span className="text-white/80">{paceScope}</span>.
           </p>
         </Section>

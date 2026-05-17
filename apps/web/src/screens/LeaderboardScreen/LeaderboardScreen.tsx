@@ -5,6 +5,7 @@ import Screen from '@/components/Screen/Screen';
 import ScreenHeader from '@/components/ScreenHeader/ScreenHeader';
 import BackButton from '@/components/BackButton/BackButton';
 import ToggleGroup from '@/components/ui/ToggleGroup';
+import Tabs from '@/components/ui/Tabs';
 import AnimatedBlock from '@/components/ui/AnimatedBlock';
 import LineChart from '@/components/ui/LineChart';
 import { cardClass } from '@/components/ui/Card';
@@ -84,9 +85,27 @@ function Initials({ name, size = 'md' }: { name: string | null; size?: 'sm' | 'm
 }
 
 const PODIUM_COLS = [
-  { sortIdx: 1, medal: '🥈', platformH: 'h-14', platformColor: 'color-mix(in srgb, var(--color_chart_2) 40%, transparent)', valueColor: 'text-(--color_chart_2)' },
-  { sortIdx: 0, medal: '🥇', platformH: 'h-20', platformColor: 'color-mix(in srgb, var(--color_chart_1) 65%, transparent)', valueColor: 'text-(--color_chart_1)' },
-  { sortIdx: 2, medal: '🥉', platformH: 'h-9',  platformColor: 'color-mix(in srgb, var(--color_chart_3) 35%, transparent)', valueColor: 'text-(--color_chart_3)' },
+  {
+    sortIdx: 1,
+    medal: '🥈',
+    platformH: 'h-14',
+    platformColor: 'color-mix(in srgb, var(--color_chart_2) 40%, transparent)',
+    valueColor: 'text-(--color_chart_2)',
+  },
+  {
+    sortIdx: 0,
+    medal: '🥇',
+    platformH: 'h-20',
+    platformColor: 'color-mix(in srgb, var(--color_chart_1) 65%, transparent)',
+    valueColor: 'text-(--color_chart_1)',
+  },
+  {
+    sortIdx: 2,
+    medal: '🥉',
+    platformH: 'h-9',
+    platformColor: 'color-mix(in srgb, var(--color_chart_3) 35%, transparent)',
+    valueColor: 'text-(--color_chart_3)',
+  },
 ];
 
 function Podium({
@@ -131,7 +150,10 @@ function Podium({
               </div>
             )}
             {/* Platform block */}
-            <div className={`w-full ${platformH} rounded-t-xl flex items-center justify-center`} style={{ backgroundColor: platformColor }}>
+            <div
+              className={`w-full ${platformH} rounded-t-xl flex items-center justify-center`}
+              style={{ backgroundColor: platformColor }}
+            >
               <span className="text-lg font-black text-white/30">{rank}</span>
             </div>
           </div>
@@ -140,7 +162,6 @@ function Podium({
     </div>
   );
 }
-
 
 export default function LeaderboardScreen() {
   const { groupId } = useParams<{ groupId: string }>();
@@ -155,22 +176,25 @@ export default function LeaderboardScreen() {
   const [metric, setMetric] = useState<Metric>('progressionCoeff');
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async (p?: 7 | 30) => {
-    const pr = p ?? period;
-    setLoading(true);
-    try {
-      const res = isTrainer
-        ? await trainerApi.getGroupLeaderboard(id, pr)
-        : await athleteApi.getGroupLeaderboard(id, pr);
-      setEntries(res.data.data.entries);
-      setGroupName(res.data.data.groupName);
-      setTrainerName(res.data.data.trainerName);
-    } catch {
-      toast.error('Ошибка загрузки лидерборда');
-    } finally {
-      setLoading(false);
-    }
-  }, [id, isTrainer, period]);
+  const load = useCallback(
+    async (p?: 7 | 30) => {
+      const pr = p ?? period;
+      setLoading(true);
+      try {
+        const res = isTrainer
+          ? await trainerApi.getGroupLeaderboard(id, pr)
+          : await athleteApi.getGroupLeaderboard(id, pr);
+        setEntries(res.data.data.entries);
+        setGroupName(res.data.data.groupName);
+        setTrainerName(res.data.data.trainerName);
+      } catch {
+        toast.error('Ошибка загрузки лидерборда');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [id, isTrainer, period]
+  );
 
   const handleShare = async () => {
     const currentMetricDef = METRICS.find((m) => m.key === metric)!;
@@ -223,19 +247,18 @@ export default function LeaderboardScreen() {
 
           <ScreenHeader icon="🏆" title="Лидерборд" description="Рейтинг атлетов группы" />
 
-          <ToggleGroup
-            cols={2}
-            value={String(period)}
+          <Tabs
+            tabs={[
+              { id: '7', label: '7 дней' },
+              { id: '30', label: '30 дней' },
+            ]}
+            active={String(period)}
             onChange={(v) => {
               const n = Number(v);
               if (n !== 7 && n !== 30) return;
               setPeriod(n);
               load(n);
             }}
-            options={[
-              { value: '7', label: '7 дней' },
-              { value: '30', label: '30 дней' },
-            ]}
           />
 
           <ToggleGroup
@@ -246,7 +269,7 @@ export default function LeaderboardScreen() {
             itemPy="py-1.5"
           />
 
-          <div className="min-h-18 px-3 py-2.5 rounded-xl bg-(--color_bg_card) border border-(--color_border) text-xs text-(--color_text_muted) leading-relaxed">
+          <div className="glass min-h-18 px-3 py-2.5 rounded-xl text-xs text-(--color_text_muted) leading-relaxed">
             {currentMetric.hint}
             {metricEmpty && entries.length > 0 && (
               <div className="mt-1.5 text-(--color_text_muted)/70">
@@ -266,7 +289,9 @@ export default function LeaderboardScreen() {
           <>
             {sorted.length >= 2 && (
               <SectionGroup title="Топ-3">
-                <AnimatedBlock className={`${cardClass} rounded-2xl px-4 pt-3 pb-0 overflow-hidden`}>
+                <AnimatedBlock
+                  className={`${cardClass} rounded-2xl px-4 pt-3 pb-0 overflow-hidden`}
+                >
                   <Podium sorted={sorted} metric={metric} format={currentMetric.format} />
                 </AnimatedBlock>
               </SectionGroup>
@@ -309,7 +334,9 @@ export default function LeaderboardScreen() {
                           {medal ? (
                             <span className="text-xl">{medal}</span>
                           ) : (
-                            <span className="text-sm font-bold text-(--color_text_muted)">{i + 1}</span>
+                            <span className="text-sm font-bold text-(--color_text_muted)">
+                              {i + 1}
+                            </span>
                           )}
                         </div>
                         <Initials name={entry.fullName} />

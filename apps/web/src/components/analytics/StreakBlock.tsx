@@ -8,7 +8,15 @@ interface Props {
 }
 
 const WEEK_DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-const WEEK_DAYS_FULL = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
+const WEEK_DAYS_FULL = [
+  'Понедельник',
+  'Вторник',
+  'Среда',
+  'Четверг',
+  'Пятница',
+  'Суббота',
+  'Воскресенье',
+];
 
 function isoToLocalDate(iso: string) {
   const [y, m, d] = iso.split('-').map(Number);
@@ -27,7 +35,14 @@ export default function StreakBlock({ data, period }: Props) {
   const { currentStreak, bestStreak, favDayIdx, avgPerWeek, dotGrid, trainedSet } = useMemo(() => {
     const timeline = data.timeline ?? [];
     if (!timeline.length) {
-      return { currentStreak: 0, bestStreak: 0, favDayIdx: -1, avgPerWeek: 0, dotGrid: [], trainedSet: new Set<string>() };
+      return {
+        currentStreak: 0,
+        bestStreak: 0,
+        favDayIdx: -1,
+        avgPerWeek: 0,
+        dotGrid: [],
+        trainedSet: new Set<string>(),
+      };
     }
 
     // Build set of trained dates — only real workouts (intensity > 0 or volume > 0)
@@ -118,27 +133,27 @@ export default function StreakBlock({ data, period }: Props) {
   return (
     <div className="space-y-4">
       <AnalyticsSheetIntro>
-        Календарь точек строится по последним 28 дням; серии и «в неделю» считаются по фактическим датам
-        тренировок в загруженном периоде. Для полноценной сетки переключитесь на «Месяц».
+        Календарь точек строится по последним 28 дням; серии и «в неделю» считаются по фактическим
+        датам тренировок в загруженном периоде. Для полноценной сетки переключитесь на «Месяц».
       </AnalyticsSheetIntro>
       {/* Streak cards */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+        <div className="glass rounded-xl p-4 text-center">
           <div className="text-3xl font-bold text-orange-400">{currentStreak}</div>
           <div className="text-xs text-(--color_text_muted) mt-1">текущая серия</div>
           <div className="text-[11px] text-(--color_text_muted)/60 mt-0.5">дн. подряд</div>
         </div>
-        <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+        <div className="glass rounded-xl p-4 text-center">
           <div className="text-3xl font-bold text-emerald-400">{bestStreak}</div>
           <div className="text-xs text-(--color_text_muted) mt-1">лучшая серия</div>
           <div className="text-[11px] text-(--color_text_muted)/60 mt-0.5">дн. подряд</div>
         </div>
-        <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+        <div className="glass rounded-xl p-4 text-center">
           <div className="text-3xl font-bold text-emerald-400">{avgPerWeek}</div>
           <div className="text-xs text-(--color_text_muted) mt-1">в неделю</div>
           <div className="text-[11px] text-(--color_text_muted)/60 mt-0.5">тренировок</div>
         </div>
-        <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center">
+        <div className="glass rounded-xl p-4 text-center">
           <div className="text-3xl font-bold text-amber-400">{totalDays}</div>
           <div className="text-xs text-(--color_text_muted) mt-1">тренировок</div>
           <div className="text-[11px] text-(--color_text_muted)/60 mt-0.5">за период</div>
@@ -147,7 +162,7 @@ export default function StreakBlock({ data, period }: Props) {
 
       {/* Favourite day */}
       {favDayIdx >= 0 && (
-        <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border) flex items-center gap-3">
+        <div className="glass rounded-xl p-3 flex items-center gap-3">
           <span className="text-2xl">🏆</span>
           <div>
             <p className="text-sm font-semibold text-white">{WEEK_DAYS_FULL[favDayIdx]}</p>
@@ -158,7 +173,7 @@ export default function StreakBlock({ data, period }: Props) {
 
       {/* 28-day dot calendar */}
       {dotGrid.length > 0 && (
-        <div className="bg-(--color_bg_card) rounded-xl p-3 border border-(--color_border)">
+        <div className="glass rounded-xl p-3">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-semibold text-(--color_text_muted) uppercase tracking-wide">
               Последние 4 недели
@@ -199,7 +214,10 @@ export default function StreakBlock({ data, period }: Props) {
           </div>
           <div className="flex items-center gap-3 mt-2">
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-[3px]" style={{ backgroundColor: 'var(--color_primary_light)' }} />
+              <div
+                className="w-3 h-3 rounded-[3px]"
+                style={{ backgroundColor: 'var(--color_primary_light)' }}
+              />
               <span className="text-[11px] text-(--color_text_muted)">Тренировка</span>
             </div>
             <div className="flex items-center gap-1.5">

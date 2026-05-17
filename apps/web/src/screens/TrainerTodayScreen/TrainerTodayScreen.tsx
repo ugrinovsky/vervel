@@ -149,7 +149,7 @@ export default function TrainerTodayScreen() {
         />
 
         <SectionGroup showLabel={false} showBreakAfter={false} bodyClassName="space-y-4">
-          <AnimatedBlock className="w-full rounded-2xl p-4 border border-(--color_primary_light)/30 bg-(--color_primary_light)/10">
+          <AnimatedBlock className="card-shadow w-full rounded-2xl p-4 border border-(--color_primary_light)/30 bg-(--color_primary_light)/10">
             <div className="flex items-center gap-3">
               <div className="text-2xl">
                 {overview
@@ -199,7 +199,7 @@ export default function TrainerTodayScreen() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     onClick={() => navigate('/trainer/groups')}
-                    className="w-full flex items-center gap-3 p-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
+                    className="glass rounded-xl w-full flex items-center gap-3 p-4 hover:bg-(--color_bg_card_hover) transition-colors text-left"
                   >
                     <ChatBubbleLeftEllipsisIcon className="w-6 h-6 text-(--color_primary_icon) shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -224,7 +224,7 @@ export default function TrainerTodayScreen() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.05 }}
                     onClick={() => navigate('/trainer/athletes')}
-                    className="w-full flex items-center gap-3 p-4 rounded-xl bg-(--color_bg_card) border border-(--color_border) hover:bg-(--color_bg_card_hover) transition-colors text-left"
+                    className="glass rounded-xl w-full flex items-center gap-3 p-4 hover:bg-(--color_bg_card_hover) transition-colors text-left"
                   >
                     <ChatBubbleLeftEllipsisIcon className="w-6 h-6 text-(--color_primary_icon) shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -289,7 +289,7 @@ export default function TrainerTodayScreen() {
                   type="button"
                   aria-label="Открыть календарь тренера"
                   onClick={() => navigate('/trainer/calendar')}
-                  className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center hover:border-(--color_primary_light)/50 hover:bg-(--color_bg_card_hover) transition-colors"
+                  className="glass rounded-xl p-4 text-center hover:border-(--color_primary_light)/50 hover:bg-(--color_bg_card_hover) transition-colors"
                 >
                   <ClockIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
                   <div className="text-2xl font-bold text-white">{todaySessionCount}</div>
@@ -301,7 +301,7 @@ export default function TrainerTodayScreen() {
                       type="button"
                       aria-label="Список атлетов"
                       onClick={() => navigate('/trainer/athletes')}
-                      className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center hover:border-(--color_primary_light)/50 hover:bg-(--color_bg_card_hover) transition-colors"
+                      className="glass rounded-xl p-4 text-center hover:border-(--color_primary_light)/50 hover:bg-(--color_bg_card_hover) transition-colors"
                     >
                       <UsersIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
                       <div className="text-2xl font-bold text-white">
@@ -313,7 +313,7 @@ export default function TrainerTodayScreen() {
                       type="button"
                       aria-label="Список групп"
                       onClick={() => navigate('/trainer/groups')}
-                      className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) text-center hover:border-(--color_primary_light)/50 hover:bg-(--color_bg_card_hover) transition-colors"
+                      className="glass rounded-xl p-4 text-center hover:border-(--color_primary_light)/50 hover:bg-(--color_bg_card_hover) transition-colors"
                     >
                       <UserGroupIcon className="w-6 h-6 text-(--color_primary_icon) mx-auto mb-2" />
                       <div className="text-2xl font-bold text-white">
@@ -327,10 +327,7 @@ export default function TrainerTodayScreen() {
             </SectionGroup>
 
             <SectionGroup title="Тренировки на сегодня">
-              <AnimatedBlock
-                delay={0.1}
-                className="bg-(--color_bg_card) rounded-2xl p-5 border border-(--color_border)"
-              >
+              <AnimatedBlock delay={0.1} className="glass rounded-2xl p-5">
                 {todaySessionWorkouts.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="text-4xl mb-2">{hasRestDayToday ? '🛋️' : '🎉'}</div>
@@ -408,10 +405,7 @@ export default function TrainerTodayScreen() {
         {/* CRM action list: leads + athletes that need attention */}
         {showCrmBlock && (
           <SectionGroup title="Кого не потерять">
-            <AnimatedBlock
-              delay={0.15}
-              className="bg-(--color_bg_card) rounded-2xl p-4 border border-(--color_border) space-y-3"
-            >
+            <AnimatedBlock delay={0.15} className="glass rounded-2xl p-4 space-y-3">
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between gap-3">
                   <div className="text-sm font-semibold text-white">CRM: следующие действия</div>

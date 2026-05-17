@@ -270,7 +270,7 @@ export default function DayDetails({
   return (
     <>
       <div className="animate-fade-in">
-        <div className="bg-white/5 p-5 rounded-xl border border-white/20">
+        <div className="glass p-5 rounded-xl">
           <div className="mb-4">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-xl font-bold text-white min-w-0 truncate">

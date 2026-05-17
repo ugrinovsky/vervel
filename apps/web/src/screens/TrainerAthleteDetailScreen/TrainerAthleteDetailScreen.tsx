@@ -33,6 +33,7 @@ import UserAvatar from '@/components/UserAvatar/UserAvatar';
 import BackButton from '@/components/BackButton/BackButton';
 import type { MonthlyStatsData } from '@/screens/ActivityScreen/useActivityData';
 import SectionGroup from '@/components/ui/SectionGroup';
+import Tabs from '@/components/ui/Tabs';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { useTrainerTeamsFeatureRedirect } from '@/hooks/useTrainerTeamsFeatureRedirect';
 import PassBlock from './PassBlock';
@@ -244,7 +245,7 @@ export default function TrainerAthleteDetailScreen() {
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-4 pt-4 pb-5 px-4 rounded-2xl bg-(--color_bg_card) border border-(--color_border)"
+            className="glass rounded-2xl flex items-center gap-4 pt-4 pb-5 px-4"
           >
             <UserAvatar
               photoUrl={athletePhotoUrl}
@@ -253,7 +254,7 @@ export default function TrainerAthleteDetailScreen() {
               className="shrink-0"
             />
             <div className="flex-1 min-w-0">
-              {/* Никнейм */}
+              {/* Никнейм + CRM chip */}
               <div className="flex items-center gap-1.5 min-h-7 w-full">
                 {editingNickname ? (
                   <>
@@ -289,20 +290,58 @@ export default function TrainerAthleteDetailScreen() {
                     </button>
                   </>
                 ) : (
-                  <button
-                    onClick={() => {
-                      setNicknameInput(nickname ?? '');
-                      setEditingNickname(true);
-                    }}
-                    className="flex items-center gap-1.5 group"
-                  >
-                    <span
-                      className={`text-lg font-bold leading-tight ${nickname ? 'text-white' : 'text-(--color_text_muted) font-normal italic'}`}
+                  <>
+                    <button
+                      onClick={() => {
+                        setNicknameInput(nickname ?? '');
+                        setEditingNickname(true);
+                      }}
+                      className="flex items-center gap-1.5 group flex-1 min-w-0"
                     >
-                      {nickname || 'Никнейм…'}
-                    </span>
-                    <PencilIcon className="w-3.5 h-3.5 text-(--color_text_muted) opacity-40 group-hover:opacity-100 transition-opacity shrink-0" />
-                  </button>
+                      <span
+                        className={`text-lg font-bold leading-tight truncate ${nickname ? 'text-white' : 'text-(--color_text_muted) font-normal italic'}`}
+                      >
+                        {nickname || 'Никнейм…'}
+                      </span>
+                      <PencilIcon className="w-3.5 h-3.5 text-(--color_text_muted) opacity-40 group-hover:opacity-100 transition-opacity shrink-0" />
+                    </button>
+                    {flags.trainerCrm && (
+                      <button
+                        type="button"
+                        onClick={() => setShowCrm(true)}
+                        className={`inline-flex shrink-0 items-center gap-1.5 px-2 py-1 rounded-full border text-[11px] font-medium transition-all hover:brightness-125 active:scale-95 ${
+                          crmStatus === 'active'
+                            ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                            : crmStatus === 'sleeping'
+                              ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                              : crmStatus === 'paused'
+                                ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                                : 'bg-gray-500/10 border-gray-500/20 text-gray-400'
+                        }`}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            crmStatus === 'active'
+                              ? 'bg-green-400'
+                              : crmStatus === 'sleeping'
+                                ? 'bg-amber-400'
+                                : crmStatus === 'paused'
+                                  ? 'bg-blue-400'
+                                  : 'bg-gray-500'
+                          }`}
+                        />
+                        {
+                          {
+                            active: 'Активен',
+                            sleeping: 'Неактивен',
+                            paused: 'Пауза',
+                            churned: 'Ушёл',
+                          }[crmStatus]
+                        }
+                        <ChevronDownIcon className="w-3 h-3 opacity-50" />
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -316,50 +355,6 @@ export default function TrainerAthleteDetailScreen() {
                 <p className="text-xs text-(--color_text_muted) mt-0.5 truncate max-w-full">
                   {athleteEmail}
                 </p>
-              )}
-
-              {/* CRM status chip — кликабелен */}
-              {flags.trainerCrm && (
-                <button
-                  type="button"
-                  onClick={() => setShowCrm(true)}
-                  className={`mt-1.5 inline-flex items-center gap-1.5 px-2 py-1 rounded-full border text-[11px] font-medium transition-all hover:brightness-125 active:scale-95 ${
-                    crmStatus === 'active'
-                      ? 'bg-green-500/10 border-green-500/20 text-green-400'
-                      : crmStatus === 'sleeping'
-                        ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                        : crmStatus === 'paused'
-                          ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
-                          : 'bg-gray-500/10 border-gray-500/20 text-gray-400'
-                  }`}
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      crmStatus === 'active'
-                        ? 'bg-green-400'
-                        : crmStatus === 'sleeping'
-                          ? 'bg-amber-400'
-                          : crmStatus === 'paused'
-                            ? 'bg-blue-400'
-                            : 'bg-gray-500'
-                    }`}
-                  />
-                  {
-                    { active: 'Активен', sleeping: 'Тихо', paused: 'Пауза', churned: 'Ушёл' }[
-                      crmStatus
-                    ]
-                  }
-                  {crmFollowUpAt && (
-                    <span className="opacity-60">
-                      ·{' '}
-                      {new Date(crmFollowUpAt).toLocaleDateString('ru-RU', {
-                        day: 'numeric',
-                        month: 'short',
-                      })}
-                    </span>
-                  )}
-                  <ChevronDownIcon className="w-3 h-3 opacity-50" />
-                </button>
               )}
             </div>
           </motion.div>
@@ -391,127 +386,113 @@ export default function TrainerAthleteDetailScreen() {
               <PassBlock athleteId={id} />
             </motion.div>
           )}
-
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="flex gap-1 bg-(--color_bg_card) rounded-xl p-1"
-          >
-            {(
-              [
-                ['analytics', 'Аналитика'],
-                ['activity', 'Активность'],
-                ['avatar', 'Зоны мышц'],
-              ] as [Tab, string][]
-            ).map(([t, label]) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-                  tab === t
-                    ? 'bg-(--color_primary_light) text-white shadow'
-                    : 'text-(--color_text_secondary) hover:text-white'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </motion.div>
         </SectionGroup>
 
-        {tab === 'analytics' && (
-          <SectionGroup title="Аналитика" showBreakAfter={false}>
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-5"
-            >
-              <AnalyticsPeriodToggle value={timeRange} onChange={setTimeRange} showHint={false} />
+        <div>
+          <Tabs
+            tabs={[
+              { id: 'analytics' as Tab, label: 'Аналитика' },
+              { id: 'activity' as Tab, label: 'Активность' },
+              { id: 'avatar' as Tab, label: 'Зоны мышц' },
+            ]}
+            active={tab}
+            onChange={setTab}
+            className="mb-5"
+          />
 
-              {stats ? (
-                <motion.div
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.05 }}
-                >
-                  <AnalyticsCards
-                    stats={stats}
-                    monthStats={monthStats}
-                    advancedAnalytics={periodization}
-                    showAdvancedSettingsHint={false}
-                    timeRange={timeRange}
-                  />
-                </motion.div>
-              ) : (
-                <div className="text-center text-(--color_text_muted) py-12 text-sm">
-                  Нет данных за выбранный период
-                </div>
-              )}
-            </motion.div>
-          </SectionGroup>
-        )}
+          {tab === 'analytics' && (
+            <SectionGroup title="Аналитика" showBreakAfter={false}>
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-5"
+              >
+                <AnalyticsPeriodToggle value={timeRange} onChange={setTimeRange} showHint={false} />
 
-        {tab === 'activity' && (
-          <SectionGroup title="Активность">
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-6"
-            >
-              {monthlyStatsData && <MonthlyStats stats={monthlyStatsData} />}
-
-              <Calendar
-                mode="load"
-                selectedDate={selectedDate}
-                onSelect={(day) => setSelectedDate(day.date)}
-                onMonthChange={setCurrentMonth}
-                month={currentMonth}
-                days={days}
-                hideTrainerBadge
-              />
-
-              <AnimatePresence mode="wait">
-                {selectedDate && (
+                {stats ? (
                   <motion.div
-                    key={selectedDate.toISOString()}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ delay: 0.05 }}
                   >
-                    <DayDetails
-                      date={selectedDate}
-                      workouts={dayWorkouts}
-                      onDeleted={() => {}}
-                      readOnly
+                    <AnalyticsCards
+                      stats={stats}
+                      monthStats={monthStats}
+                      advancedAnalytics={periodization}
+                      showAdvancedSettingsHint={false}
+                      timeRange={timeRange}
                     />
                   </motion.div>
+                ) : (
+                  <div className="text-center text-(--color_text_muted) py-12 text-sm">
+                    Нет данных за выбранный период
+                  </div>
                 )}
-              </AnimatePresence>
-            </motion.div>
-          </SectionGroup>
-        )}
+              </motion.div>
+            </SectionGroup>
+          )}
 
-        {tab === 'avatar' && (
-          <SectionGroup title="Зоны мышц" showBreakAfter={false}>
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-              {!avatarLoading && !avatarData ? (
-                <div className="text-center text-(--color_text_muted) py-12 text-sm">
-                  Нет данных
-                </div>
-              ) : (
-                <AvatarView
-                  zones={avatarData?.zones ?? {}}
-                  totalWorkouts={avatarData?.totalWorkouts ?? 0}
-                  lastWorkoutDaysAgo={avatarData?.lastWorkoutDaysAgo ?? null}
-                  loading={avatarLoading}
-                  avatarContext="trainer_view"
+          {tab === 'activity' && (
+            <SectionGroup title="Активность">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-6"
+              >
+                {monthlyStatsData && <MonthlyStats stats={monthlyStatsData} />}
+
+                <Calendar
+                  mode="load"
+                  selectedDate={selectedDate}
+                  onSelect={(day) => setSelectedDate(day.date)}
+                  onMonthChange={setCurrentMonth}
+                  month={currentMonth}
+                  days={days}
+                  hideTrainerBadge
                 />
-              )}
-            </motion.div>
-          </SectionGroup>
-        )}
+
+                <AnimatePresence mode="wait">
+                  {selectedDate && (
+                    <motion.div
+                      key={selectedDate.toISOString()}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <DayDetails
+                        date={selectedDate}
+                        workouts={dayWorkouts}
+                        onDeleted={() => {}}
+                        readOnly
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            </SectionGroup>
+          )}
+
+          {tab === 'avatar' && (
+            <SectionGroup title="Зоны мышц" showBreakAfter={false}>
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+                {!avatarLoading && !avatarData ? (
+                  <div className="text-center text-(--color_text_muted) py-12 text-sm">
+                    Нет данных
+                  </div>
+                ) : (
+                  <AvatarView
+                    zones={avatarData?.zones ?? {}}
+                    totalWorkouts={avatarData?.totalWorkouts ?? 0}
+                    lastWorkoutDaysAgo={avatarData?.lastWorkoutDaysAgo ?? null}
+                    loading={avatarLoading}
+                    avatarContext="trainer_view"
+                  />
+                )}
+              </motion.div>
+            </SectionGroup>
+          )}
+        </div>
       </div>
     </Screen>
   );

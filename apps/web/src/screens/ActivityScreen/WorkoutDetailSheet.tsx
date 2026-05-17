@@ -227,18 +227,47 @@ interface Props {
 /* ─── Константы ─────────────────────────────────────────────────────── */
 
 const ZONE_COLORS = [
-  'var(--color-emerald-400)', 'var(--color-emerald-600)', 'var(--color-emerald-300)',
-  'var(--color-emerald-700)', 'var(--color-emerald-500)', 'var(--color-emerald-200)',
+  'var(--color-emerald-400)',
+  'var(--color-emerald-600)',
+  'var(--color-emerald-300)',
+  'var(--color-emerald-700)',
+  'var(--color-emerald-500)',
+  'var(--color-emerald-200)',
 ];
 
 /* ─── RPE шкала ─────────────────────────────────────────────────────── */
 
 const RPE_LEVELS = [
-  { value: 1, label: 'Очень легко', emoji: '😴', color: 'bg-blue-500/20 border-blue-500/40 text-blue-300' },
-  { value: 2, label: 'Легко',       emoji: '😊', color: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' },
-  { value: 3, label: 'Норм',        emoji: '💪', color: 'bg-yellow-500/20 border-yellow-500/40 text-yellow-300' },
-  { value: 4, label: 'Тяжело',      emoji: '🔥', color: 'bg-orange-500/20 border-orange-500/40 text-orange-300' },
-  { value: 5, label: 'Максимум',    emoji: '💀', color: 'bg-red-500/20 border-red-500/40 text-red-300' },
+  {
+    value: 1,
+    label: 'Очень легко',
+    emoji: '😴',
+    color: 'bg-blue-500/20 border-blue-500/40 text-blue-300',
+  },
+  {
+    value: 2,
+    label: 'Легко',
+    emoji: '😊',
+    color: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300',
+  },
+  {
+    value: 3,
+    label: 'Норм',
+    emoji: '💪',
+    color: 'bg-yellow-500/20 border-yellow-500/40 text-yellow-300',
+  },
+  {
+    value: 4,
+    label: 'Тяжело',
+    emoji: '🔥',
+    color: 'bg-orange-500/20 border-orange-500/40 text-orange-300',
+  },
+  {
+    value: 5,
+    label: 'Максимум',
+    emoji: '💀',
+    color: 'bg-red-500/20 border-red-500/40 text-red-300',
+  },
 ] as const;
 
 /* ─── Утилиты ───────────────────────────────────────────────────────── */
@@ -269,7 +298,9 @@ function extractTime(dateStr?: string | null): string | null {
     const m = d.getMinutes();
     if (h === 0 && m === 0) return null;
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 // Есть ли подходы с повторами без веса (атлет должен дополнить)
@@ -288,7 +319,6 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
     </p>
   );
 }
-
 
 /* ─── Карточка упражнения ─────────────────────────────────────────── */
 
@@ -330,8 +360,12 @@ function ExerciseCard({
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           {dragHandle}
-          <span className="text-[11px] font-bold tabular-nums w-5 h-5 rounded-md flex items-center justify-center shrink-0 bg-white/8 border border-white/12 text-white/50">{number}</span>
-<span className="text-sm font-semibold text-white leading-tight truncate">{exerciseName}</span>
+          <span className="text-[11px] font-bold tabular-nums w-5 h-5 rounded-md flex items-center justify-center shrink-0 bg-white/8 border border-white/12 text-white/50">
+            {number}
+          </span>
+          <span className="text-sm font-semibold text-white leading-tight truncate">
+            {exerciseName}
+          </span>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {vol > 0 && (
@@ -347,7 +381,12 @@ function ExerciseCard({
             </button>
           )}
           {isEditing && onDelete && (
-            <ConfirmDeleteButton icon="trash" variant="overlay" onConfirm={onDelete} className="p-1" />
+            <ConfirmDeleteButton
+              icon="trash"
+              variant="overlay"
+              onConfirm={onDelete}
+              className="p-1"
+            />
           )}
         </div>
       </div>
@@ -360,8 +399,12 @@ function ExerciseCard({
                 {isWodType(ex.wodType) ? WOD_CONFIG[ex.wodType].label : ex.wodType.toUpperCase()}
               </span>
             )}
-            {ex.timeCap && <span className="text-xs text-(--color_text_muted)">{ex.timeCap} мин</span>}
-            {ex.rounds && <span className="text-xs text-(--color_text_muted)">{ex.rounds} раундов</span>}
+            {ex.timeCap && (
+              <span className="text-xs text-(--color_text_muted)">{ex.timeCap} мин</span>
+            )}
+            {ex.rounds && (
+              <span className="text-xs text-(--color_text_muted)">{ex.rounds} раундов</span>
+            )}
           </div>
           <div className="flex items-center gap-3 text-xs">
             {ex.sets?.[0]?.reps != null && (
@@ -374,7 +417,9 @@ function ExerciseCard({
             ) : (
               <span className="text-white/30 italic">вес не указан</span>
             )}
-            {ex.distance != null && <span className="text-(--color_text_muted)">{ex.distance} м</span>}
+            {ex.distance != null && (
+              <span className="text-(--color_text_muted)">{ex.distance} м</span>
+            )}
           </div>
         </div>
       ) : ex.type === 'cardio' || !hasSets ? (
@@ -386,7 +431,9 @@ function ExerciseCard({
           {(ex.sets ?? []).map((s, si) => (
             <div key={s.id ?? si} className="flex items-center gap-2">
               <span className="text-xs text-(--color_text_muted) w-10 shrink-0">Сет {si + 1}</span>
-              <span className={`text-xs ${s.weight || ex.bodyweight ? 'text-(--color_text_secondary)' : 'text-white/30 italic'}`}>
+              <span
+                className={`text-xs ${s.weight || ex.bodyweight ? 'text-(--color_text_secondary)' : 'text-white/30 italic'}`}
+              >
                 {ex.bodyweight && s.reps
                   ? `${s.weight ? `${s.reps} × ${s.weight} кг · ` : `${s.reps} повт. · `}вес тела`
                   : formatSet(s, ex.type)}
@@ -428,8 +475,15 @@ function SortableEditExerciseBlock({
   onToggleSuperset: () => void;
   onInsertAfter: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
-    useSortable({ id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
   const style = {
     transform: transform ? CSS.Transform.toString({ ...transform, x: 0 }) : undefined,
     transition,
@@ -479,13 +533,30 @@ function ZonesSection({ zonesLoad }: { zonesLoad: Record<string, number> }) {
     <div>
       <SectionTitle>Нагрузка по мышцам</SectionTitle>
       <ResponsiveContainer width="100%" height={chartData.length * 34 + 8}>
-        <BarChart layout="vertical" data={chartData} margin={{ top: 0, right: 44, left: 0, bottom: 0 }}>
+        <BarChart
+          layout="vertical"
+          data={chartData}
+          margin={{ top: 0, right: 44, left: 0, bottom: 0 }}
+        >
           <XAxis type="number" domain={[0, 100]} hide />
-          <YAxis type="category" dataKey="name" width={92} interval={0} tick={{ fontSize: 12, fill: 'var(--color_text_muted)' }} axisLine={false} tickLine={false} />
+          <YAxis
+            type="category"
+            dataKey="name"
+            width={92}
+            interval={0}
+            tick={{ fontSize: 12, fill: 'var(--color_text_muted)' }}
+            axisLine={false}
+            tickLine={false}
+          />
           <Bar
             dataKey="value"
             radius={[0, 4, 4, 0]}
-            label={{ position: 'right', fontSize: 11, fill: 'var(--color_text_muted)', formatter: (v: unknown) => `${v}%` }}
+            label={{
+              position: 'right',
+              fontSize: 11,
+              fill: 'var(--color_text_muted)',
+              formatter: (v: unknown) => `${v}%`,
+            }}
             fill={ZONE_COLORS[0]}
             fillOpacity={0.85}
           />
@@ -554,7 +625,9 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
           return;
         }
         setFullWorkout(fw);
-        setEditExercises(fw.exercises.map((ex) => ({ ...ex, sets: (ex.sets ?? []).map((s) => ({ ...s })) })));
+        setEditExercises(
+          fw.exercises.map((ex) => ({ ...ex, sets: (ex.sets ?? []).map((s) => ({ ...s })) }))
+        );
         setRpe(fw.rpe ?? null);
 
         try {
@@ -586,7 +659,8 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
   }, [isEditing, editExercises]);
 
   useEffect(() => {
-    profileApi.getMeasurements('body_weight', 1)
+    profileApi
+      .getMeasurements('body_weight', 1)
       .then((res) => {
         const latest = res.data?.data?.[0];
         if (latest) setProfileWeight(latest.value);
@@ -595,7 +669,10 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
   }, []);
 
   // Строит полный payload для PUT /workouts/:id (backend требует все поля)
-  const buildUpdatePayload = (overrides: { exercises?: FullWorkout['exercises']; rpe?: number | null }) => {
+  const buildUpdatePayload = (overrides: {
+    exercises?: FullWorkout['exercises'];
+    rpe?: number | null;
+  }) => {
     const exercises = (overrides.exercises ?? editExercises).map((ex) => ({
       exerciseId: ex.exerciseId,
       name: ex.name,
@@ -608,9 +685,8 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
       zones: ex.zones,
       bodyweight: ex.bodyweight,
     }));
-    const rpeVal = 'rpe' in overrides
-      ? (overrides.rpe ?? undefined)
-      : (fullWorkout!.rpe ?? undefined);
+    const rpeVal =
+      'rpe' in overrides ? (overrides.rpe ?? undefined) : (fullWorkout!.rpe ?? undefined);
     const dateStr = isEditing
       ? `${getLocalDateISOString(editDate)}T${format(editTime, 'HH:mm')}:00`
       : fullWorkout!.date;
@@ -628,7 +704,10 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
     if (!fullWorkout || !workout) return;
     setSavingWeights(true);
     try {
-      const res = await workoutsApi.update(fullWorkout.id, buildUpdatePayload({ exercises: editExercises }));
+      const res = await workoutsApi.update(
+        fullWorkout.id,
+        buildUpdatePayload({ exercises: editExercises })
+      );
       const updated = normalizeFullWorkoutPayload(res.data);
       if (!updated) {
         toast.error('Ошибка сохранения');
@@ -650,7 +729,9 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
 
   const handleCancelEdit = () => {
     if (fullWorkout) {
-      setEditExercises(fullWorkout.exercises.map((ex) => ({ ...ex, sets: (ex.sets ?? []).map((s) => ({ ...s })) })));
+      setEditExercises(
+        fullWorkout.exercises.map((ex) => ({ ...ex, sets: (ex.sets ?? []).map((s) => ({ ...s })) }))
+      );
     }
     setEditSortIds([]);
     setInsertAt(null);
@@ -697,9 +778,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
       const splitBlockId = prev[oldIndex]?.blockId;
       const reordered = arrayMove(prev, oldIndex, newIndex);
       if (!splitBlockId) return reordered;
-      return reordered.map((e) =>
-        e.blockId === splitBlockId ? { ...e, blockId: undefined } : e
-      );
+      return reordered.map((e) => (e.blockId === splitBlockId ? { ...e, blockId: undefined } : e));
     });
   };
 
@@ -731,7 +810,9 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
         return;
       }
       setFullWorkout(updated);
-      setEditExercises(updated.exercises.map((ex) => ({ ...ex, sets: (ex.sets ?? []).map((s) => ({ ...s })) })));
+      setEditExercises(
+        updated.exercises.map((ex) => ({ ...ex, sets: (ex.sets ?? []).map((s) => ({ ...s })) }))
+      );
       setRpe(updated.rpe ?? null);
       setNotesHidden(true);
       setParsePreview(null);
@@ -745,11 +826,18 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
   };
 
   // Конвертирует FullWorkout exercise → ExerciseWithSets для ExerciseDrawer
-  const toExerciseWithSets = (ex: FullWorkout['exercises'][number], title: string): ExerciseWithSets => ({
+  const toExerciseWithSets = (
+    ex: FullWorkout['exercises'][number],
+    title: string
+  ): ExerciseWithSets => ({
     exerciseId: ex.exerciseId,
     title,
     bodyweight: ex.bodyweight,
-    sets: (ex.sets ?? []).map((s) => ({ id: s.id ?? crypto.randomUUID(), reps: s.reps ?? 0, weight: s.weight ?? 0 })),
+    sets: (ex.sets ?? []).map((s) => ({
+      id: s.id ?? crypto.randomUUID(),
+      reps: s.reps ?? 0,
+      weight: s.weight ?? 0,
+    })),
     duration: ex.duration ? Math.round(ex.duration / 60) : undefined,
   });
 
@@ -822,7 +910,9 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
       !isEditing &&
       fullWorkout.workoutType !== 'crossfit' &&
       (fullWorkout.exercises?.length ?? 0) > 0 &&
-      (fullWorkout.rpe == null || !Number.isFinite(Number(fullWorkout.rpe)) || Number(fullWorkout.rpe) < 1)
+      (fullWorkout.rpe == null ||
+        !Number.isFinite(Number(fullWorkout.rpe)) ||
+        Number(fullWorkout.rpe) < 1)
     : Boolean(workout?.hasMissingRpe);
 
   const startEditWorkout = () => {
@@ -883,7 +973,6 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
 
       {!loading && fullWorkout && (
         <div className="space-y-5 pt-1">
-
           {/* ── Бейджи ───────────────────────────────────────────── */}
           <div className="flex items-center gap-2 flex-wrap">
             {workout?.scheduledWorkoutId != null && (
@@ -970,7 +1059,9 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
                       }`}
                     >
                       <span className="text-xl">{level.emoji}</span>
-                      <span className={`text-[10px] font-medium leading-tight text-center ${selected ? '' : 'text-(--color_text_muted)'}`}>
+                      <span
+                        className={`text-[10px] font-medium leading-tight text-center ${selected ? '' : 'text-(--color_text_muted)'}`}
+                      >
                         {level.label}
                       </span>
                     </button>
@@ -980,7 +1071,6 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
             </div>
           )}
 
-
           {/* ── Упражнения ─────────────────────────────────────────── */}
           {fullWorkout.exercises.length > 0 && (
             <div>
@@ -989,7 +1079,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
                 {!isEditing
                   ? fullWorkout.exercises.map((ex, i, arr) => {
                       const name = exerciseIdForDisplay(
-                        ex.name ?? exerciseMap.get(ex.exerciseId)?.title ?? ex.exerciseId,
+                        ex.name ?? exerciseMap.get(ex.exerciseId)?.title ?? ex.exerciseId
                       );
                       const isLinkedToNext =
                         i < arr.length - 1 && !!ex.blockId && ex.blockId === arr[i + 1].blockId;
@@ -1006,7 +1096,9 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
                             (isLinkedToNext ? (
                               <div className="relative flex items-center h-5 pl-4">
                                 <div className="absolute left-[18px] top-0 bottom-0 w-0.5 bg-amber-500/50" />
-                                <span className="ml-7 text-[10px] text-amber-400/60 font-medium">суперсет</span>
+                                <span className="ml-7 text-[10px] text-amber-400/60 font-medium">
+                                  суперсет
+                                </span>
                               </div>
                             ) : (
                               <div className="my-3 border-t border-(--color_border)" />
@@ -1023,57 +1115,67 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
                         onDragEnd={handleEditDragEnd}
                       >
                         <div ref={editExerciseListBoundsRef} className="min-w-0">
-                          <InsertStartRow onClick={() => { setEditingExIdx(null); setInsertAt(0); }} />
-                          <SortableContext items={editSortIds} strategy={verticalListSortingStrategy}>
-                          {editExercises.map((ex, i, arr) => {
-                            const name = exerciseIdForDisplay(
-                              ex.name ?? exerciseMap.get(ex.exerciseId)?.title ?? ex.exerciseId,
-                            );
-                            const isLinkedToNext =
-                              i < arr.length - 1 && !!ex.blockId && ex.blockId === arr[i + 1].blockId;
-                            const isLast = i === arr.length - 1;
-                            return (
-                              <SortableEditExerciseBlock
-                                key={editSortIds[i]}
-                                id={editSortIds[i]}
-                                index={i}
-                                ex={ex}
-                                exerciseName={name}
-                                isLast={isLast}
-                                isLinkedToNext={isLinkedToNext}
-                                showSuperset={fullWorkout.workoutType !== 'crossfit'}
-                                onEditClick={() => setEditingExIdx(i)}
-                                onDelete={() =>
-                                  setEditExercises((prev) => prev.filter((_, idx) => idx !== i))
-                                }
-                                onInsertAfter={() => {
-                                  setEditingExIdx(null);
-                                  setInsertAt(i + 1);
-                                }}
-                                onToggleSuperset={() => {
-                                  setEditExercises((prev) => {
-                                    const next = prev.map((e) => ({ ...e }));
-                                    const a = next[i];
-                                    const b = next[i + 1];
-                                    if (!a || !b) return prev;
-                                    if (a.blockId && a.blockId === b.blockId) {
-                                      const bid = a.blockId;
-                                      for (let j = i + 1; j < next.length; j++) {
-                                        if (next[j].blockId === bid) delete next[j].blockId;
-                                        else break;
+                          <InsertStartRow
+                            onClick={() => {
+                              setEditingExIdx(null);
+                              setInsertAt(0);
+                            }}
+                          />
+                          <SortableContext
+                            items={editSortIds}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            {editExercises.map((ex, i, arr) => {
+                              const name = exerciseIdForDisplay(
+                                ex.name ?? exerciseMap.get(ex.exerciseId)?.title ?? ex.exerciseId
+                              );
+                              const isLinkedToNext =
+                                i < arr.length - 1 &&
+                                !!ex.blockId &&
+                                ex.blockId === arr[i + 1].blockId;
+                              const isLast = i === arr.length - 1;
+                              return (
+                                <SortableEditExerciseBlock
+                                  key={editSortIds[i]}
+                                  id={editSortIds[i]}
+                                  index={i}
+                                  ex={ex}
+                                  exerciseName={name}
+                                  isLast={isLast}
+                                  isLinkedToNext={isLinkedToNext}
+                                  showSuperset={fullWorkout.workoutType !== 'crossfit'}
+                                  onEditClick={() => setEditingExIdx(i)}
+                                  onDelete={() =>
+                                    setEditExercises((prev) => prev.filter((_, idx) => idx !== i))
+                                  }
+                                  onInsertAfter={() => {
+                                    setEditingExIdx(null);
+                                    setInsertAt(i + 1);
+                                  }}
+                                  onToggleSuperset={() => {
+                                    setEditExercises((prev) => {
+                                      const next = prev.map((e) => ({ ...e }));
+                                      const a = next[i];
+                                      const b = next[i + 1];
+                                      if (!a || !b) return prev;
+                                      if (a.blockId && a.blockId === b.blockId) {
+                                        const bid = a.blockId;
+                                        for (let j = i + 1; j < next.length; j++) {
+                                          if (next[j].blockId === bid) delete next[j].blockId;
+                                          else break;
+                                        }
+                                        delete a.blockId;
+                                      } else {
+                                        const id = a.blockId ?? crypto.randomUUID();
+                                        a.blockId = id;
+                                        b.blockId = id;
                                       }
-                                      delete a.blockId;
-                                    } else {
-                                      const id = a.blockId ?? crypto.randomUUID();
-                                      a.blockId = id;
-                                      b.blockId = id;
-                                    }
-                                    return next;
-                                  });
-                                }}
-                              />
-                            );
-                          })}
+                                      return next;
+                                    });
+                                  }}
+                                />
+                              );
+                            })}
                           </SortableContext>
                         </div>
                       </DndContext>
@@ -1087,12 +1189,14 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
 
           {/* ── Итого ──────────────────────────────────────────────── */}
           {!isEditing && fullWorkout.totalVolume > 0 && (
-            <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border)">
+            <div className="glass rounded-xl p-4">
               <SectionTitle>Итого</SectionTitle>
               <div className="grid grid-cols-2 gap-3">
                 {fullWorkout.totalVolume > 0 && (
                   <div>
-                    <div className="text-lg font-bold text-emerald-400">{formatVolume(fullWorkout.totalVolume)}</div>
+                    <div className="text-lg font-bold text-emerald-400">
+                      {formatVolume(fullWorkout.totalVolume)}
+                    </div>
                     <div className="text-xs text-(--color_text_muted)">Объём</div>
                   </div>
                 )}
@@ -1102,7 +1206,9 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
                 </div>
                 {fullWorkout.totalVolume > 0 && (
                   <div>
-                    <div className="text-lg font-bold text-amber-400">{Math.round(fullWorkout.totalVolume * 0.05).toLocaleString()}</div>
+                    <div className="text-lg font-bold text-amber-400">
+                      {Math.round(fullWorkout.totalVolume * 0.05).toLocaleString()}
+                    </div>
                     <div className="text-xs text-(--color_text_muted)">Калорий ~</div>
                   </div>
                 )}
@@ -1112,9 +1218,11 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
 
           {/* ── Заметки ────────────────────────────────────────────── */}
           {!isEditing && fullWorkout.notes && !parsePreview && !notesHidden && (
-            <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border)">
+            <div className="glass rounded-xl p-4">
               <SectionTitle>Заметки</SectionTitle>
-              <p className="text-sm text-(--color_text_secondary) leading-relaxed whitespace-pre-line">{fullWorkout.notes}</p>
+              <p className="text-sm text-(--color_text_secondary) leading-relaxed whitespace-pre-line">
+                {fullWorkout.notes}
+              </p>
               {canParseNotes && (
                 <GhostButton onClick={handleParseNotes} disabled={isParsing} className="mt-4">
                   {isParsing ? (
@@ -1132,7 +1240,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
 
           {/* ── Превью AI-парсинга ──────────────────────────────────── */}
           {!isEditing && parsePreview && (
-            <div className="bg-(--color_bg_card) rounded-xl p-4 border border-(--color_border) space-y-3">
+            <div className="glass rounded-xl p-4 space-y-3">
               <SectionTitle>Программа от ИИ · проверьте</SectionTitle>
 
               {parsePreview.warning && (
@@ -1159,14 +1267,20 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
                     <span className="text-xs text-(--color_text_muted) shrink-0 tabular-nums text-right">
                       {item.sets > 0 ? `${item.sets} × ` : ''}
                       {item.reps ? `${item.reps} повт.` : ''}
-                      {item.weight ? ` · ${item.weightMax ? `${item.weight}–${item.weightMax}` : item.weight} кг` : ''}
+                      {item.weight
+                        ? ` · ${item.weightMax ? `${item.weight}–${item.weightMax}` : item.weight} кг`
+                        : ''}
                     </span>
                   </div>
                 ))}
               </div>
 
               <div className="flex gap-2 pt-1">
-                <GhostButton variant="solid" onClick={() => setParsePreview(null)} className="flex-1">
+                <GhostButton
+                  variant="solid"
+                  onClick={() => setParsePreview(null)}
+                  className="flex-1"
+                >
                   Отмена
                 </GhostButton>
                 <button
@@ -1174,11 +1288,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
                   disabled={isApplying}
                   className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium bg-emerald-500 text-black hover:bg-emerald-400 transition-colors disabled:opacity-50"
                 >
-                  {isApplying ? (
-                    <LoadingSpinner size="xs" variant="trackLight" />
-                  ) : (
-                    'Сохранить'
-                  )}
+                  {isApplying ? <LoadingSpinner size="xs" variant="trackLight" /> : 'Сохранить'}
                 </button>
               </div>
             </div>
@@ -1187,7 +1297,9 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
       )}
 
       {!loading && !fullWorkout && workout?.id && (
-        <div className="text-center py-10 text-(--color_text_muted) text-sm">Не удалось загрузить детали</div>
+        <div className="text-center py-10 text-(--color_text_muted) text-sm">
+          Не удалось загрузить детали
+        </div>
       )}
 
       {/* ExerciseDrawer для редактирования упражнения */}
@@ -1199,7 +1311,7 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
             exerciseIdForDisplay(
               editExercises[editingExIdx].name ??
                 exerciseMap.get(editExercises[editingExIdx].exerciseId)?.title ??
-                editExercises[editingExIdx].exerciseId,
+                editExercises[editingExIdx].exerciseId
             )
           )}
           workoutType={drawerWorkoutType(fullWorkout?.workoutType)}
@@ -1232,7 +1344,9 @@ export default function WorkoutDetailSheet({ workout, onClose, onUpdate, onRefre
           {(workout?.volume ?? 0) > 0 && (
             <div>
               <span className="text-xs text-(--color_text_muted)">Объём</span>
-              <p className="text-lg font-bold text-emerald-400 mt-0.5">{formatVolume(workout?.volume ?? 0)}</p>
+              <p className="text-lg font-bold text-emerald-400 mt-0.5">
+                {formatVolume(workout?.volume ?? 0)}
+              </p>
             </div>
           )}
         </div>
