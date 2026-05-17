@@ -22,11 +22,7 @@ import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import Tabs from '@/components/ui/Tabs';
 import ChipScrollRow from '@/components/ui/ChipScrollRow';
 import ChipCountBadge from '@/components/ui/ChipCountBadge';
-import {
-  LEAD_CHIP_ALL_ACTIVE,
-  LEAD_CHIP_ALL_INACTIVE,
-  type LeadChipToneKey,
-} from '@/components/ui/leadChipStyles';
+import { LEAD_CHIP_ALL_ACTIVE, LEAD_CHIP_ALL_INACTIVE } from '@/components/ui/leadChipStyles';
 import { MotionButton } from '@/components/ui/Button';
 import AddAthleteDrawer from '@/components/AddAthleteDrawer/AddAthleteDrawer';
 import LeadDetailSheet from '@/components/trainer/LeadDetailSheet';
@@ -267,7 +263,7 @@ export default function TrainerCrmScreen() {
     () =>
       filterOptions.map((f) => ({
         key: f.id,
-        tone: f.id !== 'all' ? (f.id as LeadChipToneKey) : undefined,
+        tone: f.id !== 'all' ? f.id : undefined,
         inactiveClass: f.id === 'all' ? LEAD_CHIP_ALL_INACTIVE : undefined,
         activeClass: f.id === 'all' ? LEAD_CHIP_ALL_ACTIVE : undefined,
         label: (
