@@ -902,13 +902,13 @@ function FeatureSettingsSection({
               >
                 Применить
               </button>
-              <button
-                type="button"
+              <GhostButton
+                variant="solid"
                 onClick={() => setConfirmMode(null)}
-                className="flex-1 py-1.5 rounded-lg bg-white/5 text-(--color_text_muted) text-xs"
+                className="flex-1 py-1.5 text-xs"
               >
                 Отмена
-              </button>
+              </GhostButton>
             </div>
           </div>
         )}

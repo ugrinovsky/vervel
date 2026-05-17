@@ -6,6 +6,7 @@ import { ru } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import { trainerApi, type AthletePass } from '@/api/trainer';
 import AccentButton from '@/components/ui/AccentButton';
+import GhostButton from '@/components/ui/GhostButton';
 import CreatePassSheet from './CreatePassSheet';
 import ConsumePassSheet from './ConsumePassSheet';
 import { CreditCardIcon, EllipsisHorizontalIcon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -64,7 +65,11 @@ export default function PassBlock({ athleteId }: Props) {
       setPasses((prev) => prev.map((p) => (p.id === passId ? res.data.data : p)));
       toast.success('Абонемент отменён');
     } catch (err: unknown) {
-      toast.error(axios.isAxiosError(err) ? (err.response?.data?.message ?? 'Не удалось отменить') : 'Не удалось отменить');
+      toast.error(
+        axios.isAxiosError(err)
+          ? (err.response?.data?.message ?? 'Не удалось отменить')
+          : 'Не удалось отменить'
+      );
     } finally {
       setCancelling(null);
       setMenuPassId(null);
@@ -206,13 +211,13 @@ export default function PassBlock({ athleteId }: Props) {
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
+              <GhostButton
+                variant="outline-accent"
                 onClick={() => setShowCreate(true)}
-                className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border border-(--color_primary_light)/40 text-(--color_primary_light) hover:bg-(--color_primary_light)/10 transition-colors"
+                className="shrink-0 border-(--color_primary_light)/40"
               >
                 + Добавить
-              </button>
+              </GhostButton>
             </motion.div>
           )}
         </AnimatePresence>

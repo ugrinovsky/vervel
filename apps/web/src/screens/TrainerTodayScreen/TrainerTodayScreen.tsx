@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import Screen from '@/components/Screen/Screen';
 import AnimatedBlock from '@/components/ui/AnimatedBlock';
 import SectionGroup from '@/components/ui/SectionGroup';
+import AccentButton from '@/components/ui/AccentButton';
 import Badge from '@/components/ui/Badge';
 import ScreenLinks from '@/components/ScreenLinks/ScreenLinks';
 import ScreenHint from '@/components/ScreenHint/ScreenHint';
@@ -249,13 +250,9 @@ export default function TrainerTodayScreen() {
                   ? 'Запишите клиента или подключите атлета — дальше назначьте первую тренировку и не теряйте контакт из одного места'
                   : 'Календарь и шаблоны — без списка атлетов в приложении. Включите «Атлеты и группы» в настройках, когда понадобится ростер и чаты.'}
               </p>
-              <button
-                type="button"
-                onClick={() => setShowAddClient(true)}
-                className="w-full mb-4 rounded-xl bg-(--color_primary_light) px-4 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-              >
+              <AccentButton onClick={() => setShowAddClient(true)} className="mb-4">
                 Добавить клиента
-              </button>
+              </AccentButton>
               <div className="space-y-3">
                 {getTrainerGettingStartedSteps(workStyle, {
                   templates: flags.trainerTemplates,
@@ -426,13 +423,13 @@ export default function TrainerTodayScreen() {
                     >
                       Все заявки
                     </button>
-                    <button
-                      type="button"
+                    <AccentButton
                       onClick={() => setShowAddClient(true)}
-                      className="rounded-lg bg-(--color_primary_light) px-3 py-2 text-xs font-semibold text-white hover:opacity-90 transition-opacity"
+                      size="sm"
+                      className="text-xs"
                     >
                       Добавить
-                    </button>
+                    </AccentButton>
                   </div>
                 </div>
                 <p className="text-xs text-(--color_text_muted)">

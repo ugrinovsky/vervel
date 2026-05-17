@@ -271,13 +271,9 @@ export default function AddAthleteDrawer({ open, onClose, onAdded, onLeadCreated
               className="space-y-3"
             >
               {!inviteLink ? (
-                <button
-                  onClick={handleGenerateInvite}
-                  disabled={loading}
-                  className="w-full py-3 rounded-xl text-sm font-medium bg-(--color_primary_light) text-white hover:opacity-90 transition-opacity disabled:opacity-50"
-                >
+                <AccentButton onClick={handleGenerateInvite} disabled={loading} className="py-3">
                   {loading ? 'Генерируем...' : 'Сгенерировать ссылку'}
-                </button>
+                </AccentButton>
               ) : (
                 <div className="space-y-3">
                   <div className="bg-(--color_bg_input) border border-(--color_border) rounded-xl px-4 py-3 text-sm text-white break-all">

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import AccentButton from '@/components/ui/AccentButton';
+import GhostButton from '@/components/ui/GhostButton';
 import AppInput from '@/components/ui/AppInput';
 import FormField from '@/components/FormField';
 import { trainerApi, type TrainerCustomExercise } from '@/api/trainer';
@@ -173,12 +174,9 @@ export default function CustomExercisePicker({ open, onClose, workoutType, onSel
               >
                 Добавить
               </AccentButton>
-              <button
-                onClick={() => setShowCreate(false)}
-                className="px-4 py-2 rounded-xl text-sm text-(--color_text_muted) bg-(--color_bg_card_hover) border border-(--color_border) hover:text-white transition-colors"
-              >
+              <GhostButton variant="solid" onClick={() => setShowCreate(false)} className="px-4">
                 Отмена
-              </button>
+              </GhostButton>
             </div>
           </div>
         ) : (

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import BottomSheet from '@/components/BottomSheet/BottomSheet';
 import PhoneInput from '@/components/ui/PhoneInput';
+import AccentButton from '@/components/ui/AccentButton';
+import GhostButton from '@/components/ui/GhostButton';
 import { trainerApi, type TrainerLead, type LeadCrmStatus } from '@/api/trainer';
 import {
   PhoneIcon,
@@ -229,14 +231,10 @@ export default function LeadDetailSheet({ lead, open, onClose, onUpdated }: Prop
                 <div className="px-3 py-2.5 rounded-xl bg-(--color_bg_input) border border-(--color_border) text-xs text-white/80 break-all">
                   {inviteLink}
                 </div>
-                <button
-                  type="button"
-                  onClick={handleCopyInvite}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-(--color_primary_light) text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-                >
+                <AccentButton onClick={handleCopyInvite}>
                   <ClipboardDocumentIcon className="w-4 h-4" />
                   Скопировать ссылку
-                </button>
+                </AccentButton>
                 {status !== 'converted' && (
                   <button
                     type="button"
@@ -291,13 +289,13 @@ export default function LeadDetailSheet({ lead, open, onClose, onUpdated }: Prop
             {confirmDelete ? 'Подтвердите удаление' : 'Удалить заявку'}
           </button>
           {confirmDelete && (
-            <button
-              type="button"
+            <GhostButton
+              variant="link"
               onClick={() => setConfirmDelete(false)}
-              className="w-full text-xs text-(--color_text_muted) hover:text-white transition-colors py-1"
+              className="w-full text-center py-1"
             >
               Отмена
-            </button>
+            </GhostButton>
           )}
         </div>
       </div>

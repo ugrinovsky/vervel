@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { now, today, parseLocalDate, parseApiDateTime } from '../../utils/date';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
@@ -156,7 +157,7 @@ export default function TrainerCrmScreen() {
   const handleTabChange = (next: MainTab) => {
     localStorage.setItem('crm_tab', next);
     setTab(next);
-    if (Date.now() - lastLoadedAt > 60_000) loadData();
+    if (now().getTime() - lastLoadedAt > 60_000) loadData();
   };
   const [leads, setLeads] = useState<TrainerLead[]>([]);
   const [athletes, setAthletes] = useState<AthleteListItem[]>([]);
@@ -179,7 +180,7 @@ export default function TrainerCrmScreen() {
       setLeads(freshLeads);
       setAthletes(athletesRes.data.data);
       setPassSummaries(passesRes.data.data);
-      setLastLoadedAt(Date.now());
+      setLastLoadedAt(now().getTime());
       return freshLeads;
     } catch {
       toast.error('Ошибка загрузки');
@@ -195,13 +196,13 @@ export default function TrainerCrmScreen() {
   // ── Leads computed ──────────────────────────────────────────────────────────
 
   const leadCounts = useMemo(() => {
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
+    const endOfToday = today();
+    endOfToday.setHours(23, 59, 59, 999);
     const byStatus = countLeadsByCrmStatus(leads);
     return {
       total: leads.length,
       active: leads.filter((l) => l.crmStatus !== 'converted' && l.crmStatus !== 'lost').length,
-      followUpToday: leads.filter((l) => l.nextFollowUpAt && new Date(l.nextFollowUpAt) <= today)
+      followUpToday: leads.filter((l) => l.nextFollowUpAt && parseApiDateTime(l.nextFollowUpAt) <= endOfToday)
         .length,
       byStatus,
     };
@@ -215,14 +216,14 @@ export default function TrainerCrmScreen() {
     }
     const sorted = [...arr];
     if (sort === 'created_desc') {
-      sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      sorted.sort((a, b) => parseApiDateTime(b.createdAt).getTime() - parseApiDateTime(a.createdAt).getTime());
     } else if (sort === 'name_asc') {
       sorted.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
     } else if (sort === 'followup_asc') {
       sorted.sort((a, b) => {
         if (!a.nextFollowUpAt) return 1;
         if (!b.nextFollowUpAt) return -1;
-        return new Date(a.nextFollowUpAt).getTime() - new Date(b.nextFollowUpAt).getTime();
+        return parseApiDateTime(a.nextFollowUpAt).getTime() - parseApiDateTime(b.nextFollowUpAt).getTime();
       });
     }
     return sorted;
@@ -291,7 +292,7 @@ export default function TrainerCrmScreen() {
       if (p.sessionsLeft <= 2) return true;
       if (p.validUntil) {
         const days = Math.ceil(
-          (new Date(p.validUntil).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+          (parseLocalDate(p.validUntil).getTime() - now().getTime()) / (1000 * 60 * 60 * 24)
         );
         if (days <= 7) return true;
       }
@@ -499,7 +500,7 @@ export default function TrainerCrmScreen() {
                           ? formatFollowUp(lead.nextFollowUpAt!)
                           : null;
                         const isOverdue =
-                          hasFollowUp && new Date(lead.nextFollowUpAt!) < new Date();
+                          hasFollowUp && parseApiDateTime(lead.nextFollowUpAt!) < now();
                         return (
                           <motion.button
                             key={lead.id}
