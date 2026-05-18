@@ -21,6 +21,7 @@ import ToolbarButton from '@/components/ui/ToolbarButton';
 import ConfirmDeleteButton from '@/components/ui/ConfirmDeleteButton';
 import ButtonLink from '@/components/ui/ButtonLink';
 import Badge from '@/components/ui/Badge';
+import StatusTag, { StatusTagRow } from '@/components/ui/StatusTag';
 import Switch from '@/components/ui/Switch';
 import Tabs from '@/components/ui/Tabs';
 import TabCard from '@/components/ui/TabCard';
@@ -174,6 +175,7 @@ const COMPONENT_CATALOG = [
   'SectionDivider',
   'SectionGroup',
   'Select',
+  'StatusTag',
   'Switch',
   'TabCard',
   'Tabs',
@@ -188,6 +190,7 @@ const TOC = [
   { id: 'buttons', label: 'Button' },
   { id: 'buttons-legacy', label: 'Legacy' },
   { id: 'badges', label: 'Badge' },
+  { id: 'status-tags', label: 'StatusTag' },
   { id: 'toggles', label: 'Toggles' },
   { id: 'inputs', label: 'Inputs' },
   { id: 'pickers', label: 'Pickers' },
@@ -481,6 +484,55 @@ export default function UIKitScreen() {
             <Badge count={3} size="xs" />
             <Badge count={12} size="sm" />
             <Badge count={120} size="md" />
+          </Row>
+        </UiKitSection>
+
+        <UiKitSection id="status-tags" title="StatusTag" path="@/components/ui/StatusTag">
+          <Row label="Тоны (CRM атлета)">
+            <StatusTag
+              label="Активен"
+              pillClassName="text-green-300 bg-green-500/10"
+              dotClassName="bg-green-400"
+            />
+            <StatusTag
+              label="Неактивен"
+              pillClassName="text-amber-300 bg-amber-500/10"
+              dotClassName="bg-amber-400"
+            />
+            <StatusTag
+              label="Пауза"
+              pillClassName="text-blue-300 bg-blue-500/10"
+              dotClassName="bg-blue-400"
+            />
+            <StatusTag
+              label="Ушёл"
+              pillClassName="text-gray-400 bg-gray-500/10"
+              dotClassName="bg-gray-500"
+            />
+          </Row>
+          <Row label="Без точки">
+            <StatusTag
+              label="Черновик"
+              pillClassName="text-(--color_text_muted) bg-(--color_bg_card)"
+              dotClassName="bg-(--color_text_muted)"
+              showDot={false}
+            />
+          </Row>
+          <Row label="StatusTagRow (пустая строка = та же высота)">
+            <div className="w-28 rounded-xl bg-(--color_bg_card)/50 p-2 space-y-1 text-center">
+              <div className="text-xs text-white truncate">Иван</div>
+              <StatusTagRow center>
+                <StatusTag
+                  label="Неактивен"
+                  pillClassName="text-amber-300 bg-amber-500/10"
+                  dotClassName="bg-amber-400"
+                />
+              </StatusTagRow>
+            </div>
+            <div className="w-28 rounded-xl bg-(--color_bg_card)/50 p-2 space-y-1 text-center">
+              <div className="text-xs text-white truncate">Мария</div>
+              <StatusTagRow center />
+            </div>
           </Row>
         </UiKitSection>
 

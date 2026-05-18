@@ -22,14 +22,7 @@ import {
   ViewColumnsIcon,
   Bars3Icon,
 } from '@heroicons/react/24/outline';
-import type { AthleteCrmStatus } from '@/api/trainer';
-
-const CRM_STATUS_CONFIG: Record<AthleteCrmStatus, { label: string; dot: string; pill: string }> = {
-  active: { label: 'Активен', dot: 'bg-green-400', pill: 'text-green-300 bg-green-500/10' },
-  sleeping: { label: 'Неактивен', dot: 'bg-amber-400', pill: 'text-amber-300 bg-amber-500/10' },
-  paused: { label: 'Пауза', dot: 'bg-blue-400', pill: 'text-blue-300 bg-blue-500/10' },
-  churned: { label: 'Ушёл', dot: 'bg-gray-500', pill: 'text-gray-400 bg-gray-500/10' },
-};
+import { AthleteCrmStatusBadgeRow } from '@/components/trainer/AthleteCrmStatusBadge';
 import ConfirmDeleteWrapper from '@/components/ui/ConfirmDeleteWrapper';
 import SectionGroup from '@/components/ui/SectionGroup';
 import { useTrainerTeamsFeatureRedirect } from '@/hooks/useTrainerTeamsFeatureRedirect';
@@ -261,16 +254,7 @@ export default function TrainerAthletesListScreen() {
                                 <div className="text-[11px] text-(--color_text_muted)/70 truncate leading-snug">
                                   {athlete.status === 'pending' ? '⏳ Ожидает' : athlete.email}
                                 </div>
-                                {athlete.crmStatus && athlete.crmStatus !== 'active' && (
-                                  <div
-                                    className={`mt-0.5 inline-flex items-center gap-1 text-[10px] font-medium rounded-full px-1.5 py-0.5 ${CRM_STATUS_CONFIG[athlete.crmStatus].pill}`}
-                                  >
-                                    <span
-                                      className={`w-1.5 h-1.5 rounded-full ${CRM_STATUS_CONFIG[athlete.crmStatus].dot}`}
-                                    />
-                                    {CRM_STATUS_CONFIG[athlete.crmStatus].label}
-                                  </div>
-                                )}
+                                <AthleteCrmStatusBadgeRow status={athlete.crmStatus} />
                               </div>
                             </div>
                             {unread > 0 && <Badge count={unread} />}
@@ -331,14 +315,7 @@ export default function TrainerAthletesListScreen() {
                                     {athlete.status === 'pending' ? '⏳ Ожидает' : athlete.email}
                                   </div>
                                 )}
-                                {athlete.crmStatus && athlete.crmStatus !== 'active' && (
-                                  <div className="flex justify-center mt-0.5">
-                                    <span
-                                      className={`w-2 h-2 rounded-full ${CRM_STATUS_CONFIG[athlete.crmStatus].dot}`}
-                                      title={CRM_STATUS_CONFIG[athlete.crmStatus].label}
-                                    />
-                                  </div>
-                                )}
+                                <AthleteCrmStatusBadgeRow status={athlete.crmStatus} center />
                               </div>
                             </div>
                           </ConfirmDeleteWrapper>
